@@ -47,7 +47,7 @@ pytania = [
                 ]
             },
             {
-                tresc: "Zwyciestwo",
+                tresc: "Zwycięstwo",
                 punkty: []
             },
             {
