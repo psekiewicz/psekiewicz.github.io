@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="pl">
 
-<!-- W HEAD SĄ USTAWIENIA STRONY -->
 <head>
-
 	<title>Pierwsze zaklęcie</title>
 	<meta charset="UTF-8" name="viewport" content="width=dewice-width, initial-scale=1">
 	<link href="https://fonts.googleapis.com/css?family=Jolly+Lodger&display=swap" rel="stylesheet">
- 
+
 	<style>
 		html {
 			height: 100%;
@@ -32,7 +30,7 @@
 			text-shadow: 2px 2px 4px #000000;
 		}
 		form input[type=text] {
-			display: block;		
+			display: block;
 			margin-left: auto;
 			margin-right: auto;
 			font-family: 'Jolly Lodger', cursive;
@@ -87,29 +85,27 @@
 				width: 400px !important;
 			}
 		}
-	</style> 
-	
+	</style>
+
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-
 </head>
 
-<!-- W BODY JEST TREŚĆ STRONY -->
 <body>
 	<div class="karta">
 		<h1>Podaj swoje imię młody adepcie:</h1>
-		
+
 		<form action="" method ="post">
 			<input type="text" id="kafczar" name="kafczar">
 			<input type="button" id="kafbut" value="Generuj">
 		</form>
-		
+
 		<div class="kafczar">
 			Zaklęcie odblokowujące potężny czar:
 		</div>
 		<p id="czar"></p>
 	</div>
-	
+
 	<script type="text/javascript">
 		window.onload = function() {
 			Particles.init({
@@ -132,9 +128,9 @@
 			});
 		};
 	</script>
-	
-<canvas class="background"></canvas>
 
+	<canvas class="background"></canvas>
 </body>
+
 </html>
  
