@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+	<title>Pierwsze zaklęcie</title>
+	<meta charset="UTF-8" name="viewport" content="width=dewice-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Jolly+Lodger&display=swap" rel="stylesheet">
+
+	<style>
+		html {
+			height: 100%;
+		}
+		body {
+			height: 100%;
+			font-family: 'Jolly Lodger', cursive;
+			font-size: 24px;
+			background-color: #256276;
+			color: #fff;
+			max-width: 100%;
+		}
+		h1 {
+			text-align: center;
+			padding-top: 20px;
+			text-shadow: 2px 2px 4px #000000;
+		}
+		.kafczar {
+			margin-top: 20px;
+			font-size: 42px;
+			text-align: center;
+			text-shadow: 2px 2px 4px #000000;
+		}
+		form input[type=text] {
+			display: block;
+			margin-left: auto;
+			margin-right: auto;
+			font-family: 'Jolly Lodger', cursive;
+			font-size: 76px;
+			font-weight: bold;
+			text-align: center;
+			background: transparent;
+			border: none;
+			border-bottom: 1px dashed #83A4C5;
+			outline: none;
+			padding: 0px 0px 0px 0px;
+		}
+		form input[type=text]:focus {
+			border-bottom: 1px dashed #D9FFA9;
+		}
+		form input[type=button] {
+			width: 100px;
+			height: 50px;
+			border-radius: 15px;
+			background-color: #fff;
+			-webkit-box-shadow: 5px 5px 0px 0px rgba(0,0,0,0.75);
+			-moz-box-shadow: 5px 5px 0px 0px rgba(0,0,0,0.75);
+			box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.75);
+			cursor: pointer;
+			display: block;
+			margin-left: auto;
+			margin-right:auto;
+			margin-top: 20px;
+		}
+		form input[type=button]:hover {
+			background-color: rgba(207, 0, 20, 0.452);
+		}
+		.karta {
+			width: 600px;
+			height: 500px;
+			border-radius: 25px;
+			background-color: #4162f3
+			-webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+			-moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+			box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			margin-right: -50%;
+			transform: translate(-50%, -50%);
+			}
+		#czar {
+				text-align: center;
+			}
+		@media all and (min-width:320px) and (max-width:667px) {
+			.karta {
+				width: 400px !important;
+			}
+		}
+	</style>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+	<div class="karta">
+		<h1>Podaj swoje imię młody adepcie:</h1>
+
+		<form action="" method ="post">
+			<input type="text" id="kafczar" name="kafczar">
+			<input type="button" id="kafbut" value="Generuj">
+		</form>
+
+		<div class="kafczar">
+			Zaklęcie odblokowujące potężny czar:
+		</div>
+		<p id="czar"></p>
+	</div>
+
+	<script type="text/javascript">
+		window.onload = function() {
+			Particles.init({
+				selector: '.background',
+				maxParticles: 120,
+				sizeVariations: 4,
+				speed: 0.3,
+				connectParticles: true,
+				color: '#48F2E3',
+			});
+			$('#kafbut').click(function() {
+				var kaftxt = $("#kafczar").val();
+				if (kaftxt) {
+					var kaffinal = 'KA' + kaftxt + 'FEJ';
+					$("#czar").text(kaffinal);
+					let speech = new SpeechSynthesisUtterance();
+					speech.lang = "pl";
+					voices = window.speechSynthesis.getVoices();
+  					speech.voice = voices[0];
+					speech.text = kaffinal;
+					window.speechSynthesis.speak(speech)
+					// TODO: dodać opóźnienie 2 sekundy
+					// https://freesound.org/people/sonically_sound/sounds/613163/
+					var audio = new Audio('2019_1_zabawa_czary_i_magia_i_dzwiek/magic.flac');
+        			audio.play();
+				} else {
+					alert("Podaj imię adepcie");
+					$("#czar").text("Wpisz imię adepcie");
+				}
+			});
+		};
+	</script>
+
+	<canvas class="background"></canvas>
+</body>
+
+</html>
+ 
