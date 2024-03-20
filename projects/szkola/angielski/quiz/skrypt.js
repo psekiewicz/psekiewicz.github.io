@@ -3,7 +3,7 @@ zawodnicy = [
 ];
 pytania = [
     {
-        tresc: "Co oznacza słowo 'sausage'?",
+        tresc: "Co oznacza słowo 'sausages'?",
         odpowiedzi: [
             {
                 tresc: "sos",
@@ -49,7 +49,7 @@ pytania = [
         ]
     },
     {
-        tresc: "Po angielsku 'marchewka' to:",
+        tresc: "Po angielsku 'marchewki' to:",
         odpowiedzi: [
             {
                 tresc: "ham",
@@ -60,7 +60,7 @@ pytania = [
                 punkty: []
             },
             {
-                tresc: "carrot",
+                tresc: "carrots",
                 punkty: [
                     { zawodnik: "uczen", wartosc: 1 }
                 ]
