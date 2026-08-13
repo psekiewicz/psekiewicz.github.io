@@ -31,6 +31,7 @@
         <p class="sub">Start publishing your projects in minutes.</p>
 
         <div class="alert alert-error" id="form-alert"></div>
+        <div class="alert alert-success" id="form-success"></div>
 
         <form id="register-form" novalidate>
           <div class="field">
@@ -64,9 +65,11 @@
 
     const form = document.getElementById('register-form');
     const alertBox = document.getElementById('form-alert');
+    const successBox = document.getElementById('form-success');
     const submitBtn = document.getElementById('submit-btn');
 
     function showError(message) {
+      successBox.classList.remove('is-visible');
       alertBox.textContent = message;
       alertBox.classList.add('is-visible');
     }
@@ -74,6 +77,7 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       alertBox.classList.remove('is-visible');
+      successBox.classList.remove('is-visible');
 
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirm-password').value;
@@ -86,12 +90,22 @@
       submitBtn.innerHTML = '<span class="spinner"></span> Creating account…';
 
       try {
-        await registerUser(
+        const { session } = await registerUser(
           document.getElementById('email').value,
           password,
           document.getElementById('displayName').value.trim()
         );
-        window.location.href = '/dashboard.html';
+        if (session) {
+          // Email confirmation is off for this project — already logged in.
+          window.location.href = '/dashboard.html';
+        } else {
+          // Email confirmation is on (Supabase's default): no session yet.
+          form.reset();
+          successBox.textContent = 'Account created! Check your email for a confirmation link, then log in.';
+          successBox.classList.add('is-visible');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create account';
+        }
       } catch (err) {
         showError(err.message);
         submitBtn.disabled = false;

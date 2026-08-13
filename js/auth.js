@@ -11,6 +11,10 @@ function friendlyError(err) {
   return map[message] || message;
 }
 
+// Returns { user, session }. `session` is null when the project has email
+// confirmation enabled (Supabase's default) — the caller must handle that
+// case by prompting the user to check their inbox rather than assuming
+// they're immediately logged in.
 export async function registerUser(email, password, displayName) {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -18,7 +22,7 @@ export async function registerUser(email, password, displayName) {
     options: { data: { display_name: displayName } },
   });
   if (error) throw new Error(friendlyError(error));
-  return data.user;
+  return { user: data.user, session: data.session };
 }
 
 export async function loginUser(email, password) {
