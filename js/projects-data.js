@@ -30,6 +30,12 @@ export async function getPublishedProjects() {
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+export async function getPublishedProjectsByUser(uid) {
+  const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid).eq('published', true);
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
+}
+
 export async function getMyProjects(uid) {
   const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid);
   if (error) throw new Error(error.message);

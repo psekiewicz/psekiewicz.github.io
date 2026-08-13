@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="page-title">Project — Showcase</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -16,8 +17,12 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
-      <div class="nav-actions" id="nav-actions"></div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
       <button class="nav-toggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -39,7 +44,9 @@
     </div>
   </footer>
 
+  <script src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getProjectById } from '/js/projects-data.js';
     import { escapeHtml, timeAgo } from '/js/utils.js';
@@ -71,7 +78,7 @@
             <a href="projects.html" class="nav-link" style="padding-left:0;">← Back to projects</a>
             <h1 style="margin-top:14px;">${escapeHtml(project.title)}${draftBadge}</h1>
             <div class="detail-meta">
-              <span>by <strong>${escapeHtml(project.authorName)}</strong></span>
+              <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}"><strong>${escapeHtml(project.authorName)}</strong></a></span>
               <span>·</span>
               <span>Published ${timeAgo(project.createdAt)}</span>
             </div>

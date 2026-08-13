@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Showcase — Publish and discover projects</title>
   <meta name="description" content="A place for developers to publish, share, and discover projects." />
@@ -17,8 +18,12 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
-      <div class="nav-actions" id="nav-actions"></div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
       <button class="nav-toggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -34,7 +39,7 @@
           Showcase is a clean, no-nonsense home for your side projects and portfolio work.
           Create an account, publish what you've built, and share a single link.
         </p>
-        <div class="hero-actions">
+        <div class="hero-actions" id="hero-actions">
           <a class="btn btn-primary" href="register.html">Create free account</a>
           <a class="btn btn-secondary" href="projects.html">Browse projects</a>
         </div>
@@ -86,12 +91,28 @@
     </div>
   </footer>
 
+  <script src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { onAuthChange } from '/js/auth.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    onAuthChange((user) => {
+      const heroActions = document.getElementById('hero-actions');
+      heroActions.innerHTML = user
+        ? `
+          <a class="btn btn-primary" href="dashboard.html?new=1">Add new project</a>
+          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
+        `
+        : `
+          <a class="btn btn-primary" href="register.html">Create free account</a>
+          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
+        `;
+    });
 
     function projectCard(project) {
       const thumb = project.imageUrl
@@ -106,7 +127,7 @@
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
             <div class="tag-list">${tags}</div>
             <div class="card-meta">
-              <span>by ${escapeHtml(project.authorName)}</span>
+              <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a></span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
           </div>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Profile — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
+      </div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" id="profile-root">
+        <p>Loading profile…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="projects.html">Browse projects</a>
+    </div>
+  </footer>
+
+  <!-- Followers / following list modal -->
+  <div class="modal-overlay" id="list-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="list-modal-title" style="margin:0;">People</h2>
+        <button class="modal-close" id="list-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="follow-list" id="list-modal-body">
+        <p>Loading…</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module">
+    import { getCurrentUser } from '/js/auth.js';
+    import { getProfile } from '/js/profiles-data.js';
+    import { getPublishedProjectsByUser } from '/js/projects-data.js';
+    import {
+      isFollowing,
+      followUser,
+      unfollowUser,
+      getFollowerCount,
+      getFollowingCount,
+      getFollowers,
+      getFollowing,
+    } from '/js/follows-data.js';
+    import { escapeHtml, initials, timeAgo } from '/js/utils.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const root = document.getElementById('profile-root');
+    const profileUserId = new URLSearchParams(window.location.search).get('user');
+
+    const listModal = document.getElementById('list-modal');
+    const listModalTitle = document.getElementById('list-modal-title');
+    const listModalBody = document.getElementById('list-modal-body');
+    document.getElementById('list-modal-close').addEventListener('click', () => listModal.classList.remove('is-open'));
+    listModal.addEventListener('click', (e) => {
+      if (e.target === listModal) listModal.classList.remove('is-open');
+    });
+
+    function renderPeopleList(people) {
+      if (people.length === 0) return '<p>Nobody here yet.</p>';
+      return people
+        .map(
+          (p) => `
+            <a class="follow-list-item" href="profile.html?user=${encodeURIComponent(p.id)}">
+              <span class="avatar">${p.avatarUrl ? `<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escapeHtml(initials(p.displayName))}</span>
+              <span>${escapeHtml(p.displayName)}</span>
+            </a>
+          `
+        )
+        .join('');
+    }
+
+    async function openPeopleModal(title, loader) {
+      listModalTitle.textContent = title;
+      listModalBody.innerHTML = '<p>Loading…</p>';
+      listModal.classList.add('is-open');
+      try {
+        const people = await loader();
+        listModalBody.innerHTML = renderPeopleList(people);
+      } catch (err) {
+        listModalBody.innerHTML = `<p>Could not load: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function projectCard(project) {
+      const thumb = project.imageUrl
+        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        : escapeHtml(project.title.slice(0, 2).toUpperCase());
+      const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      return `
+        <article class="card">
+          <div class="card-thumb">${thumb}</div>
+          <div class="card-body">
+            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
+            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
+            <div class="tag-list">${tags}</div>
+            <div class="card-meta">
+              <span>${timeAgo(project.createdAt)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function render() {
+      if (!profileUserId) {
+        root.innerHTML = `<div class="empty-state"><h3>No profile specified</h3><p>Follow a link from a project card to view a profile.</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div>`;
+        return;
+      }
+
+      let profile;
+      try {
+        profile = await getProfile(profileUserId);
+      } catch (err) {
+        root.innerHTML = `<div class="empty-state"><h3>Could not load profile</h3><p>${escapeHtml(err.message)}</p></div>`;
+        return;
+      }
+      if (!profile) {
+        root.innerHTML = `<div class="empty-state"><h3>Profile not found</h3><p>This account doesn't exist.</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div>`;
+        return;
+      }
+
+      document.getElementById('page-title').textContent = `${profile.displayName} — Showcase`;
+
+      const currentUser = await getCurrentUser();
+      const isOwnProfile = currentUser && currentUser.id === profileUserId;
+
+      const [projects, followerCount, followingCount] = await Promise.all([
+        getPublishedProjectsByUser(profileUserId),
+        getFollowerCount(profileUserId),
+        getFollowingCount(profileUserId),
+      ]);
+
+      let following = false;
+      if (currentUser && !isOwnProfile) {
+        following = await isFollowing(currentUser.id, profileUserId);
+      }
+
+      const avatar = profile.avatarUrl
+        ? `<img src="${escapeHtml(profile.avatarUrl)}" alt="${escapeHtml(profile.displayName)}" />`
+        : escapeHtml(initials(profile.displayName));
+
+      let actionButton;
+      if (isOwnProfile) {
+        actionButton = `<a class="btn btn-secondary" href="settings.html">Edit profile</a>`;
+      } else if (currentUser) {
+        actionButton = `<button class="btn ${following ? 'btn-secondary' : 'btn-primary'}" id="follow-btn" type="button">${following ? 'Unfollow' : 'Follow'}</button>`;
+      } else {
+        actionButton = `<a class="btn btn-primary" href="login.html?next=${encodeURIComponent('/profile.html?user=' + profileUserId)}">Log in to follow</a>`;
+      }
+
+      const projectsGrid =
+        projects.length === 0
+          ? `<div class="empty-state"><h3>No published projects yet</h3></div>`
+          : `<div class="project-grid">${projects.map(projectCard).join('')}</div>`;
+
+      root.innerHTML = `
+        <div class="profile-header">
+          <div class="profile-avatar">${avatar}</div>
+          <div class="profile-info">
+            <div class="profile-name-row">
+              <h1 style="margin:0;">${escapeHtml(profile.displayName)}</h1>
+              ${actionButton}
+            </div>
+            ${profile.bio ? `<p style="margin-top:8px;">${escapeHtml(profile.bio)}</p>` : ''}
+            <div class="profile-stats">
+              <div class="profile-stat">
+                <span class="num">${projects.length}</span>
+                <span class="label">Projects</span>
+              </div>
+              <button class="profile-stat" id="followers-stat" type="button" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;">
+                <span class="num">${followerCount}</span>
+                <span class="label">Followers</span>
+              </button>
+              <button class="profile-stat" id="following-stat" type="button" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;">
+                <span class="num">${followingCount}</span>
+                <span class="label">Following</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="section-head">
+          <h2>Published projects</h2>
+        </div>
+        ${projectsGrid}
+      `;
+
+      document.getElementById('followers-stat').addEventListener('click', () => {
+        openPeopleModal('Followers', () => getFollowers(profileUserId));
+      });
+      document.getElementById('following-stat').addEventListener('click', () => {
+        openPeopleModal('Following', () => getFollowing(profileUserId));
+      });
+
+      const followBtn = document.getElementById('follow-btn');
+      if (followBtn) {
+        followBtn.addEventListener('click', async () => {
+          followBtn.disabled = true;
+          try {
+            if (following) {
+              await unfollowUser(currentUser.id, profileUserId);
+            } else {
+              await followUser(currentUser.id, profileUserId);
+            }
+            await render();
+          } catch (err) {
+            alert(err.message);
+            followBtn.disabled = false;
+          }
+        });
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

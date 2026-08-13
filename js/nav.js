@@ -31,10 +31,10 @@ function renderNavActions(container, user) {
   const name = displayNameOf(user);
   container.innerHTML = `
     <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
-    <div class="user-chip">
+    <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}">
       <span class="avatar">${escapeHtml(initials(name))}</span>
       <span>${escapeHtml(name)}</span>
-    </div>
+    </a>
     <button class="btn btn-secondary btn-sm" id="logout-btn" type="button">Log out</button>
   `;
 

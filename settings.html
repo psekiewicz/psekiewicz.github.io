@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account settings — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
+      </div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section" id="settings-section" style="display:none; max-width: 640px; margin: 0 auto;">
+      <div class="container">
+        <h1>Account settings</h1>
+        <p style="margin-bottom: 28px;">Update how you appear across Showcase.</p>
+
+        <div class="form-panel" style="margin-bottom: 24px;">
+          <h3>Profile</h3>
+          <div class="alert alert-error" id="profile-alert"></div>
+          <div class="alert alert-success" id="profile-success"></div>
+          <form id="profile-form" novalidate>
+            <div class="field">
+              <label for="displayName">Display name</label>
+              <input type="text" id="displayName" required minlength="2" maxlength="60" />
+            </div>
+            <div class="field">
+              <label for="bio">Bio</label>
+              <textarea id="bio" maxlength="300" placeholder="A short line about you"></textarea>
+            </div>
+            <div class="field">
+              <label for="avatarUrl">Avatar image URL</label>
+              <input type="url" id="avatarUrl" placeholder="https://…" />
+              <div class="hint">Leave blank to use your initials instead.</div>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="email" disabled />
+            </div>
+            <button class="btn btn-primary btn-block" type="submit" id="profile-submit-btn">Save profile</button>
+          </form>
+        </div>
+
+        <div class="form-panel">
+          <h3>Change password</h3>
+          <div class="alert alert-error" id="password-alert"></div>
+          <div class="alert alert-success" id="password-success"></div>
+          <form id="password-form" novalidate>
+            <div class="field">
+              <label for="newPassword">New password</label>
+              <input type="password" id="newPassword" autocomplete="new-password" required minlength="6" />
+              <div class="hint">At least 6 characters.</div>
+            </div>
+            <div class="field">
+              <label for="confirmNewPassword">Confirm new password</label>
+              <input type="password" id="confirmNewPassword" autocomplete="new-password" required minlength="6" />
+            </div>
+            <button class="btn btn-secondary btn-block" type="submit" id="password-submit-btn">Update password</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="container" id="loading-region" style="padding-top:64px;">
+      <p>Checking your session…</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="dashboard.html">Back to dashboard</a>
+    </div>
+  </footer>
+
+  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module">
+    import { onAuthChange, changePassword, updateDisplayNameMetadata } from '/js/auth.js';
+    import { getProfile, updateProfile } from '/js/profiles-data.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const settingsSection = document.getElementById('settings-section');
+    const loadingRegion = document.getElementById('loading-region');
+
+    const profileForm = document.getElementById('profile-form');
+    const profileAlert = document.getElementById('profile-alert');
+    const profileSuccess = document.getElementById('profile-success');
+    const profileSubmitBtn = document.getElementById('profile-submit-btn');
+
+    const passwordForm = document.getElementById('password-form');
+    const passwordAlert = document.getElementById('password-alert');
+    const passwordSuccess = document.getElementById('password-success');
+    const passwordSubmitBtn = document.getElementById('password-submit-btn');
+
+    let currentUser = null;
+
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      profileAlert.classList.remove('is-visible');
+      profileSuccess.classList.remove('is-visible');
+
+      const displayName = document.getElementById('displayName').value.trim();
+      if (displayName.length < 2) {
+        profileAlert.textContent = 'Display name must be at least 2 characters.';
+        profileAlert.classList.add('is-visible');
+        return;
+      }
+
+      profileSubmitBtn.disabled = true;
+      profileSubmitBtn.innerHTML = '<span class="spinner"></span> Saving…';
+
+      try {
+        await updateProfile(currentUser.id, {
+          displayName,
+          bio: document.getElementById('bio').value.trim(),
+          avatarUrl: document.getElementById('avatarUrl').value.trim(),
+        });
+        await updateDisplayNameMetadata(displayName);
+        profileSuccess.textContent = 'Profile updated.';
+        profileSuccess.classList.add('is-visible');
+      } catch (err) {
+        profileAlert.textContent = err.message;
+        profileAlert.classList.add('is-visible');
+      } finally {
+        profileSubmitBtn.disabled = false;
+        profileSubmitBtn.textContent = 'Save profile';
+      }
+    });
+
+    passwordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      passwordAlert.classList.remove('is-visible');
+      passwordSuccess.classList.remove('is-visible');
+
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+      if (newPassword !== confirmNewPassword) {
+        passwordAlert.textContent = 'Passwords do not match.';
+        passwordAlert.classList.add('is-visible');
+        return;
+      }
+
+      passwordSubmitBtn.disabled = true;
+      passwordSubmitBtn.innerHTML = '<span class="spinner"></span> Updating…';
+
+      try {
+        await changePassword(newPassword);
+        passwordForm.reset();
+        passwordSuccess.textContent = 'Password updated.';
+        passwordSuccess.classList.add('is-visible');
+      } catch (err) {
+        passwordAlert.textContent = err.message;
+        passwordAlert.classList.add('is-visible');
+      } finally {
+        passwordSubmitBtn.disabled = false;
+        passwordSubmitBtn.textContent = 'Update password';
+      }
+    });
+
+    let initialized = false;
+    onAuthChange(async (user) => {
+      if (!user) {
+        window.location.href = '/login.html?next=' + encodeURIComponent('/settings.html');
+        return;
+      }
+      currentUser = user;
+      if (initialized) return;
+      initialized = true;
+
+      loadingRegion.style.display = 'none';
+      settingsSection.style.display = '';
+
+      document.getElementById('email').value = user.email;
+
+      try {
+        const profile = await getProfile(user.id);
+        if (profile) {
+          document.getElementById('displayName').value = profile.displayName;
+          document.getElementById('bio').value = profile.bio;
+          document.getElementById('avatarUrl').value = profile.avatarUrl;
+        }
+      } catch (err) {
+        profileAlert.textContent = `Could not load your profile: ${err.message}`;
+        profileAlert.classList.add('is-visible');
+      }
+    });
+  </script>
+</body>
+</html>

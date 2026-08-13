@@ -63,6 +63,19 @@ export function onAuthChange(callback) {
   return () => subscription.unsubscribe();
 }
 
+// Keeps auth.user_metadata.display_name (what nav.js/bottom-nav.js show)
+// in sync with the profiles table, which is the source of truth for
+// display name everywhere else (profile pages, project author names).
+export async function updateDisplayNameMetadata(displayName) {
+  const { error } = await supabase.auth.updateUser({ data: { display_name: displayName } });
+  if (error) throw new Error(friendlyError(error));
+}
+
+export async function changePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(friendlyError(error));
+}
+
 export function displayNameOf(user) {
   return (user && user.user_metadata && user.user_metadata.display_name) || (user && user.email) || 'Unknown';
 }

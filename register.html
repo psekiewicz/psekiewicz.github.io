@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create account — Showcase</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -16,8 +17,12 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
-      <div class="nav-actions" id="nav-actions"></div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
       <button class="nav-toggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -59,7 +64,9 @@
     </div>
   </main>
 
+  <script src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { registerUser, getCurrentUser } from '/js/auth.js';
 

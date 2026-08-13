@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Showcase</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -16,9 +17,13 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
         <a class="nav-link active" href="dashboard.html">Dashboard</a>
       </div>
-      <div class="nav-actions" id="nav-actions"></div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
       <button class="nav-toggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -341,6 +346,10 @@
         await loadProjects();
       } catch (err) {
         tableRegion.innerHTML = `<p>Could not load your projects: ${escapeHtml(err.message)}</p>`;
+      }
+
+      if (new URLSearchParams(window.location.search).get('new') === '1') {
+        openModal(null);
       }
     });
   </script>
