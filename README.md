@@ -13,7 +13,7 @@ GitHub Pages only serves static files — there's no server to run session logic
 The site is fully built, but it's pointed at a placeholder Supabase project. Until you complete these steps, register/login will fail.
 
 1. **Create a Supabase project** — go to [supabase.com/dashboard](https://supabase.com/dashboard), click "New project" (the free tier is enough for this).
-2. **Create the database tables and security policies** — open the project's *SQL Editor*, paste in everything from [`schema.sql`](./schema.sql) in this repo, and click **Run**. This creates the `projects`, `profiles`, `follows`, and `comments` tables and the RLS policies that actually enforce ownership (only you can edit/delete your projects), draft privacy (only you can see your unpublished projects), "you can only follow/unfollow as yourself", and "anyone signed in can comment, but only the comment's author, the project's owner, or an admin can delete it" — it's not optional. The whole file is safe to re-run any time you pull an update that adds to it.
+2. **Create the database tables and security policies** — open the project's *SQL Editor*, paste in everything from [`schema.sql`](./schema.sql) in this repo, and click **Run**. This creates the `projects`, `profiles`, `follows`, `comments`, `likes`, and `project_views` tables and the RLS policies that actually enforce ownership (only you can edit/delete your projects), draft privacy (only you can see your unpublished projects), "you can only follow/unfollow as yourself", "anyone signed in can comment, but only the comment's author, the project's owner, or an admin can delete it", "anyone signed in can like/unlike as themselves", and "only a project's owner (or an admin) can read its raw view log" — it's not optional. The whole file is safe to re-run any time you pull an update that adds to it.
 3. **Get your project's API values** — go to *Project Settings* (gear icon) → *API*. Copy the **Project URL** and the **`anon` `public`** key (never the `service_role` key — that one must never appear in client-side code).
 4. **Paste your config** — put those two values into [`js/supabase-config.js`](./js/supabase-config.js), replacing the `REPLACE_WITH_...` placeholders. These values are safe to publish in client-side code — they identify your project, they aren't secret keys (the RLS policies in `schema.sql` are what actually protect your data).
 5. **Commit and push** the updated `js/supabase-config.js`. GitHub Pages will redeploy automatically within a minute or two.
@@ -74,8 +74,11 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Outline icon set** — a small hand-built set of stroke-only ("no fill") SVG icons (`js/icons.js`) replaces emoji throughout the app: nav, bottom bar, theme toggle, feature cards, dashboard/admin row actions.
 - **Admin panel** (`admin.html`) — accounts with `is_admin = true` get a moderation view of every project on the site (any user, any status, searchable) with unpublish/delete actions, and a searchable Users tab showing every account's email and ban status, with real Ban (for a chosen duration)/Unban/Delete-account actions. There's no in-app way to grant the admin role itself — see "Making an account admin" below. Ban/delete require the Edge Function described below; everything else works without it.
 - **Project types** — every project is tagged as Website, Mobile App, Game, Design, Library/Tool, or Other (`dashboard.html`'s create/edit form), shown as an icon badge on every card and the detail page, and filterable on `projects.html`.
-- **Live preview** — if a project has a live URL, its detail page embeds it in a sandboxed iframe (`sandbox="allow-scripts allow-same-origin allow-popups allow-forms"`, no referrer sent) alongside an "Open in new tab" link, since some sites block being framed.
-- **Comments** — anyone signed in can comment on a project from its detail page; the comment's author, the project's owner, or an admin can delete it. Enforced by RLS in `schema.sql`, not just hidden buttons in the UI.
+- **Comments** — anyone signed in can comment on a project from its detail page or from a Scrolls card's comments drawer; the comment's author, the project's owner, or an admin can delete it. Enforced by RLS in `schema.sql`, not just hidden buttons in the UI.
+- **Likes** — a heart button on the detail page and every Scrolls card; anyone signed in can like/unlike a project, counts are public. Backed by `js/likes-data.js` and the `likes` table.
+- **View counts + analytics** — every project detail-page load logs a view (`log_project_view()`, works for signed-out visitors too) and bumps a public `views_count` shown next to the project. The dashboard adds two charts built from that data: a 14-day views line chart and a per-project views bar chart (`js/views-data.js`).
+- **Edit from anywhere** — a project's owner sees an Edit button on its detail page and on their own profile's project cards, both deep-linking to `dashboard.html?edit=<id>`, which opens the same edit modal used on the dashboard itself pre-filled with that project — one edit UI, reachable from three places.
+- **Scrolls action rail** — likes, comments, visit/source links, and the detail-page link live in a YT-Shorts-style vertical button rail on the right of each full-screen card; tapping the comment button opens a slide-up comments drawer without leaving the feed.
 - **Age confirmation at signup** — registration requires checking "I confirm that I am at least 13 years old" before an account can be created.
 - **Cookie notice** — a dismissible banner (`js/cookie-consent.js`), shown once per browser via `localStorage`, explains that the site only uses essential cookies/local storage (session + preferences), no tracking or advertising.
 
@@ -117,7 +120,9 @@ js/auth.js               register/login/logout/reset-password/change-password, w
 js/projects-data.js      All reads/writes for the `projects` table
 js/profiles-data.js      Read/update the `profiles` table; batch-fetch profiles by id for author avatars
 js/follows-data.js       Follow/unfollow, follower/following counts and lists
-js/comments-data.js      getComments/addComment/deleteComment for the `comments` table
+js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts for the `comments` table
+js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
+js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
 js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
 js/icons.js               Outline SVG icon set shared by every page
 js/theme.js               Dark mode toggle + localStorage persistence
@@ -143,6 +148,7 @@ Postgres table `public.projects`, one row per project:
 | `image_url`, `repo_url`, `live_url` | text  | All optional                                       |
 | `tags`         | text[]               | Up to 10, enforced client-side                     |
 | `project_type` | text                 | One of `website`, `mobile_app`, `game`, `design`, `library`, `other` — defaults to `other` |
+| `views_count`  | integer              | Public running total, only ever incremented via `log_project_view()` |
 | `published`    | boolean              | Controls public visibility                          |
 | `created_at`   | timestamptz          | Defaults to `now()`                                 |
 | `updated_at`   | timestamptz          | Kept current by a trigger on every update           |
@@ -183,6 +189,25 @@ Postgres table `public.comments`, one row per comment:
 | `created_at`  | timestamptz | Defaults to `now()`                                   |
 
 Readable by anyone who can see the project; insertable by any signed-in user (as themselves); deletable by the comment's own author, the project's owner, or an admin.
+
+Postgres table `public.likes`, one row per (project, user) like:
+
+| Column       | Type        | Notes                                      |
+| ------------ | ----------- | --------------------------------------------- |
+| `project_id` | uuid        | References `projects(id)`, cascade-deletes with the project |
+| `user_id`    | uuid        | References `auth.users(id)`                    |
+| `created_at` | timestamptz | Defaults to `now()`                            |
+
+Primary key is `(project_id, user_id)`, so liking twice is a no-op at the schema level. Public read (so counts show to signed-out visitors too); insert/delete only as yourself.
+
+Postgres table `public.project_views`, an append-only log of detail-page views:
+
+| Column       | Type        | Notes                                      |
+| ------------ | ----------- | --------------------------------------------- |
+| `project_id` | uuid        | References `projects(id)`, cascade-deletes with the project |
+| `created_at` | timestamptz | Defaults to `now()`                            |
+
+Only ever written through `log_project_view(project_id)`, a `security definer` RPC that both inserts the log row and increments `projects.views_count` — that's what lets a signed-out visitor's view count at all, without granting public write access to the `projects`/`project_views` tables directly. Reading the raw log (used for the dashboard's 14-day chart) is restricted by RLS to the project's owner or an admin.
 
 ## Legal / compliance
 

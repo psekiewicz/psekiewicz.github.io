@@ -57,6 +57,8 @@
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getComments, addComment, deleteComment } from '/js/comments-data.js';
     import { isAdmin } from '/js/admin-data.js';
+    import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
+    import { logProjectView } from '/js/views-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -67,6 +69,7 @@
     let currentUser = null;
     let currentUserIsAdmin = false;
     let currentProject = null;
+    const likeState = { liked: false, count: 0, wired: false };
 
     function render(project, authorProfile) {
       document.getElementById('page-title').textContent = `${project.title} — Showcase`;
@@ -83,25 +86,9 @@
 
       const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft — only visible to you</span>';
 
-      const livePreview = project.liveUrl
-        ? `
-          <div class="live-preview">
-            <div class="live-preview-head">
-              <h3 style="margin:0;">Live preview</h3>
-              <a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">${icon('external-link', { size: 14 })} Open in new tab</a>
-            </div>
-            <div class="live-preview-frame">
-              <iframe
-                src="${escapeHtml(project.liveUrl)}"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                referrerpolicy="no-referrer"
-                title="Live preview of ${escapeHtml(project.title)}"
-              ></iframe>
-            </div>
-            <p class="hint">Some sites block being shown in an embedded preview like this — if it looks blank, use "Open in new tab" above.</p>
-          </div>
-        `
+      const isOwner = Boolean(currentUser && currentUser.id === project.uid);
+      const editButton = isOwner
+        ? `<a class="btn btn-secondary btn-sm" href="dashboard.html?edit=${encodeURIComponent(project.id)}">${icon('pencil', { size: 15 })} Edit</a>`
         : '';
 
       root.innerHTML = `
@@ -116,8 +103,16 @@
               </span>
               <span>·</span>
               <span>Published ${timeAgo(project.createdAt)}</span>
+              <span>·</span>
+              <span>${icon('eye', { size: 14 })} <span id="views-count">${project.viewsCount}</span> views</span>
             </div>
             <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
+            <div class="engagement-bar">
+              <button class="like-btn" id="like-btn" type="button" aria-pressed="false" disabled>
+                ${icon('heart', { size: 17 })} <span id="like-count">–</span>
+              </button>
+              ${editButton}
+            </div>
           </div>
         </section>
         <section class="section">
@@ -125,10 +120,61 @@
             <div class="detail-thumb">${thumb}</div>
             <div class="detail-body">${escapeHtml(project.description || project.summary || 'No description provided.')}</div>
             <div class="detail-links">${links.join('')}</div>
-            ${livePreview}
           </div>
         </section>
       `;
+
+      wireLikeButton(project);
+    }
+
+    function updateLikeButtonUI() {
+      const btn = document.getElementById('like-btn');
+      if (!btn) return;
+      btn.classList.toggle('is-liked', likeState.liked);
+      btn.setAttribute('aria-pressed', String(likeState.liked));
+      const countEl = document.getElementById('like-count');
+      if (countEl) countEl.textContent = likeState.count;
+    }
+
+    async function wireLikeButton(project) {
+      try {
+        const counts = await getLikeCounts([project.id]);
+        likeState.count = counts.get(project.id) || 0;
+        likeState.liked = currentUser ? (await getLikedSet(currentUser.id, [project.id])).has(project.id) : false;
+      } catch {
+        // leave counts at their defaults
+      }
+      updateLikeButtonUI();
+
+      const btn = document.getElementById('like-btn');
+      if (!btn) return;
+      btn.disabled = false;
+      if (likeState.wired) return;
+      likeState.wired = true;
+
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          window.location.href = 'login.html?next=' + encodeURIComponent('/project.html?id=' + project.id);
+          return;
+        }
+        btn.disabled = true;
+        try {
+          if (likeState.liked) {
+            await unlikeProject(currentUser.id, project.id);
+            likeState.liked = false;
+            likeState.count = Math.max(0, likeState.count - 1);
+          } else {
+            await likeProject(currentUser.id, project.id);
+            likeState.liked = true;
+            likeState.count += 1;
+          }
+          updateLikeButtonUI();
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      });
     }
 
     function showNotFound(message) {
@@ -249,6 +295,13 @@
             currentProject = project;
             const authorProfile = await getProfile(project.uid).catch(() => null);
             render(project, authorProfile);
+            logProjectView(project.id)
+              .then(() => {
+                project.viewsCount += 1;
+                const el = document.getElementById('views-count');
+                if (el) el.textContent = project.viewsCount;
+              })
+              .catch(() => {});
           } catch {
             showNotFound('This project does not exist or is not published.');
             return;

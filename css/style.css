@@ -1,5 +1,10 @@
 /* ---------- Design tokens ---------- */
 :root {
+  /* Tells the browser which palette native controls (checkboxes, select
+     dropdown popups, scrollbars) should render in — without this they stay
+     light-themed even when the page itself is dark. */
+  color-scheme: light;
+
   --color-bg: #f7f8fb;
   --color-surface: #ffffff;
   --color-border: #e4e7ee;
@@ -36,6 +41,8 @@
    by the theme toggle (js/theme.js). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
     --color-bg: #0e1015;
     --color-surface: #171a22;
     --color-border: #2a2e3a;
@@ -62,6 +69,8 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --color-bg: #0e1015;
   --color-surface: #171a22;
   --color-border: #2a2e3a;
@@ -532,6 +541,20 @@ img {
   margin-top: 4px;
 }
 
+.card-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.card-edit-btn:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
 .card-author {
   display: inline-flex;
   align-items: center;
@@ -750,6 +773,102 @@ img {
   letter-spacing: 0.03em;
 }
 
+.dash-charts {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.chart-card h3 {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+}
+
+.line-chart-wrap {
+  position: relative;
+}
+
+.line-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.chart-hit {
+  cursor: pointer;
+}
+
+.chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 32px;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-track {
+  background: var(--color-muted-soft);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  background: var(--color-primary);
+  height: 100%;
+  border-radius: 999px;
+}
+
+.bar-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 780px) {
+  .dash-charts {
+    grid-template-columns: 1fr;
+  }
+  .bar-row {
+    grid-template-columns: 70px 1fr 28px;
+  }
+}
+
 .table-wrap {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -913,39 +1032,51 @@ tbody tr:last-child td {
   flex-wrap: wrap;
 }
 
-/* ---------- Live preview iframe ---------- */
-.live-preview {
-  margin-top: 40px;
-}
-
-.live-preview-head {
+/* ---------- Engagement bar (likes, edit) ---------- */
+.engagement-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-top: 18px;
 }
 
-.live-preview-head a {
+.like-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.live-preview-frame {
-  aspect-ratio: 16 / 10;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
 }
 
-.live-preview-frame iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+.like-btn:active {
+  transform: translateY(1px);
+}
+
+.like-btn:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.like-btn.is-liked {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.like-btn.is-liked .icon {
+  fill: currentColor;
+}
+
+.like-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ---------- Standalone hint text ---------- */
@@ -1352,8 +1483,9 @@ body.has-bottom-nav .scroll-card {
 .scroll-content {
   position: relative;
   z-index: 2;
-  padding: 28px 24px calc(28px + env(safe-area-inset-bottom, 0px));
-  width: 100%;
+  padding: 28px 12px calc(28px + env(safe-area-inset-bottom, 0px)) 24px;
+  flex: 1;
+  min-width: 0;
 }
 
 .scroll-card.has-image .scroll-content {
@@ -1386,17 +1518,126 @@ body.has-bottom-nav .scroll-card {
   border: 2px solid rgba(255, 255, 255, 0.85);
 }
 
-.scroll-content .scroll-links {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-
 .scroll-empty-icon {
   font-size: 3rem;
   font-weight: 800;
   color: var(--color-primary);
+}
+
+/* ---------- Scrolls right-side action rail (YT Shorts style) ---------- */
+.scroll-rail {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px calc(20px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
+
+.scroll-card.has-image .scroll-rail {
+  color: #fff;
+}
+
+.scroll-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.scroll-rail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.scroll-card:not(.has-image) .scroll-rail-icon {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.scroll-rail-count {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.scroll-card:not(.has-image) .scroll-rail-count {
+  text-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.scroll-rail .like-btn.is-liked .scroll-rail-icon {
+  color: #ef4444;
+}
+
+.scroll-rail .like-btn.is-liked .icon {
+  fill: currentColor;
+}
+
+.scroll-rail-avatar-img {
+  width: 44px;
+  height: 44px;
+  font-size: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  margin-bottom: 2px;
+}
+
+.scroll-card:not(.has-image) .scroll-rail-avatar-img {
+  border-color: var(--color-border);
+}
+
+/* ---------- Comments drawer (used on scrolls.html) ---------- */
+.comments-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 18, 0.55);
+  z-index: 300;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.comments-drawer-overlay.is-open {
+  display: flex;
+}
+
+.comments-drawer {
+  background: var(--color-surface);
+  width: 100%;
+  max-width: 620px;
+  max-height: 78vh;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+
+.comments-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.comments-drawer-body {
+  padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
 }
 
 /* ---------- Profile page ---------- */

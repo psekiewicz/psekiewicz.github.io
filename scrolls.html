@@ -38,6 +38,19 @@
     </div>
   </main>
 
+  <!-- Comments drawer, shared across every card, populated per project on open -->
+  <div class="comments-drawer-overlay" id="comments-drawer-overlay">
+    <div class="comments-drawer">
+      <div class="comments-drawer-head">
+        <h3 id="comments-drawer-title" style="margin:0;">Comments</h3>
+        <button class="modal-close" id="comments-drawer-close" type="button" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="comments-drawer-body" id="comments-drawer-body">
+        <p class="hint">Loading comments…</p>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
@@ -45,26 +58,75 @@
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
+    import { icon } from '/js/icons.js';
+    import { onAuthChange, displayNameOf } from '/js/auth.js';
+    import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
+    import { getComments, addComment, deleteComment, getCommentCounts } from '/js/comments-data.js';
+    import { isAdmin } from '/js/admin-data.js';
 
     const root = document.getElementById('scrolls-root');
+
+    let currentUser = null;
+    let currentUserIsAdmin = false;
+    const projectsById = new Map();
+    const likeState = new Map(); // projectId -> { liked, count }
+    const commentCounts = new Map(); // projectId -> count
+
+    function railButtonsHtml(project, authorProfile) {
+      const likeInfo = likeState.get(project.id) || { liked: false, count: 0 };
+      const commentCount = commentCounts.get(project.id) || 0;
+
+      const extra = [];
+      if (project.liveUrl) {
+        extra.push(
+          `<a class="scroll-rail-btn" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Visit live site">
+            <span class="scroll-rail-icon">${icon('external-link', { size: 20 })}</span>
+          </a>`
+        );
+      }
+      if (project.repoUrl) {
+        extra.push(
+          `<a class="scroll-rail-btn" href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View source">
+            <span class="scroll-rail-icon">${icon('code', { size: 20 })}</span>
+          </a>`
+        );
+      }
+
+      return `
+        <div class="scroll-rail">
+          <a class="scroll-rail-btn scroll-rail-avatar" href="profile.html?user=${encodeURIComponent(project.uid)}" aria-label="View profile">
+            ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'scroll-rail-avatar-img')}
+          </a>
+          <button class="scroll-rail-btn like-btn${likeInfo.liked ? ' is-liked' : ''}" type="button" data-action="like" data-project-id="${escapeHtml(project.id)}" aria-pressed="${likeInfo.liked}" aria-label="Like">
+            <span class="scroll-rail-icon">${icon('heart', { size: 22 })}</span>
+            <span class="scroll-rail-count" data-role="like-count">${likeInfo.count}</span>
+          </button>
+          <button class="scroll-rail-btn" type="button" data-action="comments" data-project-id="${escapeHtml(project.id)}" aria-label="Comments">
+            <span class="scroll-rail-icon">${icon('message-circle', { size: 21 })}</span>
+            <span class="scroll-rail-count" data-role="comment-count">${commentCount}</span>
+          </button>
+          ${extra.join('')}
+          <a class="scroll-rail-btn" href="project.html?id=${encodeURIComponent(project.id)}" aria-label="View details">
+            <span class="scroll-rail-icon">${icon('eye', { size: 20 })}</span>
+          </a>
+        </div>
+      `;
+    }
 
     function scrollCard(project, profiles) {
       const hasImage = Boolean(project.imageUrl);
       const bg = hasImage
-        ? `<img class="scroll-card-bg" src="${escapeHtml(project.imageUrl)}" alt="" onerror="this.remove(); this.closest('.scroll-card').classList.remove('has-image');" />`
+        ? `<img class="scroll-card-bg" src="${escapeHtml(project.imageUrl)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
         : `<div class="scroll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = profiles.get(project.uid);
 
-      const links = [];
-      if (project.liveUrl) links.push(`<a class="btn btn-primary btn-sm" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">Visit ↗</a>`);
-      if (project.repoUrl) links.push(`<a class="btn btn-secondary btn-sm" href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener noreferrer">Source ↗</a>`);
-      links.push(`<a class="btn btn-secondary btn-sm" href="project.html?id=${encodeURIComponent(project.id)}">Details</a>`);
+      const rail = railButtonsHtml(project, authorProfile);
 
       return `
-        <section class="scroll-card${hasImage ? ' has-image' : ''}">
+        <section class="scroll-card${hasImage ? ' has-image' : ''}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
           <div class="scroll-content">
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
@@ -74,13 +136,182 @@
             <h2>${escapeHtml(project.title)}</h2>
             <p>${escapeHtml(project.summary || project.description.slice(0, 140))}</p>
             <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
-            <div class="scroll-links">${links.join('')}</div>
           </div>
+          ${rail}
         </section>
       `;
     }
 
-    (async () => {
+    function updateLikeUI(projectId) {
+      const state = likeState.get(projectId);
+      if (!state) return;
+      root.querySelectorAll(`[data-action="like"][data-project-id="${CSS.escape(projectId)}"]`).forEach((btn) => {
+        btn.classList.toggle('is-liked', state.liked);
+        btn.setAttribute('aria-pressed', String(state.liked));
+        const countEl = btn.querySelector('[data-role="like-count"]');
+        if (countEl) countEl.textContent = state.count;
+      });
+    }
+
+    function updateCommentCountUI(projectId) {
+      const count = commentCounts.get(projectId) || 0;
+      root.querySelectorAll(`[data-action="comments"][data-project-id="${CSS.escape(projectId)}"]`).forEach((btn) => {
+        const countEl = btn.querySelector('[data-role="comment-count"]');
+        if (countEl) countEl.textContent = count;
+      });
+    }
+
+    async function toggleLike(projectId) {
+      if (!currentUser) {
+        window.location.href = 'login.html?next=' + encodeURIComponent('/scrolls.html');
+        return;
+      }
+      const state = likeState.get(projectId);
+      if (!state) return;
+      try {
+        if (state.liked) {
+          await unlikeProject(currentUser.id, projectId);
+          state.liked = false;
+          state.count = Math.max(0, state.count - 1);
+        } else {
+          await likeProject(currentUser.id, projectId);
+          state.liked = true;
+          state.count += 1;
+        }
+        updateLikeUI(projectId);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // ---------- Comments drawer ----------
+    const drawerOverlay = document.getElementById('comments-drawer-overlay');
+    const drawerTitle = document.getElementById('comments-drawer-title');
+    const drawerBody = document.getElementById('comments-drawer-body');
+
+    function closeDrawer() {
+      drawerOverlay.classList.remove('is-open');
+    }
+    document.getElementById('comments-drawer-close').addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', (e) => {
+      if (e.target === drawerOverlay) closeDrawer();
+    });
+
+    function commentItemHtml(comment, profile, canDelete) {
+      return `
+        <article class="comment" data-comment-id="${escapeHtml(comment.id)}">
+          <div class="comment-head">
+            ${avatarHtml(profile ? profile.avatarUrl : '', comment.authorName, 'avatar-sm')}
+            <div class="comment-head-text">
+              <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+              <span class="comment-time">${timeAgo(comment.createdAt)}</span>
+            </div>
+            ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(comment.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
+          </div>
+          <p class="comment-body">${escapeHtml(comment.body)}</p>
+        </article>
+      `;
+    }
+
+    async function renderDrawerComments(project) {
+      drawerBody.innerHTML = '<p class="hint">Loading comments…</p>';
+
+      let comments;
+      try {
+        comments = await getComments(project.id);
+      } catch (err) {
+        drawerBody.innerHTML = `<p class="hint">Could not load comments: ${escapeHtml(err.message)}</p>`;
+        return;
+      }
+
+      commentCounts.set(project.id, comments.length);
+      updateCommentCountUI(project.id);
+
+      const profiles = await getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map());
+
+      const list = comments.length
+        ? comments
+            .map((c) => {
+              const canDelete = Boolean(
+                currentUser && (currentUser.id === c.userId || currentUser.id === project.uid || currentUserIsAdmin)
+              );
+              return commentItemHtml(c, profiles.get(c.userId), canDelete);
+            })
+            .join('')
+        : '<p class="hint">No comments yet — be the first to say something.</p>';
+
+      const form = currentUser
+        ? `
+          <form class="comment-form" id="drawer-comment-form">
+            <textarea id="drawer-comment-body" placeholder="Write a comment…" maxlength="2000" required></textarea>
+            <button class="btn btn-primary" type="submit">${icon('send', { size: 15 })} Post</button>
+          </form>
+        `
+        : `<p class="hint"><a href="login.html?next=${encodeURIComponent('/scrolls.html')}">Log in</a> to leave a comment.</p>`;
+
+      drawerBody.innerHTML = `${form}<div class="comments-list">${list}</div>`;
+
+      const commentForm = document.getElementById('drawer-comment-form');
+      if (commentForm) {
+        commentForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const textarea = document.getElementById('drawer-comment-body');
+          const body = textarea.value.trim();
+          if (!body) return;
+          const submitBtn = commentForm.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          try {
+            await addComment(project.id, currentUser.id, displayNameOf(currentUser), body);
+            await renderDrawerComments(project);
+          } catch (err) {
+            alert(err.message);
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
+      drawerBody.querySelectorAll('.comment-delete').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this comment?')) return;
+          btn.disabled = true;
+          try {
+            await deleteComment(btn.dataset.id);
+            await renderDrawerComments(project);
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function openCommentsDrawer(projectId) {
+      const project = projectsById.get(projectId);
+      if (!project) return;
+      drawerTitle.textContent = `Comments · ${project.title}`;
+      drawerOverlay.classList.add('is-open');
+      await renderDrawerComments(project);
+    }
+
+    root.addEventListener('click', (e) => {
+      const likeBtn = e.target.closest('[data-action="like"]');
+      if (likeBtn) {
+        toggleLike(likeBtn.dataset.projectId);
+        return;
+      }
+      const commentBtn = e.target.closest('[data-action="comments"]');
+      if (commentBtn) {
+        openCommentsDrawer(commentBtn.dataset.projectId);
+      }
+    });
+
+    let loaded = false;
+    onAuthChange(async (user) => {
+      currentUser = user;
+      currentUserIsAdmin = user ? await isAdmin(user.id).catch(() => false) : false;
+      if (loaded) return;
+      loaded = true;
+
       try {
         const projects = await getPublishedProjects();
         if (projects.length === 0) {
@@ -95,12 +326,36 @@
           `;
           return;
         }
+
+        projects.forEach((p) => projectsById.set(p.id, p));
         const profiles = await getProfilesByIds(projects.map((p) => p.uid));
+
+        const projectIds = projects.map((p) => p.id);
+        const [likeCounts, commentCountsMap] = await Promise.all([
+          getLikeCounts(projectIds).catch(() => new Map()),
+          getCommentCounts(projectIds).catch(() => new Map()),
+        ]);
+        projectIds.forEach((pid) => {
+          likeState.set(pid, { liked: false, count: likeCounts.get(pid) || 0 });
+          commentCounts.set(pid, commentCountsMap.get(pid) || 0);
+        });
+        if (currentUser) {
+          const liked = await getLikedSet(currentUser.id, projectIds).catch(() => new Set());
+          liked.forEach((pid) => {
+            const state = likeState.get(pid);
+            if (state) state.liked = true;
+          });
+        }
+
         root.innerHTML = `<div class="scrolls-container">${projects.map((p) => scrollCard(p, profiles)).join('')}</div>`;
+        projectIds.forEach((pid) => {
+          updateLikeUI(pid);
+          updateCommentCountUI(pid);
+        });
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load projects: ${escapeHtml(err.message)}</p></div>`;
       }
-    })();
+    });
   </script>
 </body>
 </html>

@@ -330,6 +330,89 @@ create policy "Comment author, project owner, or admin can delete"
     or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
   );
 
+-- ============================================================
+-- Likes — one row per (project, user) like. Public read (so like counts
+-- show even to signed-out visitors), but you can only ever like/unlike as
+-- yourself, and only on a project you can actually see.
+-- ============================================================
+
+create table if not exists public.likes (
+  project_id uuid not null references public.projects (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (project_id, user_id)
+);
+
+create index if not exists likes_project_id_idx on public.likes (project_id);
+
+alter table public.likes enable row level security;
+
+drop policy if exists "Likes are publicly readable" on public.likes;
+create policy "Likes are publicly readable"
+  on public.likes for select
+  using (true);
+
+drop policy if exists "Signed-in users can like as themselves" on public.likes;
+create policy "Signed-in users can like as themselves"
+  on public.likes for insert
+  with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.projects p where p.id = project_id)
+  );
+
+drop policy if exists "Users can remove their own like" on public.likes;
+create policy "Users can remove their own like"
+  on public.likes for delete
+  using (auth.uid() = user_id);
+
+
+-- ============================================================
+-- Views — a public running counter per project (projects.views_count),
+-- plus a private log (project_views) that only the project's owner or an
+-- admin can read, used to draw the "views over time" chart on the
+-- dashboard. Both are only ever written through log_project_view() below
+-- (security definer), never by a direct client insert/update — that's
+-- what lets a signed-out visitor's page view count at all, without
+-- opening up public write access to the projects table itself.
+-- ============================================================
+
+alter table public.projects add column if not exists views_count integer not null default 0;
+
+create table if not exists public.project_views (
+  id bigint generated always as identity primary key,
+  project_id uuid not null references public.projects (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists project_views_project_id_idx on public.project_views (project_id);
+create index if not exists project_views_created_at_idx on public.project_views (created_at);
+
+alter table public.project_views enable row level security;
+
+drop policy if exists "Project owner or admin can read the view log" on public.project_views;
+create policy "Project owner or admin can read the view log"
+  on public.project_views for select
+  using (
+    exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
+  );
+
+create or replace function public.log_project_view(p_project_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.projects where id = p_project_id) then
+    insert into public.project_views (project_id) values (p_project_id);
+    update public.projects set views_count = views_count + 1 where id = p_project_id;
+  end if;
+end;
+$$;
+
+grant execute on function public.log_project_view(uuid) to anon, authenticated;
+
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor
 -- (this does NOT run automatically as part of this file — uncomment

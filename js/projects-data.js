@@ -15,6 +15,7 @@ function toPlainProject(row) {
     repoUrl: row.repo_url || '',
     liveUrl: row.live_url || '',
     type: row.project_type || 'other',
+    viewsCount: row.views_count || 0,
     published: Boolean(row.published),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

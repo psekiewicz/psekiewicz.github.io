@@ -75,6 +75,7 @@
       getFollowing,
     } from '/js/follows-data.js';
     import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
+    import { icon } from '/js/icons.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -115,11 +116,14 @@
       }
     }
 
-    function projectCard(project) {
+    function projectCard(project, isOwnProfile) {
       const thumb = project.imageUrl
         ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      const editLink = isOwnProfile
+        ? `<a class="card-edit-btn" href="dashboard.html?edit=${encodeURIComponent(project.id)}" aria-label="Edit project">${icon('pencil', { size: 14 })} Edit</a>`
+        : '';
       return `
         <article class="card">
           <div class="card-thumb">${thumb}</div>
@@ -129,6 +133,7 @@
             <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
             <div class="card-meta">
               <span>${timeAgo(project.createdAt)}</span>
+              ${editLink}
             </div>
           </div>
         </article>
@@ -188,7 +193,7 @@
       const projectsGrid =
         projects.length === 0
           ? `<div class="empty-state"><h3>No published projects yet</h3></div>`
-          : `<div class="project-grid">${projects.map(projectCard).join('')}</div>`;
+          : `<div class="project-grid">${projects.map((p) => projectCard(p, isOwnProfile)).join('')}</div>`;
 
       root.innerHTML = `
         <div class="profile-header">

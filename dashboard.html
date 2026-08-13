@@ -56,6 +56,17 @@
           </div>
         </div>
 
+        <div class="dash-charts">
+          <div class="chart-card">
+            <h3>Views, last 14 days</h3>
+            <div id="views-timeseries-chart"><p class="hint">Loading…</p></div>
+          </div>
+          <div class="chart-card">
+            <h3>Views by project</h3>
+            <div id="views-bar-chart"><p class="hint">Loading…</p></div>
+          </div>
+        </div>
+
         <div id="table-region">
           <p>Loading your projects…</p>
         </div>
@@ -144,6 +155,7 @@
   <script type="module">
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getMyProjects, createProject, updateProject, togglePublish, deleteProject } from '/js/projects-data.js';
+    import { getRecentViewTimestamps } from '/js/views-data.js';
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
@@ -272,6 +284,116 @@
       }
     }
 
+    function bucketViewsByDay(timestamps, days) {
+      const buckets = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        buckets.push({ date, count: 0 });
+      }
+      timestamps.forEach((ts) => {
+        const day = new Date(ts);
+        day.setHours(0, 0, 0, 0);
+        const bucket = buckets.find((b) => b.date.getTime() === day.getTime());
+        if (bucket) bucket.count += 1;
+      });
+      return buckets;
+    }
+
+    function renderTimeSeriesChart(container, buckets) {
+      if (buckets.every((b) => b.count === 0)) {
+        container.innerHTML = '<p class="hint">No views yet in the last 14 days.</p>';
+        return;
+      }
+
+      const width = 560;
+      const height = 160;
+      const padding = 20;
+      const max = Math.max(...buckets.map((b) => b.count), 1);
+      const stepX = (width - padding * 2) / (buckets.length - 1 || 1);
+      const points = buckets.map((b, i) => ({
+        x: padding + i * stepX,
+        y: height - padding - (b.count / max) * (height - padding * 2),
+        ...b,
+      }));
+
+      const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+      const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${height - padding} L ${points[0].x.toFixed(1)} ${height - padding} Z`;
+
+      const dots = points
+        .map(
+          (p, i) => `
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9" fill="transparent" data-idx="${i}" class="chart-hit"></circle>
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="var(--color-primary)" class="chart-dot"></circle>
+          `
+        )
+        .join('');
+
+      container.innerHTML = `
+        <div class="line-chart-wrap">
+          <svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="Views over the last 14 days" preserveAspectRatio="none">
+            <path d="${areaPath}" fill="var(--color-primary)" opacity="0.12" stroke="none"></path>
+            <path d="${linePath}" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            ${dots}
+          </svg>
+          <div class="chart-tooltip" id="ts-tooltip" hidden></div>
+        </div>
+      `;
+
+      const tooltip = container.querySelector('#ts-tooltip');
+      container.querySelectorAll('.chart-hit').forEach((hit) => {
+        const p = points[Number(hit.dataset.idx)];
+        hit.addEventListener('mouseenter', () => {
+          tooltip.hidden = false;
+          tooltip.textContent = `${p.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${p.count} view${p.count === 1 ? '' : 's'}`;
+          tooltip.style.left = `${(p.x / width) * 100}%`;
+          tooltip.style.top = `${(p.y / height) * 100}%`;
+        });
+        hit.addEventListener('mouseleave', () => {
+          tooltip.hidden = true;
+        });
+      });
+    }
+
+    function renderViewsBarChart(container, projects) {
+      const top = [...projects].sort((a, b) => b.viewsCount - a.viewsCount).slice(0, 6);
+      if (top.length === 0 || top.every((p) => p.viewsCount === 0)) {
+        container.innerHTML = '<p class="hint">No views yet.</p>';
+        return;
+      }
+      const max = Math.max(...top.map((p) => p.viewsCount), 1);
+      container.innerHTML = `
+        <div class="bar-chart">
+          ${top
+            .map(
+              (p) => `
+                <div class="bar-row">
+                  <span class="bar-label" title="${escapeHtml(p.title)}">${escapeHtml(p.title)}</span>
+                  <div class="bar-track">
+                    <div class="bar-fill" style="width:${Math.max(4, (p.viewsCount / max) * 100)}%"></div>
+                  </div>
+                  <span class="bar-value">${p.viewsCount}</span>
+                </div>
+              `
+            )
+            .join('')}
+        </div>
+      `;
+    }
+
+    async function renderCharts() {
+      renderViewsBarChart(document.getElementById('views-bar-chart'), myProjects);
+      const tsContainer = document.getElementById('views-timeseries-chart');
+      try {
+        const timestamps = await getRecentViewTimestamps(14);
+        renderTimeSeriesChart(tsContainer, bucketViewsByDay(timestamps, 14));
+      } catch (err) {
+        tsContainer.innerHTML = `<p class="hint">Could not load view stats: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
     function renderStats() {
       const published = myProjects.filter((p) => p.published).length;
       document.getElementById('stat-total').textContent = myProjects.length;
@@ -344,12 +466,13 @@
       myProjects = await getMyProjects(currentUser.id);
       renderStats();
       renderTable();
+      renderCharts();
     }
 
     let initialized = false;
     onAuthChange(async (user) => {
       if (!user) {
-        window.location.href = '/login.html?next=' + encodeURIComponent('/dashboard.html');
+        window.location.href = '/login.html?next=' + encodeURIComponent('/dashboard.html' + window.location.search);
         return;
       }
       currentUser = user;
@@ -365,8 +488,14 @@
         tableRegion.innerHTML = `<p>Could not load your projects: ${escapeHtml(err.message)}</p>`;
       }
 
-      if (new URLSearchParams(window.location.search).get('new') === '1') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('new') === '1') {
         openModal(null);
+      }
+      const editId = params.get('edit');
+      if (editId) {
+        const project = myProjects.find((p) => p.id === editId);
+        if (project) openModal(project);
       }
     });
   </script>

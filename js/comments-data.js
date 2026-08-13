@@ -37,3 +37,15 @@ export async function deleteComment(commentId) {
   const { error } = await supabase.from(TABLE).delete().eq('id', commentId);
   if (error) throw new Error(error.message);
 }
+
+// Batch-fetch comment counts for a page/feed of projects in one round trip.
+// Returns a Map<projectId, count>.
+export async function getCommentCounts(projectIds) {
+  const uniqueIds = [...new Set(projectIds)].filter(Boolean);
+  const map = new Map();
+  if (uniqueIds.length === 0) return map;
+  const { data, error } = await supabase.from(TABLE).select('project_id').in('project_id', uniqueIds);
+  if (error) throw new Error(error.message);
+  data.forEach((row) => map.set(row.project_id, (map.get(row.project_id) || 0) + 1));
+  return map;
+}
