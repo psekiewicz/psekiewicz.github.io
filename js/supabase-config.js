@@ -13,6 +13,6 @@
 // is enforced by the Row Level Security policies in schema.sql, not by
 // hiding these values.
 export const supabaseConfig = {
-  url: 'https://REPLACE_WITH_YOUR_PROJECT.supabase.co',
+  url: 'https://tgikpcvkkkbkqtahmczt.supabase.co/rest/v1/',
   anonKey: 'REPLACE_WITH_YOUR_ANON_PUBLIC_KEY',
 };
