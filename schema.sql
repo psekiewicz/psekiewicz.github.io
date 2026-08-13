@@ -196,7 +196,13 @@ create or replace function public.prevent_self_admin_promotion()
 returns trigger as $$
 begin
   if new.is_admin is distinct from old.is_admin then
-    if not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true) then
+    -- auth.uid() is NULL when this runs outside PostgREST (e.g. you,
+    -- running SQL directly in the Supabase SQL Editor) — that path is
+    -- already gated by owning the Supabase project, so let it through.
+    -- Only block when there's a real (non-admin) end-user session behind
+    -- the request — i.e. someone hitting this via the anon-key client.
+    if auth.uid() is not null
+       and not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true) then
       new.is_admin = old.is_admin;
     end if;
   end if;
