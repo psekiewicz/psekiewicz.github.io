@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Paste this into Firebase Console → Firestore Database → Rules → Publish.
+// This is where real access control lives for this site: GitHub Pages only
+// serves static files, so it's Firestore's rules engine — not the browser —
+// that actually enforces "only the owner can edit/delete their project" and
+// "drafts are only visible to their owner".
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /projects/{projectId} {
+      // Anyone can read a published project. Only the owner can read their
+      // own drafts (used by the dashboard and by draft-preview links).
+      allow read: if resource.data.published == true
+                   || (request.auth != null && request.auth.uid == resource.data.uid);
+
+      // Must be signed in, and can only ever create projects owned by yourself.
+      allow create: if request.auth != null
+                     && request.resource.data.uid == request.auth.uid
+                     && request.resource.data.title is string
+                     && request.resource.data.title.size() >= 3
+                     && request.resource.data.title.size() <= 100;
+
+      // Only the owner can edit or delete, and ownership can't be reassigned.
+      allow update: if request.auth != null
+                     && request.auth.uid == resource.data.uid
+                     && request.resource.data.uid == resource.data.uid;
+
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+  }
+}

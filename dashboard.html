@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link active" href="dashboard.html">Dashboard</a>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section" id="dashboard-section" style="display:none;">
+      <div class="container">
+        <div class="dash-header">
+          <div>
+            <h1 style="margin-bottom:2px;">My projects</h1>
+            <p style="margin:0;">Create, edit, and publish your work.</p>
+          </div>
+          <button class="btn btn-primary" id="new-project-btn" type="button">+ New project</button>
+        </div>
+
+        <div class="dash-stats">
+          <div class="stat-card">
+            <div class="num" id="stat-total">0</div>
+            <div class="label">Total projects</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" id="stat-published">0</div>
+            <div class="label">Published</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" id="stat-drafts">0</div>
+            <div class="label">Drafts</div>
+          </div>
+        </div>
+
+        <div id="table-region">
+          <p>Loading your projects…</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="container" id="loading-region" style="padding-top:64px;">
+      <p>Checking your session…</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="projects.html">Browse public projects</a>
+    </div>
+  </footer>
+
+  <!-- Create / edit modal -->
+  <div class="modal-overlay" id="project-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modal-title" style="margin:0;">New project</h2>
+        <button class="modal-close" id="modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="alert alert-error" id="modal-alert"></div>
+
+      <form id="project-form" novalidate>
+        <input type="hidden" id="project-id" />
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" id="title" required minlength="3" maxlength="100" />
+        </div>
+        <div class="field">
+          <label for="summary">Short summary</label>
+          <input type="text" id="summary" maxlength="200" placeholder="One sentence describing the project" />
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
+        </div>
+        <div class="field">
+          <label for="imageUrl">Image URL</label>
+          <input type="url" id="imageUrl" placeholder="https://…" />
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="repoUrl">Repository URL</label>
+            <input type="url" id="repoUrl" placeholder="https://github.com/…" />
+          </div>
+          <div class="field">
+            <label for="liveUrl">Live URL</label>
+            <input type="url" id="liveUrl" placeholder="https://…" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="tags">Tags</label>
+          <input type="text" id="tags" placeholder="react, api, side-project" />
+          <div class="hint">Comma-separated, up to 10 tags.</div>
+        </div>
+        <div class="field checkbox-field">
+          <input type="checkbox" id="published" />
+          <label for="published" style="margin:0;">Publish immediately</label>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="modal-submit-btn">Save project</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module">
+    import { onAuthChange } from '/js/auth.js';
+    import { getMyProjects, createProject, updateProject, togglePublish, deleteProject } from '/js/projects-data.js';
+    import { escapeHtml, timeAgo } from '/js/utils.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    let myProjects = [];
+    let currentUser = null;
+
+    const dashboardSection = document.getElementById('dashboard-section');
+    const loadingRegion = document.getElementById('loading-region');
+    const tableRegion = document.getElementById('table-region');
+    const modal = document.getElementById('project-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalAlert = document.getElementById('modal-alert');
+    const form = document.getElementById('project-form');
+    const submitBtn = document.getElementById('modal-submit-btn');
+
+    function openModal(project) {
+      form.reset();
+      modalAlert.classList.remove('is-visible');
+      document.getElementById('project-id').value = project ? project.id : '';
+      modalTitle.textContent = project ? 'Edit project' : 'New project';
+      submitBtn.textContent = project ? 'Save changes' : 'Save project';
+
+      if (project) {
+        document.getElementById('title').value = project.title;
+        document.getElementById('summary').value = project.summary;
+        document.getElementById('description').value = project.description;
+        document.getElementById('imageUrl').value = project.imageUrl;
+        document.getElementById('repoUrl').value = project.repoUrl;
+        document.getElementById('liveUrl').value = project.liveUrl;
+        document.getElementById('tags').value = project.tags.join(', ');
+        document.getElementById('published').checked = project.published;
+      }
+
+      modal.classList.add('is-open');
+      document.getElementById('title').focus();
+    }
+
+    function closeModal() {
+      modal.classList.remove('is-open');
+    }
+
+    document.getElementById('new-project-btn').addEventListener('click', () => openModal(null));
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    function parseTags(raw) {
+      return raw
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 10);
+    }
+
+    function readForm() {
+      const title = document.getElementById('title').value.trim();
+      if (title.length < 3) throw new Error('Title must be at least 3 characters.');
+      return {
+        title,
+        summary: document.getElementById('summary').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        imageUrl: document.getElementById('imageUrl').value.trim(),
+        repoUrl: document.getElementById('repoUrl').value.trim(),
+        liveUrl: document.getElementById('liveUrl').value.trim(),
+        tags: parseTags(document.getElementById('tags').value),
+        published: document.getElementById('published').checked,
+      };
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      modalAlert.classList.remove('is-visible');
+
+      const id = document.getElementById('project-id').value;
+
+      let payload;
+      try {
+        payload = readForm();
+      } catch (err) {
+        modalAlert.textContent = err.message;
+        modalAlert.classList.add('is-visible');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Saving…';
+
+      try {
+        if (id) {
+          await updateProject(id, payload);
+        } else {
+          await createProject(currentUser.uid, currentUser.displayName || currentUser.email, payload);
+        }
+        closeModal();
+        await loadProjects();
+      } catch (err) {
+        modalAlert.textContent = err.message;
+        modalAlert.classList.add('is-visible');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = id ? 'Save changes' : 'Save project';
+      }
+    });
+
+    async function handleTogglePublish(project) {
+      try {
+        await togglePublish(project.id, !project.published);
+        await loadProjects();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function handleDelete(project) {
+      if (!confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
+      try {
+        await deleteProject(project.id);
+        await loadProjects();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function renderStats() {
+      const published = myProjects.filter((p) => p.published).length;
+      document.getElementById('stat-total').textContent = myProjects.length;
+      document.getElementById('stat-published').textContent = published;
+      document.getElementById('stat-drafts').textContent = myProjects.length - published;
+    }
+
+    function renderTable() {
+      if (myProjects.length === 0) {
+        tableRegion.innerHTML = `
+          <div class="empty-state">
+            <h3>No projects yet</h3>
+            <p>Create your first project to get it in front of the community.</p>
+            <button class="btn btn-primary" onclick="document.getElementById('new-project-btn').click()">+ New project</button>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = myProjects
+        .map((p) => {
+          const statusClass = p.published ? 'published' : 'draft';
+          const statusLabel = p.published ? 'Published' : 'Draft';
+          return `
+            <tr data-id="${escapeHtml(p.id)}">
+              <td>
+                <div class="row-title">${escapeHtml(p.title)}</div>
+                <div class="tag-list" style="margin-top:4px;">${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
+              </td>
+              <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+              <td>${timeAgo(p.updatedAt)}</td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn-secondary btn-sm" href="project.html?id=${encodeURIComponent(p.id)}">View</a>
+                  <button class="btn btn-secondary btn-sm" data-action="toggle">${p.published ? 'Unpublish' : 'Publish'}</button>
+                  <button class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
+                  <button class="btn btn-danger btn-sm" data-action="delete">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      tableRegion.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      tableRegion.querySelectorAll('tr[data-id]').forEach((row) => {
+        const project = myProjects.find((p) => p.id === row.dataset.id);
+        row.querySelector('[data-action="toggle"]').addEventListener('click', () => handleTogglePublish(project));
+        row.querySelector('[data-action="edit"]').addEventListener('click', () => openModal(project));
+        row.querySelector('[data-action="delete"]').addEventListener('click', () => handleDelete(project));
+      });
+    }
+
+    async function loadProjects() {
+      myProjects = await getMyProjects(currentUser.uid);
+      renderStats();
+      renderTable();
+    }
+
+    let initialized = false;
+    onAuthChange(async (user) => {
+      if (!user) {
+        window.location.href = '/login.html?next=' + encodeURIComponent('/dashboard.html');
+        return;
+      }
+      currentUser = user;
+      if (initialized) return;
+      initialized = true;
+
+      loadingRegion.style.display = 'none';
+      dashboardSection.style.display = '';
+
+      try {
+        await loadProjects();
+      } catch (err) {
+        tableRegion.innerHTML = `<p>Could not load your projects: ${escapeHtml(err.message)}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

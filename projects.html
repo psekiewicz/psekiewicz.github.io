@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browse Projects — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>All projects</h2>
+          <p>Discover what the community has published.</p>
+        </div>
+
+        <div class="filter-bar">
+          <input type="search" id="search-input" placeholder="Search by title, summary, or description…" />
+          <select id="tag-filter">
+            <option value="">All tags</option>
+          </select>
+        </div>
+
+        <div id="projects-container" class="project-grid">
+          <p>Loading projects…</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="index.html">Home</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module">
+    import { getPublishedProjects } from '/js/projects-data.js';
+    import { escapeHtml, timeAgo } from '/js/utils.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    let allProjects = [];
+    const container = document.getElementById('projects-container');
+    const searchInput = document.getElementById('search-input');
+    const tagFilter = document.getElementById('tag-filter');
+
+    function projectCard(project) {
+      const thumb = project.imageUrl
+        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        : escapeHtml(project.title.slice(0, 2).toUpperCase());
+      const tags = project.tags.slice(0, 4).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      return `
+        <article class="card">
+          <div class="card-thumb">${thumb}</div>
+          <div class="card-body">
+            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
+            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
+            <div class="tag-list">${tags}</div>
+            <div class="card-meta">
+              <span>by ${escapeHtml(project.authorName)}</span>
+              <span>${timeAgo(project.createdAt)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function render() {
+      const q = searchInput.value.trim().toLowerCase();
+      const tag = tagFilter.value;
+      const filtered = allProjects.filter((p) => {
+        const matchesQ =
+          !q ||
+          p.title.toLowerCase().includes(q) ||
+          p.summary.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q);
+        const matchesTag = !tag || p.tags.includes(tag);
+        return matchesQ && matchesTag;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <h3>No projects match your filters</h3>
+            <p>Try a different search term or tag.</p>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = filtered.map(projectCard).join('');
+    }
+
+    function populateTags() {
+      const tags = new Set();
+      allProjects.forEach((p) => p.tags.forEach((t) => tags.add(t)));
+      [...tags].sort().forEach((t) => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        tagFilter.appendChild(opt);
+      });
+    }
+
+    searchInput.addEventListener('input', render);
+    tagFilter.addEventListener('change', render);
+
+    (async () => {
+      try {
+        allProjects = await getPublishedProjects();
+        populateTags();
+        render();
+      } catch (err) {
+        container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Project — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <div id="project-root">
+      <div class="container" style="padding-top: 48px;">
+        <p>Loading project…</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="projects.html">← Back to projects</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module">
+    import { getProjectById } from '/js/projects-data.js';
+    import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { onAuthChange } from '/js/auth.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const root = document.getElementById('project-root');
+    const id = new URLSearchParams(window.location.search).get('id');
+
+    function render(project) {
+      document.getElementById('page-title').textContent = `${project.title} — Showcase`;
+
+      const thumb = project.imageUrl
+        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        : escapeHtml(project.title.slice(0, 2).toUpperCase());
+
+      const tags = project.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+
+      const links = [];
+      if (project.liveUrl) links.push(`<a class="btn btn-primary" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">Visit live site ↗</a>`);
+      if (project.repoUrl) links.push(`<a class="btn btn-secondary" href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener noreferrer">View source ↗</a>`);
+
+      const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft — only visible to you</span>';
+
+      root.innerHTML = `
+        <section class="detail-hero">
+          <div class="container">
+            <a href="projects.html" class="nav-link" style="padding-left:0;">← Back to projects</a>
+            <h1 style="margin-top:14px;">${escapeHtml(project.title)}${draftBadge}</h1>
+            <div class="detail-meta">
+              <span>by <strong>${escapeHtml(project.authorName)}</strong></span>
+              <span>·</span>
+              <span>Published ${timeAgo(project.createdAt)}</span>
+            </div>
+            <div class="tag-list">${tags}</div>
+          </div>
+        </section>
+        <section class="section">
+          <div class="container">
+            <div class="detail-thumb">${thumb}</div>
+            <div class="detail-body">${escapeHtml(project.description || project.summary || 'No description provided.')}</div>
+            <div class="detail-links">${links.join('')}</div>
+          </div>
+        </section>
+      `;
+    }
+
+    function showNotFound(message) {
+      root.innerHTML = `<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Project not found</h3><p>${escapeHtml(message)}</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div></div>`;
+    }
+
+    if (!id) {
+      root.innerHTML = `<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>No project specified</h3><p>Head back to the gallery to pick a project.</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div></div>`;
+    } else {
+      // Wait for auth state to settle before reading, since draft visibility
+      // depends on whether the signed-in user is the project's owner.
+      let loaded = false;
+      onAuthChange(async () => {
+        if (loaded) return;
+        loaded = true;
+        try {
+          const project = await getProjectById(id);
+          if (!project) {
+            showNotFound('This project does not exist or is not published.');
+            return;
+          }
+          render(project);
+        } catch {
+          showNotFound('This project does not exist or is not published.');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

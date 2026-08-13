@@ -1,90 +1,139 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-	<title>Home</title>
-	<style>
-		/* Resetowanie marginesów i paddingu */
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-		}
-
-		/* Stylizacja nagłówka */
-		header {
-			background-color: #4CAF50;
-			text-align: center;
-			padding: 1em;
-			font-size: 2em;
-			color: white;
-		}
-
-		/* Stylizacja menu nawigacyjnego */
-		nav {
-			background-color: #333;
-			overflow: hidden;
-		}
-
-		nav div {
-			float: left;
-		}
-
-		nav a {
-			display: block;
-			color: white;
-			text-align: center;
-			padding: 14px 20px;
-			text-decoration: none;
-		}
-
-		nav a:hover {
-			background-color: #ddd;
-			color: black;
-		}
-
-		/* Stylizacja zawartości */
-		#content {
-			padding: 2em;
-			background-color: #f9f9f9;
-			flex: 1 0 auto; /* Pozwala na rozciągnięcie się zawartości */
-		}
-
-		/* Stylizacja stopki */
-		footer {
-			background-color: #333;
-			color: white;
-			text-align: center;
-			padding: 1em;
-			flex-shrink: 0; /* Zapobiega zmniejszaniu się stopki */
-		}
-
-		/* Ustawienie struktury strony jako flexbox */
-		body, html {
-			height: 100%;
-			display: flex;
-			flex-direction: column;
-		}
-	</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Showcase — Publish and discover projects</title>
+  <meta name="description" content="A place for developers to publish, share, and discover projects." />
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
-
 <body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
 
-	<header>PSEKIEWICZ</header>
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <span class="eyebrow">Built for builders</span>
+        <h1>Publish your projects. Get discovered.</h1>
+        <p class="lead">
+          Showcase is a clean, no-nonsense home for your side projects and portfolio work.
+          Create an account, publish what you've built, and share a single link.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="register.html">Create free account</a>
+          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
+        </div>
+      </div>
+    </section>
 
-	<nav>
-		<div><a href="index.html">Home</a></div>
-		<div><a href="blog/blog.html">Blog</a></div>
-		<div><a href="projects/projects.html">Projekty</a></div>
-		<div><a href="about.html">O mnie</a></div>
-	</nav>
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Everything you need to share your work</h2>
+        </div>
+        <div class="features">
+          <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>Secure accounts</h3>
+            <p>Firebase Authentication and per-user Firestore rules keep every account and every project safe.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🗂️</div>
+            <h3>A real dashboard</h3>
+            <p>Create, edit, publish, and remove projects from a dedicated dashboard built just for you.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3>Public showcase</h3>
+            <p>Published projects appear instantly on the public gallery, searchable by keyword and tag.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-	<div id="content">
+    <section class="section" style="padding-top:0;">
+      <div class="container">
+        <div class="section-head">
+          <h2>Recently published</h2>
+          <a class="btn btn-ghost btn-sm" href="projects.html">View all →</a>
+        </div>
+        <div id="latest-projects" class="project-grid">
+          <p>Loading projects…</p>
+        </div>
+      </div>
+    </section>
+  </main>
 
-		<p>Witaj na mojej stronie internetowej!</p>
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="projects.html">Browse projects</a>
+    </div>
+  </footer>
 
-	</div>
-	<footer>©2024. Strona stworzona przeze mnie. Wszystkie prawa zastrzeżone.</footer>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module">
+    import { getPublishedProjects } from '/js/projects-data.js';
+    import { escapeHtml, timeAgo } from '/js/utils.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    function projectCard(project) {
+      const thumb = project.imageUrl
+        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        : escapeHtml(project.title.slice(0, 2).toUpperCase());
+      const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      return `
+        <article class="card">
+          <div class="card-thumb">${thumb}</div>
+          <div class="card-body">
+            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
+            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
+            <div class="tag-list">${tags}</div>
+            <div class="card-meta">
+              <span>by ${escapeHtml(project.authorName)}</span>
+              <span>${timeAgo(project.createdAt)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    (async () => {
+      const container = document.getElementById('latest-projects');
+      try {
+        const projects = await getPublishedProjects();
+        const latest = projects.slice(0, 3);
+        if (latest.length === 0) {
+          container.outerHTML = `
+            <div class="empty-state">
+              <h3>No projects published yet</h3>
+              <p>Be the first to share something you built.</p>
+              <a class="btn btn-primary" href="register.html">Create free account</a>
+            </div>
+          `;
+          return;
+        }
+        container.innerHTML = latest.map(projectCard).join('');
+      } catch (err) {
+        container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+      }
+    })();
+  </script>
 </body>
-
 </html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="auth-shell">
+      <div class="auth-card">
+        <h1>Welcome back</h1>
+        <p class="sub">Log in to manage your projects.</p>
+
+        <div class="alert alert-error" id="form-alert"></div>
+        <div class="alert alert-success" id="form-success"></div>
+
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required />
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Log in</button>
+        </form>
+
+        <p class="form-footer"><a href="#" id="forgot-link">Forgot your password?</a></p>
+        <p class="form-footer">Don't have an account? <a href="register.html">Create one</a></p>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module">
+    import { loginUser, resetPassword, getCurrentUser } from '/js/auth.js';
+
+    const form = document.getElementById('login-form');
+    const alertBox = document.getElementById('form-alert');
+    const successBox = document.getElementById('form-success');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function showError(message) {
+      successBox.classList.remove('is-visible');
+      alertBox.textContent = message;
+      alertBox.classList.add('is-visible');
+    }
+
+    function showSuccess(message) {
+      alertBox.classList.remove('is-visible');
+      successBox.textContent = message;
+      successBox.classList.add('is-visible');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.classList.remove('is-visible');
+      successBox.classList.remove('is-visible');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Logging in…';
+
+      try {
+        await loginUser(document.getElementById('email').value, document.getElementById('password').value);
+        const next = new URLSearchParams(window.location.search).get('next');
+        window.location.href = next && next.startsWith('/') ? next : '/dashboard.html';
+      } catch (err) {
+        showError(err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Log in';
+      }
+    });
+
+    document.getElementById('forgot-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        showError('Enter your email above first, then click "Forgot your password?" again.');
+        return;
+      }
+      try {
+        await resetPassword(email);
+        showSuccess(`Password reset email sent to ${email}.`);
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+
+    // If already logged in, skip straight to the dashboard.
+    (async () => {
+      const user = await getCurrentUser();
+      if (user) window.location.href = '/dashboard.html';
+    })();
+  </script>
+</body>
+</html>
