@@ -397,10 +397,19 @@
 
       adminSection.style.display = '';
 
+      // Loaded independently so a failure in one (e.g. admin_list_users()
+      // not existing yet because schema.sql hasn't been re-run) shows an
+      // error in *that* section instead of leaving it stuck on "Loading…"
+      // while the other section's error gets shown instead.
       try {
-        await Promise.all([loadUsers(), loadProjects()]);
+        await loadUsers();
       } catch (err) {
-        tableRegion.innerHTML = `<p>Could not load data: ${escapeHtml(err.message)}</p>`;
+        usersTableRegion.innerHTML = `<p>Could not load users: ${escapeHtml(err.message)}</p>`;
+      }
+      try {
+        await loadProjects();
+      } catch (err) {
+        tableRegion.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
       }
     });
   </script>
