@@ -1,72 +1,64 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { auth } from './firebase-init.js';
+import { supabase } from './supabase-init.js';
 
 function friendlyError(err) {
+  const message = err && err.message ? err.message : 'Something went wrong. Please try again.';
   const map = {
-    'auth/email-already-in-use': 'An account with that email already exists.',
-    'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/weak-password': 'Password must be at least 6 characters long.',
-    'auth/invalid-credential': 'Incorrect email or password.',
-    'auth/wrong-password': 'Incorrect email or password.',
-    'auth/user-not-found': 'Incorrect email or password.',
-    'auth/too-many-requests': 'Too many attempts. Please try again in a few minutes.',
-    'auth/network-request-failed': 'Network error — please check your connection and try again.',
+    'User already registered': 'An account with that email already exists.',
+    'Invalid login credentials': 'Incorrect email or password.',
+    'Password should be at least 6 characters.': 'Password must be at least 6 characters long.',
+    'Email not confirmed': 'Please confirm your email address before logging in (check your inbox).',
   };
-  return map[err.code] || err.message || 'Something went wrong. Please try again.';
+  return map[message] || message;
 }
 
 export async function registerUser(email, password, displayName) {
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName) {
-      await updateProfile(cred.user, { displayName });
-    }
-    return cred.user;
-  } catch (err) {
-    throw new Error(friendlyError(err));
-  }
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: displayName } },
+  });
+  if (error) throw new Error(friendlyError(error));
+  return data.user;
 }
 
 export async function loginUser(email, password) {
-  try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    return cred.user;
-  } catch (err) {
-    throw new Error(friendlyError(err));
-  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(friendlyError(error));
+  return data.user;
 }
 
 export async function logoutUser() {
-  await signOut(auth);
+  await supabase.auth.signOut();
 }
 
 export async function resetPassword(email) {
-  try {
-    await sendPasswordResetEmail(auth, email);
-  } catch (err) {
-    throw new Error(friendlyError(err));
-  }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/login.html`,
+  });
+  if (error) throw new Error(friendlyError(error));
 }
 
 // Resolves once with the current user (or null) — handy for one-off checks
 // like "am I already logged in?" on the login/register pages.
-export function getCurrentUser() {
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-  });
+export async function getCurrentUser() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }
 
-// Fires immediately with the current auth state, then again on every change.
+// Fires immediately with the current auth state (Supabase emits an
+// INITIAL_SESSION event on subscribe), then again on every change.
+// Returns an unsubscribe function.
 export function onAuthChange(callback) {
-  return onAuthStateChanged(auth, callback);
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(session ? session.user : null);
+  });
+  return () => subscription.unsubscribe();
+}
+
+export function displayNameOf(user) {
+  return (user && user.user_metadata && user.user_metadata.display_name) || (user && user.email) || 'Unknown';
 }

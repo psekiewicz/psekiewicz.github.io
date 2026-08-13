@@ -123,7 +123,7 @@
 
   <script type="module" src="/js/nav.js"></script>
   <script type="module">
-    import { onAuthChange } from '/js/auth.js';
+    import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getMyProjects, createProject, updateProject, togglePublish, deleteProject } from '/js/projects-data.js';
     import { escapeHtml, timeAgo } from '/js/utils.js';
 
@@ -218,7 +218,7 @@
         if (id) {
           await updateProject(id, payload);
         } else {
-          await createProject(currentUser.uid, currentUser.displayName || currentUser.email, payload);
+          await createProject(currentUser.id, displayNameOf(currentUser), payload);
         }
         closeModal();
         await loadProjects();
@@ -319,7 +319,7 @@
     }
 
     async function loadProjects() {
-      myProjects = await getMyProjects(currentUser.uid);
+      myProjects = await getMyProjects(currentUser.id);
       renderStats();
       renderTable();
     }

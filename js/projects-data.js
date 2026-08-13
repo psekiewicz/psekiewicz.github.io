@@ -1,37 +1,22 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  serverTimestamp,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { db } from './firebase-init.js';
+import { supabase } from './supabase-init.js';
 
-const projectsRef = collection(db, 'projects');
+const TABLE = 'projects';
 
-function toPlainProject(docSnap) {
-  const data = docSnap.data();
+function toPlainProject(row) {
   return {
-    id: docSnap.id,
-    uid: data.uid,
-    authorName: data.authorName || 'Unknown',
-    title: data.title || '',
-    summary: data.summary || '',
-    description: data.description || '',
-    imageUrl: data.imageUrl || '',
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    repoUrl: data.repoUrl || '',
-    liveUrl: data.liveUrl || '',
-    published: Boolean(data.published),
-    // Timestamps can briefly be null client-side right after a write with
-    // serverTimestamp() before the server value round-trips back.
-    createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-    updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : new Date().toISOString(),
+    id: row.id,
+    uid: row.user_id,
+    authorName: row.author_name || 'Unknown',
+    title: row.title || '',
+    summary: row.summary || '',
+    description: row.description || '',
+    imageUrl: row.image_url || '',
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    repoUrl: row.repo_url || '',
+    liveUrl: row.live_url || '',
+    published: Boolean(row.published),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -40,57 +25,75 @@ function sortByCreatedDesc(projects) {
 }
 
 export async function getPublishedProjects() {
-  const snap = await getDocs(query(projectsRef, where('published', '==', true)));
-  return sortByCreatedDesc(snap.docs.map(toPlainProject));
+  const { data, error } = await supabase.from(TABLE).select('*').eq('published', true);
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
 }
 
 export async function getMyProjects(uid) {
-  const snap = await getDocs(query(projectsRef, where('uid', '==', uid)));
-  return sortByCreatedDesc(snap.docs.map(toPlainProject));
+  const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid);
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
 }
 
 export async function getProjectById(id) {
-  const snap = await getDoc(doc(db, 'projects', id));
-  if (!snap.exists()) return null;
-  return toPlainProject(snap);
+  const { data, error } = await supabase.from(TABLE).select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return toPlainProject(data);
 }
 
 export async function createProject(uid, authorName, fields) {
-  const docRef = await addDoc(projectsRef, {
-    uid,
-    authorName,
-    title: fields.title,
-    summary: fields.summary,
-    description: fields.description,
-    imageUrl: fields.imageUrl,
-    tags: fields.tags,
-    repoUrl: fields.repoUrl,
-    liveUrl: fields.liveUrl,
-    published: Boolean(fields.published),
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return docRef.id;
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({
+      user_id: uid,
+      author_name: authorName,
+      title: fields.title,
+      summary: fields.summary,
+      description: fields.description,
+      image_url: fields.imageUrl,
+      tags: fields.tags,
+      repo_url: fields.repoUrl,
+      live_url: fields.liveUrl,
+      published: Boolean(fields.published),
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data.id;
+}
+
+async function applyUpdate(id, patch) {
+  const { data, error } = await supabase.from(TABLE).update(patch).eq('id', id).select();
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error('You do not have permission to update this project.');
+  }
+  return toPlainProject(data[0]);
 }
 
 export async function updateProject(id, fields) {
-  await updateDoc(doc(db, 'projects', id), {
+  return applyUpdate(id, {
     title: fields.title,
     summary: fields.summary,
     description: fields.description,
-    imageUrl: fields.imageUrl,
+    image_url: fields.imageUrl,
     tags: fields.tags,
-    repoUrl: fields.repoUrl,
-    liveUrl: fields.liveUrl,
+    repo_url: fields.repoUrl,
+    live_url: fields.liveUrl,
     published: Boolean(fields.published),
-    updatedAt: serverTimestamp(),
   });
 }
 
 export async function togglePublish(id, published) {
-  await updateDoc(doc(db, 'projects', id), { published, updatedAt: serverTimestamp() });
+  return applyUpdate(id, { published });
 }
 
 export async function deleteProject(id) {
-  await deleteDoc(doc(db, 'projects', id));
+  const { data, error } = await supabase.from(TABLE).delete().eq('id', id).select();
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error('You do not have permission to delete this project.');
+  }
 }

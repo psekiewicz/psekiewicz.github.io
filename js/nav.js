@@ -1,4 +1,4 @@
-import { onAuthChange, logoutUser } from './auth.js';
+import { onAuthChange, logoutUser, displayNameOf } from './auth.js';
 import { escapeHtml, initials } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -28,7 +28,7 @@ function renderNavActions(container, user) {
     return;
   }
 
-  const name = user.displayName || user.email;
+  const name = displayNameOf(user);
   container.innerHTML = `
     <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
     <div class="user-chip">
