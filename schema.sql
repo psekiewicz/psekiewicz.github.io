@@ -51,22 +51,26 @@ alter table public.projects enable row level security;
 
 -- Anyone (including signed-out visitors) can read published projects.
 -- Signed-in users can also read their own unpublished drafts.
+drop policy if exists "Published projects are publicly readable" on public.projects;
 create policy "Published projects are publicly readable"
   on public.projects for select
   using (published = true or auth.uid() = user_id);
 
 -- Signed-in users can only ever create projects owned by themselves.
+drop policy if exists "Users can create their own projects" on public.projects;
 create policy "Users can create their own projects"
   on public.projects for insert
   with check (auth.uid() = user_id);
 
 -- Only the owner can update their project, and cannot reassign ownership.
+drop policy if exists "Users can update their own projects" on public.projects;
 create policy "Users can update their own projects"
   on public.projects for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- Only the owner can delete their project.
+drop policy if exists "Users can delete their own projects" on public.projects;
 create policy "Users can delete their own projects"
   on public.projects for delete
   using (auth.uid() = user_id);
@@ -90,15 +94,18 @@ create table if not exists public.profiles (
 alter table public.profiles enable row level security;
 
 -- Profiles are public — anyone can view anyone's profile page.
+drop policy if exists "Profiles are publicly readable" on public.profiles;
 create policy "Profiles are publicly readable"
   on public.profiles for select
   using (true);
 
 -- Users can only ever create/update their own profile row.
+drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = id)
@@ -149,16 +156,19 @@ create index if not exists follows_following_id_idx on public.follows (following
 alter table public.follows enable row level security;
 
 -- Follow relationships are public (needed to show follower/following lists).
+drop policy if exists "Follows are publicly readable" on public.follows;
 create policy "Follows are publicly readable"
   on public.follows for select
   using (true);
 
 -- You can only ever create a follow row where you are the follower.
+drop policy if exists "Users can follow as themselves" on public.follows;
 create policy "Users can follow as themselves"
   on public.follows for insert
   with check (auth.uid() = follower_id);
 
 -- You can only ever remove your own follow row.
+drop policy if exists "Users can unfollow as themselves" on public.follows;
 create policy "Users can unfollow as themselves"
   on public.follows for delete
   using (auth.uid() = follower_id);
