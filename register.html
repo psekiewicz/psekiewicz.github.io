@@ -56,6 +56,10 @@
             <label for="confirm-password">Confirm password</label>
             <input type="password" id="confirm-password" autocomplete="new-password" required minlength="6" />
           </div>
+          <div class="field checkbox-field">
+            <input type="checkbox" id="age-confirm" required />
+            <label for="age-confirm" style="margin:0;">I confirm that I am at least 13 years old.</label>
+          </div>
           <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Create account</button>
         </form>
 
@@ -67,6 +71,7 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { registerUser, getCurrentUser } from '/js/auth.js';
 
@@ -90,6 +95,11 @@
       const confirmPassword = document.getElementById('confirm-password').value;
       if (password !== confirmPassword) {
         showError('Passwords do not match.');
+        return;
+      }
+
+      if (!document.getElementById('age-confirm').checked) {
+        showError('You must confirm that you are at least 13 years old to create an account.');
         return;
       }
 

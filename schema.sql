@@ -29,6 +29,16 @@ create table if not exists public.projects (
   updated_at timestamptz not null default now()
 );
 
+-- What kind of project this is — drives the badge/icon shown on cards and
+-- the filter dropdown on projects.html. Kept as a plain checked text
+-- column rather than a Postgres enum so adding a new type later is just
+-- one more value in the check constraint, not a type migration.
+alter table public.projects add column if not exists project_type text not null default 'other';
+
+alter table public.projects drop constraint if exists projects_project_type_check;
+alter table public.projects add constraint projects_project_type_check
+  check (project_type in ('website', 'mobile_app', 'game', 'design', 'library', 'other'));
+
 create index if not exists projects_user_id_idx on public.projects (user_id);
 create index if not exists projects_published_idx on public.projects (published);
 
@@ -270,6 +280,55 @@ end;
 $$;
 
 grant execute on function public.admin_list_users() to authenticated;
+
+
+-- ============================================================
+-- Comments — one row per comment on a project. Visibility piggybacks on
+-- the `projects` policies above: "select 1 from projects where id = ..."
+-- only finds a row at all if the *current caller* is allowed to see that
+-- project (published, or its owner, or an admin), because that lookup is
+-- itself subject to projects' own RLS. So a comment on someone's private
+-- draft is never exposed, without duplicating the visibility rules here.
+-- ============================================================
+
+create table if not exists public.comments (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists comments_project_id_idx on public.comments (project_id);
+
+alter table public.comments enable row level security;
+
+drop policy if exists "Comments are readable if their project is" on public.comments;
+create policy "Comments are readable if their project is"
+  on public.comments for select
+  using (exists (select 1 from public.projects p where p.id = project_id));
+
+-- Must be signed in, can only ever post as yourself, and the project has
+-- to actually be visible to you (see the note above).
+drop policy if exists "Signed-in users can comment on visible projects" on public.comments;
+create policy "Signed-in users can comment on visible projects"
+  on public.comments for insert
+  with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.projects p where p.id = project_id)
+  );
+
+-- A comment can be removed by whoever wrote it, by the project's owner
+-- (moderating their own project), or by a site admin.
+drop policy if exists "Comment author, project owner, or admin can delete" on public.comments;
+create policy "Comment author, project owner, or admin can delete"
+  on public.comments for delete
+  using (
+    auth.uid() = user_id
+    or exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
+  );
 
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor

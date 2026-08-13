@@ -574,6 +574,18 @@ img {
   color: var(--color-text-muted);
 }
 
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: var(--color-muted-soft);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 /* ---------- Forms ---------- */
 .auth-shell {
   min-height: calc(100vh - 68px);
@@ -899,6 +911,163 @@ tbody tr:last-child td {
   gap: 10px;
   margin-top: 28px;
   flex-wrap: wrap;
+}
+
+/* ---------- Live preview iframe ---------- */
+.live-preview {
+  margin-top: 40px;
+}
+
+.live-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.live-preview-head a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.live-preview-frame {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.live-preview-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---------- Standalone hint text ---------- */
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-text-faint);
+}
+
+/* ---------- Comments ---------- */
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.comment-form textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.95rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.comment-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.comment:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-head-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.comment-author {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.comment-time {
+  font-size: 0.76rem;
+  color: var(--color-text-faint);
+}
+
+.comment-delete {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+}
+
+.comment-delete:hover {
+  color: var(--color-danger, #e5484d);
+  background: var(--color-primary-soft);
+}
+
+.comment-body {
+  margin: 8px 0 0;
+  font-size: 0.94rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ---------- Cookie consent banner ---------- */
+/* A static bar at the very top of the document (not fixed/floating) so it
+   pushes page content down instead of overlapping it — avoids covering
+   buttons on short pages like the auth forms. */
+.cookie-banner {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px 20px;
+}
+
+.cookie-banner-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.cookie-banner-inner p {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 /* ---------- Empty state ---------- */

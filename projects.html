@@ -39,6 +39,15 @@
 
         <div class="filter-bar">
           <input type="search" id="search-input" placeholder="Search by title, summary, or description…" />
+          <select id="type-filter">
+            <option value="">All types</option>
+            <option value="website">Website</option>
+            <option value="mobile_app">Mobile App</option>
+            <option value="game">Game</option>
+            <option value="design">Design</option>
+            <option value="library">Library / Tool</option>
+            <option value="other">Other</option>
+          </select>
           <select id="tag-filter">
             <option value="">All tags</option>
           </select>
@@ -61,10 +70,11 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -73,6 +83,7 @@
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
     const tagFilter = document.getElementById('tag-filter');
+    const typeFilter = document.getElementById('type-filter');
 
     function projectCard(project) {
       const thumb = project.imageUrl
@@ -86,7 +97,7 @@
           <div class="card-body">
             <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${tags}</div>
+            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
             <div class="card-meta">
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
@@ -102,6 +113,7 @@
     function render() {
       const q = searchInput.value.trim().toLowerCase();
       const tag = tagFilter.value;
+      const type = typeFilter.value;
       const filtered = allProjects.filter((p) => {
         const matchesQ =
           !q ||
@@ -109,7 +121,8 @@
           p.summary.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q);
         const matchesTag = !tag || p.tags.includes(tag);
-        return matchesQ && matchesTag;
+        const matchesType = !type || p.type === type;
+        return matchesQ && matchesTag && matchesType;
       });
 
       if (filtered.length === 0) {
@@ -137,6 +150,7 @@
 
     searchInput.addEventListener('input', render);
     tagFilter.addEventListener('change', render);
+    typeFilter.addEventListener('change', render);
 
     (async () => {
       try {

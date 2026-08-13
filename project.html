@@ -35,6 +35,7 @@
         <p>Loading project…</p>
       </div>
     </div>
+    <div id="comments-root"></div>
   </main>
 
   <footer class="site-footer">
@@ -47,16 +48,25 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { getProjectById } from '/js/projects-data.js';
-    import { getProfile } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
-    import { onAuthChange } from '/js/auth.js';
+    import { getProfile, getProfilesByIds } from '/js/profiles-data.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { icon } from '/js/icons.js';
+    import { onAuthChange, displayNameOf } from '/js/auth.js';
+    import { getComments, addComment, deleteComment } from '/js/comments-data.js';
+    import { isAdmin } from '/js/admin-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
     const root = document.getElementById('project-root');
+    const commentsRoot = document.getElementById('comments-root');
     const id = new URLSearchParams(window.location.search).get('id');
+
+    let currentUser = null;
+    let currentUserIsAdmin = false;
+    let currentProject = null;
 
     function render(project, authorProfile) {
       document.getElementById('page-title').textContent = `${project.title} — Showcase`;
@@ -73,6 +83,27 @@
 
       const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft — only visible to you</span>';
 
+      const livePreview = project.liveUrl
+        ? `
+          <div class="live-preview">
+            <div class="live-preview-head">
+              <h3 style="margin:0;">Live preview</h3>
+              <a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">${icon('external-link', { size: 14 })} Open in new tab</a>
+            </div>
+            <div class="live-preview-frame">
+              <iframe
+                src="${escapeHtml(project.liveUrl)}"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                referrerpolicy="no-referrer"
+                title="Live preview of ${escapeHtml(project.title)}"
+              ></iframe>
+            </div>
+            <p class="hint">Some sites block being shown in an embedded preview like this — if it looks blank, use "Open in new tab" above.</p>
+          </div>
+        `
+        : '';
+
       root.innerHTML = `
         <section class="detail-hero">
           <div class="container">
@@ -86,7 +117,7 @@
               <span>·</span>
               <span>Published ${timeAgo(project.createdAt)}</span>
             </div>
-            <div class="tag-list">${tags}</div>
+            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
           </div>
         </section>
         <section class="section">
@@ -94,6 +125,7 @@
             <div class="detail-thumb">${thumb}</div>
             <div class="detail-body">${escapeHtml(project.description || project.summary || 'No description provided.')}</div>
             <div class="detail-links">${links.join('')}</div>
+            ${livePreview}
           </div>
         </section>
       `;
@@ -103,26 +135,127 @@
       root.innerHTML = `<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Project not found</h3><p>${escapeHtml(message)}</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div></div>`;
     }
 
+    function commentItemHtml(comment, profile, canDelete) {
+      return `
+        <article class="comment" data-comment-id="${escapeHtml(comment.id)}">
+          <div class="comment-head">
+            ${avatarHtml(profile ? profile.avatarUrl : '', comment.authorName, 'avatar-sm')}
+            <div class="comment-head-text">
+              <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+              <span class="comment-time">${timeAgo(comment.createdAt)}</span>
+            </div>
+            ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(comment.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
+          </div>
+          <p class="comment-body">${escapeHtml(comment.body)}</p>
+        </article>
+      `;
+    }
+
+    async function renderComments(project) {
+      commentsRoot.innerHTML = `<section class="section"><div class="container"><p>Loading comments…</p></div></section>`;
+
+      let comments;
+      try {
+        comments = await getComments(project.id);
+      } catch (err) {
+        commentsRoot.innerHTML = `<section class="section"><div class="container"><p>Could not load comments: ${escapeHtml(err.message)}</p></div></section>`;
+        return;
+      }
+
+      const profiles = await getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map());
+
+      const list = comments.length
+        ? comments
+            .map((c) => {
+              const canDelete = Boolean(
+                currentUser && (currentUser.id === c.userId || currentUser.id === project.uid || currentUserIsAdmin)
+              );
+              return commentItemHtml(c, profiles.get(c.userId), canDelete);
+            })
+            .join('')
+        : '<p class="hint">No comments yet — be the first to say something.</p>';
+
+      const form = currentUser
+        ? `
+          <form class="comment-form" id="comment-form">
+            <textarea id="comment-body" placeholder="Write a comment…" maxlength="2000" required></textarea>
+            <button class="btn btn-primary" type="submit">${icon('send', { size: 15 })} Post</button>
+          </form>
+        `
+        : `<p class="hint"><a href="login.html?next=${encodeURIComponent('/project.html?id=' + project.id)}">Log in</a> to leave a comment.</p>`;
+
+      commentsRoot.innerHTML = `
+        <section class="section">
+          <div class="container">
+            <div class="section-head"><h2>Comments (${comments.length})</h2></div>
+            ${form}
+            <div class="comments-list">${list}</div>
+          </div>
+        </section>
+      `;
+
+      const commentForm = document.getElementById('comment-form');
+      if (commentForm) {
+        commentForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const textarea = document.getElementById('comment-body');
+          const body = textarea.value.trim();
+          if (!body) return;
+          const submitBtn = commentForm.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          try {
+            await addComment(project.id, currentUser.id, displayNameOf(currentUser), body);
+            await renderComments(project);
+          } catch (err) {
+            alert(err.message);
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
+      commentsRoot.querySelectorAll('.comment-delete').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this comment?')) return;
+          btn.disabled = true;
+          try {
+            await deleteComment(btn.dataset.id);
+            await renderComments(project);
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
     if (!id) {
       root.innerHTML = `<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>No project specified</h3><p>Head back to the gallery to pick a project.</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div></div>`;
     } else {
       // Wait for auth state to settle before reading, since draft visibility
       // depends on whether the signed-in user is the project's owner.
       let loaded = false;
-      onAuthChange(async () => {
-        if (loaded) return;
-        loaded = true;
-        try {
-          const project = await getProjectById(id);
-          if (!project) {
+      onAuthChange(async (user) => {
+        currentUser = user;
+        currentUserIsAdmin = user ? await isAdmin(user.id).catch(() => false) : false;
+
+        if (!loaded) {
+          loaded = true;
+          try {
+            const project = await getProjectById(id);
+            if (!project) {
+              showNotFound('This project does not exist or is not published.');
+              return;
+            }
+            currentProject = project;
+            const authorProfile = await getProfile(project.uid).catch(() => null);
+            render(project, authorProfile);
+          } catch {
             showNotFound('This project does not exist or is not published.');
             return;
           }
-          const authorProfile = await getProfile(project.uid).catch(() => null);
-          render(project, authorProfile);
-        } catch {
-          showNotFound('This project does not exist or is not published.');
         }
+
+        if (currentProject) renderComments(currentProject);
       });
     }
   </script>

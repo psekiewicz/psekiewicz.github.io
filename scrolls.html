@@ -41,10 +41,11 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, avatarHtml } from '/js/utils.js';
+    import { escapeHtml, avatarHtml, typeBadgeHtml } from '/js/utils.js';
 
     const root = document.getElementById('scrolls-root');
 
@@ -72,7 +73,7 @@
             </a>
             <h2>${escapeHtml(project.title)}</h2>
             <p>${escapeHtml(project.summary || project.description.slice(0, 140))}</p>
-            <div class="tag-list">${tags}</div>
+            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
             <div class="scroll-links">${links.join('')}</div>
           </div>
         </section>

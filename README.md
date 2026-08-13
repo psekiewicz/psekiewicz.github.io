@@ -13,7 +13,7 @@ GitHub Pages only serves static files — there's no server to run session logic
 The site is fully built, but it's pointed at a placeholder Supabase project. Until you complete these steps, register/login will fail.
 
 1. **Create a Supabase project** — go to [supabase.com/dashboard](https://supabase.com/dashboard), click "New project" (the free tier is enough for this).
-2. **Create the database tables and security policies** — open the project's *SQL Editor*, paste in everything from [`schema.sql`](./schema.sql) in this repo, and click **Run**. This creates the `projects`, `profiles`, and `follows` tables and the RLS policies that actually enforce ownership (only you can edit/delete your projects), draft privacy (only you can see your unpublished projects), and "you can only follow/unfollow as yourself" — it's not optional. The whole file is safe to re-run any time you pull an update that adds to it.
+2. **Create the database tables and security policies** — open the project's *SQL Editor*, paste in everything from [`schema.sql`](./schema.sql) in this repo, and click **Run**. This creates the `projects`, `profiles`, `follows`, and `comments` tables and the RLS policies that actually enforce ownership (only you can edit/delete your projects), draft privacy (only you can see your unpublished projects), "you can only follow/unfollow as yourself", and "anyone signed in can comment, but only the comment's author, the project's owner, or an admin can delete it" — it's not optional. The whole file is safe to re-run any time you pull an update that adds to it.
 3. **Get your project's API values** — go to *Project Settings* (gear icon) → *API*. Copy the **Project URL** and the **`anon` `public`** key (never the `service_role` key — that one must never appear in client-side code).
 4. **Paste your config** — put those two values into [`js/supabase-config.js`](./js/supabase-config.js), replacing the `REPLACE_WITH_...` placeholders. These values are safe to publish in client-side code — they identify your project, they aren't secret keys (the RLS policies in `schema.sql` are what actually protect your data).
 5. **Commit and push** the updated `js/supabase-config.js`. GitHub Pages will redeploy automatically within a minute or two.
@@ -73,6 +73,11 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Avatars everywhere** — not just the profile page: the navbar chip, the bottom nav's Profile tab, and every project card, scroll, and detail page show the author's actual photo (falling back to initials on a gradient when they haven't set one).
 - **Outline icon set** — a small hand-built set of stroke-only ("no fill") SVG icons (`js/icons.js`) replaces emoji throughout the app: nav, bottom bar, theme toggle, feature cards, dashboard/admin row actions.
 - **Admin panel** (`admin.html`) — accounts with `is_admin = true` get a moderation view of every project on the site (any user, any status, searchable) with unpublish/delete actions, and a searchable Users tab showing every account's email and ban status, with real Ban (for a chosen duration)/Unban/Delete-account actions. There's no in-app way to grant the admin role itself — see "Making an account admin" below. Ban/delete require the Edge Function described below; everything else works without it.
+- **Project types** — every project is tagged as Website, Mobile App, Game, Design, Library/Tool, or Other (`dashboard.html`'s create/edit form), shown as an icon badge on every card and the detail page, and filterable on `projects.html`.
+- **Live preview** — if a project has a live URL, its detail page embeds it in a sandboxed iframe (`sandbox="allow-scripts allow-same-origin allow-popups allow-forms"`, no referrer sent) alongside an "Open in new tab" link, since some sites block being framed.
+- **Comments** — anyone signed in can comment on a project from its detail page; the comment's author, the project's owner, or an admin can delete it. Enforced by RLS in `schema.sql`, not just hidden buttons in the UI.
+- **Age confirmation at signup** — registration requires checking "I confirm that I am at least 13 years old" before an account can be created.
+- **Cookie notice** — a dismissible banner (`js/cookie-consent.js`), shown once per browser via `localStorage`, explains that the site only uses essential cookies/local storage (session + preferences), no tracking or advertising.
 
 ## Tech stack
 
@@ -112,12 +117,14 @@ js/auth.js               register/login/logout/reset-password/change-password, w
 js/projects-data.js      All reads/writes for the `projects` table
 js/profiles-data.js      Read/update the `profiles` table; batch-fetch profiles by id for author avatars
 js/follows-data.js       Follow/unfollow, follower/following counts and lists
+js/comments-data.js      getComments/addComment/deleteComment for the `comments` table
 js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
 js/icons.js               Outline SVG icon set shared by every page
 js/theme.js               Dark mode toggle + localStorage persistence
 js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware, shows the signed-in user's real avatar
 js/nav.js                 Shared top navbar: auth-aware links + avatar, admin link, mobile menu toggle
-js/utils.js               escapeHtml / initials / avatarHtml / timeAgo helpers
+js/cookie-consent.js      One-time dismissible cookie notice banner, shown on every page
+js/utils.js               escapeHtml / initials / avatarHtml / timeAgo / typeBadgeHtml helpers + PROJECT_TYPES metadata
 schema.sql              Table definitions + Row Level Security policies — run in the Supabase SQL Editor (see setup above)
 supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion — see "Real bans and account deletion" above
 ```
@@ -135,6 +142,7 @@ Postgres table `public.projects`, one row per project:
 | `description`  | text                 | Full write-up shown on the detail page             |
 | `image_url`, `repo_url`, `live_url` | text  | All optional                                       |
 | `tags`         | text[]               | Up to 10, enforced client-side                     |
+| `project_type` | text                 | One of `website`, `mobile_app`, `game`, `design`, `library`, `other` — defaults to `other` |
 | `published`    | boolean              | Controls public visibility                          |
 | `created_at`   | timestamptz          | Defaults to `now()`                                 |
 | `updated_at`   | timestamptz          | Kept current by a trigger on every update           |
@@ -163,6 +171,23 @@ Postgres table `public.follows`, one row per follow relationship:
 | `created_at`   | timestamptz | Defaults to `now()`                        |
 
 Primary key is `(follower_id, following_id)`, so a given follow relationship can only exist once. Follower/following counts are just row counts — computed client-side via `js/follows-data.js`, no denormalized counter columns to keep in sync.
+
+Postgres table `public.comments`, one row per comment:
+
+| Column        | Type        | Notes                                              |
+| ------------- | ----------- | ---------------------------------------------------- |
+| `project_id`  | uuid        | References `projects(id)`, cascade-deletes with the project |
+| `user_id`     | uuid        | Comment author — references `auth.users(id)`         |
+| `author_name` | text        | Display name snapshot at comment time                |
+| `body`        | text (1–2000 chars) |                                                |
+| `created_at`  | timestamptz | Defaults to `now()`                                   |
+
+Readable by anyone who can see the project; insertable by any signed-in user (as themselves); deletable by the comment's own author, the project's owner, or an admin.
+
+## Legal / compliance
+
+- **Age gate** — `register.html` requires checking "I confirm that I am at least 13 years old" before the form will submit; there's no server-side age verification (Supabase doesn't offer one), so this is a self-attestation, same as most consumer sites.
+- **Cookie notice** — `js/cookie-consent.js` shows a one-time banner (dismissal remembered in `localStorage`) describing what's stored: the Supabase auth session, and preferences like the dark-mode choice. No analytics or advertising cookies are set by this app.
 
 ## Notes
 

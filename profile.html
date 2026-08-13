@@ -60,6 +60,7 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { getCurrentUser, logoutUser } from '/js/auth.js';
     import { getProfile } from '/js/profiles-data.js';
@@ -73,7 +74,7 @@
       getFollowers,
       getFollowing,
     } from '/js/follows-data.js';
-    import { escapeHtml, initials, timeAgo } from '/js/utils.js';
+    import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -125,7 +126,7 @@
           <div class="card-body">
             <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${tags}</div>
+            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
             <div class="card-meta">
               <span>${timeAgo(project.createdAt)}</span>
             </div>

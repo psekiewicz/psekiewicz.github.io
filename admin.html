@@ -103,12 +103,13 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { onAuthChange } from '/js/auth.js';
     import { isAdmin, listUsersForAdmin, banUser, unbanUser, deleteAccount } from '/js/admin-data.js';
     import { getAllProjects, togglePublish, deleteProject } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -172,7 +173,7 @@
             <tr data-id="${escapeHtml(p.id)}">
               <td>
                 <div class="row-title">${escapeHtml(p.title)}</div>
-                <div class="tag-list" style="margin-top:4px;">${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
+                <div class="tag-list" style="margin-top:4px;">${typeBadgeHtml(p.type)}${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
               </td>
               <td>
                 <span class="card-author">

@@ -14,6 +14,7 @@ function toPlainProject(row) {
     tags: Array.isArray(row.tags) ? row.tags : [],
     repoUrl: row.repo_url || '',
     liveUrl: row.live_url || '',
+    type: row.project_type || 'other',
     published: Boolean(row.published),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -70,6 +71,7 @@ export async function createProject(uid, authorName, fields) {
       tags: fields.tags,
       repo_url: fields.repoUrl,
       live_url: fields.liveUrl,
+      project_type: fields.type || 'other',
       published: Boolean(fields.published),
     })
     .select()
@@ -96,6 +98,7 @@ export async function updateProject(id, fields) {
     tags: fields.tags,
     repo_url: fields.repoUrl,
     live_url: fields.liveUrl,
+    project_type: fields.type || 'other',
     published: Boolean(fields.published),
   });
 }

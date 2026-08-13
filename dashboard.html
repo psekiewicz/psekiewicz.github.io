@@ -91,6 +91,17 @@
           <input type="text" id="title" required minlength="3" maxlength="100" />
         </div>
         <div class="field">
+          <label for="type">Project type</label>
+          <select id="type">
+            <option value="website">Website</option>
+            <option value="mobile_app">Mobile App</option>
+            <option value="game">Game</option>
+            <option value="design">Design</option>
+            <option value="library">Library / Tool</option>
+            <option value="other" selected>Other</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="summary">Short summary</label>
           <input type="text" id="summary" maxlength="200" placeholder="One sentence describing the project" />
         </div>
@@ -129,10 +140,11 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getMyProjects, createProject, updateProject, togglePublish, deleteProject } from '/js/projects-data.js';
-    import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -158,6 +170,7 @@
 
       if (project) {
         document.getElementById('title').value = project.title;
+        document.getElementById('type').value = project.type;
         document.getElementById('summary').value = project.summary;
         document.getElementById('description').value = project.description;
         document.getElementById('imageUrl').value = project.imageUrl;
@@ -194,6 +207,7 @@
       if (title.length < 3) throw new Error('Title must be at least 3 characters.');
       return {
         title,
+        type: document.getElementById('type').value,
         summary: document.getElementById('summary').value.trim(),
         description: document.getElementById('description').value.trim(),
         imageUrl: document.getElementById('imageUrl').value.trim(),
@@ -285,7 +299,7 @@
             <tr data-id="${escapeHtml(p.id)}">
               <td>
                 <div class="row-title">${escapeHtml(p.title)}</div>
-                <div class="tag-list" style="margin-top:4px;">${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
+                <div class="tag-list" style="margin-top:4px;">${typeBadgeHtml(p.type)}${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
               </td>
               <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
               <td>${timeAgo(p.updatedAt)}</td>

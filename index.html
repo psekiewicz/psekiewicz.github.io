@@ -94,10 +94,11 @@
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { onAuthChange } from '/js/auth.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -127,7 +128,7 @@
           <div class="card-body">
             <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${tags}</div>
+            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
             <div class="card-meta">
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
