@@ -1321,12 +1321,23 @@ tbody tr:last-child td {
   .nav-actions {
     display: none;
   }
+  /* Chrome on Android already offers its own install affordance; the
+     custom button is mainly useful on desktop where there's no automatic
+     prompt, and there's no room for it next to the hamburger on mobile. */
+  .pwa-install-btn {
+    display: none;
+  }
   .table-wrap {
     overflow-x: auto;
   }
   table {
     min-width: 640px;
   }
+}
+
+.pwa-install-btn {
+  margin-right: 10px;
+  flex-shrink: 0;
 }
 
 /* ---------- Theme toggle ---------- */

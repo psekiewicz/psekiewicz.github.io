@@ -7,6 +7,12 @@
   <title>Scrolls — Showcase</title>
   <meta name="description" content="Swipe through published projects, one at a time." />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Showcase" />
 </head>
 <body>
   <nav class="navbar">
@@ -55,6 +61,7 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module" src="/js/cookie-consent.js"></script>
+  <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
@@ -64,6 +71,7 @@
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { getComments, addComment, deleteComment, getCommentCounts } from '/js/comments-data.js';
     import { isAdmin } from '/js/admin-data.js';
+    import { logProjectView } from '/js/views-data.js';
 
     const root = document.getElementById('scrolls-root');
 
@@ -72,6 +80,49 @@
     const projectsById = new Map();
     const likeState = new Map(); // projectId -> { liked, count }
     const commentCounts = new Map(); // projectId -> count
+
+    // A view counts once a card has been at least 75% on screen for 3
+    // straight seconds — scrolling past it faster than that doesn't count,
+    // matching how Scrolls is meant to be skimmed vs. actually looked at.
+    const VIEW_DWELL_MS = 3000;
+    const viewedProjectIds = new Set();
+    const dwellTimers = new Map(); // card element -> timeoutId
+    let viewObserver = null;
+
+    function setupViewTracking() {
+      if (viewObserver) viewObserver.disconnect();
+      dwellTimers.forEach((timeoutId) => clearTimeout(timeoutId));
+      dwellTimers.clear();
+
+      const container = document.querySelector('.scrolls-container');
+      if (!container) return;
+
+      viewObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const card = entry.target;
+            const projectId = card.dataset.cardProjectId;
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.75) {
+              if (viewedProjectIds.has(projectId) || dwellTimers.has(card)) return;
+              const timeoutId = setTimeout(() => {
+                dwellTimers.delete(card);
+                if (!viewedProjectIds.has(projectId)) {
+                  viewedProjectIds.add(projectId);
+                  logProjectView(projectId).catch(() => {});
+                }
+              }, VIEW_DWELL_MS);
+              dwellTimers.set(card, timeoutId);
+            } else if (dwellTimers.has(card)) {
+              clearTimeout(dwellTimers.get(card));
+              dwellTimers.delete(card);
+            }
+          });
+        },
+        { root: container, threshold: [0, 0.75, 1] }
+      );
+
+      document.querySelectorAll('.scroll-card').forEach((card) => viewObserver.observe(card));
+    }
 
     function railButtonsHtml(project, authorProfile) {
       const likeInfo = likeState.get(project.id) || { liked: false, count: 0 };
@@ -352,6 +403,7 @@
           updateLikeUI(pid);
           updateCommentCountUI(pid);
         });
+        setupViewTracking();
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load projects: ${escapeHtml(err.message)}</p></div>`;
       }

@@ -33,6 +33,7 @@ const PATHS = {
   heart: '<path d="M12 21s-7.5-4.6-10-9.5C.3 7.7 2.3 4 6 4c2 0 3.6 1.1 4.6 2.4C11.6 5.1 13.2 4 15.2 4c3.7 0 5.7 3.7 4 7.5C19.5 16.4 12 21 12 21Z"/>',
   code: '<path d="M8 6 2 12l6 6"/><path d="M16 6l6 6-6 6"/>',
   'bar-chart': '<path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/>',
+  download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
 };
 
 export function icon(name, { size = 20, strokeWidth = 1.8, className = '' } = {}) {

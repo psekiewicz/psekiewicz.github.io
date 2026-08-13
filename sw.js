@@ -1,0 +1,102 @@
+// Service worker for the installable PWA shell. Caches the static app shell
+// (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
+// connection — but never touches Supabase API/auth calls or any other
+// cross-origin request, so account state and project data always stay live.
+const CACHE_VERSION = 'showcase-shell-v1';
+
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/projects.html',
+  '/project.html',
+  '/scrolls.html',
+  '/profile.html',
+  '/settings.html',
+  '/admin.html',
+  '/login.html',
+  '/register.html',
+  '/dashboard.html',
+  '/404.html',
+  '/css/style.css',
+  '/js/admin-data.js',
+  '/js/auth.js',
+  '/js/bottom-nav.js',
+  '/js/comments-data.js',
+  '/js/cookie-consent.js',
+  '/js/follows-data.js',
+  '/js/icons.js',
+  '/js/likes-data.js',
+  '/js/nav.js',
+  '/js/profiles-data.js',
+  '/js/projects-data.js',
+  '/js/pwa.js',
+  '/js/supabase-config.js',
+  '/js/supabase-init.js',
+  '/js/theme.js',
+  '/js/utils.js',
+  '/js/views-data.js',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
+  '/icons/apple-touch-icon.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE_VERSION)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  // Only ever handle same-origin requests. Supabase's REST/Auth calls, the
+  // esm.sh CDN, and any user-supplied avatar/image URLs all go straight to
+  // the network untouched.
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    caches.open(CACHE_VERSION).then(async (cache) => {
+      const cached = await cache.match(request);
+
+      const networkFetch = fetch(request)
+        .then((response) => {
+          if (response.ok) cache.put(request, response.clone());
+          return response;
+        })
+        .catch(() => null);
+
+      // Stale-while-revalidate: serve the cached shell instantly if we have
+      // it, and let the network response quietly refresh the cache for next
+      // time. Only wait on the network when there's nothing cached yet.
+      if (cached) {
+        networkFetch;
+        return cached;
+      }
+
+      const networkResponse = await networkFetch;
+      if (networkResponse) return networkResponse;
+
+      if (request.mode === 'navigate') {
+        const shell = await cache.match('/index.html');
+        if (shell) return shell;
+      }
+      return new Response('Offline', { status: 503, statusText: 'Offline' });
+    })
+  );
+});

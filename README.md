@@ -76,11 +76,12 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Project types** — every project is tagged as Website, Mobile App, Game, Design, Library/Tool, or Other (`dashboard.html`'s create/edit form), shown as an icon badge on every card and the detail page, and filterable on `projects.html`.
 - **Comments** — anyone signed in can comment on a project from its detail page or from a Scrolls card's comments drawer; the comment's author, the project's owner, or an admin can delete it. Enforced by RLS in `schema.sql`, not just hidden buttons in the UI.
 - **Likes** — a heart button on the detail page and every Scrolls card; anyone signed in can like/unlike a project, counts are public. Backed by `js/likes-data.js` and the `likes` table.
-- **View counts + analytics** — every project detail-page load logs a view (`log_project_view()`, works for signed-out visitors too) and bumps a public `views_count` shown next to the project. The dashboard adds two charts built from that data: a 14-day views line chart and a per-project views bar chart (`js/views-data.js`).
+- **View counts + analytics** — every project detail-page load logs a view (`log_project_view()`, works for signed-out visitors too) and bumps a public `views_count` shown next to the project. Scrolls counts a view too, but only once a card has stayed at least 75% on screen for a full 3 seconds — a quick swipe past a card doesn't count, matching how the feed is meant to be skimmed vs. actually looked at. The dashboard adds two charts built from that data: a 14-day views line chart and a per-project views bar chart (`js/views-data.js`).
 - **Edit from anywhere** — a project's owner sees an Edit button on its detail page and on their own profile's project cards, both deep-linking to `dashboard.html?edit=<id>`, which opens the same edit modal used on the dashboard itself pre-filled with that project — one edit UI, reachable from three places.
 - **Scrolls action rail** — likes, comments, visit/source links, and the detail-page link live in a YT-Shorts-style vertical button rail on the right of each full-screen card; tapping the comment button opens a slide-up comments drawer without leaving the feed.
 - **Age confirmation at signup** — registration requires checking "I confirm that I am at least 13 years old" before an account can be created.
 - **Cookie notice** — a dismissible banner (`js/cookie-consent.js`), shown once per browser via `localStorage`, explains that the site only uses essential cookies/local storage (session + preferences), no tracking or advertising.
+- **Installable PWA** — the site ships a web app manifest (`manifest.webmanifest`) and a service worker (`sw.js`) that caches the static app shell (HTML/CSS/JS/icons) for instant loads and resilience on a flaky connection. On Chrome/Edge, an "Install app" button appears in the navbar once the browser decides the site is installable (`js/pwa.js`, listening for `beforeinstallprompt`); installing puts a real icon on the home screen/app list that opens in its own window, no browser chrome. Live data (auth, projects, comments, etc.) is never cached — the service worker only ever intercepts same-origin requests, so Supabase calls always go straight to the network and nothing goes stale or works "offline" in a way that would show outdated account state.
 
 ## Tech stack
 
@@ -129,7 +130,11 @@ js/theme.js               Dark mode toggle + localStorage persistence
 js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware, shows the signed-in user's real avatar
 js/nav.js                 Shared top navbar: auth-aware links + avatar, admin link, mobile menu toggle
 js/cookie-consent.js      One-time dismissible cookie notice banner, shown on every page
+js/pwa.js                 Registers sw.js; shows the "Install app" button when the browser fires beforeinstallprompt
 js/utils.js               escapeHtml / initials / avatarHtml / timeAgo / typeBadgeHtml helpers + PROJECT_TYPES metadata
+sw.js                    Service worker — caches the static app shell, always passes Supabase/cross-origin requests straight through
+manifest.webmanifest     Web app manifest — name, icons, standalone display, required for installability
+icons/                   PWA icons (192/512/maskable/apple-touch-icon), generated from the navbar's gradient "S" mark
 schema.sql              Table definitions + Row Level Security policies — run in the Supabase SQL Editor (see setup above)
 supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion — see "Real bans and account deletion" above
 ```
