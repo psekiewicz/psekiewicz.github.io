@@ -31,7 +31,7 @@ update public.profiles set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-They'll see an "Admin" link appear in the nav (desktop: next to Home/Projects/Rolls; mobile: in the hamburger menu) next time they load the site, leading to `admin.html`.
+They'll see an "Admin" link appear in the nav (desktop: next to Home/Projects/Scrolls; mobile: in the hamburger menu) next time they load the site, leading to `admin.html`.
 
 ## Features
 
@@ -42,11 +42,11 @@ They'll see an "Admin" link appear in the nav (desktop: next to Home/Projects/Ro
 - **Personal dashboard** — logged-in users manage their own projects (create, edit, publish/unpublish, delete).
 - **Account settings** — edit display name, bio, avatar, and password from `settings.html`.
 - **Profiles & followers** — every account has a public profile page (`profile.html?user=<id>`) listing their published work and follower/following counts; anyone signed in can follow/unfollow.
-- **Rolls** — a TikTok/Reels-style full-screen, swipeable feed of published projects at `rolls.html`.
+- **Scrolls** — a TikTok/Reels-style full-screen, swipeable feed of published projects at `scrolls.html`.
 - **Dark mode** — a toggle in the navbar, remembered per-browser (`localStorage`), falling back to the OS theme when no explicit choice has been made.
-- **Mobile bottom nav** — on narrow screens, a fixed bottom tab bar (Home / Rolls / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop.
+- **Mobile bottom nav** — on narrow screens, a fixed bottom tab bar (Home / Scrolls / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop.
 - **Homepage adapts to your session** — signed-in visitors see "Add new project" / "Browse projects" instead of the signed-out "Create free account" pitch.
-- **Avatars everywhere** — not just the profile page: the navbar chip, the bottom nav's Profile tab, and every project card/roll/detail page show the author's actual photo (falling back to initials on a gradient when they haven't set one).
+- **Avatars everywhere** — not just the profile page: the navbar chip, the bottom nav's Profile tab, and every project card, scroll, and detail page show the author's actual photo (falling back to initials on a gradient when they haven't set one).
 - **Outline icon set** — a small hand-built set of stroke-only ("no fill") SVG icons (`js/icons.js`) replaces emoji throughout the app: nav, bottom bar, theme toggle, feature cards, dashboard/admin row actions.
 - **Admin panel** (`admin.html`) — accounts with `is_admin = true` get a moderation view of every project on the site (any user, any status) with unpublish/delete actions and basic stats. There's no in-app way to grant this role — see "Making an account admin" below.
 
@@ -73,7 +73,7 @@ python3 -m http.server 8080
 index.html            Home page — hero (auth-aware) + latest published projects
 projects.html         Public gallery — search + tag filter over published projects
 project.html           Single project detail (?id=<row uuid>)
-rolls.html              Full-screen swipeable feed of published projects
+scrolls.html            Full-screen swipeable feed of published projects
 profile.html            Public profile (?user=<uuid>) — bio, stats, follow button, their published projects
 settings.html           Protected — edit display name/bio/avatar, change password
 admin.html               Protected + admin-gated — moderate every project on the site
@@ -81,7 +81,7 @@ login.html             Email/password login + "forgot password"
 register.html          Account creation
 dashboard.html         Protected — create/edit/publish/delete your own projects
 404.html                GitHub Pages' custom not-found page
-css/style.css          Shared design system (dark theme tokens, bottom nav, rolls, profile, admin styles)
+css/style.css          Shared design system (dark theme tokens, bottom nav, scrolls, profile, admin styles)
 js/supabase-config.js  Your Supabase project's public URL + anon key — EDIT THIS
 js/supabase-init.js     Initializes the Supabase client, exports `supabase`
 js/auth.js               register/login/logout/reset-password/change-password, wraps Supabase Auth errors in plain-English messages

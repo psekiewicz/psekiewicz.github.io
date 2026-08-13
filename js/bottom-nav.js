@@ -46,9 +46,9 @@ async function render(nav, user) {
       <span class="bottom-nav-icon">${icon('home', { size: 20 })}</span>
       <span>Home</span>
     </a>
-    <a class="bottom-nav-item${isActive('rolls.html')}" href="/rolls.html">
+    <a class="bottom-nav-item${isActive('scrolls.html')}" href="/scrolls.html">
       <span class="bottom-nav-icon">${icon('film', { size: 20 })}</span>
-      <span>Rolls</span>
+      <span>Scrolls</span>
     </a>
     <a class="bottom-nav-item bottom-nav-add" href="${addHref}" aria-label="Add project">
       <span class="bottom-nav-icon">${icon('plus', { size: 20 })}</span>

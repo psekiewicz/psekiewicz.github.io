@@ -17,7 +17,7 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="rolls.html">Rolls</a>
+        <a class="nav-link" href="scrolls.html">Scrolls</a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -78,6 +78,12 @@
             <button class="btn btn-secondary btn-block" type="submit" id="password-submit-btn">Update password</button>
           </form>
         </div>
+
+        <div class="form-panel">
+          <h3>Session</h3>
+          <p>Signed in — log out to switch accounts or end your session on this device.</p>
+          <button class="btn btn-danger btn-block" id="logout-btn" type="button">Log out</button>
+        </div>
       </div>
     </section>
 
@@ -97,7 +103,7 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
-    import { onAuthChange, changePassword, updateDisplayNameMetadata } from '/js/auth.js';
+    import { onAuthChange, changePassword, updateDisplayNameMetadata, logoutUser } from '/js/auth.js';
     import { getProfile, updateProfile } from '/js/profiles-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -178,6 +184,12 @@
         passwordSubmitBtn.disabled = false;
         passwordSubmitBtn.textContent = 'Update password';
       }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      await logoutUser();
+      window.location.href = '/index.html';
     });
 
     let initialized = false;

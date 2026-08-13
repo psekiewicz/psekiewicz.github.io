@@ -17,7 +17,7 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="rolls.html">Rolls</a>
+        <a class="nav-link" href="scrolls.html">Scrolls</a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -61,7 +61,7 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
-    import { getCurrentUser } from '/js/auth.js';
+    import { getCurrentUser, logoutUser } from '/js/auth.js';
     import { getProfile } from '/js/profiles-data.js';
     import { getPublishedProjectsByUser } from '/js/projects-data.js';
     import {
@@ -174,7 +174,10 @@
 
       let actionButton;
       if (isOwnProfile) {
-        actionButton = `<a class="btn btn-secondary" href="settings.html">Edit profile</a>`;
+        actionButton = `
+          <a class="btn btn-secondary" href="settings.html">Edit profile</a>
+          <button class="btn btn-secondary" id="logout-btn" type="button">Log out</button>
+        `;
       } else if (currentUser) {
         actionButton = `<button class="btn ${following ? 'btn-secondary' : 'btn-primary'}" id="follow-btn" type="button">${following ? 'Unfollow' : 'Follow'}</button>`;
       } else {
@@ -216,6 +219,15 @@
         </div>
         ${projectsGrid}
       `;
+
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          logoutBtn.disabled = true;
+          await logoutUser();
+          window.location.href = '/index.html';
+        });
+      }
 
       document.getElementById('followers-stat').addEventListener('click', () => {
         openPeopleModal('Followers', () => getFollowers(profileUserId));

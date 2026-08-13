@@ -1138,7 +1138,7 @@ tbody tr:last-child td {
 }
 
 /* ---------- Rolls (swipeable project feed) ---------- */
-.rolls-container {
+.scrolls-container {
   height: calc(100vh - 68px);
   overflow-y: auto;
   scroll-snap-type: y mandatory;
@@ -1146,11 +1146,11 @@ tbody tr:last-child td {
   -webkit-overflow-scrolling: touch;
 }
 
-body.has-bottom-nav .rolls-container {
+body.has-bottom-nav .scrolls-container {
   height: calc(100vh - 68px - 66px);
 }
 
-.roll-card {
+.scroll-card {
   height: calc(100vh - 68px);
   scroll-snap-align: start;
   scroll-snap-stop: always;
@@ -1161,11 +1161,11 @@ body.has-bottom-nav .rolls-container {
   background: linear-gradient(160deg, var(--color-primary-soft), var(--color-bg));
 }
 
-body.has-bottom-nav .roll-card {
+body.has-bottom-nav .scroll-card {
   height: calc(100vh - 68px - 66px);
 }
 
-.roll-card-bg {
+.scroll-card-bg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1173,34 +1173,34 @@ body.has-bottom-nav .roll-card {
   object-fit: cover;
 }
 
-.roll-card.has-image::after {
+.scroll-card.has-image::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 45%, transparent 75%);
 }
 
-.roll-content {
+.scroll-content {
   position: relative;
   z-index: 2;
   padding: 28px 24px calc(28px + env(safe-area-inset-bottom, 0px));
   width: 100%;
 }
 
-.roll-card.has-image .roll-content {
+.scroll-card.has-image .scroll-content {
   color: #fff;
 }
 
-.roll-card.has-image .roll-content p {
+.scroll-card.has-image .scroll-content p {
   color: rgba(255, 255, 255, 0.88);
 }
 
-.roll-content h2 {
+.scroll-content h2 {
   font-size: 1.5rem;
   margin-bottom: 6px;
 }
 
-.roll-content .roll-author {
+.scroll-content .scroll-author {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1210,21 +1210,21 @@ body.has-bottom-nav .roll-card {
   margin-bottom: 4px;
 }
 
-.roll-avatar {
+.scroll-avatar {
   width: 26px;
   height: 26px;
   font-size: 0.72rem;
   border: 2px solid rgba(255, 255, 255, 0.85);
 }
 
-.roll-content .roll-links {
+.scroll-content .scroll-links {
   display: flex;
   gap: 10px;
   margin-top: 16px;
   flex-wrap: wrap;
 }
 
-.roll-empty-icon {
+.scroll-empty-icon {
   font-size: 3rem;
   font-weight: 800;
   color: var(--color-primary);
