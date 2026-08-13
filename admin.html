@@ -58,6 +58,22 @@
           </div>
         </div>
 
+        <div class="section-head">
+          <h2>Users</h2>
+        </div>
+        <div class="filter-bar">
+          <input type="search" id="user-search-input" placeholder="Search by name or email…" />
+        </div>
+        <div id="users-table-region" style="margin-bottom:40px;">
+          <p>Loading users…</p>
+        </div>
+
+        <div class="section-head">
+          <h2>Projects</h2>
+        </div>
+        <div class="filter-bar">
+          <input type="search" id="project-search-input" placeholder="Search by title, summary, or author…" />
+        </div>
         <div id="table-region">
           <p>Loading projects…</p>
         </div>
@@ -89,7 +105,7 @@
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { onAuthChange } from '/js/auth.js';
-    import { isAdmin, getUserCount } from '/js/admin-data.js';
+    import { isAdmin, listUsersForAdmin, banUser, unbanUser, deleteAccount } from '/js/admin-data.js';
     import { getAllProjects, togglePublish, deleteProject } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
@@ -101,24 +117,53 @@
     const deniedRegion = document.getElementById('denied-region');
     const loadingRegion = document.getElementById('loading-region');
     const tableRegion = document.getElementById('table-region');
+    const usersTableRegion = document.getElementById('users-table-region');
+    const projectSearchInput = document.getElementById('project-search-input');
+    const userSearchInput = document.getElementById('user-search-input');
 
+    const BAN_DURATIONS = [
+      { hours: 1, label: '1 hour' },
+      { hours: 24, label: '1 day' },
+      { hours: 24 * 7, label: '7 days' },
+      { hours: 24 * 30, label: '30 days' },
+      { hours: 24 * 365, label: '1 year' },
+    ];
+
+    let currentAdminId = null;
     let allProjects = [];
     let authorProfiles = new Map();
+    let allUsers = [];
+
+    function isBanned(user) {
+      return Boolean(user.bannedUntil) && new Date(user.bannedUntil) > new Date();
+    }
 
     function renderStats() {
       const published = allProjects.filter((p) => p.published).length;
+      document.getElementById('stat-users').textContent = allUsers.length;
       document.getElementById('stat-total').textContent = allProjects.length;
       document.getElementById('stat-published').textContent = published;
       document.getElementById('stat-drafts').textContent = allProjects.length - published;
     }
 
+    // ---------- Projects ----------
+
     function renderTable() {
-      if (allProjects.length === 0) {
-        tableRegion.innerHTML = `<div class="empty-state"><h3>No projects yet</h3></div>`;
+      const q = projectSearchInput.value.trim().toLowerCase();
+      const filtered = allProjects.filter(
+        (p) =>
+          !q ||
+          p.title.toLowerCase().includes(q) ||
+          p.summary.toLowerCase().includes(q) ||
+          p.authorName.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        tableRegion.innerHTML = `<div class="empty-state"><h3>No matching projects</h3></div>`;
         return;
       }
 
-      const rows = allProjects
+      const rows = filtered
         .map((p) => {
           const statusClass = p.published ? 'published' : 'draft';
           const statusLabel = p.published ? 'Published' : 'Draft';
@@ -195,6 +240,143 @@
       renderTable();
     }
 
+    // ---------- Users ----------
+
+    function renderUsersTable() {
+      const q = userSearchInput.value.trim().toLowerCase();
+      const filtered = allUsers.filter(
+        (u) => !q || u.displayName.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        usersTableRegion.innerHTML = `<div class="empty-state"><h3>No matching users</h3></div>`;
+        return;
+      }
+
+      const rows = filtered
+        .map((u) => {
+          const banned = isBanned(u);
+          const isSelf = u.id === currentAdminId;
+          const statusHtml = banned
+            ? `<span class="status-pill draft">Banned until ${escapeHtml(new Date(u.bannedUntil).toLocaleString())}</span>`
+            : `<span class="status-pill published">Active</span>`;
+
+          let actionsHtml;
+          if (isSelf) {
+            actionsHtml = `<span class="tag is-muted">You</span>`;
+          } else if (banned) {
+            actionsHtml = `
+              <div class="row-actions">
+                <button class="btn btn-secondary btn-sm" data-action="unban">Unban</button>
+                <button class="btn btn-danger btn-sm" data-action="delete">${icon('trash', { size: 15 })} Delete</button>
+              </div>
+            `;
+          } else {
+            actionsHtml = `
+              <div class="row-actions">
+                <select class="ban-duration-select" style="padding:7px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);font-size:0.85rem;">
+                  ${BAN_DURATIONS.map((d) => `<option value="${d.hours}">${d.label}</option>`).join('')}
+                </select>
+                <button class="btn btn-secondary btn-sm" data-action="ban">Ban</button>
+                <button class="btn btn-danger btn-sm" data-action="delete">${icon('trash', { size: 15 })} Delete</button>
+              </div>
+            `;
+          }
+
+          return `
+            <tr data-id="${escapeHtml(u.id)}">
+              <td>
+                <span class="card-author">
+                  ${avatarHtml(u.avatarUrl, u.displayName, 'avatar-sm')}
+                  <a href="profile.html?user=${encodeURIComponent(u.id)}">${escapeHtml(u.displayName)}</a>
+                  ${u.isAdmin ? '<span class="tag" style="margin-left:6px;">Admin</span>' : ''}
+                </span>
+              </td>
+              <td>${escapeHtml(u.email || '—')}</td>
+              <td>${timeAgo(u.createdAt)}</td>
+              <td>${statusHtml}</td>
+              <td>${actionsHtml}</td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      usersTableRegion.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      usersTableRegion.querySelectorAll('tr[data-id]').forEach((row) => {
+        const user = allUsers.find((u) => u.id === row.dataset.id);
+
+        const banBtn = row.querySelector('[data-action="ban"]');
+        if (banBtn) {
+          banBtn.addEventListener('click', async () => {
+            const hours = Number(row.querySelector('.ban-duration-select').value);
+            if (!confirm(`Ban ${user.displayName} for ${hours} hour(s)?`)) return;
+            banBtn.disabled = true;
+            try {
+              await banUser(user.id, hours);
+              await loadUsers();
+            } catch (err) {
+              alert(err.message);
+              banBtn.disabled = false;
+            }
+          });
+        }
+
+        const unbanBtn = row.querySelector('[data-action="unban"]');
+        if (unbanBtn) {
+          unbanBtn.addEventListener('click', async () => {
+            unbanBtn.disabled = true;
+            try {
+              await unbanUser(user.id);
+              await loadUsers();
+            } catch (err) {
+              alert(err.message);
+              unbanBtn.disabled = false;
+            }
+          });
+        }
+
+        const deleteBtn = row.querySelector('[data-action="delete"]');
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', async () => {
+            if (!confirm(`Permanently delete ${user.displayName}'s account and all of their projects? This cannot be undone.`)) return;
+            deleteBtn.disabled = true;
+            try {
+              await deleteAccount(user.id);
+              await Promise.all([loadUsers(), loadProjects()]);
+            } catch (err) {
+              alert(err.message);
+              deleteBtn.disabled = false;
+            }
+          });
+        }
+      });
+    }
+
+    async function loadUsers() {
+      allUsers = await listUsersForAdmin();
+      renderStats();
+      renderUsersTable();
+    }
+
+    projectSearchInput.addEventListener('input', renderTable);
+    userSearchInput.addEventListener('input', renderUsersTable);
+
     let initialized = false;
     onAuthChange(async (user) => {
       if (!user) {
@@ -203,6 +385,7 @@
       }
       if (initialized) return;
       initialized = true;
+      currentAdminId = user.id;
 
       const admin = await isAdmin(user.id).catch(() => false);
       loadingRegion.style.display = 'none';
@@ -215,10 +398,9 @@
       adminSection.style.display = '';
 
       try {
-        document.getElementById('stat-users').textContent = await getUserCount();
-        await loadProjects();
+        await Promise.all([loadUsers(), loadProjects()]);
       } catch (err) {
-        tableRegion.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+        tableRegion.innerHTML = `<p>Could not load data: ${escapeHtml(err.message)}</p>`;
       }
     });
   </script>

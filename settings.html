@@ -67,6 +67,10 @@
           <div class="alert alert-success" id="password-success"></div>
           <form id="password-form" novalidate>
             <div class="field">
+              <label for="currentPassword">Current password</label>
+              <input type="password" id="currentPassword" autocomplete="current-password" required />
+            </div>
+            <div class="field">
               <label for="newPassword">New password</label>
               <input type="password" id="newPassword" autocomplete="new-password" required minlength="6" />
               <div class="hint">At least 6 characters.</div>
@@ -83,6 +87,17 @@
           <h3>Session</h3>
           <p>Signed in — log out to switch accounts or end your session on this device.</p>
           <button class="btn btn-danger btn-block" id="settings-logout-btn" type="button">Log out</button>
+        </div>
+
+        <div class="form-panel" style="border-color: var(--color-danger);">
+          <h3>Delete account</h3>
+          <div class="alert alert-error" id="delete-alert"></div>
+          <p>This permanently deletes your account, profile, and all of your projects. This cannot be undone.</p>
+          <div class="field">
+            <label for="deleteConfirm">Type DELETE to confirm</label>
+            <input type="text" id="deleteConfirm" autocomplete="off" placeholder="DELETE" />
+          </div>
+          <button class="btn btn-danger btn-block" id="delete-account-btn" type="button" disabled>Delete my account</button>
         </div>
       </div>
     </section>
@@ -103,8 +118,9 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
-    import { onAuthChange, changePassword, updateDisplayNameMetadata, logoutUser } from '/js/auth.js';
+    import { onAuthChange, loginUser, changePassword, updateDisplayNameMetadata, logoutUser } from '/js/auth.js';
     import { getProfile, updateProfile } from '/js/profiles-data.js';
+    import { deleteAccount } from '/js/admin-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -161,10 +177,11 @@
       passwordAlert.classList.remove('is-visible');
       passwordSuccess.classList.remove('is-visible');
 
+      const currentPassword = document.getElementById('currentPassword').value;
       const newPassword = document.getElementById('newPassword').value;
       const confirmNewPassword = document.getElementById('confirmNewPassword').value;
       if (newPassword !== confirmNewPassword) {
-        passwordAlert.textContent = 'Passwords do not match.';
+        passwordAlert.textContent = 'New passwords do not match.';
         passwordAlert.classList.add('is-visible');
         return;
       }
@@ -173,6 +190,11 @@
       passwordSubmitBtn.innerHTML = '<span class="spinner"></span> Updating…';
 
       try {
+        // Re-authenticating confirms the current password is correct
+        // before we're willing to change it — Supabase has no separate
+        // "verify current password" call, so signing in again with it is
+        // the standard way to check it.
+        await loginUser(currentUser.email, currentPassword);
         await changePassword(newPassword);
         passwordForm.reset();
         passwordSuccess.textContent = 'Password updated.';
@@ -183,6 +205,33 @@
       } finally {
         passwordSubmitBtn.disabled = false;
         passwordSubmitBtn.textContent = 'Update password';
+      }
+    });
+
+    const deleteConfirmInput = document.getElementById('deleteConfirm');
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+    const deleteAlert = document.getElementById('delete-alert');
+
+    deleteConfirmInput.addEventListener('input', () => {
+      deleteAccountBtn.disabled = deleteConfirmInput.value.trim() !== 'DELETE';
+    });
+
+    deleteAccountBtn.addEventListener('click', async () => {
+      deleteAlert.classList.remove('is-visible');
+      if (!confirm('This will permanently delete your account and all of your projects. Continue?')) return;
+
+      deleteAccountBtn.disabled = true;
+      deleteAccountBtn.innerHTML = '<span class="spinner"></span> Deleting…';
+
+      try {
+        await deleteAccount(currentUser.id);
+        alert('Your account has been deleted.');
+        window.location.href = '/index.html';
+      } catch (err) {
+        deleteAlert.textContent = err.message;
+        deleteAlert.classList.add('is-visible');
+        deleteAccountBtn.disabled = false;
+        deleteAccountBtn.textContent = 'Delete my account';
       }
     });
 

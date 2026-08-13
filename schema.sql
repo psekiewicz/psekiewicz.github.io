@@ -235,6 +235,42 @@ create policy "Admins can delete any project"
   on public.projects for delete
   using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
 
+-- Lists every account for the admin panel's Users tab, including each
+-- user's email and ban status — neither of which live in `profiles`
+-- (email is never exposed there, and bans are tracked natively by
+-- Supabase Auth on auth.users, not by this app). `security definer`
+-- lets this function read auth.users despite normal client roles having
+-- no access to it; the check below is what keeps that safe — only
+-- callers who are already admins get any rows back.
+create or replace function public.admin_list_users()
+returns table (
+  id uuid,
+  email text,
+  display_name text,
+  avatar_url text,
+  is_admin boolean,
+  banned_until timestamptz,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true) then
+    raise exception 'Admin access required';
+  end if;
+
+  return query
+    select u.id, u.email::text, p.display_name, p.avatar_url, p.is_admin, u.banned_until, p.created_at
+    from auth.users u
+    join public.profiles p on p.id = u.id
+    order by p.created_at desc;
+end;
+$$;
+
+grant execute on function public.admin_list_users() to authenticated;
+
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor
 -- (this does NOT run automatically as part of this file — uncomment
