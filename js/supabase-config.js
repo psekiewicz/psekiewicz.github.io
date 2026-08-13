@@ -14,5 +14,5 @@
 // hiding these values.
 export const supabaseConfig = {
   url: 'https://tgikpcvkkkbkqtahmczt.supabase.co/rest/v1/',
-  anonKey: 'REPLACE_WITH_YOUR_ANON_PUBLIC_KEY',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWtwY3Zra2tia3F0YWhtY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc3NjAsImV4cCI6MjEwMjE4Mzc2MH0.xphJ9crDXfddBJmIsB0x78vU1fMrpcuiiyGB-bDDOMg',
 };
