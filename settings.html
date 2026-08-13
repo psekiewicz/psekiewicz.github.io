@@ -82,7 +82,7 @@
         <div class="form-panel">
           <h3>Session</h3>
           <p>Signed in — log out to switch accounts or end your session on this device.</p>
-          <button class="btn btn-danger btn-block" id="logout-btn" type="button">Log out</button>
+          <button class="btn btn-danger btn-block" id="settings-logout-btn" type="button">Log out</button>
         </div>
       </div>
     </section>
@@ -186,7 +186,7 @@
       }
     });
 
-    document.getElementById('logout-btn').addEventListener('click', async (e) => {
+    document.getElementById('settings-logout-btn').addEventListener('click', async (e) => {
       e.target.disabled = true;
       await logoutUser();
       window.location.href = '/index.html';

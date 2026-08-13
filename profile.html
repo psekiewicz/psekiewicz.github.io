@@ -176,7 +176,7 @@
       if (isOwnProfile) {
         actionButton = `
           <a class="btn btn-secondary" href="settings.html">Edit profile</a>
-          <button class="btn btn-secondary" id="logout-btn" type="button">Log out</button>
+          <button class="btn btn-secondary" id="profile-logout-btn" type="button">Log out</button>
         `;
       } else if (currentUser) {
         actionButton = `<button class="btn ${following ? 'btn-secondary' : 'btn-primary'}" id="follow-btn" type="button">${following ? 'Unfollow' : 'Follow'}</button>`;
@@ -220,7 +220,7 @@
         ${projectsGrid}
       `;
 
-      const logoutBtn = document.getElementById('logout-btn');
+      const logoutBtn = document.getElementById('profile-logout-btn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
           logoutBtn.disabled = true;

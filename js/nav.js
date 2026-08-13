@@ -45,10 +45,10 @@ async function renderNavActions(container, user) {
       ${avatarHtml(avatarUrl, name)}
       <span>${escapeHtml(name)}</span>
     </a>
-    <button class="btn btn-secondary btn-sm" id="logout-btn" type="button">Log out</button>
+    <button class="btn btn-secondary btn-sm" id="nav-logout-btn" type="button">Log out</button>
   `;
 
-  document.getElementById('logout-btn').addEventListener('click', async (e) => {
+  container.querySelector('#nav-logout-btn').addEventListener('click', async (e) => {
     e.target.disabled = true;
     await logoutUser();
     window.location.href = '/index.html';
