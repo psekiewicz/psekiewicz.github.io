@@ -21,7 +21,7 @@
         <a class="nav-link active" href="rolls.html">Rolls</a>
       </div>
       <div class="nav-right">
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu">
@@ -38,22 +38,24 @@
     </div>
   </main>
 
-  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
-    import { escapeHtml } from '/js/utils.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
+    import { escapeHtml, avatarHtml } from '/js/utils.js';
 
     const root = document.getElementById('rolls-root');
 
-    function rollCard(project) {
+    function rollCard(project, profiles) {
       const hasImage = Boolean(project.imageUrl);
       const bg = hasImage
         ? `<img class="roll-card-bg" src="${escapeHtml(project.imageUrl)}" alt="" onerror="this.remove(); this.closest('.roll-card').classList.remove('has-image');" />`
         : `<div class="roll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      const authorProfile = profiles.get(project.uid);
 
       const links = [];
       if (project.liveUrl) links.push(`<a class="btn btn-primary btn-sm" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">Visit ↗</a>`);
@@ -64,7 +66,10 @@
         <section class="roll-card${hasImage ? ' has-image' : ''}">
           ${bg}
           <div class="roll-content">
-            <a class="roll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">@${escapeHtml(project.authorName)}</a>
+            <a class="roll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
+              ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'roll-avatar')}
+              <span>@${escapeHtml(project.authorName)}</span>
+            </a>
             <h2>${escapeHtml(project.title)}</h2>
             <p>${escapeHtml(project.summary || project.description.slice(0, 140))}</p>
             <div class="tag-list">${tags}</div>
@@ -89,7 +94,8 @@
           `;
           return;
         }
-        root.innerHTML = `<div class="rolls-container">${projects.map(rollCard).join('')}</div>`;
+        const profiles = await getProfilesByIds(projects.map((p) => p.uid));
+        root.innerHTML = `<div class="rolls-container">${projects.map((p) => rollCard(p, profiles)).join('')}</div>`;
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load projects: ${escapeHtml(err.message)}</p></div>`;
       }

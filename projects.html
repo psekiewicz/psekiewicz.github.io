@@ -20,7 +20,7 @@
         <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
       <div class="nav-right">
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu">
@@ -58,16 +58,18 @@
     </div>
   </footer>
 
-  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
-    import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
+    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
     let allProjects = [];
+    let authorProfiles = new Map();
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
     const tagFilter = document.getElementById('tag-filter');
@@ -77,6 +79,7 @@
         ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 4).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      const authorProfile = authorProfiles.get(project.uid);
       return `
         <article class="card">
           <div class="card-thumb">${thumb}</div>
@@ -85,7 +88,10 @@
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
             <div class="tag-list">${tags}</div>
             <div class="card-meta">
-              <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a></span>
+              <span class="card-author">
+                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
+                <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+              </span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
           </div>
@@ -135,6 +141,7 @@
     (async () => {
       try {
         allProjects = await getPublishedProjects();
+        authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
         populateTags();
         render();
       } catch (err) {

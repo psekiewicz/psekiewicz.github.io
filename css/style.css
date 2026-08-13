@@ -347,6 +347,20 @@ img {
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* ---------- Hero ---------- */
@@ -518,6 +532,27 @@ img {
   margin-top: 4px;
 }
 
+.card-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-author a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.card-author a:hover {
+  color: var(--color-primary);
+}
+
+.avatar-sm {
+  width: 18px;
+  height: 18px;
+  font-size: 0.6rem;
+}
+
 .tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -678,7 +713,7 @@ img {
 
 .dash-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -802,10 +837,17 @@ tbody tr:last-child td {
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.3rem;
   cursor: pointer;
   color: var(--color-text-faint);
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--color-text);
 }
 
 /* ---------- Project detail ---------- */
@@ -973,6 +1015,12 @@ tbody tr:last-child td {
   .nav-toggle {
     display: block;
   }
+  /* The bottom tab bar (js/bottom-nav.js) is the primary nav on mobile —
+     it covers everything nav-actions would otherwise show (dashboard,
+     profile, log in/out), so hide the top one to avoid it overflowing. */
+  .nav-actions {
+    display: none;
+  }
   .table-wrap {
     overflow-x: auto;
   }
@@ -1038,8 +1086,31 @@ tbody tr:last-child td {
 }
 
 .bottom-nav-icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
   line-height: 1;
+}
+
+.bottom-nav-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.bottom-nav-avatar-fallback {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
 }
 
 .bottom-nav-add .bottom-nav-icon {
@@ -1130,9 +1201,20 @@ body.has-bottom-nav .roll-card {
 }
 
 .roll-content .roll-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   text-decoration: none;
   color: inherit;
+  margin-bottom: 4px;
+}
+
+.roll-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 0.72rem;
+  border: 2px solid rgba(255, 255, 255, 0.85);
 }
 
 .roll-content .roll-links {

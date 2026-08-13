@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="rolls.html">Rolls</a>
+      </div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section" id="admin-section" style="display:none;">
+      <div class="container">
+        <div class="dash-header">
+          <div>
+            <h1 style="margin-bottom:2px;">Admin</h1>
+            <p style="margin:0;">Moderate every project on the site.</p>
+          </div>
+        </div>
+
+        <div class="dash-stats">
+          <div class="stat-card">
+            <div class="num" id="stat-users">0</div>
+            <div class="label">Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" id="stat-total">0</div>
+            <div class="label">Total projects</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" id="stat-published">0</div>
+            <div class="label">Published</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" id="stat-drafts">0</div>
+            <div class="label">Drafts</div>
+          </div>
+        </div>
+
+        <div id="table-region">
+          <p>Loading projects…</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="container" id="denied-region" style="display:none; padding-top:64px;">
+      <div class="empty-state">
+        <h3>You don't have access to this page</h3>
+        <p>This area is limited to site admins.</p>
+        <a class="btn btn-primary" href="index.html">Go home</a>
+      </div>
+    </div>
+
+    <div class="container" id="loading-region" style="padding-top:64px;">
+      <p>Checking your session…</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="dashboard.html">Back to dashboard</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/theme.js"></script>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module">
+    import { onAuthChange } from '/js/auth.js';
+    import { isAdmin, getUserCount } from '/js/admin-data.js';
+    import { getAllProjects, togglePublish, deleteProject } from '/js/projects-data.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
+    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
+    import { icon } from '/js/icons.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const adminSection = document.getElementById('admin-section');
+    const deniedRegion = document.getElementById('denied-region');
+    const loadingRegion = document.getElementById('loading-region');
+    const tableRegion = document.getElementById('table-region');
+
+    let allProjects = [];
+    let authorProfiles = new Map();
+
+    function renderStats() {
+      const published = allProjects.filter((p) => p.published).length;
+      document.getElementById('stat-total').textContent = allProjects.length;
+      document.getElementById('stat-published').textContent = published;
+      document.getElementById('stat-drafts').textContent = allProjects.length - published;
+    }
+
+    function renderTable() {
+      if (allProjects.length === 0) {
+        tableRegion.innerHTML = `<div class="empty-state"><h3>No projects yet</h3></div>`;
+        return;
+      }
+
+      const rows = allProjects
+        .map((p) => {
+          const statusClass = p.published ? 'published' : 'draft';
+          const statusLabel = p.published ? 'Published' : 'Draft';
+          const author = authorProfiles.get(p.uid);
+          return `
+            <tr data-id="${escapeHtml(p.id)}">
+              <td>
+                <div class="row-title">${escapeHtml(p.title)}</div>
+                <div class="tag-list" style="margin-top:4px;">${p.tags.slice(0, 3).map((t) => `<span class="tag is-muted">${escapeHtml(t)}</span>`).join('')}</div>
+              </td>
+              <td>
+                <span class="card-author">
+                  ${avatarHtml(author ? author.avatarUrl : '', p.authorName, 'avatar-sm')}
+                  <a href="profile.html?user=${encodeURIComponent(p.uid)}">${escapeHtml(p.authorName)}</a>
+                </span>
+              </td>
+              <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+              <td>${timeAgo(p.updatedAt)}</td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn-secondary btn-sm" href="project.html?id=${encodeURIComponent(p.id)}">${icon('eye', { size: 15 })} View</a>
+                  <button class="btn btn-secondary btn-sm" data-action="toggle">${p.published ? 'Unpublish' : 'Publish'}</button>
+                  <button class="btn btn-danger btn-sm" data-action="delete">${icon('trash', { size: 15 })} Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      tableRegion.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Author</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      tableRegion.querySelectorAll('tr[data-id]').forEach((row) => {
+        const project = allProjects.find((p) => p.id === row.dataset.id);
+        row.querySelector('[data-action="toggle"]').addEventListener('click', async () => {
+          try {
+            await togglePublish(project.id, !project.published);
+            await loadProjects();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+        row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+          if (!confirm(`Delete "${project.title}" by ${project.authorName}? This cannot be undone.`)) return;
+          try {
+            await deleteProject(project.id);
+            await loadProjects();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+    }
+
+    async function loadProjects() {
+      allProjects = await getAllProjects();
+      authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
+      renderStats();
+      renderTable();
+    }
+
+    let initialized = false;
+    onAuthChange(async (user) => {
+      if (!user) {
+        window.location.href = '/login.html?next=' + encodeURIComponent('/admin.html');
+        return;
+      }
+      if (initialized) return;
+      initialized = true;
+
+      const admin = await isAdmin(user.id).catch(() => false);
+      loadingRegion.style.display = 'none';
+
+      if (!admin) {
+        deniedRegion.style.display = '';
+        return;
+      }
+
+      adminSection.style.display = '';
+
+      try {
+        document.getElementById('stat-users').textContent = await getUserCount();
+        await loadProjects();
+      } catch (err) {
+        tableRegion.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

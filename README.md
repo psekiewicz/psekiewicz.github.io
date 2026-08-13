@@ -22,6 +22,17 @@ Email confirmation is enabled by default on new Supabase projects. If you'd rath
 
 That's it — no server to host, no environment variables, no backend to keep running.
 
+### Making an account admin
+
+There's deliberately no button anywhere in the app for this — granting the admin role is something only you, from the Supabase SQL Editor, should be able to do. After the person has registered an account, run (with their email filled in):
+
+```sql
+update public.profiles set is_admin = true
+where id = (select id from auth.users where email = 'you@example.com');
+```
+
+They'll see an "Admin" link appear in the nav (desktop: next to Home/Projects/Rolls; mobile: in the hamburger menu) next time they load the site, leading to `admin.html`.
+
 ## Features
 
 - **Real authentication** — Supabase Authentication handles registration, login, logout, and password reset ("Forgot your password?" on the login page).
@@ -33,8 +44,11 @@ That's it — no server to host, no environment variables, no backend to keep ru
 - **Profiles & followers** — every account has a public profile page (`profile.html?user=<id>`) listing their published work and follower/following counts; anyone signed in can follow/unfollow.
 - **Rolls** — a TikTok/Reels-style full-screen, swipeable feed of published projects at `rolls.html`.
 - **Dark mode** — a toggle in the navbar, remembered per-browser (`localStorage`), falling back to the OS theme when no explicit choice has been made.
-- **Mobile bottom nav** — on narrow screens, a fixed bottom tab bar (Home / Rolls / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram; the top navbar remains the primary nav on desktop.
+- **Mobile bottom nav** — on narrow screens, a fixed bottom tab bar (Home / Rolls / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop.
 - **Homepage adapts to your session** — signed-in visitors see "Add new project" / "Browse projects" instead of the signed-out "Create free account" pitch.
+- **Avatars everywhere** — not just the profile page: the navbar chip, the bottom nav's Profile tab, and every project card/roll/detail page show the author's actual photo (falling back to initials on a gradient when they haven't set one).
+- **Outline icon set** — a small hand-built set of stroke-only ("no fill") SVG icons (`js/icons.js`) replaces emoji throughout the app: nav, bottom bar, theme toggle, feature cards, dashboard/admin row actions.
+- **Admin panel** (`admin.html`) — accounts with `is_admin = true` get a moderation view of every project on the site (any user, any status) with unpublish/delete actions and basic stats. There's no in-app way to grant this role — see "Making an account admin" below.
 
 ## Tech stack
 
@@ -62,21 +76,24 @@ project.html           Single project detail (?id=<row uuid>)
 rolls.html              Full-screen swipeable feed of published projects
 profile.html            Public profile (?user=<uuid>) — bio, stats, follow button, their published projects
 settings.html           Protected — edit display name/bio/avatar, change password
+admin.html               Protected + admin-gated — moderate every project on the site
 login.html             Email/password login + "forgot password"
 register.html          Account creation
 dashboard.html         Protected — create/edit/publish/delete your own projects
 404.html                GitHub Pages' custom not-found page
-css/style.css          Shared design system (incl. dark theme tokens, bottom nav, rolls, profile styles)
+css/style.css          Shared design system (dark theme tokens, bottom nav, rolls, profile, admin styles)
 js/supabase-config.js  Your Supabase project's public URL + anon key — EDIT THIS
 js/supabase-init.js     Initializes the Supabase client, exports `supabase`
 js/auth.js               register/login/logout/reset-password/change-password, wraps Supabase Auth errors in plain-English messages
 js/projects-data.js      All reads/writes for the `projects` table
-js/profiles-data.js      Read/update the `profiles` table
+js/profiles-data.js      Read/update the `profiles` table; batch-fetch profiles by id for author avatars
 js/follows-data.js       Follow/unfollow, follower/following counts and lists
-js/theme.js               Dark mode toggle + localStorage persistence (classic script, not a module)
-js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware
-js/nav.js                 Shared top navbar: auth-aware links, mobile menu toggle
-js/utils.js               escapeHtml / initials / timeAgo helpers
+js/admin-data.js         isAdmin() check, site-wide user count
+js/icons.js               Outline SVG icon set shared by every page
+js/theme.js               Dark mode toggle + localStorage persistence
+js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware, shows the signed-in user's real avatar
+js/nav.js                 Shared top navbar: auth-aware links + avatar, admin link, mobile menu toggle
+js/utils.js               escapeHtml / initials / avatarHtml / timeAgo helpers
 schema.sql              Table definitions + Row Level Security policies — run in the Supabase SQL Editor (see setup above)
 ```
 
@@ -104,7 +121,8 @@ Postgres table `public.profiles`, one row per account (auto-created by a trigger
 | `id`           | uuid       | Primary key, same as `auth.users(id)`                |
 | `display_name` | text       | Editable from `settings.html`; kept in sync with `auth.user_metadata.display_name` |
 | `bio`          | text       | Shown on the public profile page                     |
-| `avatar_url`   | text       | Optional; falls back to initials when blank          |
+| `avatar_url`   | text       | Optional; falls back to initials-on-gradient everywhere it's shown when blank |
+| `is_admin`     | boolean    | Grants access to `admin.html`; only settable via direct SQL (see "Making an account admin" above) — guarded by a trigger so the app itself can never set it |
 | `created_at`   | timestamptz | Defaults to `now()`                                  |
 
 This exists because `auth.users` itself is never queryable from the browser — profile pages, follower lists, and anything showing *other* people's info reads from `profiles` instead. Each project also keeps its own `author_name` snapshot so project cards don't need an extra join.

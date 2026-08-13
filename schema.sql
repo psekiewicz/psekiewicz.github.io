@@ -172,3 +172,68 @@ drop policy if exists "Users can unfollow as themselves" on public.follows;
 create policy "Users can unfollow as themselves"
   on public.follows for delete
   using (auth.uid() = follower_id);
+
+
+-- ============================================================
+-- Admin role — a flag on profiles that grants moderation powers
+-- (see admin.html): read every project regardless of owner/published
+-- state, and unpublish/delete any project. There is no in-app way to
+-- grant this — see the very bottom of this file for how to make an
+-- account admin. That's deliberate: promoting someone to admin is not
+-- something the client-side app should ever be able to do to itself.
+-- ============================================================
+
+alter table public.profiles add column if not exists is_admin boolean not null default false;
+
+-- Guards against privilege escalation: even though the "update own profile"
+-- policy above lets you update your own row, this trigger silently discards
+-- any change to is_admin unless the request is already coming from an
+-- admin. Without this, anyone could call
+-- supabase.from('profiles').update({ is_admin: true }) on themselves from
+-- the browser console — RLS alone only checks *which row* you may touch,
+-- not *which columns*.
+create or replace function public.prevent_self_admin_promotion()
+returns trigger as $$
+begin
+  if new.is_admin is distinct from old.is_admin then
+    if not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true) then
+      new.is_admin = old.is_admin;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+drop trigger if exists profiles_guard_is_admin on public.profiles;
+create trigger profiles_guard_is_admin
+  before update on public.profiles
+  for each row execute function public.prevent_self_admin_promotion();
+
+-- Admins can see every project, including other users' drafts (needed for
+-- the admin panel to list everything). Combines with the owner/published
+-- policy above via OR — it only ever adds access, never removes any.
+drop policy if exists "Admins can read all projects" on public.projects;
+create policy "Admins can read all projects"
+  on public.projects for select
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+-- Admins can unpublish or edit any project (moderation).
+drop policy if exists "Admins can update any project" on public.projects;
+create policy "Admins can update any project"
+  on public.projects for update
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+-- Admins can delete any project (moderation).
+drop policy if exists "Admins can delete any project" on public.projects;
+create policy "Admins can delete any project"
+  on public.projects for delete
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+-- ---------------------------------------------------------------
+-- To make an account admin, run this separately in the SQL Editor
+-- (this does NOT run automatically as part of this file — uncomment
+-- and edit the email first):
+--
+-- update public.profiles set is_admin = true
+-- where id = (select id from auth.users where email = 'you@example.com');
+-- ---------------------------------------------------------------

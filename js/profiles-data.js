@@ -19,6 +19,19 @@ export async function getProfile(userId) {
   return toPlainProfile(data);
 }
 
+// Batch-fetch avatars/names for a list of user ids (e.g. the authors of a
+// page of project cards) in one round trip instead of one query per card.
+// Returns a Map keyed by user id.
+export async function getProfilesByIds(userIds) {
+  const uniqueIds = [...new Set(userIds)].filter(Boolean);
+  const map = new Map();
+  if (uniqueIds.length === 0) return map;
+  const { data, error } = await supabase.from(TABLE).select('*').in('id', uniqueIds);
+  if (error) throw new Error(error.message);
+  data.forEach((row) => map.set(row.id, toPlainProfile(row)));
+  return map;
+}
+
 export async function updateProfile(userId, fields) {
   const { data, error } = await supabase
     .from(TABLE)

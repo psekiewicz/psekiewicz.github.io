@@ -21,7 +21,7 @@
         <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
       <div class="nav-right">
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu">
@@ -53,17 +53,17 @@
         </div>
         <div class="features">
           <div class="feature-card">
-            <div class="feature-icon">🔐</div>
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></div>
             <h3>Secure accounts</h3>
             <p>Supabase Authentication and per-user Row Level Security policies keep every account and every project safe.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🗂️</div>
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></div>
             <h3>A real dashboard</h3>
             <p>Create, edit, publish, and remove projects from a dedicated dashboard built just for you.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🌐</div>
+            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.7 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.7-4-9s1.5-6.5 4-9Z"/></svg></div>
             <h3>Public showcase</h3>
             <p>Published projects appear instantly on the public gallery, searchable by keyword and tag.</p>
           </div>
@@ -91,12 +91,13 @@
     </div>
   </footer>
 
-  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
-    import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
+    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
     import { onAuthChange } from '/js/auth.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -114,11 +115,12 @@
         `;
     });
 
-    function projectCard(project) {
+    function projectCard(project, profiles) {
       const thumb = project.imageUrl
         ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+      const authorProfile = profiles.get(project.uid);
       return `
         <article class="card">
           <div class="card-thumb">${thumb}</div>
@@ -127,7 +129,10 @@
             <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
             <div class="tag-list">${tags}</div>
             <div class="card-meta">
-              <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a></span>
+              <span class="card-author">
+                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
+                <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+              </span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
           </div>
@@ -150,7 +155,8 @@
           `;
           return;
         }
-        container.innerHTML = latest.map(projectCard).join('');
+        const profiles = await getProfilesByIds(latest.map((p) => p.uid));
+        container.innerHTML = latest.map((p) => projectCard(p, profiles)).join('');
       } catch (err) {
         container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
       }

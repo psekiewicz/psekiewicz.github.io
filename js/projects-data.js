@@ -36,6 +36,14 @@ export async function getPublishedProjectsByUser(uid) {
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Every project regardless of owner or published state. Only returns
+// anything for admins — RLS enforces that, this function doesn't check.
+export async function getAllProjects() {
+  const { data, error } = await supabase.from(TABLE).select('*');
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
+}
+
 export async function getMyProjects(uid) {
   const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid);
   if (error) throw new Error(error.message);

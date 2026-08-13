@@ -14,6 +14,17 @@ export function initials(name) {
     .join('');
 }
 
+// Renders a circular avatar: the user's photo when they have one, their
+// initials on a gradient background otherwise. sizeClass is an optional
+// extra class (e.g. "avatar-sm") layered on top of the base .avatar size.
+export function avatarHtml(avatarUrl, name, sizeClass = '') {
+  const cls = `avatar${sizeClass ? ' ' + sizeClass : ''}`;
+  if (avatarUrl) {
+    return `<span class="${cls} avatar-img"><img src="${escapeHtml(avatarUrl)}" alt="" /></span>`;
+  }
+  return `<span class="${cls}">${escapeHtml(initials(name))}</span>`;
+}
+
 export function timeAgo(isoDate) {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   const mins = Math.floor(diffMs / 60000);

@@ -20,7 +20,7 @@
         <a class="nav-link" href="rolls.html">Rolls</a>
       </div>
       <div class="nav-right">
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu">
@@ -44,12 +44,13 @@
     </div>
   </footer>
 
-  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module">
     import { getProjectById } from '/js/projects-data.js';
-    import { escapeHtml, timeAgo } from '/js/utils.js';
+    import { getProfile } from '/js/profiles-data.js';
+    import { escapeHtml, timeAgo, avatarHtml } from '/js/utils.js';
     import { onAuthChange } from '/js/auth.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -57,7 +58,7 @@
     const root = document.getElementById('project-root');
     const id = new URLSearchParams(window.location.search).get('id');
 
-    function render(project) {
+    function render(project, authorProfile) {
       document.getElementById('page-title').textContent = `${project.title} — Showcase`;
 
       const thumb = project.imageUrl
@@ -78,7 +79,10 @@
             <a href="projects.html" class="nav-link" style="padding-left:0;">← Back to projects</a>
             <h1 style="margin-top:14px;">${escapeHtml(project.title)}${draftBadge}</h1>
             <div class="detail-meta">
-              <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}"><strong>${escapeHtml(project.authorName)}</strong></a></span>
+              <span class="card-author">
+                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
+                <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}"><strong>${escapeHtml(project.authorName)}</strong></a></span>
+              </span>
               <span>·</span>
               <span>Published ${timeAgo(project.createdAt)}</span>
             </div>
@@ -114,7 +118,8 @@
             showNotFound('This project does not exist or is not published.');
             return;
           }
-          render(project);
+          const authorProfile = await getProfile(project.uid).catch(() => null);
+          render(project, authorProfile);
         } catch {
           showNotFound('This project does not exist or is not published.');
         }
