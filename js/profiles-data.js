@@ -36,6 +36,20 @@ export async function getProfilesByIds(userIds) {
   return map;
 }
 
+// Every profile, for the leaderboard. Capped rather than unbounded because
+// the caller then computes a level for each one, and that work grows with
+// the number of accounts — the cap is what keeps a busy site from turning
+// one page load into a table scan of everything.
+export async function getAllProfiles(limit = 200) {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data.map(toPlainProfile);
+}
+
 export async function updateProfile(userId, fields) {
   const { data, error } = await supabase
     .from(TABLE)

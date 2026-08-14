@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard — Showcase</title>
+  <meta name="description" content="The highest-levelled builders on Showcase." />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Showcase" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="scrolls.html">Scrolls</a>
+        <a class="nav-link" href="shop.html">Shop</a>
+        <a class="nav-link active" href="leaderboard.html">Leaderboard</a>
+      </div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h1 style="margin-bottom:6px;">Leaderboard</h1>
+            <p style="margin:0;">Ranked by XP — earned from published projects, likes, followers, comments and views.</p>
+          </div>
+        </div>
+        <div id="leaderboard-root">
+          <p>Loading rankings…</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="projects.html">Browse projects</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/theme.js"></script>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
+  <script type="module" src="/js/pwa.js"></script>
+  <script type="module">
+    import { getCurrentUser } from '/js/auth.js';
+    import { getAllProfiles } from '/js/profiles-data.js';
+    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { effectClass } from '/js/shop-items.js';
+    import { escapeHtml, avatarHtml } from '/js/utils.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const root = document.getElementById('leaderboard-root');
+    const TOP_N = 50;
+
+    function rowHtml(entry, position, isMe) {
+      // Only the podium gets a medal class; everyone else shows a plain number.
+      const medal = position <= 3 ? ` leaderboard-rank-${position}` : '';
+      return `
+        <a class="leaderboard-row${isMe ? ' is-me' : ''}" href="profile.html?user=${encodeURIComponent(entry.profile.id)}">
+          <span class="leaderboard-rank${medal}">${position}</span>
+          ${avatarHtml(entry.profile.avatarUrl, entry.profile.displayName, effectClass(entry.profile.equippedBorder))}
+          <span class="leaderboard-name">
+            <span class="${effectClass(entry.profile.equippedNameEffect)}">${escapeHtml(entry.profile.displayName)}</span>
+            ${isMe ? '<span class="leaderboard-you">you</span>' : ''}
+          </span>
+          ${levelChipHtml(entry.level.level, 'sm')}
+          <span class="leaderboard-xp">${entry.level.xp.toLocaleString()} XP</span>
+        </a>
+      `;
+    }
+
+    (async () => {
+      let profiles;
+      try {
+        profiles = await getAllProfiles();
+      } catch (err) {
+        root.innerHTML = `<p>Could not load the leaderboard: ${escapeHtml(err.message)}</p>`;
+        return;
+      }
+
+      if (profiles.length === 0) {
+        root.innerHTML = `<div class="empty-state"><h3>Nobody here yet</h3><p>Be the first to publish something.</p><a class="btn btn-primary" href="register.html">Create free account</a></div>`;
+        return;
+      }
+
+      const [levels, currentUser] = await Promise.all([
+        getLevelsForUsers(profiles.map((p) => p.id)).catch(() => new Map()),
+        getCurrentUser().catch(() => null),
+      ]);
+
+      const ranked = profiles
+        .map((profile) => ({ profile, level: levels.get(profile.id) }))
+        .filter((entry) => entry.level)
+        // Accounts that have never done anything would otherwise pad the
+        // table with a wall of identical Lv 1 / 0 XP rows.
+        .filter((entry) => entry.level.xp > 0)
+        .sort((a, b) => b.level.xp - a.level.xp);
+
+      if (ranked.length === 0) {
+        root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>Publish a project to get on the board.</p></div>`;
+        return;
+      }
+
+      const top = ranked.slice(0, TOP_N);
+      let html = `<div class="leaderboard">${top
+        .map((entry, index) => rowHtml(entry, index + 1, currentUser && currentUser.id === entry.profile.id))
+        .join('')}</div>`;
+
+      // If you didn't make the cut, show your own standing underneath rather
+      // than leaving you to wonder where you are.
+      const myIndex = currentUser ? ranked.findIndex((entry) => entry.profile.id === currentUser.id) : -1;
+      if (myIndex >= TOP_N) {
+        html += `
+          <p class="leaderboard-gap">…</p>
+          <div class="leaderboard">${rowHtml(ranked[myIndex], myIndex + 1, true)}</div>
+        `;
+      }
+
+      root.innerHTML = html;
+    })();
+  </script>
+</body>
+</html>

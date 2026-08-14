@@ -1931,6 +1931,126 @@ body.has-bottom-nav .scroll-card {
   height: 12px;
 }
 
+/* ---------- Leaderboard ---------- */
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+  color: var(--color-text);
+  transition: background 0.15s ease;
+}
+
+.leaderboard-row:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-row:hover {
+  background: var(--color-primary-soft);
+  text-decoration: none;
+}
+
+.leaderboard-row.is-me {
+  background: var(--color-primary-soft);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.leaderboard-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: var(--color-muted-soft);
+  color: var(--color-text-muted);
+}
+
+.leaderboard-rank-1 {
+  background: linear-gradient(135deg, #f7d046, #e0a80d);
+  color: #4a3500;
+}
+
+.leaderboard-rank-2 {
+  background: linear-gradient(135deg, #e2e5ea, #b3b9c4);
+  color: #3d4149;
+}
+
+.leaderboard-rank-3 {
+  background: linear-gradient(135deg, #e0a173, #b1703f);
+  color: #40260f;
+}
+
+.leaderboard-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+/* The name can be long, and the level chip and XP after it must not get
+   pushed off a narrow row. The truncation has to live on the span that
+   actually holds the text — text-overflow does nothing on a flex
+   container, which just clips the name mid-letter with no ellipsis. */
+.leaderboard-name > span:not(.leaderboard-you) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-you {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.leaderboard-xp {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  flex-shrink: 0;
+}
+
+.leaderboard-gap {
+  text-align: center;
+  color: var(--color-text-faint);
+  margin: 10px 0;
+  letter-spacing: 0.3em;
+}
+
+@media (max-width: 560px) {
+  .leaderboard-row {
+    gap: 10px;
+    padding: 11px 12px;
+  }
+  .leaderboard-xp {
+    font-size: 0.72rem;
+  }
+}
+
 /* ---------- Toasts (reward notifications) ---------- */
 .toast-stack {
   position: fixed;
