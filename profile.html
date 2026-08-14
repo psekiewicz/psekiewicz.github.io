@@ -24,6 +24,7 @@
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
         <a class="nav-link" href="scrolls.html">Scrolls</a>
+        <a class="nav-link" href="shop.html">Shop</a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -84,6 +85,8 @@
     import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { getUserStats, computeAchievements, getTopAchievement } from '/js/achievements.js';
+    import { getClaimedAchievementIds, claimAchievement } from '/js/points-data.js';
+    import { effectClass } from '/js/shop-items.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -179,6 +182,7 @@
       ]);
       const achievements = stats ? computeAchievements(stats) : [];
       const topAchievement = stats ? getTopAchievement(stats) : null;
+      const claimedIds = isOwnProfile ? await getClaimedAchievementIds(profileUserId).catch(() => new Set()) : new Set();
 
       let following = false;
       if (currentUser && !isOwnProfile) {
@@ -210,6 +214,15 @@
         ? `<span class="name-badge" title="${escapeHtml(topAchievement.label)} — ${escapeHtml(topAchievement.description)}">${icon(topAchievement.icon, { size: 17 })}</span>`
         : '';
 
+      const nameEffectClass = effectClass(profile.equippedNameEffect);
+      const borderEffectClass = effectClass(profile.equippedBorder);
+      const bgEffectClass = effectClass(profile.equippedBg);
+      const headerClass = `profile-header${bgEffectClass ? ` has-profile-bg ${bgEffectClass}` : ''}`;
+
+      const pointsRow = isOwnProfile
+        ? `<a class="points-chip" href="shop.html" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts — Shop</a>`
+        : '';
+
       const unlockedCount = achievements.filter((a) => a.unlocked).length;
       const achievementsSection = stats
         ? `
@@ -219,25 +232,32 @@
           </div>
           <div class="achievements-grid">
             ${achievements
-              .map(
-                (a) => `
+              .map((a) => {
+                let claimControl = '';
+                if (isOwnProfile && a.unlocked) {
+                  claimControl = claimedIds.has(a.id)
+                    ? `<span class="shop-item-price">${icon('check', { size: 12 })} +${a.reward} pts</span>`
+                    : `<button class="btn btn-primary btn-sm achievement-claim-btn" type="button" data-claim="${a.id}" data-reward="${a.reward}">Claim +${a.reward}</button>`;
+                }
+                return `
                   <div class="achievement-badge${a.unlocked ? ' is-unlocked' : ' is-locked'}" title="${escapeHtml(a.description)}">
                     <span class="achievement-icon">${icon(a.icon, { size: 22 })}</span>
                     <span class="achievement-label">${escapeHtml(a.label)}</span>
+                    ${claimControl}
                   </div>
-                `
-              )
+                `;
+              })
               .join('')}
           </div>
         `
         : '';
 
       root.innerHTML = `
-        <div class="profile-header">
-          <div class="profile-avatar">${avatar}</div>
+        <div class="${headerClass}">
+          <div class="profile-avatar ${borderEffectClass}">${avatar}</div>
           <div class="profile-info">
             <div class="profile-name-row">
-              <h1 style="margin:0;">${escapeHtml(profile.displayName)}${nameBadge}</h1>
+              <h1 style="margin:0;"><span class="${nameEffectClass}">${escapeHtml(profile.displayName)}</span>${nameBadge}</h1>
               ${actionButton}
             </div>
             ${profile.bio ? `<p style="margin-top:8px;">${escapeHtml(profile.bio)}</p>` : ''}
@@ -255,6 +275,7 @@
                 <span class="label">Following</span>
               </button>
             </div>
+            ${pointsRow}
           </div>
         </div>
         ${achievementsSection}
@@ -297,6 +318,19 @@
           }
         });
       }
+
+      root.querySelectorAll('[data-claim]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await claimAchievement(btn.dataset.claim);
+            await render();
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
     }
 
     render();

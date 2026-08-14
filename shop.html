@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop — Showcase</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Showcase" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark">S</span>
+        Showcase
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="projects.html">Projects</a>
+        <a class="nav-link" href="scrolls.html">Scrolls</a>
+        <a class="nav-link" href="shop.html">Shop</a>
+      </div>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+        <div class="nav-actions" id="nav-actions"></div>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section" id="shop-section" style="display:none;">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h1 style="margin-bottom:6px;">Shop</h1>
+            <p style="margin:0;">Spend points earned from achievements on cosmetics for your profile.</p>
+          </div>
+          <span class="points-chip" id="shop-points"></span>
+        </div>
+        <p>Don't have enough points yet? Head to your <a id="shop-profile-link" href="#">profile</a> and claim any achievements you've already earned.</p>
+        <div class="shop-categories" id="shop-categories"></div>
+      </div>
+    </section>
+
+    <div class="container" id="loading-region" style="padding-top:64px;">
+      <p>Checking your session…</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Showcase</span>
+      <a href="dashboard.html">Back to dashboard</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/theme.js"></script>
+  <script type="module" src="/js/nav.js"></script>
+  <script type="module" src="/js/bottom-nav.js"></script>
+  <script type="module" src="/js/cookie-consent.js"></script>
+  <script type="module" src="/js/pwa.js"></script>
+  <script type="module">
+    import { onAuthChange } from '/js/auth.js';
+    import { getProfile } from '/js/profiles-data.js';
+    import { getOwnedItemIds, purchaseItem, equipItem } from '/js/shop-data.js';
+    import { SHOP_CATEGORIES, itemsByCategory, effectClass } from '/js/shop-items.js';
+    import { escapeHtml, initials } from '/js/utils.js';
+    import { icon } from '/js/icons.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const shopSection = document.getElementById('shop-section');
+    const loadingRegion = document.getElementById('loading-region');
+    const categoriesRoot = document.getElementById('shop-categories');
+    const pointsChip = document.getElementById('shop-points');
+
+    let currentUser = null;
+    let profile = null;
+    let ownedIds = new Set();
+
+    async function loadState() {
+      const [p, owned] = await Promise.all([getProfile(currentUser.id), getOwnedItemIds(currentUser.id)]);
+      profile = p;
+      ownedIds = owned;
+    }
+
+    function equippedIdFor(category) {
+      return { bg: profile.equippedBg, border: profile.equippedBorder, name: profile.equippedNameEffect }[category];
+    }
+
+    function previewFor(item) {
+      if (item.category === 'bg') {
+        return `<div class="shop-item-preview ${effectClass(item.id)}"></div>`;
+      }
+      if (item.category === 'border') {
+        return `<div class="shop-item-preview shop-item-preview-avatar ${effectClass(item.id)}">${escapeHtml(
+          initials(profile.displayName)
+        )}</div>`;
+      }
+      return `<div class="shop-item-preview shop-item-preview-name"><span class="${effectClass(item.id)}">${escapeHtml(
+        profile.displayName
+      )}</span></div>`;
+    }
+
+    function cardHtml(item) {
+      const owned = ownedIds.has(item.id);
+      const equipped = equippedIdFor(item.category) === item.id;
+
+      let action;
+      if (equipped) {
+        action = `<button class="btn btn-secondary btn-sm" type="button" data-action="unequip" data-category="${item.category}">Unequip</button>`;
+      } else if (owned) {
+        action = `<button class="btn btn-primary btn-sm" type="button" data-action="equip" data-category="${item.category}" data-item="${item.id}">Equip</button>`;
+      } else {
+        action = `<button class="btn btn-primary btn-sm" type="button" data-action="buy" data-item="${item.id}">Buy</button>`;
+      }
+
+      const priceLine = owned
+        ? `<span class="shop-item-price">${icon('check', { size: 13 })} Owned</span>`
+        : `<span class="shop-item-price">${icon('award', { size: 13 })} ${item.price} pts</span>`;
+
+      return `
+        <div class="shop-item-card${equipped ? ' is-equipped' : ''}${owned ? ' is-owned' : ''}">
+          ${previewFor(item)}
+          <span class="shop-item-name">${escapeHtml(item.label)}</span>
+          ${priceLine}
+          ${action}
+        </div>
+      `;
+    }
+
+    function render() {
+      pointsChip.innerHTML = `${icon('award', { size: 16 })} ${profile.points} pts`;
+      document.getElementById('shop-profile-link').href = `profile.html?user=${encodeURIComponent(currentUser.id)}`;
+
+      categoriesRoot.innerHTML = SHOP_CATEGORIES.map(
+        (cat) => `
+          <div>
+            <h2 style="margin-bottom:4px;">${escapeHtml(cat.label)}</h2>
+            <p class="shop-category-hint">${escapeHtml(cat.hint)}</p>
+            <div class="shop-grid">${itemsByCategory(cat.id).map(cardHtml).join('')}</div>
+          </div>
+        `
+      ).join('');
+    }
+
+    categoriesRoot.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      btn.disabled = true;
+
+      try {
+        if (btn.dataset.action === 'buy') {
+          await purchaseItem(btn.dataset.item);
+        } else if (btn.dataset.action === 'equip') {
+          await equipItem(currentUser.id, btn.dataset.category, btn.dataset.item);
+        } else if (btn.dataset.action === 'unequip') {
+          await equipItem(currentUser.id, btn.dataset.category, 'none');
+        }
+        await loadState();
+        render();
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+      }
+    });
+
+    let initialized = false;
+    onAuthChange(async (user) => {
+      if (!user) {
+        window.location.href = '/login.html?next=' + encodeURIComponent('/shop.html');
+        return;
+      }
+      currentUser = user;
+      if (initialized) return;
+      initialized = true;
+
+      try {
+        await loadState();
+        loadingRegion.style.display = 'none';
+        shopSection.style.display = '';
+        render();
+      } catch (err) {
+        loadingRegion.innerHTML = `<p>Could not load the shop: ${escapeHtml(err.message)}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -41,6 +41,9 @@ const PATHS = {
   star: '<path d="M12 3.5l2.5 5.4 5.9.7-4.4 4.1 1.2 5.8L12 16.7l-5.2 2.8 1.2-5.8-4.4-4.1 5.9-.7L12 3.5Z"/>',
   award:
     '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/>',
+  'shopping-bag': '<path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/>',
+  lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  check: '<path d="M5 12l5 5L20 7"/>',
 };
 
 export function icon(name, { size = 20, strokeWidth = 1.8, className = '' } = {}) {

@@ -1996,3 +1996,273 @@ body.has-bottom-nav .scroll-card {
     font-size: 0.66rem;
   }
 }
+
+/* ---------- Profile background (shop item, equipped on .profile-header) ---------- */
+.profile-header.has-profile-bg {
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-header.has-profile-bg .profile-info h1,
+.profile-header.has-profile-bg .profile-info > p,
+.profile-header.has-profile-bg .profile-stat .num {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.profile-header.has-profile-bg .profile-stat .label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.shop-bg-sunset {
+  background: linear-gradient(135deg, #f97316, #ec4899 60%, #f97316);
+}
+
+.shop-bg-ocean {
+  background: linear-gradient(135deg, #0ea5e9, #22d3ee 60%, #0369a1);
+}
+
+.shop-bg-midnight {
+  background: linear-gradient(135deg, #1e1b4b, #4c1d95 60%, #0f172a);
+}
+
+.shop-bg-aurora {
+  background: linear-gradient(120deg, #22d3ee, #a855f7, #34d399, #22d3ee);
+  background-size: 300% 300%;
+  animation: shop-aurora-shift 8s ease infinite;
+}
+
+@keyframes shop-aurora-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.shop-bg-confetti {
+  background-color: #4338ca;
+  background-image: radial-gradient(circle at 15% 25%, #fbbf24 0 4px, transparent 5px),
+    radial-gradient(circle at 75% 15%, #f472b6 0 4px, transparent 5px),
+    radial-gradient(circle at 45% 70%, #34d399 0 4px, transparent 5px),
+    radial-gradient(circle at 85% 65%, #60a5fa 0 4px, transparent 5px),
+    radial-gradient(circle at 25% 85%, #f87171 0 4px, transparent 5px);
+  background-size: 160px 160px;
+}
+
+/* ---------- Avatar borders (shop item, equipped on .avatar / .profile-avatar) ---------- */
+.shop-border-bronze {
+  box-shadow: 0 0 0 3px #b08d57;
+}
+
+.shop-border-silver {
+  box-shadow: 0 0 0 3px #c7cbd1;
+}
+
+.shop-border-gold {
+  box-shadow: 0 0 0 3px #f0c419, 0 0 10px 1px rgba(240, 196, 25, 0.5);
+}
+
+.shop-border-neon {
+  animation: shop-neon-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes shop-neon-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #22d3ee, 0 0 10px 2px rgba(34, 211, 238, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #22d3ee, 0 0 20px 6px rgba(34, 211, 238, 0.85);
+  }
+}
+
+.shop-border-rainbow {
+  animation: shop-rainbow-ring 4s linear infinite;
+}
+
+@keyframes shop-rainbow-ring {
+  0% {
+    box-shadow: 0 0 0 3px #ff3b3b, 0 0 14px 1px rgba(255, 59, 59, 0.5);
+  }
+  16% {
+    box-shadow: 0 0 0 3px #ff9d3b, 0 0 14px 1px rgba(255, 157, 59, 0.5);
+  }
+  33% {
+    box-shadow: 0 0 0 3px #f4e04d, 0 0 14px 1px rgba(244, 224, 77, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #3ddc84, 0 0 14px 1px rgba(61, 220, 132, 0.5);
+  }
+  66% {
+    box-shadow: 0 0 0 3px #3bb2ff, 0 0 14px 1px rgba(59, 178, 255, 0.5);
+  }
+  83% {
+    box-shadow: 0 0 0 3px #b23bff, 0 0 14px 1px rgba(178, 59, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 3px #ff3b3b, 0 0 14px 1px rgba(255, 59, 59, 0.5);
+  }
+}
+
+/* ---------- Nickname effects (shop item, wraps a display name) ---------- */
+.shop-name-gradient {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.shop-name-shadow {
+  text-shadow: 2px 2px 0 var(--color-accent), 4px 4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.shop-name-glow {
+  color: #22d3ee;
+  text-shadow: 0 0 6px rgba(34, 211, 238, 0.85), 0 0 14px rgba(34, 211, 238, 0.5);
+}
+
+.shop-name-rainbow {
+  background: linear-gradient(90deg, #ff3b3b, #ff9d3b, #f4e04d, #3ddc84, #3bb2ff, #b23bff, #ff3b3b);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shop-name-rainbow-move 5s linear infinite;
+}
+
+@keyframes shop-name-rainbow-move {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.shop-name-sparkle {
+  position: relative;
+}
+
+.shop-name-sparkle::after {
+  content: '✦';
+  position: absolute;
+  top: -0.3em;
+  right: -0.9em;
+  font-size: 0.6em;
+  color: #f4e04d;
+  animation: shop-sparkle-twinkle 1.6s ease-in-out infinite;
+}
+
+@keyframes shop-sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* ---------- Shop page ---------- */
+.points-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.shop-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.shop-category-hint {
+  margin-top: -8px;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+
+.shop-item-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 20px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  animation: fade-in-up 0.35s ease both;
+}
+
+.shop-item-card.is-equipped {
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-surface));
+}
+
+.shop-item-preview {
+  width: 100%;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--color-muted-soft);
+}
+
+.shop-item-preview.shop-item-preview-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.shop-item-preview.shop-item-preview-name {
+  height: auto;
+  background: none;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.shop-item-name {
+  font-weight: 700;
+}
+
+.shop-item-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.shop-item-card.is-owned .shop-item-price {
+  color: var(--color-success);
+}
+
+/* ---------- Achievement claim button ---------- */
+.achievement-claim-btn {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 720px) {
+  .profile-header.has-profile-bg {
+    padding: 20px;
+  }
+}

@@ -7,13 +7,18 @@ import { getProfile } from './profiles-data.js';
 // Each achievement is independently unlockable — a profile can hold any
 // number of these at once, ordered here roughly by how hard they are to get
 // (used as the display order and to pick the single "best" badge shown
-// next to a name elsewhere in the app).
+// next to a name elsewhere in the app). `reward` is the points paid out
+// the first time it's claimed (profile.html, own profile only) — it's a
+// display-only copy of the real reward table in claim_achievement() in
+// schema.sql, which is what actually pays out and re-verifies eligibility
+// server-side; keep the two in sync by hand.
 export const ACHIEVEMENTS = [
   {
     id: 'crowd-favorite',
     label: 'Crowd Favorite',
     description: 'Received 50 or more likes across your projects.',
     icon: 'flame',
+    reward: 100,
     check: (s) => s.totalLikes >= 50,
   },
   {
@@ -21,6 +26,7 @@ export const ACHIEVEMENTS = [
     label: 'Influencer',
     description: '10 or more people follow you.',
     icon: 'users',
+    reward: 80,
     check: (s) => s.followerCount >= 10,
   },
   {
@@ -28,6 +34,7 @@ export const ACHIEVEMENTS = [
     label: 'Builder',
     description: 'Published 5 or more projects.',
     icon: 'package',
+    reward: 60,
     check: (s) => s.projectsPublished >= 5,
   },
   {
@@ -35,6 +42,7 @@ export const ACHIEVEMENTS = [
     label: 'Conversationalist',
     description: 'Posted 10 or more comments.',
     icon: 'message-circle',
+    reward: 40,
     check: (s) => s.totalComments >= 10,
   },
   {
@@ -42,6 +50,7 @@ export const ACHIEVEMENTS = [
     label: 'Well Liked',
     description: 'Received 10 or more likes across your projects.',
     icon: 'heart',
+    reward: 30,
     check: (s) => s.totalLikes >= 10,
   },
   {
@@ -49,6 +58,7 @@ export const ACHIEVEMENTS = [
     label: 'Veteran',
     description: "Been part of Showcase for a year.",
     icon: 'star',
+    reward: 50,
     check: (s) => s.accountAgeDays >= 365,
   },
   {
@@ -56,6 +66,7 @@ export const ACHIEVEMENTS = [
     label: 'Launched',
     description: 'Published your first project.',
     icon: 'rocket',
+    reward: 20,
     check: (s) => s.projectsPublished >= 1,
   },
 ];

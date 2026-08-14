@@ -9,6 +9,10 @@ function toPlainProfile(row) {
     bio: row.bio || '',
     avatarUrl: row.avatar_url || '',
     createdAt: row.created_at,
+    points: row.points ?? 0,
+    equippedBg: row.equipped_bg || 'none',
+    equippedBorder: row.equipped_border || 'none',
+    equippedNameEffect: row.equipped_name_effect || 'none',
   };
 }
 

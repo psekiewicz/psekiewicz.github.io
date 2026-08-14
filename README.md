@@ -82,7 +82,8 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Age confirmation at signup** — registration requires checking "I confirm that I am at least 13 years old" before an account can be created.
 - **Cookie notice** — a dismissible banner (`js/cookie-consent.js`), shown once per browser via `localStorage`, explains that the site only uses essential cookies/local storage (session + preferences), no tracking or advertising.
 - **Installable PWA** — the site ships a web app manifest (`manifest.webmanifest`) and a service worker (`sw.js`) that caches the static app shell (HTML/CSS/JS/icons) for instant loads and resilience on a flaky connection. On Chrome/Edge, an "Install app" button appears in the navbar once the browser decides the site is installable (`js/pwa.js`, listening for `beforeinstallprompt` — Firefox doesn't implement that event at all, so the button simply never appears there; that's a Firefox platform limitation, not a bug). Installing puts a real icon on the home screen/app list that opens in its own window, no browser chrome. Live data (auth, projects, comments, etc.) is never cached — the service worker only ever intercepts same-origin requests, so Supabase calls always go straight to the network and nothing goes stale or works "offline" in a way that would show outdated account state. Page navigations are network-first (bypassing the HTTP cache, not just Cache Storage) so a new deploy shows up on the very next load in every browser, not just Chrome; `js/pwa.js` also force-checks for a new `sw.js` on every load and reloads once automatically when a newer one takes over.
-- **Achievements** — a badge system computed client-side from data the app already has (published projects, likes received, comments posted, followers, account age) via `js/achievements.js`, no extra tables. A profile page shows the full grid of unlocked/locked badges; the single best-earned badge also shows as a small icon next to the name on the profile header and in the navbar's own account chip.
+- **Achievements** — a badge system computed client-side from data the app already has (published projects, likes received, comments posted, followers, account age) via `js/achievements.js`. A profile page shows the full grid of unlocked/locked badges; the single best-earned badge also shows as a small icon next to the name on the profile header and in the navbar's own account chip.
+- **Points & Shop** — on your own profile, each unlocked achievement has a "Claim +N pts" button; claiming calls `claim_achievement()` in `schema.sql`, which independently re-checks eligibility against the real tables (it doesn't trust the client) and pays out the reward exactly once. Points are spent at `shop.html` on purely cosmetic profile items — backgrounds, avatar borders, and nickname effects (`js/shop-items.js` is the catalog) — bought via `purchase_item()`, which owns the real price list the same way. Buying is separate from equipping: owned items sit in your inventory until you Equip one per category, backed by `profiles.equipped_bg`/`equipped_border`/`equipped_name_effect` and a trigger that reverts any attempt to equip an item you don't own. Equipped effects show on your profile page (background behind the header, ring around your avatar, styled name) and — border + name effect — in the navbar's account chip too.
 - **Animated throughout** — the mobile hamburger morphs into an X and the nav dropdown slides open instead of snapping; every modal/drawer (new/edit project, followers list, Scrolls comments) fades and scales in instead of popping; the login/register card and error/success alerts fade in; liking a project pops the heart icon; buttons lift slightly on hover; new cards and table rows fade in as they render. Everything respects `prefers-reduced-motion` and collapses to near-instant for anyone who's asked their OS for less motion.
 
 ## Tech stack
@@ -109,7 +110,8 @@ index.html            Home page — hero (auth-aware) + latest published project
 projects.html         Public gallery — search + tag filter over published projects
 project.html           Single project detail (?id=<row uuid>)
 scrolls.html            Full-screen swipeable feed of published projects
-profile.html            Public profile (?user=<uuid>) — bio, stats, follow button, their published projects
+profile.html            Public profile (?user=<uuid>) — bio, stats, follow button, achievements, their published projects
+shop.html               Protected — spend points on profile backgrounds, avatar borders, and nickname effects
 settings.html           Protected — edit display name/bio/avatar, change password (requires current password), delete own account
 admin.html               Protected + admin-gated — search/moderate every project and account on the site
 login.html             Email/password login + "forgot password"
@@ -126,7 +128,10 @@ js/follows-data.js       Follow/unfollow, follower/following counts and lists
 js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts for the `comments` table
 js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
 js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
-js/achievements.js       Achievement definitions + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
+js/achievements.js       Achievement definitions (incl. display-only `reward` copy) + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
+js/points-data.js        getClaimedAchievementIds() + claimAchievement() (calls claim_achievement(), which re-verifies eligibility and pays out server-side)
+js/shop-items.js         The shop's item catalog (backgrounds/borders/name effects) + effectClass() mapping an item id to its CSS class — display-only copy of the real prices in purchase_item()
+js/shop-data.js          getOwnedItemIds() + purchaseItem() (calls purchase_item()) + equipItem() for the three cosmetic slots on `profiles`
 js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
 js/icons.js               Outline SVG icon set shared by every page
 js/theme.js               Dark mode toggle + localStorage persistence
@@ -170,6 +175,8 @@ Postgres table `public.profiles`, one row per account (auto-created by a trigger
 | `bio`          | text       | Shown on the public profile page                     |
 | `avatar_url`   | text       | Optional; falls back to initials-on-gradient everywhere it's shown when blank |
 | `is_admin`     | boolean    | Grants access to `admin.html`; only settable via direct SQL (see "Making an account admin" above) — guarded by a trigger so the app itself can never set it |
+| `points`       | integer    | Shop currency; only ever changed by `claim_achievement()`/`purchase_item()` — column-level `UPDATE` is revoked from the `authenticated` role, so a direct client update to it is rejected by Postgres itself |
+| `equipped_bg`, `equipped_border`, `equipped_name_effect` | text | Currently-equipped shop item id per cosmetic slot, or `'none'`; a trigger reverts any value that isn't `'none'` and isn't in `owned_items` for that user |
 | `created_at`   | timestamptz | Defaults to `now()`                                  |
 
 This exists because `auth.users` itself is never queryable from the browser — profile pages, follower lists, and anything showing *other* people's info reads from `profiles` instead. Each project also keeps its own `author_name` snapshot so project cards don't need an extra join.
@@ -216,6 +223,26 @@ Postgres table `public.project_views`, an append-only log of detail-page views:
 | `created_at` | timestamptz | Defaults to `now()`                            |
 
 Only ever written through `log_project_view(project_id)`, a `security definer` RPC that both inserts the log row and increments `projects.views_count` — that's what lets a signed-out visitor's view count at all, without granting public write access to the `projects`/`project_views` tables directly. Reading the raw log (used for the dashboard's 14-day chart) is restricted by RLS to the project's owner or an admin.
+
+Postgres table `public.unlocked_achievements`, one row per achievement a user has claimed:
+
+| Column           | Type        | Notes                                    |
+| ---------------- | ----------- | ------------------------------------------ |
+| `user_id`        | uuid        | References `auth.users(id)`                |
+| `achievement_id` | text        | One of the ids in `js/achievements.js`     |
+| `claimed_at`     | timestamptz | Defaults to `now()`                        |
+
+Primary key is `(user_id, achievement_id)`, so an achievement can only ever be claimed (and paid out) once. Readable only by its own owner; there's no insert/update/delete policy at all — rows are only ever written by `claim_achievement()` (`security definer`), which re-checks eligibility against `projects`/`likes`/`comments`/`follows`/`profiles` itself rather than trusting a client-supplied stats object, then increments `profiles.points` by a hardcoded reward.
+
+Postgres table `public.owned_items`, one row per shop item a user has purchased:
+
+| Column         | Type        | Notes                                    |
+| -------------- | ----------- | ------------------------------------------ |
+| `user_id`      | uuid        | References `auth.users(id)`                |
+| `item_id`      | text        | One of the ids in `js/shop-items.js`       |
+| `purchased_at` | timestamptz | Defaults to `now()`                        |
+
+Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Readable only by its own owner; likewise no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which checks a hardcoded price against `profiles.points` before charging.
 
 ## Legal / compliance
 

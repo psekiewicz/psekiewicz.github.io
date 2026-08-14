@@ -4,6 +4,7 @@ import { isAdmin } from './admin-data.js';
 import { escapeHtml, avatarHtml } from './utils.js';
 import { icon } from './icons.js';
 import { getUserStats, getTopAchievement } from './achievements.js';
+import { effectClass } from './shop-items.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
@@ -38,18 +39,24 @@ async function renderNavActions(container, user) {
 
   const name = displayNameOf(user);
   let avatarUrl = '';
+  let borderClass = '';
+  let nameEffectClass = '';
   try {
     const profile = await getProfile(user.id);
-    if (profile) avatarUrl = profile.avatarUrl;
+    if (profile) {
+      avatarUrl = profile.avatarUrl;
+      borderClass = effectClass(profile.equippedBorder);
+      nameEffectClass = effectClass(profile.equippedNameEffect);
+    }
   } catch {
-    // keep the initials fallback
+    // keep the initials fallback, no effects
   }
 
   container.innerHTML = `
     <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
     <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}">
-      ${avatarHtml(avatarUrl, name)}
-      <span>${escapeHtml(name)}</span>
+      ${avatarHtml(avatarUrl, name, borderClass)}
+      <span class="${nameEffectClass}">${escapeHtml(name)}</span>
     </a>
     <button class="btn btn-secondary btn-sm" id="nav-logout-btn" type="button">Log out</button>
   `;
