@@ -82,6 +82,8 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Age confirmation at signup** — registration requires checking "I confirm that I am at least 13 years old" before an account can be created.
 - **Cookie notice** — a dismissible banner (`js/cookie-consent.js`), shown once per browser via `localStorage`, explains that the site only uses essential cookies/local storage (session + preferences), no tracking or advertising.
 - **Installable PWA** — the site ships a web app manifest (`manifest.webmanifest`) and a service worker (`sw.js`) that caches the static app shell (HTML/CSS/JS/icons) for instant loads and resilience on a flaky connection. On Chrome/Edge, an "Install app" button appears in the navbar once the browser decides the site is installable (`js/pwa.js`, listening for `beforeinstallprompt`); installing puts a real icon on the home screen/app list that opens in its own window, no browser chrome. Live data (auth, projects, comments, etc.) is never cached — the service worker only ever intercepts same-origin requests, so Supabase calls always go straight to the network and nothing goes stale or works "offline" in a way that would show outdated account state.
+- **Achievements** — a badge system computed client-side from data the app already has (published projects, likes received, comments posted, followers, account age) via `js/achievements.js`, no extra tables. A profile page shows the full grid of unlocked/locked badges; the single best-earned badge also shows as a small icon next to the name on the profile header and in the navbar's own account chip.
+- **Animated throughout** — the mobile hamburger morphs into an X and the nav dropdown slides open instead of snapping; every modal/drawer (new/edit project, followers list, Scrolls comments) fades and scales in instead of popping; the login/register card and error/success alerts fade in; liking a project pops the heart icon; buttons lift slightly on hover; new cards and table rows fade in as they render. Everything respects `prefers-reduced-motion` and collapses to near-instant for anyone who's asked their OS for less motion.
 
 ## Tech stack
 
@@ -124,6 +126,7 @@ js/follows-data.js       Follow/unfollow, follower/following counts and lists
 js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts for the `comments` table
 js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
 js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
+js/achievements.js       Achievement definitions + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
 js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
 js/icons.js               Outline SVG icon set shared by every page
 js/theme.js               Dark mode toggle + localStorage persistence

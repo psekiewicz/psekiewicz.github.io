@@ -34,6 +34,13 @@ const PATHS = {
   code: '<path d="M8 6 2 12l6 6"/><path d="M16 6l6 6-6 6"/>',
   'bar-chart': '<path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  rocket:
+    '<path d="M12 2c3 1.5 5 5 5 9 0 2-.5 3.5-1.2 4.7L12 19l-3.8-3.3C7.5 14.5 7 13 7 11c0-4 2-7.5 5-9Z"/><circle cx="12" cy="10" r="1.6"/><path d="M8.5 15.5 6 18M15.5 15.5 18 18M9 20l1-2M15 20l-1-2"/>',
+  flame:
+    '<path d="M12 2c1 3-3 4-3 8a3 3 0 0 0 6 0c0-1.2-.6-2-1.2-2.8.9.2 3.2 1.8 3.2 5.3a5 5 0 0 1-10 0c0-4.5 3-5.8 5-10.5Z"/>',
+  star: '<path d="M12 3.5l2.5 5.4 5.9.7-4.4 4.1 1.2 5.8L12 16.7l-5.2 2.8 1.2-5.8-4.4-4.1 5.9-.7L12 3.5Z"/>',
+  award:
+    '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/>',
 };
 
 export function icon(name, { size = 20, strokeWidth = 1.8, className = '' } = {}) {

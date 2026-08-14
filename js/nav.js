@@ -2,12 +2,18 @@ import { onAuthChange, logoutUser, displayNameOf } from './auth.js';
 import { getProfile } from './profiles-data.js';
 import { isAdmin } from './admin-data.js';
 import { escapeHtml, avatarHtml } from './utils.js';
+import { icon } from './icons.js';
+import { getUserStats, getTopAchievement } from './achievements.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
   const links = document.querySelector('.nav-links');
   if (toggle && links) {
-    toggle.addEventListener('click', () => links.classList.toggle('is-open'));
+    toggle.addEventListener('click', () => {
+      const isOpen = links.classList.toggle('is-open');
+      toggle.classList.toggle('is-open', isOpen);
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
   }
 
   const path = window.location.pathname.split('/').pop() || 'index.html';
@@ -53,6 +59,23 @@ async function renderNavActions(container, user) {
     await logoutUser();
     window.location.href = '/index.html';
   });
+
+  // Progressive enhancement: the chip is already visible and usable above,
+  // this just quietly adds a badge afterwards if the user has earned one —
+  // no need to block the rest of the navbar on it.
+  getUserStats(user.id)
+    .then((stats) => {
+      const top = getTopAchievement(stats);
+      const chip = container.querySelector('.user-chip');
+      if (top && chip && !chip.querySelector('.name-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'name-badge';
+        badge.title = `${top.label} — ${top.description}`;
+        badge.innerHTML = icon(top.icon, { size: 12 });
+        chip.appendChild(badge);
+      }
+    })
+    .catch(() => {});
 
   const admin = await isAdmin(user.id).catch(() => false);
   const navLinks = document.querySelector('.nav-links');

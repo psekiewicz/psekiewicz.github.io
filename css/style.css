@@ -99,6 +99,17 @@
   box-sizing: border-box;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html,
 body {
   padding: 0;
@@ -167,7 +178,8 @@ img {
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease,
+    box-shadow 0.15s ease;
   text-decoration: none;
   line-height: 1;
 }
@@ -184,6 +196,8 @@ img {
 .btn-primary:hover {
   background: var(--color-primary-hover);
   text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary {
@@ -196,6 +210,7 @@ img {
   border-color: var(--color-primary);
   color: var(--color-primary);
   text-decoration: none;
+  transform: translateY(-1px);
 }
 
 .btn-ghost {
@@ -326,6 +341,21 @@ img {
   height: 2px;
   background: var(--color-text);
   margin: 4px 0;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+  transform-origin: center;
+}
+
+.nav-toggle.is-open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.nav-toggle.is-open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.nav-toggle.is-open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .user-chip {
@@ -471,6 +501,17 @@ img {
   gap: 22px;
 }
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -479,6 +520,7 @@ img {
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
+  animation: fade-in-up 0.35s ease both;
 }
 
 .card:hover {
@@ -627,6 +669,18 @@ img {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 40px 36px;
+  animation: auth-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .auth-card h1 {
@@ -724,6 +778,18 @@ img {
 
 .alert.is-visible {
   display: block;
+  animation: alert-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .alert-error {
@@ -902,6 +968,10 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
+tbody tr {
+  animation: fade-in-up 0.3s ease both;
+}
+
 .row-title {
   font-weight: 700;
 }
@@ -937,16 +1007,21 @@ tbody tr:last-child td {
   position: fixed;
   inset: 0;
   background: rgba(15, 17, 30, 0.5);
-  display: none;
+  display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 40px 20px;
   overflow-y: auto;
   z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
 }
 
 .modal-overlay.is-open {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease;
 }
 
 .modal {
@@ -956,6 +1031,12 @@ tbody tr:last-child td {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 32px;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.is-open .modal {
+  transform: scale(1) translateY(0);
 }
 
 .modal-head {
@@ -1068,6 +1149,22 @@ tbody tr:last-child td {
   border-color: var(--color-danger);
   color: var(--color-danger);
   background: var(--color-danger-soft);
+}
+
+.like-btn.is-liked .icon {
+  animation: like-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes like-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .like-btn.is-liked .icon {
@@ -1305,15 +1402,38 @@ tbody tr:last-child td {
     border-bottom: 1px solid var(--color-border);
     flex-direction: column;
     align-items: stretch;
-    padding: 10px 16px;
-    display: none;
+    padding: 0 16px;
+    display: flex;
     gap: 2px;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: max-height 0.3s ease, opacity 0.2s ease, transform 0.2s ease, padding 0.3s ease,
+      visibility 0s linear 0.3s;
   }
   .nav-links.is-open {
-    display: flex;
+    max-height: 400px;
+    opacity: 1;
+    padding: 10px 16px;
+    pointer-events: auto;
+    visibility: visible;
+    transform: translateY(0);
+    transition: max-height 0.3s ease, opacity 0.2s ease, transform 0.2s ease, padding 0.3s ease;
   }
   .nav-toggle {
     display: block;
+  }
+  /* With nav-actions hidden below, .nav-right (just the theme toggle) was
+     the lone middle child of a 3-item space-between row, landing visually
+     centered instead of next to the hamburger. Push it flush right instead. */
+  .navbar .container {
+    justify-content: flex-start;
+  }
+  .nav-right {
+    margin-left: auto;
   }
   /* The bottom tab bar (js/bottom-nav.js) is the primary nav on mobile —
      it covers everything nav-actions would otherwise show (dashboard,
@@ -1617,13 +1737,18 @@ body.has-bottom-nav .scroll-card {
   inset: 0;
   background: rgba(10, 12, 18, 0.55);
   z-index: 300;
-  display: none;
+  display: flex;
   align-items: flex-end;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
 }
 
 .comments-drawer-overlay.is-open {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease;
 }
 
 .comments-drawer {
@@ -1635,6 +1760,12 @@ body.has-bottom-nav .scroll-card {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.comments-drawer-overlay.is-open .comments-drawer {
+  transform: translateY(0);
 }
 
 .comments-drawer-head {
@@ -1715,6 +1846,100 @@ body.has-bottom-nav .scroll-card {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-weight: 700;
+}
+
+/* ---------- Name badge (compact achievement indicator) ---------- */
+.name-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff;
+  vertical-align: middle;
+  margin-left: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-chip .name-badge {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+}
+
+.user-chip .name-badge .icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---------- Achievements ---------- */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: fade-in-up 0.35s ease both;
+}
+
+.achievement-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.achievement-badge .achievement-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.achievement-badge .achievement-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.achievement-badge.is-unlocked {
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-surface));
+}
+
+.achievement-badge.is-unlocked .achievement-icon {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff;
+}
+
+.achievement-badge.is-unlocked .achievement-label {
+  color: var(--color-text);
+}
+
+.achievement-badge.is-locked {
+  opacity: 0.55;
+}
+
+.achievement-badge.is-locked .achievement-icon {
+  background: var(--color-muted-soft);
+  color: var(--color-text-faint);
+}
+
+.achievement-badge.is-locked .achievement-label {
+  color: var(--color-text-faint);
 }
 
 .follow-list {

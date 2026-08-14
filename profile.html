@@ -29,7 +29,7 @@
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
       </div>
-      <button class="nav-toggle" aria-label="Toggle menu">
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -83,6 +83,7 @@
     } from '/js/follows-data.js';
     import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
+    import { getUserStats, computeAchievements, getTopAchievement } from '/js/achievements.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -170,11 +171,14 @@
       const currentUser = await getCurrentUser();
       const isOwnProfile = currentUser && currentUser.id === profileUserId;
 
-      const [projects, followerCount, followingCount] = await Promise.all([
+      const [projects, followerCount, followingCount, stats] = await Promise.all([
         getPublishedProjectsByUser(profileUserId),
         getFollowerCount(profileUserId),
         getFollowingCount(profileUserId),
+        getUserStats(profileUserId).catch(() => null),
       ]);
+      const achievements = stats ? computeAchievements(stats) : [];
+      const topAchievement = stats ? getTopAchievement(stats) : null;
 
       let following = false;
       if (currentUser && !isOwnProfile) {
@@ -202,12 +206,38 @@
           ? `<div class="empty-state"><h3>No published projects yet</h3></div>`
           : `<div class="project-grid">${projects.map((p) => projectCard(p, isOwnProfile)).join('')}</div>`;
 
+      const nameBadge = topAchievement
+        ? `<span class="name-badge" title="${escapeHtml(topAchievement.label)} — ${escapeHtml(topAchievement.description)}">${icon(topAchievement.icon, { size: 17 })}</span>`
+        : '';
+
+      const unlockedCount = achievements.filter((a) => a.unlocked).length;
+      const achievementsSection = stats
+        ? `
+          <div class="section-head">
+            <h2>Achievements</h2>
+            <p>${unlockedCount} of ${achievements.length} unlocked</p>
+          </div>
+          <div class="achievements-grid">
+            ${achievements
+              .map(
+                (a) => `
+                  <div class="achievement-badge${a.unlocked ? ' is-unlocked' : ' is-locked'}" title="${escapeHtml(a.description)}">
+                    <span class="achievement-icon">${icon(a.icon, { size: 22 })}</span>
+                    <span class="achievement-label">${escapeHtml(a.label)}</span>
+                  </div>
+                `
+              )
+              .join('')}
+          </div>
+        `
+        : '';
+
       root.innerHTML = `
         <div class="profile-header">
           <div class="profile-avatar">${avatar}</div>
           <div class="profile-info">
             <div class="profile-name-row">
-              <h1 style="margin:0;">${escapeHtml(profile.displayName)}</h1>
+              <h1 style="margin:0;">${escapeHtml(profile.displayName)}${nameBadge}</h1>
               ${actionButton}
             </div>
             ${profile.bio ? `<p style="margin-top:8px;">${escapeHtml(profile.bio)}</p>` : ''}
@@ -227,6 +257,7 @@
             </div>
           </div>
         </div>
+        ${achievementsSection}
         <div class="section-head">
           <h2>Published projects</h2>
         </div>
