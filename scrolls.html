@@ -73,6 +73,7 @@
     import { getComments, addComment, deleteComment, getCommentCounts } from '/js/comments-data.js';
     import { isAdmin } from '/js/admin-data.js';
     import { logProjectView } from '/js/views-data.js';
+    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     const root = document.getElementById('scrolls-root');
 
@@ -81,6 +82,10 @@
     const projectsById = new Map();
     const likeState = new Map(); // projectId -> { liked, count }
     const commentCounts = new Map(); // projectId -> count
+    // Unlike the other pages, the feed can't paint levels in afterwards:
+    // re-rendering the container would reset the scroll position mid-swipe
+    // and detach the dwell observer, so levels are loaded up front instead.
+    const authorLevels = new Map(); // userId -> levelInfo
 
     // A view counts once a card has been at least 75% on screen for 3
     // straight seconds — scrolling past it faster than that doesn't count,
@@ -184,6 +189,7 @@
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
               ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'scroll-avatar')}
               <span>@${escapeHtml(project.authorName)}</span>
+              ${authorLevels.get(project.uid) ? levelChipHtml(authorLevels.get(project.uid).level, 'sm') : ''}
             </a>
             <h2>${escapeHtml(project.title)}</h2>
             <p>${escapeHtml(project.summary || project.description.slice(0, 140))}</p>
@@ -249,13 +255,16 @@
       if (e.target === drawerOverlay) closeDrawer();
     });
 
-    function commentItemHtml(comment, profile, canDelete) {
+    function commentItemHtml(comment, profile, canDelete, levelInfo) {
       return `
         <article class="comment" data-comment-id="${escapeHtml(comment.id)}">
           <div class="comment-head">
             ${avatarHtml(profile ? profile.avatarUrl : '', comment.authorName, 'avatar-sm')}
             <div class="comment-head-text">
-              <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+              <span class="comment-author-row">
+                <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+                ${levelInfo ? levelChipHtml(levelInfo.level, 'sm') : ''}
+              </span>
               <span class="comment-time">${timeAgo(comment.createdAt)}</span>
             </div>
             ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(comment.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
@@ -279,7 +288,10 @@
       commentCounts.set(project.id, comments.length);
       updateCommentCountUI(project.id);
 
-      const profiles = await getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map());
+      const [profiles, levels] = await Promise.all([
+        getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map()),
+        getLevelsForUsers(comments.map((c) => c.userId)).catch(() => new Map()),
+      ]);
 
       const list = comments.length
         ? comments
@@ -287,7 +299,7 @@
               const canDelete = Boolean(
                 currentUser && (currentUser.id === c.userId || currentUser.id === project.uid || currentUserIsAdmin)
               );
-              return commentItemHtml(c, profiles.get(c.userId), canDelete);
+              return commentItemHtml(c, profiles.get(c.userId), canDelete, levels.get(c.userId));
             })
             .join('')
         : '<p class="hint">No comments yet — be the first to say something.</p>';
@@ -383,10 +395,12 @@
         const profiles = await getProfilesByIds(projects.map((p) => p.uid));
 
         const projectIds = projects.map((p) => p.id);
-        const [likeCounts, commentCountsMap] = await Promise.all([
+        const [likeCounts, commentCountsMap, levels] = await Promise.all([
           getLikeCounts(projectIds).catch(() => new Map()),
           getCommentCounts(projectIds).catch(() => new Map()),
+          getLevelsForUsers(projects.map((p) => p.uid)).catch(() => new Map()),
         ]);
+        levels.forEach((info, uid) => authorLevels.set(uid, info));
         projectIds.forEach((pid) => {
           likeState.set(pid, { liked: false, count: likeCounts.get(pid) || 0 });
           commentCounts.set(pid, commentCountsMap.get(pid) || 0);

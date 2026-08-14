@@ -38,6 +38,26 @@ export async function getPublishedProjectsByUser(uid) {
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Published projects for a whole set of authors in one round trip — used to
+// work out the levels of every author on a page of cards without firing a
+// query per card. Returns a Map<userId, project[]>.
+export async function getPublishedProjectsByUsers(userIds) {
+  const uniqueIds = [...new Set(userIds)].filter(Boolean);
+  const map = new Map();
+  if (uniqueIds.length === 0) return map;
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('id, user_id, views_count')
+    .in('user_id', uniqueIds)
+    .eq('published', true);
+  if (error) throw new Error(error.message);
+  data.forEach((row) => {
+    if (!map.has(row.user_id)) map.set(row.user_id, []);
+    map.get(row.user_id).push({ id: row.id, viewsCount: row.views_count || 0 });
+  });
+  return map;
+}
+
 // Every project regardless of owner or published state. Only returns
 // anything for admins — RLS enforces that, this function doesn't check.
 export async function getAllProjects() {

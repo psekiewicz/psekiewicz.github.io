@@ -83,11 +83,13 @@
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
     let allProjects = [];
     let authorProfiles = new Map();
+    let authorLevels = new Map();
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
     const tagFilter = document.getElementById('tag-filter');
@@ -99,6 +101,7 @@
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 4).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = authorProfiles.get(project.uid);
+      const authorLevel = authorLevels.get(project.uid);
       return `
         <article class="card">
           <div class="card-thumb">${thumb}</div>
@@ -110,6 +113,7 @@
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
                 <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+                ${authorLevel ? levelChipHtml(authorLevel.level, 'sm') : ''}
               </span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
@@ -165,6 +169,12 @@
         allProjects = await getPublishedProjects();
         authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
         populateTags();
+        render();
+
+        // Levels cost a few extra queries, so they're loaded after the grid
+        // is already on screen and painted in on a re-render rather than
+        // holding up the projects themselves.
+        authorLevels = await getLevelsForUsers(allProjects.map((p) => p.uid)).catch(() => new Map());
         render();
       } catch (err) {
         container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;

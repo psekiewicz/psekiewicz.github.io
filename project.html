@@ -67,6 +67,7 @@
     import { isAdmin } from '/js/admin-data.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { logProjectView } from '/js/views-data.js';
+    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -108,6 +109,7 @@
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
                 <span>by <a href="profile.html?user=${encodeURIComponent(project.uid)}"><strong>${escapeHtml(project.authorName)}</strong></a></span>
+                <span id="author-level"></span>
               </span>
               <span>·</span>
               <span>Published ${timeAgo(project.createdAt)}</span>
@@ -189,13 +191,16 @@
       root.innerHTML = `<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Project not found</h3><p>${escapeHtml(message)}</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div></div>`;
     }
 
-    function commentItemHtml(comment, profile, canDelete) {
+    function commentItemHtml(comment, profile, canDelete, levelInfo) {
       return `
         <article class="comment" data-comment-id="${escapeHtml(comment.id)}">
           <div class="comment-head">
             ${avatarHtml(profile ? profile.avatarUrl : '', comment.authorName, 'avatar-sm')}
             <div class="comment-head-text">
-              <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+              <span class="comment-author-row">
+                <a href="profile.html?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+                ${levelInfo ? levelChipHtml(levelInfo.level, 'sm') : ''}
+              </span>
               <span class="comment-time">${timeAgo(comment.createdAt)}</span>
             </div>
             ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(comment.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
@@ -216,7 +221,10 @@
         return;
       }
 
-      const profiles = await getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map());
+      const [profiles, levels] = await Promise.all([
+        getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map()),
+        getLevelsForUsers(comments.map((c) => c.userId)).catch(() => new Map()),
+      ]);
 
       const list = comments.length
         ? comments
@@ -224,7 +232,7 @@
               const canDelete = Boolean(
                 currentUser && (currentUser.id === c.userId || currentUser.id === project.uid || currentUserIsAdmin)
               );
-              return commentItemHtml(c, profiles.get(c.userId), canDelete);
+              return commentItemHtml(c, profiles.get(c.userId), canDelete, levels.get(c.userId));
             })
             .join('')
         : '<p class="hint">No comments yet — be the first to say something.</p>';
@@ -303,6 +311,17 @@
             currentProject = project;
             const authorProfile = await getProfile(project.uid).catch(() => null);
             render(project, authorProfile);
+
+            // Filled in after the page is up rather than blocking the
+            // project itself on the extra level queries.
+            getLevelsForUsers([project.uid])
+              .then((levels) => {
+                const slot = document.getElementById('author-level');
+                const info = levels.get(project.uid);
+                if (slot && info) slot.innerHTML = levelChipHtml(info.level, 'sm');
+              })
+              .catch(() => {});
+
             logProjectView(project.id)
               .then(() => {
                 project.viewsCount += 1;

@@ -5,6 +5,7 @@ import { escapeHtml, avatarHtml } from './utils.js';
 import { icon } from './icons.js';
 import { getUserStats, getTopAchievement } from './achievements.js';
 import { effectClass } from './shop-items.js';
+import { levelFromStats, levelChipHtml } from './levels.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
@@ -68,13 +69,19 @@ async function renderNavActions(container, user) {
   });
 
   // Progressive enhancement: the chip is already visible and usable above,
-  // this just quietly adds a badge afterwards if the user has earned one —
-  // no need to block the rest of the navbar on it.
+  // this just quietly adds the level and best-achievement badges afterwards
+  // — no need to block the rest of the navbar on either.
   getUserStats(user.id)
     .then((stats) => {
-      const top = getTopAchievement(stats);
       const chip = container.querySelector('.user-chip');
-      if (top && chip && !chip.querySelector('.name-badge')) {
+      if (!chip) return;
+
+      if (!chip.querySelector('.level-chip')) {
+        chip.insertAdjacentHTML('beforeend', levelChipHtml(levelFromStats(stats).level, 'sm'));
+      }
+
+      const top = getTopAchievement(stats);
+      if (top && !chip.querySelector('.name-badge')) {
         const badge = document.createElement('span');
         badge.className = 'name-badge';
         badge.title = `${top.label} — ${top.description}`;

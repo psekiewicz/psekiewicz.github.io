@@ -43,6 +43,19 @@ export async function getFollowerCount(userId) {
   return count || 0;
 }
 
+// Follower counts for a whole set of users in one round trip — the batch
+// counterpart of getFollowerCount, used to level a page of authors at once.
+// Returns a Map<userId, count>.
+export async function getFollowerCounts(userIds) {
+  const uniqueIds = [...new Set(userIds)].filter(Boolean);
+  const map = new Map();
+  if (uniqueIds.length === 0) return map;
+  const { data, error } = await supabase.from('follows').select('following_id').in('following_id', uniqueIds);
+  if (error) throw new Error(error.message);
+  data.forEach((row) => map.set(row.following_id, (map.get(row.following_id) || 0) + 1));
+  return map;
+}
+
 export async function getFollowingCount(userId) {
   const { count, error } = await supabase
     .from('follows')

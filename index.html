@@ -108,6 +108,7 @@
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { onAuthChange } from '/js/auth.js';
+    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -124,7 +125,7 @@
         `;
     });
 
-    function projectCard(project, profiles) {
+    function projectCard(project, profiles, levels = new Map()) {
       const thumb = project.imageUrl
         ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
@@ -141,6 +142,7 @@
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
                 <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+                ${levels.get(project.uid) ? levelChipHtml(levels.get(project.uid).level, 'sm') : ''}
               </span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
@@ -166,6 +168,11 @@
         }
         const profiles = await getProfilesByIds(latest.map((p) => p.uid));
         container.innerHTML = latest.map((p) => projectCard(p, profiles)).join('');
+
+        // Painted in after the cards are already up — levels cost a few
+        // extra queries and aren't worth delaying the homepage for.
+        const levels = await getLevelsForUsers(latest.map((p) => p.uid)).catch(() => new Map());
+        container.innerHTML = latest.map((p) => projectCard(p, profiles, levels)).join('');
       } catch (err) {
         container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
       }
