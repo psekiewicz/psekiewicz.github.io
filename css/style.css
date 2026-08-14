@@ -592,7 +592,7 @@ img {
   transform: scale(1.15);
 }
 
-.leaderboard-row:hover .level-chip {
+.leaderboard-row-wrap:hover .level-chip {
   transform: scale(1.08);
 }
 
@@ -2101,6 +2101,34 @@ body.has-bottom-nav .scroll-card {
   height: 12px;
 }
 
+/* Log out inside the burger — mobile only. On desktop the navbar's own
+   button covers it, and .nav-links is a horizontal row where a logout
+   item would sit oddly among the section links. It's a <button>, so it
+   needs the link styling reset onto it. */
+.nav-link-logout {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--color-danger);
+}
+
+@media (max-width: 720px) {
+  .nav-link-logout {
+    display: block;
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+    border-radius: 0;
+  }
+  .nav-link-logout:hover {
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+}
+
 /* ---------- Notifications bell + panel ---------- */
 
 /* The browser's own `[hidden] { display: none }` comes from the UA
@@ -2244,29 +2272,48 @@ body.has-bottom-nav .scroll-card {
   background: var(--color-surface);
 }
 
+/* The row is a link to the profile and the Follow button is a control, so
+   the button can't live inside the link — this wrapper holds both side by
+   side and carries the row's own styling. */
+.leaderboard-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s ease;
+}
+
+.leaderboard-row-wrap:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-row-wrap:hover {
+  background: var(--color-primary-soft);
+}
+
+.leaderboard-row-wrap.is-me {
+  background: var(--color-primary-soft);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
 .leaderboard-row {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex: 1;
+  min-width: 0;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border);
   text-decoration: none;
   color: var(--color-text);
-  transition: background 0.15s ease;
-}
-
-.leaderboard-row:last-child {
-  border-bottom: none;
 }
 
 .leaderboard-row:hover {
-  background: var(--color-primary-soft);
   text-decoration: none;
 }
 
-.leaderboard-row.is-me {
-  background: var(--color-primary-soft);
-  box-shadow: inset 3px 0 0 var(--color-primary);
+.leaderboard-follow {
+  flex-shrink: 0;
 }
 
 .leaderboard-rank {
@@ -2349,8 +2396,16 @@ body.has-bottom-nav .scroll-card {
     gap: 10px;
     padding: 11px 12px;
   }
+  /* With a Follow button on the row there isn't width for everything, and
+     the name is what matters — the raw XP number goes rather than letting
+     it get squeezed down to an ellipsis. The level chip still shows
+     standing. */
   .leaderboard-xp {
-    font-size: 0.72rem;
+    display: none;
+  }
+  .leaderboard-follow {
+    padding: 7px 11px;
+    font-size: 0.74rem;
   }
 }
 

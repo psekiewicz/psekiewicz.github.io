@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Leaderboard — Showcase</title>
   <meta name="description" content="The highest-levelled builders on Showcase." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Showcase" />
+  <meta property="og:title" content="Leaderboard — Showcase" />
+  <meta property="og:description" content="The highest-levelled builders on Showcase." />
+  <meta property="og:url" content="https://psekiewicz.github.io/leaderboard.html" />
+  <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Leaderboard — Showcase" />
+  <meta name="twitter:description" content="The highest-levelled builders on Showcase." />
+  <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#4f46e5" />
@@ -47,6 +59,9 @@
             <p style="margin:0;">Ranked by XP — earned from published projects, likes, followers, comments and views.</p>
           </div>
         </div>
+        <div class="filter-bar">
+          <input type="search" id="people-search" placeholder="Search people by name…" />
+        </div>
         <div id="leaderboard-root">
           <p>Loading rankings…</p>
         </div>
@@ -68,6 +83,7 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
+    import { getFollowingIds, followUser, unfollowUser } from '/js/follows-data.js';
     import { getAllProfiles } from '/js/profiles-data.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
     import { effectClass } from '/js/shop-items.js';
@@ -76,24 +92,89 @@
     document.getElementById('year').textContent = new Date().getFullYear();
 
     const root = document.getElementById('leaderboard-root');
+    const searchInput = document.getElementById('people-search');
     const TOP_N = 50;
+
+    let ranked = [];
+    let currentUser = null;
+    let followingIds = new Set();
 
     function rowHtml(entry, position, isMe) {
       // Only the podium gets a medal class; everyone else shows a plain number.
       const medal = position <= 3 ? ` leaderboard-rank-${position}` : '';
+      // The row is a link to the profile, so the follow control can't be a
+      // nested <a>/<button> inside it — it sits alongside as a sibling.
+      const follow =
+        currentUser && !isMe
+          ? `<button class="btn btn-sm ${followingIds.has(entry.profile.id) ? 'btn-secondary' : 'btn-primary'} leaderboard-follow"
+               type="button" data-follow="${escapeHtml(entry.profile.id)}">${
+              followingIds.has(entry.profile.id) ? 'Following' : 'Follow'
+            }</button>`
+          : '';
       return `
-        <a class="leaderboard-row${isMe ? ' is-me' : ''}" href="profile.html?user=${encodeURIComponent(entry.profile.id)}">
-          <span class="leaderboard-rank${medal}">${position}</span>
-          ${avatarHtml(entry.profile.avatarUrl, entry.profile.displayName, effectClass(entry.profile.equippedBorder))}
-          <span class="leaderboard-name">
-            <span class="${effectClass(entry.profile.equippedNameEffect)}">${escapeHtml(entry.profile.displayName)}</span>
-            ${isMe ? '<span class="leaderboard-you">you</span>' : ''}
-          </span>
-          ${levelChipHtml(entry.level.level, 'sm')}
-          <span class="leaderboard-xp">${entry.level.xp.toLocaleString()} XP</span>
-        </a>
+        <div class="leaderboard-row-wrap${isMe ? ' is-me' : ''}">
+          <a class="leaderboard-row" href="profile.html?user=${encodeURIComponent(entry.profile.id)}">
+            <span class="leaderboard-rank${medal}">${position}</span>
+            ${avatarHtml(entry.profile.avatarUrl, entry.profile.displayName, effectClass(entry.profile.equippedBorder))}
+            <span class="leaderboard-name">
+              <span class="${effectClass(entry.profile.equippedNameEffect)}">${escapeHtml(entry.profile.displayName)}</span>
+              ${isMe ? '<span class="leaderboard-you">you</span>' : ''}
+            </span>
+            ${levelChipHtml(entry.level.level, 'sm')}
+            <span class="leaderboard-xp">${entry.level.xp.toLocaleString()} XP</span>
+          </a>
+          ${follow}
+        </div>
       `;
     }
+
+    // Ranks stay absolute: filtering by name must not renumber people, or
+    // searching would tell you someone is #1 when they're #23.
+    function paint() {
+      const q = searchInput.value.trim().toLowerCase();
+      const matches = q
+        ? ranked.filter((e) => e.profile.displayName.toLowerCase().includes(q))
+        : ranked.slice(0, TOP_N);
+
+      if (matches.length === 0) {
+        root.innerHTML = `<div class="empty-state"><h3>Nobody found</h3><p>No one matches “${escapeHtml(searchInput.value.trim())}”.</p></div>`;
+        return;
+      }
+
+      let html = `<div class="leaderboard">${matches
+        .map((entry) => rowHtml(entry, ranked.indexOf(entry) + 1, currentUser && currentUser.id === entry.profile.id))
+        .join('')}</div>`;
+
+      // If you didn't make the cut, show your own standing underneath rather
+      // than leaving you to wonder where you are.
+      const myIndex = !q && currentUser ? ranked.findIndex((e) => e.profile.id === currentUser.id) : -1;
+      if (myIndex >= TOP_N) {
+        html += `<p class="leaderboard-gap">…</p><div class="leaderboard">${rowHtml(ranked[myIndex], myIndex + 1, true)}</div>`;
+      }
+      root.innerHTML = html;
+    }
+
+    searchInput.addEventListener('input', paint);
+
+    root.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-follow]');
+      if (!btn) return;
+      const targetId = btn.dataset.follow;
+      btn.disabled = true;
+      try {
+        if (followingIds.has(targetId)) {
+          await unfollowUser(currentUser.id, targetId);
+          followingIds.delete(targetId);
+        } else {
+          await followUser(currentUser.id, targetId);
+          followingIds.add(targetId);
+        }
+        paint();
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+      }
+    });
 
     (async () => {
       let profiles;
@@ -109,12 +190,14 @@
         return;
       }
 
-      const [levels, currentUser] = await Promise.all([
+      const [levels, user] = await Promise.all([
         getLevelsForUsers(profiles.map((p) => p.id)).catch(() => new Map()),
         getCurrentUser().catch(() => null),
       ]);
+      currentUser = user;
+      if (user) followingIds = await getFollowingIds(user.id).catch(() => new Set());
 
-      const ranked = profiles
+      ranked = profiles
         .map((profile) => ({ profile, level: levels.get(profile.id) }))
         .filter((entry) => entry.level)
         // Accounts that have never done anything would otherwise pad the
@@ -127,22 +210,7 @@
         return;
       }
 
-      const top = ranked.slice(0, TOP_N);
-      let html = `<div class="leaderboard">${top
-        .map((entry, index) => rowHtml(entry, index + 1, currentUser && currentUser.id === entry.profile.id))
-        .join('')}</div>`;
-
-      // If you didn't make the cut, show your own standing underneath rather
-      // than leaving you to wonder where you are.
-      const myIndex = currentUser ? ranked.findIndex((entry) => entry.profile.id === currentUser.id) : -1;
-      if (myIndex >= TOP_N) {
-        html += `
-          <p class="leaderboard-gap">…</p>
-          <div class="leaderboard">${rowHtml(ranked[myIndex], myIndex + 1, true)}</div>
-        `;
-      }
-
-      root.innerHTML = html;
+      paint();
     })();
   </script>
 </body>

@@ -5,6 +5,19 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Browse Projects — Showcase</title>
+  <meta name="description" content="Discover what the community has published." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Showcase" />
+  <meta property="og:title" content="Browse Projects — Showcase" />
+  <meta property="og:description" content="Discover what the community has published." />
+  <meta property="og:url" content="https://psekiewicz.github.io/projects.html" />
+  <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Browse Projects — Showcase" />
+  <meta name="twitter:description" content="Discover what the community has published." />
+  <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#4f46e5" />
@@ -56,6 +69,10 @@
             <option value="library">Library / Tool</option>
             <option value="other">Other</option>
           </select>
+          <select id="people-filter" hidden>
+            <option value="all">Everyone</option>
+            <option value="following">People I follow</option>
+          </select>
           <select id="tag-filter">
             <option value="">All tags</option>
           </select>
@@ -85,16 +102,23 @@
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { getFollowingIds } from '/js/follows-data.js';
+    import { getCurrentUser } from '/js/auth.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
     let allProjects = [];
     let authorProfiles = new Map();
     let authorLevels = new Map();
+    // Following someone used to change nothing about what you saw. Empty
+    // until the session resolves, which is also why the filter stays hidden
+    // for signed-out visitors — there'd be nothing to filter by.
+    let followingIds = new Set();
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
     const tagFilter = document.getElementById('tag-filter');
     const typeFilter = document.getElementById('type-filter');
+    const peopleFilter = document.getElementById('people-filter');
 
     function projectCard(project) {
       const thumb = project.imageUrl
@@ -127,7 +151,9 @@
       const q = searchInput.value.trim().toLowerCase();
       const tag = tagFilter.value;
       const type = typeFilter.value;
+      const onlyFollowing = peopleFilter.value === 'following';
       const filtered = allProjects.filter((p) => {
+        if (onlyFollowing && !followingIds.has(p.uid)) return false;
         const matchesQ =
           !q ||
           p.title.toLowerCase().includes(q) ||
@@ -139,12 +165,10 @@
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1 / -1;">
-            <h3>No projects match your filters</h3>
-            <p>Try a different search term or tag.</p>
-          </div>
-        `;
+        const emptyBody = onlyFollowing
+          ? `<h3>Nothing from people you follow</h3><p>Follow a few more builders — or switch back to Everyone.</p><a class="btn btn-primary" href="leaderboard.html">Find people to follow</a>`
+          : `<h3>No projects match your filters</h3><p>Try a different search term or tag.</p>`;
+        container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">${emptyBody}</div>`;
         return;
       }
       container.innerHTML = filtered.map(projectCard).join('');
@@ -164,6 +188,7 @@
     searchInput.addEventListener('input', render);
     tagFilter.addEventListener('change', render);
     typeFilter.addEventListener('change', render);
+    peopleFilter.addEventListener('change', render);
 
     (async () => {
       try {
@@ -171,6 +196,13 @@
         authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
         populateTags();
         render();
+
+        // Only worth offering once we know who you follow.
+        const user = await getCurrentUser().catch(() => null);
+        if (user) {
+          followingIds = await getFollowingIds(user.id).catch(() => new Set());
+          if (followingIds.size) peopleFilter.hidden = false;
+        }
 
         // Levels cost a few extra queries, so they're loaded after the grid
         // is already on screen and painted in on a re-render rather than

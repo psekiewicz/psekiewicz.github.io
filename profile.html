@@ -5,6 +5,19 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="page-title">Profile — Showcase</title>
+  <meta name="description" content="A builder on Showcase — their published work, level and achievements." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Showcase" />
+  <meta property="og:title" content="Profile — Showcase" />
+  <meta property="og:description" content="A builder on Showcase — their published work, level and achievements." />
+  <meta property="og:url" content="https://psekiewicz.github.io/profile.html" />
+  <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Profile — Showcase" />
+  <meta name="twitter:description" content="A builder on Showcase — their published work, level and achievements." />
+  <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#4f46e5" />
@@ -82,7 +95,7 @@
   <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
-    import { getCurrentUser, logoutUser } from '/js/auth.js';
+    import { getCurrentUser } from '/js/auth.js';
     import { getProfile } from '/js/profiles-data.js';
     import { getPublishedProjectsByUser } from '/js/projects-data.js';
     import {
@@ -280,10 +293,9 @@
 
       let actionButton;
       if (isOwnProfile) {
-        actionButton = `
-          <a class="btn btn-secondary" href="settings.html">Edit profile</a>
-          <button class="btn btn-secondary" id="profile-logout-btn" type="button">Log out</button>
-        `;
+        // No Log out here any more: the navbar carries it on desktop and the
+        // burger menu on mobile, so the profile page doesn't need a third copy.
+        actionButton = `<a class="btn btn-secondary" href="settings.html">Edit profile</a>`;
       } else if (currentUser) {
         actionButton = `<button class="btn ${following ? 'btn-secondary' : 'btn-primary'}" id="follow-btn" type="button">${following ? 'Unfollow' : 'Follow'}</button>`;
       } else {
@@ -389,15 +401,6 @@
         </div>
         ${projectsGrid}
       `;
-
-      const logoutBtn = document.getElementById('profile-logout-btn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-          logoutBtn.disabled = true;
-          await logoutUser();
-          window.location.href = '/index.html';
-        });
-      }
 
       document.getElementById('followers-stat').addEventListener('click', () => {
         openPeopleModal('Followers', () => getFollowers(profileUserId));

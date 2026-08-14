@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function renderNavActions(container, user) {
   if (!user) {
     unmountNotifications();
+    document.querySelectorAll('[data-mobile-logout]').forEach((el) => el.remove());
     container.innerHTML = `
       <a class="btn btn-ghost btn-sm" href="/login.html">Log in</a>
       <a class="btn btn-primary btn-sm" href="/register.html">Get started</a>
@@ -121,6 +122,25 @@ async function renderNavActions(container, user) {
     })
     .catch(() => {});
 
+  // On mobile .nav-actions (with its Log out button) is hidden in favour of
+  // the bottom tab bar, which left the profile page as the only way to sign
+  // out. The burger is where the rest of mobile navigation already lives,
+  // so it goes here — hidden on desktop, where the navbar button remains.
+  const navLinksEl = document.querySelector('.nav-links');
+  if (navLinksEl && !navLinksEl.querySelector('[data-mobile-logout]')) {
+    const logout = document.createElement('button');
+    logout.type = 'button';
+    logout.className = 'nav-link nav-link-logout';
+    logout.setAttribute('data-mobile-logout', '');
+    logout.textContent = 'Log out';
+    logout.addEventListener('click', async () => {
+      logout.disabled = true;
+      await logoutUser();
+      window.location.href = '/index.html';
+    });
+    navLinksEl.appendChild(logout);
+  }
+
   const admin = await isAdmin(user.id).catch(() => false);
   const navLinks = document.querySelector('.nav-links');
   if (admin && navLinks && !navLinks.querySelector('[data-admin-link]')) {
@@ -131,6 +151,7 @@ async function renderNavActions(container, user) {
     link.setAttribute('data-admin-link', '');
     const path = window.location.pathname.split('/').pop() || 'index.html';
     if (path === 'admin.html') link.classList.add('active');
-    navLinks.appendChild(link);
+    // Before the logout item, which is always meant to sit last.
+    navLinks.insertBefore(link, navLinks.querySelector('[data-mobile-logout]'));
   }
 }

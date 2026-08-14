@@ -5,6 +5,19 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="page-title">Project — Showcase</title>
+  <meta name="description" content="A project published on Showcase." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Showcase" />
+  <meta property="og:title" content="Project — Showcase" />
+  <meta property="og:description" content="A project published on Showcase." />
+  <meta property="og:url" content="https://psekiewicz.github.io/project.html" />
+  <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Project — Showcase" />
+  <meta name="twitter:description" content="A project published on Showcase." />
+  <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#4f46e5" />
@@ -69,6 +82,7 @@
     import { isAdmin } from '/js/admin-data.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { logProjectView } from '/js/views-data.js';
+    import { shareLink } from '/js/share.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -123,6 +137,7 @@
               <button class="like-btn" id="like-btn" type="button" aria-pressed="false" disabled>
                 ${icon('heart', { size: 17 })} <span id="like-count">–</span>
               </button>
+              <button class="btn btn-secondary btn-sm" id="share-btn" type="button">${icon('share', { size: 15 })} Share</button>
               ${editButton}
             </div>
           </div>
@@ -135,6 +150,17 @@
           </div>
         </section>
       `;
+
+      const shareBtn = document.getElementById('share-btn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', () =>
+          shareLink({
+            url: `/project.html?id=${encodeURIComponent(project.id)}`,
+            title: project.title,
+            text: project.summary || '',
+          })
+        );
+      }
 
       wireLikeButton(project);
     }

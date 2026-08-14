@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scrolls — Showcase</title>
   <meta name="description" content="Swipe through published projects, one at a time." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Showcase" />
+  <meta property="og:title" content="Scrolls — Showcase" />
+  <meta property="og:description" content="Swipe through published projects, one at a time." />
+  <meta property="og:url" content="https://psekiewicz.github.io/scrolls.html" />
+  <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Scrolls — Showcase" />
+  <meta name="twitter:description" content="Swipe through published projects, one at a time." />
+  <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#4f46e5" />
@@ -78,6 +90,7 @@
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
     import { getFollowingIds } from '/js/follows-data.js';
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
+    import { shareLink } from '/js/share.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere — past this many cards the ranking has long stopped
@@ -175,6 +188,9 @@
           <button class="scroll-rail-btn" type="button" data-action="comments" data-project-id="${escapeHtml(project.id)}" aria-label="Comments">
             <span class="scroll-rail-icon">${icon('message-circle', { size: 21 })}</span>
             <span class="scroll-rail-count" data-role="comment-count">${commentCount}</span>
+          </button>
+          <button class="scroll-rail-btn" type="button" data-action="share" data-project-id="${escapeHtml(project.id)}" aria-label="Share">
+            <span class="scroll-rail-icon">${icon('share', { size: 20 })}</span>
           </button>
           ${extra.join('')}
           <a class="scroll-rail-btn" href="project.html?id=${encodeURIComponent(project.id)}" aria-label="View details">
@@ -380,6 +396,18 @@
       const commentBtn = e.target.closest('[data-action="comments"]');
       if (commentBtn) {
         openCommentsDrawer(commentBtn.dataset.projectId);
+        return;
+      }
+      const shareBtn = e.target.closest('[data-action="share"]');
+      if (shareBtn) {
+        const project = projectsById.get(shareBtn.dataset.projectId);
+        if (project) {
+          shareLink({
+            url: `/project.html?id=${encodeURIComponent(project.id)}`,
+            title: project.title,
+            text: project.summary || '',
+          });
+        }
       }
     });
 
