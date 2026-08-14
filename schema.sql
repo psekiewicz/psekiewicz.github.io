@@ -433,9 +433,15 @@ alter table public.profiles add column if not exists equipped_name_effect text n
 -- console is rejected by Postgres itself, not just hidden UI.
 revoke update (points) on public.profiles from authenticated;
 
--- One row per (user, achievement) the user has actually claimed — lets
--- claim_achievement() pay out an achievement's reward exactly once, no
--- matter how many times the claim button is clicked.
+-- One row per (user, achievement) the user has ever earned. This is what
+-- makes achievements permanent: they're recorded the moment they're first
+-- earned, so deleting the project (or losing the likes/followers) that
+-- earned one doesn't take the badge away again.
+--
+-- `claimed_at` is NULL for "earned but the reward hasn't been collected
+-- yet" and set once claim_achievement() pays out — that split is what lets
+-- a row exist from the moment of unlocking without the payout logic
+-- mistaking it for an already-paid claim.
 create table if not exists public.unlocked_achievements (
   user_id uuid not null references auth.users (id) on delete cascade,
   achievement_id text not null,
@@ -443,16 +449,28 @@ create table if not exists public.unlocked_achievements (
   primary key (user_id, achievement_id)
 );
 
+-- Migration for databases created before unlocks were recorded separately
+-- from claims: back then every row meant "claimed", and the column was
+-- NOT NULL DEFAULT now(). Existing rows keep their timestamp (they really
+-- were claimed), new rows now decide for themselves.
+alter table public.unlocked_achievements alter column claimed_at drop not null;
+alter table public.unlocked_achievements alter column claimed_at drop default;
+
 alter table public.unlocked_achievements enable row level security;
 
+-- Public read, like likes/follows/owned_items: a profile page has to be
+-- able to show *anyone's* permanently-earned badges, not just your own,
+-- and this exposes nothing that wasn't already visible on the profile.
 drop policy if exists "Users can read their own claimed achievements" on public.unlocked_achievements;
-create policy "Users can read their own claimed achievements"
+drop policy if exists "Unlocked achievements are publicly readable" on public.unlocked_achievements;
+create policy "Unlocked achievements are publicly readable"
   on public.unlocked_achievements for select
-  using (auth.uid() = user_id);
+  using (true);
 
 -- Deliberately no insert/update/delete policy for this table: rows are
--- only ever written by claim_achievement() (security definer), which
--- re-checks eligibility server-side before inserting.
+-- only ever written by record_achievement_unlock()/claim_achievement()
+-- (both security definer), which re-check eligibility server-side.
+
 
 -- One row per (user, item) the user has purchased from the shop.
 create table if not exists public.owned_items (
@@ -545,6 +563,41 @@ begin
 end;
 $$;
 
+-- Records an achievement as permanently earned, without paying anything
+-- out. The client calls this the first time it notices an achievement has
+-- become earned; the eligibility check here is what stops it from being
+-- used to award arbitrary badges from the browser console.
+create or replace function public.record_achievement_unlock(p_achievement_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_def record;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select * into v_def from public.achievement_defs where id = p_achievement_id;
+  if not found then
+    raise exception 'Unknown achievement: %', p_achievement_id;
+  end if;
+
+  if public.achievement_metric(v_uid, v_def.metric) < v_def.threshold then
+    raise exception 'Achievement not yet earned';
+  end if;
+
+  insert into public.unlocked_achievements (user_id, achievement_id, claimed_at)
+  values (v_uid, p_achievement_id, null)
+  on conflict (user_id, achievement_id) do nothing;
+end;
+$$;
+
+grant execute on function public.record_achievement_unlock(text) to authenticated;
+
 -- Looks up the achievement's metric/threshold/reward from achievement_defs,
 -- re-checks eligibility server-side (never trusts the client), and pays
 -- out the reward exactly once.
@@ -557,7 +610,7 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_def record;
-  v_value numeric;
+  v_recorded boolean;
 begin
   if v_uid is null then
     raise exception 'Not signed in';
@@ -568,18 +621,28 @@ begin
     raise exception 'Unknown achievement: %', p_achievement_id;
   end if;
 
-  v_value := public.achievement_metric(v_uid, v_def.metric);
-  if v_value < v_def.threshold then
+  v_recorded := exists (
+    select 1 from public.unlocked_achievements
+    where user_id = v_uid and achievement_id = p_achievement_id
+  );
+
+  -- An already-recorded achievement stays claimable even if the activity
+  -- behind it is gone (the project was deleted, likes were withdrawn) —
+  -- it was verified server-side when it was recorded, and achievements are
+  -- permanent. Only a first-time claim has to prove eligibility now.
+  if not v_recorded and public.achievement_metric(v_uid, v_def.metric) < v_def.threshold then
     raise exception 'Achievement not yet earned';
   end if;
 
-  insert into public.unlocked_achievements (user_id, achievement_id)
-  values (v_uid, p_achievement_id)
-  on conflict (user_id, achievement_id) do nothing;
+  insert into public.unlocked_achievements (user_id, achievement_id, claimed_at)
+  values (v_uid, p_achievement_id, now())
+  on conflict (user_id, achievement_id) do update set claimed_at = now()
+  where public.unlocked_achievements.claimed_at is null;
 
-  -- FOUND reflects whether the insert above actually inserted a row —
-  -- false on conflict, which is what keeps a repeat claim from paying out
-  -- twice.
+  -- FOUND is true only when a row was actually inserted or updated above.
+  -- The `where claimed_at is null` guard means a second claim matches
+  -- nothing, so the reward can never be paid twice — while an unlock that
+  -- was merely recorded (claimed_at NULL) still pays out the first time.
   if found then
     update public.profiles set points = points + v_def.reward where id = v_uid;
   end if;

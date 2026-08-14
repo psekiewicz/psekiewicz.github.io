@@ -4,6 +4,7 @@ import { isAdmin } from './admin-data.js';
 import { escapeHtml, avatarHtml } from './utils.js';
 import { icon } from './icons.js';
 import { getUserStats, getTopAchievement } from './achievements.js';
+import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
 import { effectClass } from './shop-items.js';
 import { levelFromStats, levelChipHtml } from './levels.js';
 
@@ -71,8 +72,8 @@ async function renderNavActions(container, user) {
   // Progressive enhancement: the chip is already visible and usable above,
   // this just quietly adds the level and best-achievement badges afterwards
   // — no need to block the rest of the navbar on either.
-  getUserStats(user.id)
-    .then((stats) => {
+  Promise.all([getUserStats(user.id), getAchievementRecords(user.id).catch(() => EMPTY_ACHIEVEMENT_RECORDS)])
+    .then(([stats, records]) => {
       const chip = container.querySelector('.user-chip');
       if (!chip) return;
 
@@ -80,7 +81,7 @@ async function renderNavActions(container, user) {
         chip.insertAdjacentHTML('beforeend', levelChipHtml(levelFromStats(stats).level, 'sm'));
       }
 
-      const top = getTopAchievement(stats);
+      const top = getTopAchievement(stats, records.unlocked);
       if (top && !chip.querySelector('.name-badge')) {
         const badge = document.createElement('span');
         badge.className = 'name-badge';

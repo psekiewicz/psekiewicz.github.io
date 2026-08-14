@@ -95,8 +95,18 @@
     } from '/js/follows-data.js';
     import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
-    import { getUserStats, computeAchievements, getTopAchievement } from '/js/achievements.js';
-    import { getClaimedAchievementIds, claimAchievement } from '/js/points-data.js';
+    import {
+      getUserStats,
+      computeAchievements,
+      getTopAchievement,
+      unrecordedAchievementIds,
+    } from '/js/achievements.js';
+    import {
+      getAchievementRecords,
+      recordAchievementUnlock,
+      claimAchievement,
+      EMPTY_ACHIEVEMENT_RECORDS,
+    } from '/js/points-data.js';
     import { effectClass } from '/js/shop-items.js';
     import { levelFromStats, levelChipHtml } from '/js/levels.js';
 
@@ -238,9 +248,25 @@
         getFollowingCount(profileUserId),
         getUserStats(profileUserId).catch(() => null),
       ]);
-      const achievements = stats ? computeAchievements(stats) : [];
-      const topAchievement = stats ? getTopAchievement(stats) : null;
-      const claimedIds = isOwnProfile ? await getClaimedAchievementIds(profileUserId).catch(() => new Set()) : new Set();
+      // Readable for any profile, so someone else's permanently-earned
+      // badges show up on their page too, not just your own.
+      let records = await getAchievementRecords(profileUserId).catch(() => EMPTY_ACHIEVEMENT_RECORDS);
+
+      // Anything the stats currently qualify for but that isn't on record
+      // yet gets written down now, so it survives the project being
+      // deleted later. Only possible on your own profile — the RPC records
+      // for the signed-in user and re-checks eligibility server-side.
+      if (isOwnProfile && stats) {
+        const toRecord = unrecordedAchievementIds(stats, records.unlocked);
+        if (toRecord.length) {
+          await Promise.all(toRecord.map((id) => recordAchievementUnlock(id).catch(() => {})));
+          records = await getAchievementRecords(profileUserId).catch(() => records);
+        }
+      }
+
+      const claimedIds = records.claimed;
+      const achievements = stats ? computeAchievements(stats, records.unlocked) : [];
+      const topAchievement = stats ? getTopAchievement(stats, records.unlocked) : null;
 
       let following = false;
       if (currentUser && !isOwnProfile) {

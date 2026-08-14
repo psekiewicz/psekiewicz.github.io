@@ -189,13 +189,30 @@ export async function getUserStats(userId) {
   };
 }
 
+// Achievements are permanent: once earned they stay earned, even if the
+// activity behind them goes away (a project is deleted, likes are
+// withdrawn, a follower leaves). `unlockedIds` carries the ids recorded
+// server-side in unlocked_achievements — an achievement counts as unlocked
+// if the live stats qualify *or* it's in that set. Callers that don't have
+// the recorded set yet can omit it and still get live-stats behaviour.
+function isUnlocked(achievement, stats, unlockedIds) {
+  return (unlockedIds && unlockedIds.has(achievement.id)) || achievement.check(stats);
+}
+
 // Returns every achievement with an `unlocked` flag, in display order.
-export function computeAchievements(stats) {
-  return ACHIEVEMENTS.map((a) => ({ ...a, unlocked: a.check(stats) }));
+export function computeAchievements(stats, unlockedIds) {
+  return ACHIEVEMENTS.map((a) => ({ ...a, unlocked: isUnlocked(a, stats, unlockedIds) }));
 }
 
 // The single most prestigious unlocked achievement — used for the compact
 // badge shown next to a name (navbar chip, profile header). Null if none.
-export function getTopAchievement(stats) {
-  return ACHIEVEMENTS.find((a) => a.check(stats)) || null;
+export function getTopAchievement(stats, unlockedIds) {
+  return ACHIEVEMENTS.find((a) => isUnlocked(a, stats, unlockedIds)) || null;
+}
+
+// Achievements the live stats currently qualify for but that haven't been
+// recorded server-side yet — the profile page records these so they stick
+// from now on.
+export function unrecordedAchievementIds(stats, unlockedIds) {
+  return ACHIEVEMENTS.filter((a) => a.check(stats) && !unlockedIds.has(a.id)).map((a) => a.id);
 }
