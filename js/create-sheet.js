@@ -9,9 +9,9 @@ import { showToast } from './toast.js';
 // CDN load can't stop the + button from doing anything at all.
 
 // The + tab used to navigate to the dashboard, which meant leaving whatever
-// you were looking at to reach a form. This is the same create action as a
-// sheet over the current page — deliberately the essentials only, with a
-// link out to the full editor for description, links and tags.
+// you were looking at to reach a form. This is the full project editor as a
+// sheet over the current page — every field the dashboard modal has, so
+// there's never a reason to go elsewhere to finish creating something.
 let sheet = null;
 let overlay = null;
 let onStateChange = null;
@@ -40,8 +40,27 @@ function fieldsHtml() {
         <input type="text" id="sheet-summary" maxlength="200" placeholder="One sentence about it" />
       </div>
       <div class="field">
+        <label for="sheet-description">Description</label>
+        <textarea id="sheet-description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
+      </div>
+      <div class="field">
         <label for="sheet-image">Image URL</label>
         <input type="url" id="sheet-image" placeholder="https://…" />
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label for="sheet-repo">Repository URL</label>
+          <input type="url" id="sheet-repo" placeholder="https://github.com/…" />
+        </div>
+        <div class="field">
+          <label for="sheet-live">Live URL</label>
+          <input type="url" id="sheet-live" placeholder="https://…" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="sheet-tags">Tags</label>
+        <input type="text" id="sheet-tags" placeholder="react, api, side-project" />
+        <div class="hint">Comma-separated, up to 10 tags.</div>
       </div>
 
       <details class="sheet-details">
@@ -66,7 +85,6 @@ function fieldsHtml() {
         <label for="sheet-published" style="margin:0;">Publish immediately</label>
       </div>
       <button class="btn btn-primary btn-block" type="submit" id="sheet-submit">Create project</button>
-      <a class="btn btn-ghost btn-block" href="/dashboard.html?new=1" id="sheet-full-editor">More options in the full editor</a>
     </form>
   `;
 }
@@ -179,11 +197,16 @@ function mount() {
       const id = await createProject(user.id, displayNameOf(user), {
         title,
         summary: sheet.querySelector('#sheet-summary').value.trim(),
-        description: '',
+        description: sheet.querySelector('#sheet-description').value.trim(),
         imageUrl: sheet.querySelector('#sheet-image').value.trim(),
-        tags: [],
-        repoUrl: '',
-        liveUrl: '',
+        tags: sheet
+          .querySelector('#sheet-tags')
+          .value.split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, 10),
+        repoUrl: sheet.querySelector('#sheet-repo').value.trim(),
+        liveUrl: sheet.querySelector('#sheet-live').value.trim(),
         type: sheet.querySelector('#sheet-type').value,
         scrollImageUrl: sheet.querySelector('#sheet-scroll-image').value.trim(),
         scrollBg: sheet.querySelector('#sheet-scroll-bg').value,

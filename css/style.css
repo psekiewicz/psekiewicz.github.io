@@ -2179,11 +2179,20 @@ body.has-bottom-nav .scroll-card {
   border-top-right-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Translating it out of sight is not the same as taking it away: the box
+     still sat over the tab bar and swallowed every tap there, so after one
+     close the whole bottom navigation was dead until a reload. visibility
+     is what actually removes it, delayed so the slide-out still plays. */
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.32s;
 }
 
 .create-sheet.is-open {
   transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Wider than a phone it stops being a sheet and reads better as a panel. */
