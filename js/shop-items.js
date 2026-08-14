@@ -13,12 +13,14 @@ export const SHOP_ITEMS = [
   { id: 'bg-midnight', category: 'bg', label: 'Midnight', price: 75 },
   { id: 'bg-aurora', category: 'bg', label: 'Aurora', price: 150 },
   { id: 'bg-confetti', category: 'bg', label: 'Confetti', price: 200 },
+  { id: 'bg-blocks', category: 'bg', label: 'Blocks', price: 100 },
 
   { id: 'border-bronze', category: 'border', label: 'Bronze Ring', price: 30 },
   { id: 'border-silver', category: 'border', label: 'Silver Ring', price: 60 },
   { id: 'border-gold', category: 'border', label: 'Gold Ring', price: 120 },
   { id: 'border-neon', category: 'border', label: 'Neon Glow', price: 150 },
   { id: 'border-rainbow', category: 'border', label: 'Rainbow Ring', price: 200 },
+  { id: 'border-flame', category: 'border', label: 'Blue Flame', price: 250 },
 
   { id: 'name-gradient', category: 'name', label: 'Gradient', price: 40 },
   { id: 'name-shadow', category: 'name', label: 'Pop Shadow', price: 60 },

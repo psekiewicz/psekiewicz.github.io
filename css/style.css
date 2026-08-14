@@ -2170,6 +2170,10 @@ body.has-bottom-nav .scroll-card {
   }
 }
 
+.shop-bg-blocks {
+  background: url('/assets/shop/bg-blocks.webp') center / cover no-repeat;
+}
+
 .shop-bg-confetti {
   background-color: #4338ca;
   background-image: radial-gradient(circle at 15% 25%, #fbbf24 0 4px, transparent 5px),
@@ -2233,6 +2237,52 @@ body.has-bottom-nav .scroll-card {
   100% {
     box-shadow: 0 0 0 3px #ff3b3b, 0 0 14px 1px rgba(255, 59, 59, 0.5);
   }
+}
+
+/* Image-art borders work differently from the box-shadow rings above: the
+   frame is a picture that has to sit *around* the avatar, so it's drawn as
+   an oversized pseudo-element. Two consequences handled here:
+   - .avatar/.profile-avatar clip their content with overflow:hidden (that's
+     what makes the photo circular), which would cut the frame off — so
+     framed avatars switch to overflow:visible and get their roundness from
+     border-radius on the image itself instead.
+   - the pseudo-element is sized and offset in percentages of the avatar, so
+     one rule works at every avatar size from the 26px navbar chip up.
+   The percentages come from measuring the artwork: its transparent inner
+   hole is 377x386 of a 640x584 image, centred at (327, 319.5) — so the
+   frame is 169.76% x 151.30% of the hole, shifted to line the hole's centre
+   up with the avatar's. */
+.shop-border-flame {
+  overflow: visible;
+  position: relative;
+}
+
+.shop-border-flame img {
+  border-radius: 50%;
+}
+
+.shop-border-flame::after {
+  content: '';
+  position: absolute;
+  left: -36.74%;
+  top: -32.77%;
+  width: 169.76%;
+  height: 151.30%;
+  background: url('/assets/shop/border-flame.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* The frame overhangs its avatar by roughly a third of the avatar's width on
+   each side. That's fine over empty space, but it would sit on top of the
+   text that follows the avatar, so framed avatars reserve the room. The
+   pseudo-element itself is pointer-events:none, so this is purely visual —
+   it never swallows a click on whatever it overlaps. */
+.profile-header .shop-border-flame {
+  margin-right: 18px;
+}
+
+.avatar.shop-border-flame {
+  margin: 0 8px;
 }
 
 /* ---------- Nickname effects (shop item, wraps a display name) ---------- */
