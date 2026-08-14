@@ -232,7 +232,7 @@ Postgres table `public.unlocked_achievements`, one row per achievement a user ha
 | `achievement_id` | text        | One of the ids in `js/achievements.js`     |
 | `claimed_at`     | timestamptz | Defaults to `now()`                        |
 
-Primary key is `(user_id, achievement_id)`, so an achievement can only ever be claimed (and paid out) once. Readable only by its own owner; there's no insert/update/delete policy at all — rows are only ever written by `claim_achievement()` (`security definer`), which re-checks eligibility against `projects`/`likes`/`comments`/`follows`/`profiles` itself rather than trusting a client-supplied stats object, then increments `profiles.points` by a hardcoded reward.
+Primary key is `(user_id, achievement_id)`, so an achievement can only ever be claimed (and paid out) once. Readable only by its own owner; there's no insert/update/delete policy at all — rows are only ever written by `claim_achievement()` (`security definer`), which looks up the achievement's metric/threshold/reward from `public.achievement_defs`, computes that metric for the caller via `achievement_metric()` (a small `case` over named metrics like `total_likes`/`follower_count`/`account_age_days`, each querying `projects`/`likes`/`comments`/`follows`/`profiles` directly rather than trusting a client-supplied stats object), and only then increments `profiles.points`. `achievement_defs` (id → metric, threshold, reward) is what makes adding a new achievement later just an `INSERT`, not a rewrite of `claim_achievement()` itself — it's publicly readable but only ever edited by hand in the SQL Editor.
 
 Postgres table `public.owned_items`, one row per shop item a user has purchased:
 
@@ -242,7 +242,7 @@ Postgres table `public.owned_items`, one row per shop item a user has purchased:
 | `item_id`      | text        | One of the ids in `js/shop-items.js`       |
 | `purchased_at` | timestamptz | Defaults to `now()`                        |
 
-Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Readable only by its own owner; likewise no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which checks a hardcoded price against `profiles.points` before charging.
+Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Publicly readable (like `likes`/`follows`/`comments`) so the "Collector" achievement can be checked on anyone's profile, not just your own; there's no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which checks a hardcoded price against `profiles.points` before charging.
 
 ## Legal / compliance
 

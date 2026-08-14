@@ -478,11 +478,76 @@ create policy "Owned items are publicly readable"
 -- ever written by purchase_item() (security definer), which re-checks the
 -- price and balance server-side.
 
--- Verifies eligibility for `p_achievement_id` itself (mirroring the
--- `check` functions in js/achievements.js) rather than trusting a
--- client-passed stats object, then pays out a fixed reward exactly once.
--- The reward amounts here are the source of truth; js/achievements.js's
--- `reward` field is a display-only copy that must be kept in sync by hand.
+-- Achievement definitions live in a table, not hardcoded in a function, so
+-- adding one later (or tweaking a threshold/reward) is a single small
+-- INSERT/UPDATE instead of a CREATE OR REPLACE FUNCTION covering all of
+-- them at once — much easier to paste into the SQL Editor incrementally.
+-- `metric` picks which measurement achievement_metric() below computes;
+-- several achievements share the same metric at different thresholds
+-- (e.g. 'total_likes' backs both well-liked and crowd-favorite).
+create table if not exists public.achievement_defs (
+  id text primary key,
+  metric text not null,
+  threshold numeric not null,
+  reward integer not null
+);
+
+alter table public.achievement_defs enable row level security;
+
+drop policy if exists "Achievement definitions are publicly readable" on public.achievement_defs;
+create policy "Achievement definitions are publicly readable"
+  on public.achievement_defs for select
+  using (true);
+
+-- No insert/update/delete policy: this table is config, only ever edited
+-- by the site owner directly in the SQL Editor, never by client code.
+
+-- Computes one named metric for one user, mirroring the stat calculations
+-- in js/achievements.js's getUserStats() rather than trusting a
+-- client-passed stats object.
+create or replace function public.achievement_metric(p_uid uuid, p_metric text)
+returns numeric
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  case p_metric
+    when 'published_projects' then
+      return (select count(*) from public.projects where user_id = p_uid and published = true);
+    when 'total_likes' then
+      return (
+        select count(*) from public.likes l join public.projects p on p.id = l.project_id
+        where p.user_id = p_uid and p.published = true
+      );
+    when 'total_views' then
+      return (select coalesce(sum(views_count), 0) from public.projects where user_id = p_uid and published = true);
+    when 'comment_count' then
+      return (select count(*) from public.comments where user_id = p_uid);
+    when 'follower_count' then
+      return (select count(*) from public.follows where following_id = p_uid);
+    when 'following_count' then
+      return (select count(*) from public.follows where follower_id = p_uid);
+    when 'owned_items_count' then
+      return (select count(*) from public.owned_items where user_id = p_uid);
+    when 'account_age_days' then
+      return (select extract(epoch from (now() - created_at)) / 86400 from public.profiles where id = p_uid);
+    when 'profile_complete' then
+      return (select case when bio <> '' and avatar_url <> '' then 1 else 0 end from public.profiles where id = p_uid);
+    when 'stylized' then
+      return (
+        select case when equipped_bg <> 'none' and equipped_border <> 'none' and equipped_name_effect <> 'none' then 1 else 0 end
+        from public.profiles where id = p_uid
+      );
+    else
+      raise exception 'Unknown metric: %', p_metric;
+  end case;
+end;
+$$;
+
+-- Looks up the achievement's metric/threshold/reward from achievement_defs,
+-- re-checks eligibility server-side (never trusts the client), and pays
+-- out the reward exactly once.
 create or replace function public.claim_achievement(p_achievement_id text)
 returns integer
 language plpgsql
@@ -491,84 +556,20 @@ set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_reward integer;
-  v_eligible boolean;
+  v_def record;
+  v_value numeric;
 begin
   if v_uid is null then
     raise exception 'Not signed in';
   end if;
 
-  case p_achievement_id
-    when 'launched' then
-      v_reward := 20;
-      v_eligible := exists (select 1 from public.projects where user_id = v_uid and published = true);
-    when 'well-liked' then
-      v_reward := 30;
-      v_eligible := (
-        select count(*) from public.likes l join public.projects p on p.id = l.project_id
-        where p.user_id = v_uid and p.published = true
-      ) >= 10;
-    when 'veteran' then
-      v_reward := 50;
-      v_eligible := (select created_at from public.profiles where id = v_uid) <= now() - interval '365 days';
-    when 'conversationalist' then
-      v_reward := 40;
-      v_eligible := (select count(*) from public.comments where user_id = v_uid) >= 10;
-    when 'builder' then
-      v_reward := 60;
-      v_eligible := (select count(*) from public.projects where user_id = v_uid and published = true) >= 5;
-    when 'influencer' then
-      v_reward := 80;
-      v_eligible := (select count(*) from public.follows where following_id = v_uid) >= 10;
-    when 'crowd-favorite' then
-      v_reward := 100;
-      v_eligible := (
-        select count(*) from public.likes l join public.projects p on p.id = l.project_id
-        where p.user_id = v_uid and p.published = true
-      ) >= 50;
-    when 'icon' then
-      v_reward := 150;
-      v_eligible := (
-        select count(*) from public.likes l join public.projects p on p.id = l.project_id
-        where p.user_id = v_uid and p.published = true
-      ) >= 100;
-    when 'popular' then
-      v_reward := 140;
-      v_eligible := (select count(*) from public.follows where following_id = v_uid) >= 50;
-    when 'prolific' then
-      v_reward := 90;
-      v_eligible := (select count(*) from public.projects where user_id = v_uid and published = true) >= 10;
-    when 'old-timer' then
-      v_reward := 90;
-      v_eligible := (select created_at from public.profiles where id = v_uid) <= now() - interval '730 days';
-    when 'viral' then
-      v_reward := 90;
-      v_eligible := (
-        select coalesce(sum(views_count), 0) from public.projects where user_id = v_uid and published = true
-      ) >= 1000;
-    when 'chatterbox' then
-      v_reward := 70;
-      v_eligible := (select count(*) from public.comments where user_id = v_uid) >= 25;
-    when 'collector' then
-      v_reward := 70;
-      v_eligible := (select count(*) from public.owned_items where user_id = v_uid) >= 5;
-    when 'trendsetter' then
-      v_reward := 60;
-      v_eligible := (
-        select equipped_bg <> 'none' and equipped_border <> 'none' and equipped_name_effect <> 'none'
-        from public.profiles where id = v_uid
-      );
-    when 'social-butterfly' then
-      v_reward := 25;
-      v_eligible := (select count(*) from public.follows where follower_id = v_uid) >= 10;
-    when 'all-set' then
-      v_reward := 15;
-      v_eligible := (select bio <> '' and avatar_url <> '' from public.profiles where id = v_uid);
-    else
-      raise exception 'Unknown achievement: %', p_achievement_id;
-  end case;
+  select * into v_def from public.achievement_defs where id = p_achievement_id;
+  if not found then
+    raise exception 'Unknown achievement: %', p_achievement_id;
+  end if;
 
-  if not v_eligible then
+  v_value := public.achievement_metric(v_uid, v_def.metric);
+  if v_value < v_def.threshold then
     raise exception 'Achievement not yet earned';
   end if;
 
@@ -580,7 +581,7 @@ begin
   -- false on conflict, which is what keeps a repeat claim from paying out
   -- twice.
   if found then
-    update public.profiles set points = points + v_reward where id = v_uid;
+    update public.profiles set points = points + v_def.reward where id = v_uid;
   end if;
 
   return (select points from public.profiles where id = v_uid);
@@ -588,6 +589,32 @@ end;
 $$;
 
 grant execute on function public.claim_achievement(text) to authenticated;
+
+-- The reward/threshold values here are the source of truth; js/achievements.js's
+-- `reward` field (and the >= thresholds in its `check` functions) are a
+-- display-only copy that must be kept in sync by hand.
+insert into public.achievement_defs (id, metric, threshold, reward) values
+  ('launched', 'published_projects', 1, 20),
+  ('builder', 'published_projects', 5, 60),
+  ('prolific', 'published_projects', 10, 90),
+  ('well-liked', 'total_likes', 10, 30),
+  ('crowd-favorite', 'total_likes', 50, 100),
+  ('icon', 'total_likes', 100, 150),
+  ('veteran', 'account_age_days', 365, 50),
+  ('old-timer', 'account_age_days', 730, 90),
+  ('conversationalist', 'comment_count', 10, 40),
+  ('chatterbox', 'comment_count', 25, 70),
+  ('influencer', 'follower_count', 10, 80),
+  ('popular', 'follower_count', 50, 140),
+  ('social-butterfly', 'following_count', 10, 25),
+  ('viral', 'total_views', 1000, 90),
+  ('collector', 'owned_items_count', 5, 70),
+  ('trendsetter', 'stylized', 1, 60),
+  ('all-set', 'profile_complete', 1, 15)
+on conflict (id) do update set
+  metric = excluded.metric,
+  threshold = excluded.threshold,
+  reward = excluded.reward;
 
 -- Prices here are the source of truth (js/shop-items.js's `price` field is
 -- a display-only copy that must be kept in sync by hand). Charges points
