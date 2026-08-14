@@ -251,5 +251,6 @@ Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. P
 
 ## Notes
 
+- **Keeping the free Supabase tier awake** — free-tier Supabase projects auto-pause after 7 days with no API activity. [`.github/workflows/supabase-keepalive.yml`](./.github/workflows/supabase-keepalive.yml) pings the REST API every 3 days via a scheduled GitHub Action (reads the URL/anon key straight from `js/supabase-config.js`, so it never needs editing) — set it and forget it. Also worth setting a spend cap in Supabase's billing settings so a traffic spike can never turn into a surprise bill.
 - Since there's no backend, the in-app brute-force protection from the original Express version isn't present — Supabase Auth has its own built-in rate limiting instead.
 - The one piece of server-side logic this app needs — banning/deleting accounts, which requires the `service_role` key — runs as a Supabase Edge Function (see "Real bans and account deletion" above) rather than a server you host. If you ever need more server-side logic (sending emails, webhooks, scheduled jobs), that's the same mechanism to reach for.

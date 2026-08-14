@@ -1,0 +1,34 @@
+name: Supabase keep-alive
+
+# Free-tier Supabase projects auto-pause after 7 days with no API activity.
+# This pings the REST API every 3 days (comfortable margin) so the project
+# never goes to sleep, without needing anyone to remember to open the app.
+# URL/anon key are read straight from js/supabase-config.js — the same
+# public, safe-to-expose values already committed there — so this workflow
+# never needs editing if the Supabase project ever changes.
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ping Supabase REST API
+        run: |
+          set -euo pipefail
+          url=$(grep -oP "url: '\K[^']+" js/supabase-config.js)
+          key=$(grep -oP "anonKey: '\K[^']+" js/supabase-config.js)
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "$url/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $key" \
+            -H "Authorization: Bearer $key")
+          echo "Supabase REST API responded with HTTP $status"
+          if [ "$status" -ge 400 ]; then
+            echo "::error::Supabase keep-alive ping failed with HTTP $status"
+            exit 1
+          fi
