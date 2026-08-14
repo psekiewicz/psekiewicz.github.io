@@ -7,7 +7,7 @@ import { getUserStats, getTopAchievement } from './achievements.js';
 import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
 import { effectClass } from './shop-items.js';
 import { levelFromStats, levelChipHtml } from './levels.js';
-import { watchProgress } from './progress-watch.js';
+import { watchProgress, PROGRESS_EVENT } from './progress-watch.js';
 import { mountNotifications, unmountNotifications } from './notifications-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -77,23 +77,41 @@ async function renderNavActions(container, user) {
   // Progressive enhancement: the chip is already visible and usable above,
   // this just quietly adds the level and best-achievement badges afterwards
   // — no need to block the rest of the navbar on either.
+  // Redrawn on every progress check, not just the first, so the level
+  // reflects what you just did rather than what you had when the page
+  // loaded.
+  function paintChipBadges(stats, records) {
+    const chip = container.querySelector('.user-chip');
+    if (!chip) return;
+
+    const level = levelFromStats(stats).level;
+    const existingChip = chip.querySelector('.level-chip');
+    if (!existingChip) {
+      chip.insertAdjacentHTML('beforeend', levelChipHtml(level, 'sm'));
+    } else if (existingChip.textContent !== `Lv ${level}`) {
+      existingChip.outerHTML = levelChipHtml(level, 'sm');
+    }
+
+    const top = getTopAchievement(stats, records.unlocked);
+    if (!top) return;
+    let badge = chip.querySelector('.name-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'name-badge';
+      chip.appendChild(badge);
+    }
+    badge.title = `${top.label} — ${top.description}`;
+    badge.innerHTML = icon(top.icon, { size: 12 });
+  }
+
+  if (!container.dataset.progressBound) {
+    container.dataset.progressBound = '1';
+    document.addEventListener(PROGRESS_EVENT, (e) => paintChipBadges(e.detail.stats, e.detail.records));
+  }
+
   Promise.all([getUserStats(user.id), getAchievementRecords(user.id).catch(() => EMPTY_ACHIEVEMENT_RECORDS)])
     .then(([stats, records]) => {
-      const chip = container.querySelector('.user-chip');
-      if (chip) {
-        if (!chip.querySelector('.level-chip')) {
-          chip.insertAdjacentHTML('beforeend', levelChipHtml(levelFromStats(stats).level, 'sm'));
-        }
-
-        const top = getTopAchievement(stats, records.unlocked);
-        if (top && !chip.querySelector('.name-badge')) {
-          const badge = document.createElement('span');
-          badge.className = 'name-badge';
-          badge.title = `${top.label} — ${top.description}`;
-          badge.innerHTML = icon(top.icon, { size: 12 });
-          chip.appendChild(badge);
-        }
-      }
+      paintChipBadges(stats, records);
 
       // The navbar is the one thing that loads on every page while signed
       // in, so it's also where new rewards get noticed and toasted —

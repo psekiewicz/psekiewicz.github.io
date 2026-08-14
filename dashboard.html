@@ -164,6 +164,7 @@
   <script type="module">
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getMyProjects, createProject, updateProject, togglePublish, deleteProject } from '/js/projects-data.js';
+    import { refreshProgress } from '/js/progress-watch.js';
     import { getRecentViewTimestamps } from '/js/views-data.js';
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
@@ -262,6 +263,7 @@
           await updateProject(id, payload);
         } else {
           await createProject(currentUser.id, displayNameOf(currentUser), payload);
+          refreshProgress();
         }
         closeModal();
         await loadProjects();
@@ -277,6 +279,7 @@
     async function handleTogglePublish(project) {
       try {
         await togglePublish(project.id, !project.published);
+        refreshProgress();
         await loadProjects();
       } catch (err) {
         alert(err.message);
@@ -287,6 +290,7 @@
       if (!confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
       try {
         await deleteProject(project.id);
+        refreshProgress();
         await loadProjects();
       } catch (err) {
         alert(err.message);

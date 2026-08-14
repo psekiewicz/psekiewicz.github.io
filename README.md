@@ -136,7 +136,8 @@ js/views-data.js         logProjectView() (via the log_project_view() RPC) + get
 js/achievements.js       Achievement definitions (incl. display-only `reward` copy) + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
 js/feed-rank.js          Scrolls ranking — engagement/recency scoring, weighted shuffle, seen-tracking and author spacing
 js/toast.js              Reward toast stack (achievement / level-up / XP)
-js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent
+js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent.
+                         Re-checks on tab focus and via refreshProgress() after anything that changes your own XP, so a reward doesn't wait for the next navigation
 js/levels.js             XP weights + levelFromXp()/levelFromStats()/levelChipHtml(), and getLevelsForUsers() to level a whole page of authors in a fixed four queries — all derived, nothing stored
 js/notifications-data.js Read/count/mark-read for your own notifications (RLS scopes them to you)
 js/notifications-ui.js   Navbar bell, unread badge and dropdown panel, injected rather than written into every page

@@ -72,6 +72,7 @@
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { getComments, addComment, deleteComment, getCommentCounts } from '/js/comments-data.js';
+    import { refreshProgress } from '/js/progress-watch.js';
     import { isAdmin } from '/js/admin-data.js';
     import { logProjectView } from '/js/views-data.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
@@ -338,6 +339,7 @@
           submitBtn.disabled = true;
           try {
             await addComment(project.id, currentUser.id, displayNameOf(currentUser), body);
+            refreshProgress();
             await renderDrawerComments(project);
           } catch (err) {
             alert(err.message);
