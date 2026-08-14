@@ -84,6 +84,40 @@ create trigger projects_set_updated_at
   before update on public.projects
   for each row execute function public.set_updated_at();
 
+-- Same idea for projects. Two things a client must not set:
+--
+-- views_count — owners can legitimately update their own row, so nothing
+-- stopped them writing views_count directly, and that number feeds XP,
+-- level, leaderboard position and the Scrolls ranking. It is only ever
+-- meant to move through log_project_view().
+--
+-- author_name — a denormalised copy of the owner's display name. It was
+-- whatever the client sent, so a project could be published under someone
+-- else's name. It is now always derived from the owning profile.
+create or replace function public.guard_project_client_writes()
+returns trigger as $$
+declare
+  v_display_name text;
+begin
+  if current_user in ('authenticated', 'anon') then
+    if tg_op = 'UPDATE' then
+      new.views_count := old.views_count;
+    else
+      new.views_count := 0;
+    end if;
+
+    select display_name into v_display_name from public.profiles where id = new.user_id;
+    new.author_name := coalesce(v_display_name, '');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists projects_guard_client_writes on public.projects;
+create trigger projects_guard_client_writes
+  before insert or update on public.projects
+  for each row execute function public.guard_project_client_writes();
+
 -- Row Level Security: no one can read/write anything unless a policy below allows it.
 alter table public.projects enable row level security;
 
@@ -338,6 +372,48 @@ create index if not exists comments_project_id_idx on public.comments (project_i
 
 alter table public.comments enable row level security;
 
+-- A comment's author_name was also whatever the client sent, so a comment
+-- could be posted under someone else's name from your own account. Derived
+-- from the owning profile like projects above.
+create or replace function public.guard_comment_client_writes()
+returns trigger as $$
+declare
+  v_display_name text;
+begin
+  if current_user in ('authenticated', 'anon') then
+    select display_name into v_display_name from public.profiles where id = new.user_id;
+    new.author_name := coalesce(v_display_name, '');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists comments_guard_client_writes on public.comments;
+create trigger comments_guard_client_writes
+  before insert or update on public.comments
+  for each row execute function public.guard_comment_client_writes();
+
+-- author_name is a denormalised copy, so the two guards above only keep it
+-- honest at write time: renaming yourself used to leave every project and
+-- comment you had already posted showing the old name forever. Propagating
+-- the rename here keeps the copies true without the client ever being
+-- trusted to update them. Defined after comments so both tables exist.
+create or replace function public.sync_author_name()
+returns trigger as $$
+begin
+  if new.display_name is distinct from old.display_name then
+    update public.projects set author_name = new.display_name where user_id = new.id;
+    update public.comments set author_name = new.display_name where user_id = new.id;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+drop trigger if exists profiles_sync_author_name on public.profiles;
+create trigger profiles_sync_author_name
+  after update on public.profiles
+  for each row execute function public.sync_author_name();
+
 drop policy if exists "Comments are readable if their project is" on public.comments;
 create policy "Comments are readable if their project is"
   on public.comments for select
@@ -459,13 +535,34 @@ alter table public.profiles add column if not exists equipped_bg text not null d
 alter table public.profiles add column if not exists equipped_border text not null default 'none';
 alter table public.profiles add column if not exists equipped_name_effect text not null default 'none';
 
--- Only claim_achievement()/purchase_item() below (both security definer,
--- so they run with elevated privileges regardless of this grant) are
--- allowed to change points — revoking column-level update from the
--- `authenticated` role means a direct
--- `supabase.from('profiles').update({ points: 999999 })` from the browser
--- console is rejected by Postgres itself, not just hidden UI.
-revoke update (points) on public.profiles from authenticated;
+-- Columns a signed-in client must never write directly.
+--
+-- This was originally `revoke update (points) ... from authenticated`,
+-- which does nothing: in Postgres a table-level UPDATE grant covers every
+-- column, and revoking one column back does not override it. Points were
+-- forgeable the whole time with a plain
+-- `supabase.from('profiles').update({ points: 999999 })`.
+--
+-- A trigger is the robust control because it doesn't depend on grant
+-- ordering, and nothing Supabase re-grants later can silently undo it.
+-- Deliberately NOT `security definer`: current_user has to stay the role
+-- actually executing, so a direct PostgREST call shows up as
+-- authenticated/anon while claim_achievement()/purchase_item() (which are
+-- security definer) run as their owner and pass straight through.
+create or replace function public.guard_profile_client_writes()
+returns trigger as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    new.points := old.points;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists profiles_guard_client_writes on public.profiles;
+create trigger profiles_guard_client_writes
+  before update on public.profiles
+  for each row execute function public.guard_profile_client_writes();
 
 -- One row per (user, achievement) the user has ever earned. This is what
 -- makes achievements permanent: they're recorded the moment they're first
