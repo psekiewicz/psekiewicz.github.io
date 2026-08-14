@@ -64,6 +64,17 @@
     </div>
   </div>
 
+  <!-- Achievement detail modal (tap a badge to see how to earn it) -->
+  <div class="modal-overlay" id="achievement-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="achievement-modal-title" style="margin:0;">Achievement</h2>
+        <button class="modal-close" id="achievement-modal-close" type="button" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div id="achievement-modal-body" style="text-align:center;"></div>
+    </div>
+  </div>
+
   <script type="module" src="/js/theme.js"></script>
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
@@ -100,6 +111,52 @@
     listModal.addEventListener('click', (e) => {
       if (e.target === listModal) listModal.classList.remove('is-open');
     });
+
+    const achievementModal = document.getElementById('achievement-modal');
+    const achievementModalTitle = document.getElementById('achievement-modal-title');
+    const achievementModalBody = document.getElementById('achievement-modal-body');
+    document
+      .getElementById('achievement-modal-close')
+      .addEventListener('click', () => achievementModal.classList.remove('is-open'));
+    achievementModal.addEventListener('click', (e) => {
+      if (e.target === achievementModal) achievementModal.classList.remove('is-open');
+    });
+
+    // Tapping a badge is the only reliable way to see "how do I earn this"
+    // on mobile — a `title` tooltip needs a hover that touchscreens don't have.
+    function openAchievementModal(achievement, isOwnProfile, claimed, onClaimed) {
+      achievementModalTitle.textContent = achievement.label;
+      const statusClass = achievement.unlocked ? 'is-unlocked' : 'is-locked';
+      let claimLine = '';
+      if (isOwnProfile && achievement.unlocked) {
+        claimLine = claimed
+          ? `<p style="color:var(--color-success);font-weight:700;">${icon('check', { size: 14 })} Claimed +${achievement.reward} pts</p>`
+          : `<button class="btn btn-primary" type="button" id="achievement-modal-claim-btn">Claim +${achievement.reward} pts</button>`;
+      }
+      achievementModalBody.innerHTML = `
+        <div class="achievement-modal-icon ${statusClass}">${icon(achievement.icon, { size: 30 })}</div>
+        <span class="achievement-modal-status ${statusClass}">${achievement.unlocked ? 'Unlocked' : 'Locked'}</span>
+        <p>${escapeHtml(achievement.description)}</p>
+        <p style="color:var(--color-text-faint);font-size:0.85rem;">Reward: +${achievement.reward} pts</p>
+        ${claimLine}
+      `;
+      achievementModal.classList.add('is-open');
+
+      const claimBtn = document.getElementById('achievement-modal-claim-btn');
+      if (claimBtn) {
+        claimBtn.addEventListener('click', async () => {
+          claimBtn.disabled = true;
+          try {
+            await claimAchievement(achievement.id);
+            achievementModal.classList.remove('is-open');
+            await onClaimed();
+          } catch (err) {
+            alert(err.message);
+            claimBtn.disabled = false;
+          }
+        });
+      }
+    }
 
     function renderPeopleList(people) {
       if (people.length === 0) return '<p>Nobody here yet.</p>';
@@ -240,7 +297,7 @@
                     : `<button class="btn btn-primary btn-sm achievement-claim-btn" type="button" data-claim="${a.id}" data-reward="${a.reward}">Claim +${a.reward}</button>`;
                 }
                 return `
-                  <div class="achievement-badge${a.unlocked ? ' is-unlocked' : ' is-locked'}" title="${escapeHtml(a.description)}">
+                  <div class="achievement-badge${a.unlocked ? ' is-unlocked' : ' is-locked'}" data-achievement-id="${a.id}">
                     <span class="achievement-icon">${icon(a.icon, { size: 22 })}</span>
                     <span class="achievement-label">${escapeHtml(a.label)}</span>
                     ${claimControl}
@@ -320,7 +377,8 @@
       }
 
       root.querySelectorAll('[data-claim]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
           btn.disabled = true;
           try {
             await claimAchievement(btn.dataset.claim);
@@ -329,6 +387,13 @@
             alert(err.message);
             btn.disabled = false;
           }
+        });
+      });
+
+      root.querySelectorAll('.achievement-badge').forEach((badgeEl) => {
+        badgeEl.addEventListener('click', () => {
+          const a = achievements.find((x) => x.id === badgeEl.dataset.achievementId);
+          if (a) openAchievementModal(a, isOwnProfile, claimedIds.has(a.id), render);
         });
       });
     }

@@ -464,10 +464,15 @@ create table if not exists public.owned_items (
 
 alter table public.owned_items enable row level security;
 
+-- Public read (like likes/follows/comments) rather than owner-only: the
+-- "Collector" achievement (own 5+ shop items) needs to be checkable on
+-- anyone's profile, not just your own, and there's nothing sensitive about
+-- what cosmetics someone has bought.
 drop policy if exists "Users can read their own owned items" on public.owned_items;
-create policy "Users can read their own owned items"
+drop policy if exists "Owned items are publicly readable" on public.owned_items;
+create policy "Owned items are publicly readable"
   on public.owned_items for select
-  using (auth.uid() = user_id);
+  using (true);
 
 -- Deliberately no insert/update/delete policy here either: rows are only
 -- ever written by purchase_item() (security definer), which re-checks the
@@ -521,6 +526,44 @@ begin
         select count(*) from public.likes l join public.projects p on p.id = l.project_id
         where p.user_id = v_uid and p.published = true
       ) >= 50;
+    when 'icon' then
+      v_reward := 150;
+      v_eligible := (
+        select count(*) from public.likes l join public.projects p on p.id = l.project_id
+        where p.user_id = v_uid and p.published = true
+      ) >= 100;
+    when 'popular' then
+      v_reward := 140;
+      v_eligible := (select count(*) from public.follows where following_id = v_uid) >= 50;
+    when 'prolific' then
+      v_reward := 90;
+      v_eligible := (select count(*) from public.projects where user_id = v_uid and published = true) >= 10;
+    when 'old-timer' then
+      v_reward := 90;
+      v_eligible := (select created_at from public.profiles where id = v_uid) <= now() - interval '730 days';
+    when 'viral' then
+      v_reward := 90;
+      v_eligible := (
+        select coalesce(sum(views_count), 0) from public.projects where user_id = v_uid and published = true
+      ) >= 1000;
+    when 'chatterbox' then
+      v_reward := 70;
+      v_eligible := (select count(*) from public.comments where user_id = v_uid) >= 25;
+    when 'collector' then
+      v_reward := 70;
+      v_eligible := (select count(*) from public.owned_items where user_id = v_uid) >= 5;
+    when 'trendsetter' then
+      v_reward := 60;
+      v_eligible := (
+        select equipped_bg <> 'none' and equipped_border <> 'none' and equipped_name_effect <> 'none'
+        from public.profiles where id = v_uid
+      );
+    when 'social-butterfly' then
+      v_reward := 25;
+      v_eligible := (select count(*) from public.follows where follower_id = v_uid) >= 10;
+    when 'all-set' then
+      v_reward := 15;
+      v_eligible := (select bio <> '' and avatar_url <> '' from public.profiles where id = v_uid);
     else
       raise exception 'Unknown achievement: %', p_achievement_id;
   end case;

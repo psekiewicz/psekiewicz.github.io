@@ -1892,6 +1892,7 @@ body.has-bottom-nav .scroll-card {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   animation: fade-in-up 0.35s ease both;
 }
@@ -2259,6 +2260,48 @@ body.has-bottom-nav .scroll-card {
 .achievement-claim-btn {
   padding: 5px 12px;
   font-size: 0.72rem;
+}
+
+/* ---------- Achievement detail modal ---------- */
+.achievement-modal-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.achievement-modal-icon.is-unlocked {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff;
+}
+
+.achievement-modal-icon.is-locked {
+  background: var(--color-muted-soft);
+  color: var(--color-text-faint);
+}
+
+.achievement-modal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+
+.achievement-modal-status.is-unlocked {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.achievement-modal-status.is-locked {
+  background: var(--color-muted-soft);
+  color: var(--color-text-faint);
 }
 
 @media (max-width: 720px) {
