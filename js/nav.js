@@ -7,6 +7,7 @@ import { getUserStats, getTopAchievement } from './achievements.js';
 import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
 import { effectClass } from './shop-items.js';
 import { levelFromStats, levelChipHtml } from './levels.js';
+import { watchProgress } from './progress-watch.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
@@ -75,20 +76,26 @@ async function renderNavActions(container, user) {
   Promise.all([getUserStats(user.id), getAchievementRecords(user.id).catch(() => EMPTY_ACHIEVEMENT_RECORDS)])
     .then(([stats, records]) => {
       const chip = container.querySelector('.user-chip');
-      if (!chip) return;
+      if (chip) {
+        if (!chip.querySelector('.level-chip')) {
+          chip.insertAdjacentHTML('beforeend', levelChipHtml(levelFromStats(stats).level, 'sm'));
+        }
 
-      if (!chip.querySelector('.level-chip')) {
-        chip.insertAdjacentHTML('beforeend', levelChipHtml(levelFromStats(stats).level, 'sm'));
+        const top = getTopAchievement(stats, records.unlocked);
+        if (top && !chip.querySelector('.name-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'name-badge';
+          badge.title = `${top.label} — ${top.description}`;
+          badge.innerHTML = icon(top.icon, { size: 12 });
+          chip.appendChild(badge);
+        }
       }
 
-      const top = getTopAchievement(stats, records.unlocked);
-      if (top && !chip.querySelector('.name-badge')) {
-        const badge = document.createElement('span');
-        badge.className = 'name-badge';
-        badge.title = `${top.label} — ${top.description}`;
-        badge.innerHTML = icon(top.icon, { size: 12 });
-        chip.appendChild(badge);
-      }
+      // The navbar is the one thing that loads on every page while signed
+      // in, so it's also where new rewards get noticed and toasted —
+      // piggybacking on the stats it already had to fetch rather than
+      // querying for them a second time somewhere else.
+      watchProgress(user.id, stats, records);
     })
     .catch(() => {});
 
