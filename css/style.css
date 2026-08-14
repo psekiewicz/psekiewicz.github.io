@@ -448,6 +448,142 @@ img {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+  /* Every icon reacts to interaction; the rules under "Icon animations"
+     below decide how. The overshoot curve is what makes it read as a
+     physical press rather than a fade. The global prefers-reduced-motion
+     block near the top of this file flattens all of it for anyone who's
+     asked for less movement. */
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Icon animations ---------- */
+
+/* Buttons and links: the icon leads the press. */
+.btn:hover .icon,
+.card-edit-btn:hover .icon {
+  transform: translateY(-1px) scale(1.1);
+}
+
+.btn:active .icon,
+.card-edit-btn:active .icon {
+  transform: scale(0.9);
+}
+
+.nav-link .icon,
+.type-badge .icon {
+  transition: transform 0.18s ease;
+}
+
+.type-badge:hover .icon {
+  transform: rotate(-8deg) scale(1.12);
+}
+
+/* Bottom tab bar: the icon lifts into the active tab and dips on tap. */
+.bottom-nav-icon > * {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bottom-nav-item.active .bottom-nav-icon > * {
+  transform: translateY(-2px) scale(1.12);
+}
+
+.bottom-nav-item:active .bottom-nav-icon > * {
+  transform: scale(0.86);
+}
+
+.bottom-nav-add:hover .bottom-nav-icon .icon {
+  transform: rotate(90deg);
+}
+
+/* Scrolls rail: the whole control pops, since the icons there are the
+   primary controls rather than decoration. */
+.scroll-rail-btn:hover .scroll-rail-icon .icon {
+  transform: scale(1.18);
+}
+
+.scroll-rail-btn:active .scroll-rail-icon .icon {
+  transform: scale(0.85);
+}
+
+/* The bell nudges rather than spins — it's a notification, not a toy. */
+.notif-bell:hover .icon {
+  animation: bell-swing 0.6s ease;
+  transform-origin: 50% 15%;
+}
+
+@keyframes bell-swing {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(12deg);
+  }
+  45% {
+    transform: rotate(-9deg);
+  }
+  70% {
+    transform: rotate(5deg);
+  }
+}
+
+.theme-toggle {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  transform: rotate(-18deg) scale(1.06);
+}
+
+.theme-toggle:active {
+  transform: scale(0.9);
+}
+
+/* Achievement tiles are tap targets on mobile (they open the detail
+   modal), so their icon reacts too. */
+.achievement-badge:hover .achievement-icon .icon {
+  transform: rotate(-10deg) scale(1.14);
+}
+
+.achievement-badge:active .achievement-icon .icon {
+  transform: scale(0.92);
+}
+
+.name-badge .icon,
+.level-chip {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.user-chip:hover .name-badge .icon {
+  transform: scale(1.15);
+}
+
+.leaderboard-row:hover .level-chip {
+  transform: scale(1.08);
+}
+
+/* Toast icons land with a bounce so the reward registers. */
+.toast-icon .icon {
+  animation: toast-icon-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-icon-pop {
+  0% {
+    transform: scale(0.3) rotate(-25deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.notif-item:hover .avatar {
+  transform: scale(1.06);
+}
+
+.avatar {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---------- Hero ---------- */
@@ -1932,6 +2068,17 @@ body.has-bottom-nav .scroll-card {
 }
 
 /* ---------- Notifications bell + panel ---------- */
+
+/* The browser's own `[hidden] { display: none }` comes from the UA
+   stylesheet, so any author rule setting `display` beats it — the panel and
+   badge below both set one, which left them permanently on screen no matter
+   what the `hidden` property said. These restore it at a specificity that
+   wins over the class rules. */
+.notif-panel[hidden],
+.notif-badge[hidden] {
+  display: none;
+}
+
 .notif-wrap {
   position: relative;
   margin-right: 10px;
