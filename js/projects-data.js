@@ -110,6 +110,19 @@ async function applyUpdate(id, patch) {
   return toPlainProject(data[0]);
 }
 
+// Titles for a set of project ids in one round trip — the notifications
+// panel needs "liked <title>" for a handful of unrelated projects.
+// Returns a Map<projectId, title>.
+export async function getProjectTitles(projectIds) {
+  const uniqueIds = [...new Set(projectIds)].filter(Boolean);
+  const map = new Map();
+  if (uniqueIds.length === 0) return map;
+  const { data, error } = await supabase.from(TABLE).select('id, title').in('id', uniqueIds);
+  if (error) throw new Error(error.message);
+  data.forEach((row) => map.set(row.id, row.title));
+  return map;
+}
+
 export async function updateProject(id, fields) {
   return applyUpdate(id, {
     title: fields.title,

@@ -8,6 +8,7 @@ import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.
 import { effectClass } from './shop-items.js';
 import { levelFromStats, levelChipHtml } from './levels.js';
 import { watchProgress } from './progress-watch.js';
+import { mountNotifications, unmountNotifications } from './notifications-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
@@ -33,12 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function renderNavActions(container, user) {
   if (!user) {
+    unmountNotifications();
     container.innerHTML = `
       <a class="btn btn-ghost btn-sm" href="/login.html">Log in</a>
       <a class="btn btn-primary btn-sm" href="/register.html">Get started</a>
     `;
     return;
   }
+
+  mountNotifications();
 
   const name = displayNameOf(user);
   let avatarUrl = '';

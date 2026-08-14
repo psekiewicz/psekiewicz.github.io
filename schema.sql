@@ -797,6 +797,143 @@ create trigger profiles_guard_equipped_items
   before update on public.profiles
   for each row execute function public.prevent_unowned_equip();
 
+-- ============================================================
+-- Notifications — "someone followed you / liked or commented on your
+-- project". Written entirely by triggers rather than by the client: the
+-- person who causes a notification is never the person who receives it,
+-- so there's no way to express "you may insert this row" as an RLS policy
+-- the actor could satisfy. The trigger functions are security definer and
+-- work out the recipient themselves.
+-- ============================================================
+
+create table if not exists public.notifications (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  actor_id uuid references auth.users (id) on delete set null,
+  type text not null check (type in ('follow', 'like', 'comment')),
+  project_id uuid references public.projects (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
+
+alter table public.notifications enable row level security;
+
+drop policy if exists "Users can read their own notifications" on public.notifications;
+create policy "Users can read their own notifications"
+  on public.notifications for select
+  using (auth.uid() = user_id);
+
+-- Marking as read is the only update anyone needs; a user can only ever
+-- touch rows addressed to them, which nobody else can even see.
+drop policy if exists "Users can update their own notifications" on public.notifications;
+create policy "Users can update their own notifications"
+  on public.notifications for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete their own notifications" on public.notifications;
+create policy "Users can delete their own notifications"
+  on public.notifications for delete
+  using (auth.uid() = user_id);
+
+-- No insert policy at all — see the note above; the triggers below are the
+-- only writers.
+
+-- Skips when the same person already has an unread notification of the
+-- same kind about the same thing. Without this, unliking and re-liking (or
+-- toggling a follow) would pile up duplicates.
+create or replace function public.add_notification(
+  p_user_id uuid,
+  p_actor_id uuid,
+  p_type text,
+  p_project_id uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_user_id is null or p_actor_id is null or p_user_id = p_actor_id then
+    return;
+  end if;
+
+  if exists (
+    select 1 from public.notifications
+    where user_id = p_user_id
+      and actor_id = p_actor_id
+      and type = p_type
+      and project_id is not distinct from p_project_id
+      and read_at is null
+  ) then
+    return;
+  end if;
+
+  insert into public.notifications (user_id, actor_id, type, project_id)
+  values (p_user_id, p_actor_id, p_type, p_project_id);
+end;
+$$;
+
+create or replace function public.notify_on_follow()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform public.add_notification(new.following_id, new.follower_id, 'follow');
+  return new;
+end;
+$$;
+
+drop trigger if exists follows_notify on public.follows;
+create trigger follows_notify
+  after insert on public.follows
+  for each row execute function public.notify_on_follow();
+
+create or replace function public.notify_on_like()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner uuid;
+begin
+  select user_id into v_owner from public.projects where id = new.project_id;
+  perform public.add_notification(v_owner, new.user_id, 'like', new.project_id);
+  return new;
+end;
+$$;
+
+drop trigger if exists likes_notify on public.likes;
+create trigger likes_notify
+  after insert on public.likes
+  for each row execute function public.notify_on_like();
+
+create or replace function public.notify_on_comment()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner uuid;
+begin
+  select user_id into v_owner from public.projects where id = new.project_id;
+  perform public.add_notification(v_owner, new.user_id, 'comment', new.project_id);
+  return new;
+end;
+$$;
+
+drop trigger if exists comments_notify on public.comments;
+create trigger comments_notify
+  after insert on public.comments
+  for each row execute function public.notify_on_comment();
+
+
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor
 -- (this does NOT run automatically as part of this file — uncomment

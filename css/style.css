@@ -1931,6 +1931,128 @@ body.has-bottom-nav .scroll-card {
   height: 12px;
 }
 
+/* ---------- Notifications bell + panel ---------- */
+.notif-wrap {
+  position: relative;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.notif-bell {
+  position: relative;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.notif-bell:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(420px, 70vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 120;
+  overflow: hidden;
+}
+
+.notif-panel-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.notif-list {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.notif-list .hint {
+  padding: 14px 16px;
+  margin: 0;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.notif-item:hover {
+  background: var(--color-primary-soft);
+  text-decoration: none;
+}
+
+.notif-item.is-unread {
+  background: var(--color-primary-soft);
+}
+
+.notif-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.83rem;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.notif-time {
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+}
+
+@media (max-width: 720px) {
+  /* Anchored to the viewport rather than to the bell. The panel is wider
+     than the space to the left of the bell, so `right: 0` against the
+     relatively-positioned wrapper hung it off the left edge of the screen.
+     72px clears the 68px navbar. */
+  .notif-panel {
+    position: fixed;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 65vh;
+  }
+}
+
 /* ---------- Leaderboard ---------- */
 .leaderboard {
   display: flex;
