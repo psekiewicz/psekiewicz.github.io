@@ -86,17 +86,10 @@ create policy "Users can delete their own projects"
   using (auth.uid() = user_id);
 
 
--- How this project looks in the Scrolls feed. The card there is a
--- full-screen portrait, which a landscape thumbnail rarely suits — so a
--- project can carry its own Scrolls image, and pick a gradient for when it
--- has none. Both optional; empty means "fall back to the project image,
--- then to the initials gradient".
+-- The Scrolls card is a full-screen portrait, which a landscape thumbnail
+-- rarely suits, so a project can carry its own image just for that feed.
+-- Optional; empty falls back to the project's normal image.
 alter table public.projects add column if not exists scroll_image_url text not null default '';
-alter table public.projects add column if not exists scroll_bg text not null default '';
-
-alter table public.projects drop constraint if exists projects_scroll_bg_check;
-alter table public.projects add constraint projects_scroll_bg_check
-  check (scroll_bg in ('', 'dusk', 'ocean', 'forest', 'ember', 'violet'));
 
 
 -- ============================================================

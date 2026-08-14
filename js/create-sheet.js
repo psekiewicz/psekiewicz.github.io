@@ -1,4 +1,3 @@
-import { SCROLL_BACKGROUNDS } from './scroll-styles.js';
 import { PROJECT_TYPE_OPTIONS, escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
@@ -20,10 +19,6 @@ function fieldsHtml() {
   const types = PROJECT_TYPE_OPTIONS.map(
     (t) => `<option value="${t.value}"${t.value === 'other' ? ' selected' : ''}>${escapeHtml(t.label)}</option>`
   ).join('');
-  const backgrounds = SCROLL_BACKGROUNDS.map(
-    (b) => `<option value="${b.id}">${escapeHtml(b.label)}</option>`
-  ).join('');
-
   return `
     <div class="alert alert-error" id="sheet-alert"></div>
     <form id="sheet-form" novalidate>
@@ -65,15 +60,10 @@ function fieldsHtml() {
 
       <details class="sheet-details">
         <summary>${icon('film', { size: 15 })} Customize Scrolls page</summary>
-        <p class="hint">Scrolls shows your project full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it, or pick a background if you'd rather it be text-only.</p>
+        <p class="hint">Scrolls shows your project full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it.</p>
         <div class="field">
           <label for="sheet-scroll-image">Scrolls image URL</label>
           <input type="url" id="sheet-scroll-image" placeholder="https://… (portrait works best)" />
-        </div>
-        <div class="field">
-          <label for="sheet-scroll-bg">Background</label>
-          <select id="sheet-scroll-bg">${backgrounds}</select>
-          <div class="hint">Choosing one replaces the image on the Scrolls card.</div>
         </div>
         <div class="scroll-preview" id="sheet-scroll-preview">
           <span class="scroll-preview-label">Scrolls preview</span>
@@ -92,13 +82,10 @@ function fieldsHtml() {
 function updatePreview() {
   const preview = sheet.querySelector('#sheet-scroll-preview');
   if (!preview) return;
-  const bg = sheet.querySelector('#sheet-scroll-bg').value;
   const img = sheet.querySelector('#sheet-scroll-image').value.trim() || sheet.querySelector('#sheet-image').value.trim();
-
-  preview.className = `scroll-preview${bg ? ' scroll-bg-' + bg : ''}`;
   // JSON.stringify gives a correctly quoted and escaped CSS string, which
   // hand-rolled quoting around a user-typed URL does not.
-  preview.style.backgroundImage = !bg && img ? `url(${JSON.stringify(img)})` : '';
+  preview.style.backgroundImage = img ? `url(${JSON.stringify(img)})` : '';
 }
 
 export function isOpen() {
@@ -160,10 +147,9 @@ function mount() {
     if (e.key === 'Escape' && isOpen()) closeSheet();
   });
 
-  ['#sheet-scroll-bg', '#sheet-scroll-image', '#sheet-image'].forEach((sel) =>
+  ['#sheet-scroll-image', '#sheet-image'].forEach((sel) =>
     sheet.querySelector(sel).addEventListener('input', updatePreview)
   );
-  sheet.querySelector('#sheet-scroll-bg').addEventListener('change', updatePreview);
   updatePreview();
 
   sheet.querySelector('#sheet-form').addEventListener('submit', async (e) => {
@@ -209,7 +195,6 @@ function mount() {
         liveUrl: sheet.querySelector('#sheet-live').value.trim(),
         type: sheet.querySelector('#sheet-type').value,
         scrollImageUrl: sheet.querySelector('#sheet-scroll-image').value.trim(),
-        scrollBg: sheet.querySelector('#sheet-scroll-bg').value,
         published: sheet.querySelector('#sheet-published').checked,
       });
 

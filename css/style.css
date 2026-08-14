@@ -2293,25 +2293,6 @@ body.sheet-open .bottom-nav {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-.scroll-bg-dusk {
-  background-image: linear-gradient(160deg, #f97316, #7c3aed);
-}
-
-.scroll-bg-ocean {
-  background-image: linear-gradient(160deg, #0ea5e9, #0f766e);
-}
-
-.scroll-bg-forest {
-  background-image: linear-gradient(160deg, #16a34a, #14532d);
-}
-
-.scroll-bg-ember {
-  background-image: linear-gradient(160deg, #ef4444, #7f1d1d);
-}
-
-.scroll-bg-violet {
-  background-image: linear-gradient(160deg, #8b5cf6, #1e1b4b);
-}
 
 /* ---------- Notifications bell + panel ---------- */
 

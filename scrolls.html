@@ -91,7 +91,7 @@
     import { getFollowingIds } from '/js/follows-data.js';
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
     import { shareLink } from '/js/share.js';
-    import { scrollBgClass, scrollImageFor } from '/js/scroll-styles.js';
+    import { scrollImageFor } from '/js/scroll-styles.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere — past this many cards the ranking has long stopped
@@ -202,10 +202,8 @@
     }
 
     function scrollCard(project, profiles) {
-      // A project can set its own Scrolls image and/or a gradient — see
-      // js/scroll-styles.js for which wins.
+      // A project can supply a portrait image just for Scrolls.
       const cardImage = scrollImageFor(project);
-      const bgClass = scrollBgClass(project.scrollBg);
       const hasImage = Boolean(cardImage);
       const bg = hasImage
         ? `<img class="scroll-card-bg" src="${escapeHtml(cardImage)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
@@ -217,7 +215,7 @@
       const rail = railButtonsHtml(project, authorProfile);
 
       return `
-        <section class="scroll-card${hasImage ? ' has-image' : ''}${bgClass ? ' ' + bgClass : ''}" data-card-project-id="${escapeHtml(project.id)}">
+        <section class="scroll-card${hasImage ? ' has-image' : ''}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
           <div class="scroll-content">
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
