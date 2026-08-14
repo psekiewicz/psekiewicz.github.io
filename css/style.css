@@ -2213,11 +2213,15 @@ body.has-bottom-nav .scroll-card {
   background: linear-gradient(160deg, var(--color-primary-soft), var(--color-surface));
 }
 
+/* No background/color here: every real use combines this with either a
+   .shop-bg-* class (whose gradient must show through) or the -avatar/-name
+   variants below (which set their own) — a fallback here would compete at
+   equal CSS specificity with .shop-bg-*, and since this rule comes later
+   in the file it would silently win, which is exactly the bug this avoids. */
 .shop-item-preview {
   width: 100%;
   height: 56px;
   border-radius: var(--radius-sm);
-  background: var(--color-muted-soft);
 }
 
 .shop-item-preview.shop-item-preview-avatar {
