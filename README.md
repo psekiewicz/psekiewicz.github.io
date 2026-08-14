@@ -61,7 +61,7 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 
 - **Real authentication** — Supabase Authentication handles registration, login, logout, and password reset ("Forgot your password?" on the login page).
 - **Ownership-based authorization** — enforced server-side by Postgres Row Level Security policies, not just hidden in the UI: only a project's creator can edit, publish/unpublish, or delete it.
-- **Multi-page frontend** — separate HTML documents for each view, not a single-page app.
+- **Multi-page frontend** — separate HTML documents for each view, not a single-page app. Navigation opts into **cross-document view transitions**, so the browser holds the old page on screen and cross-fades into the new one instead of flashing white; the navbar and bottom bar are named so they're matched across documents and held still rather than redrawn. A full document load still happens underneath — this changes how it looks, not what it does — and browsers without support just navigate normally.
 - **Public gallery** — anyone can browse and search published projects by keyword or tag.
 - **Personal dashboard** — logged-in users manage their own projects (create, edit, publish/unpublish, delete).
 - **Account settings** — edit display name, bio, avatar, and password (changing it requires re-entering the current one) from `settings.html`, plus a self-service "Delete my account" (type-to-confirm) that permanently removes your account and everything you published.

@@ -35,6 +35,40 @@
   src: url('/fonts/oxygene-1.ttf') format('truetype');
 }
 
+/* ---------- Cross-document view transitions ----------
+   This is a multi-page site: every link is a real document load, and that
+   is what produced the white flash and the navigation visibly rebuilding
+   on each tap. Opting into cross-document view transitions lets the
+   browser hold the old page on screen and cross-fade into the new one, so
+   navigation reads as continuous even though a full load still happens
+   underneath. Chrome/Edge and Safari support it; anywhere else this block
+   is simply ignored and navigation behaves exactly as before.
+
+   Naming the navbar and bottom bar keeps them *out* of the cross-fade —
+   the browser matches them across the two documents and holds them still
+   instead of dissolving and redrawing them. */
+@view-transition {
+  navigation: auto;
+}
+
+.navbar {
+  view-transition-name: site-navbar;
+}
+
+.bottom-nav {
+  view-transition-name: site-bottom-nav;
+}
+
+/* The global reduced-motion rule below can't reach these — they're
+   pseudo-elements, which `*` doesn't match. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* ---------- Design tokens ---------- */
 :root {
   /* Tells the browser which palette native controls (checkboxes, select

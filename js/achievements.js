@@ -156,8 +156,12 @@ export const ACHIEVEMENTS = [
 // the same data-layer functions the rest of the app already calls — no new
 // tables or RPCs required.
 export async function getUserStats(userId) {
+  // Every one of these is individually guarded. Without that, a single
+  // failing query rejects the whole thing, and because the only caller
+  // wraps it in a bare .catch() the entire progress chain — level chip,
+  // achievement recording, toasts — vanishes with no error anywhere.
   const [projects, followerCount, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
-    getPublishedProjectsByUser(userId),
+    getPublishedProjectsByUser(userId).catch(() => []),
     getFollowerCount(userId).catch(() => 0),
     getFollowingCount(userId).catch(() => 0),
     getCommentCountByUser(userId).catch(() => 0),
