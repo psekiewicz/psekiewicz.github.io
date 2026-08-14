@@ -107,7 +107,7 @@
       getFollowers,
       getFollowing,
     } from '/js/follows-data.js';
-    import { escapeHtml, initials, timeAgo, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, initials, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import {
       getUserStats,
@@ -189,7 +189,7 @@
         .map(
           (p) => `
             <a class="follow-list-item" href="profile.html?user=${encodeURIComponent(p.id)}">
-              <span class="avatar">${p.avatarUrl ? `<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escapeHtml(initials(p.displayName))}</span>
+              <span class="avatar">${safeUrl(p.avatarUrl) ? `<img src="${escapeHtml(safeUrl(p.avatarUrl))}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escapeHtml(initials(p.displayName))}</span>
               <span>${escapeHtml(p.displayName)}</span>
             </a>
           `
@@ -211,7 +211,7 @@
 
     function projectCard(project, isOwnProfile) {
       const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const editLink = isOwnProfile
@@ -287,8 +287,8 @@
         following = await isFollowing(currentUser.id, profileUserId);
       }
 
-      const avatar = profile.avatarUrl
-        ? `<img src="${escapeHtml(profile.avatarUrl)}" alt="${escapeHtml(profile.displayName)}" />`
+      const avatar = safeUrl(profile.avatarUrl)
+        ? `<img src="${escapeHtml(safeUrl(profile.avatarUrl))}" alt="${escapeHtml(profile.displayName)}" />`
         : escapeHtml(initials(profile.displayName));
 
       let actionButton;

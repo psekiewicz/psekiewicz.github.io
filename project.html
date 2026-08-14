@@ -74,7 +74,7 @@
   <script type="module">
     import { getProjectById } from '/js/projects-data.js';
     import { getProfile, getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getComments, addComment, deleteComment } from '/js/comments-data.js';
@@ -101,14 +101,14 @@
       document.getElementById('page-title').textContent = `${project.title} — Showcase`;
 
       const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
 
       const tags = project.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
 
       const links = [];
-      if (project.liveUrl) links.push(`<a class="btn btn-primary" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer">Visit live site ↗</a>`);
-      if (project.repoUrl) links.push(`<a class="btn btn-secondary" href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener noreferrer">View source ↗</a>`);
+      if (safeUrl(project.liveUrl)) links.push(`<a class="btn btn-primary" href="${escapeHtml(safeUrl(project.liveUrl))}" target="_blank" rel="noopener noreferrer">Visit live site ↗</a>`);
+      if (safeUrl(project.repoUrl)) links.push(`<a class="btn btn-secondary" href="${escapeHtml(safeUrl(project.repoUrl))}" target="_blank" rel="noopener noreferrer">View source ↗</a>`);
 
       const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft — only visible to you</span>';
 
@@ -153,7 +153,7 @@
             }
             ${
               project.mediaUrl && !parseMedia(project.mediaUrl, project.type)
-                ? `<p><a href="${escapeHtml(project.mediaUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(project.mediaUrl)} ↗</a></p>`
+                ? `<p><a href="${escapeHtml(safeUrl(project.mediaUrl))}" target="_blank" rel="noopener noreferrer">${escapeHtml(project.mediaUrl)} ↗</a></p>`
                 : ''
             }
             <div class="detail-body">${escapeHtml(project.description || project.summary || 'No description provided.')}</div>

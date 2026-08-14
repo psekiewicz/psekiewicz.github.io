@@ -1,9 +1,34 @@
 import { icon } from './icons.js';
 
+// Escapes for BOTH text and quoted-attribute contexts.
+//
+// This used to route through textContent/innerHTML, which escapes &, < and
+// > but leaves quotes alone. Almost every use here is inside an attribute
+// (`alt="${escapeHtml(title)}"`, `src="${escapeHtml(url)}"`), so a value
+// containing a double quote closed the attribute and everything after it
+// was parsed as more attributes — a project title of
+// `" onmouseover="…` was a stored XSS that ran for every visitor.
 export function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = String(str ?? '');
-  return div.innerHTML;
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Escaping doesn't help against `javascript:` in an href — the quotes are
+// fine, the scheme is the problem. Anything that isn't plain http(s) comes
+// back empty so the link is inert rather than executable.
+export function safeUrl(raw) {
+  const value = String(raw ?? '').trim();
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.origin);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
 }
 
 export function initials(name) {
@@ -21,8 +46,9 @@ export function initials(name) {
 // extra class (e.g. "avatar-sm") layered on top of the base .avatar size.
 export function avatarHtml(avatarUrl, name, sizeClass = '') {
   const cls = `avatar${sizeClass ? ' ' + sizeClass : ''}`;
-  if (avatarUrl) {
-    return `<span class="${cls} avatar-img"><img src="${escapeHtml(avatarUrl)}" alt="" /></span>`;
+  const src = safeUrl(avatarUrl);
+  if (src) {
+    return `<span class="${cls} avatar-img"><img src="${escapeHtml(src)}" alt="" /></span>`;
   }
   return `<span class="${cls}">${escapeHtml(initials(name))}</span>`;
 }

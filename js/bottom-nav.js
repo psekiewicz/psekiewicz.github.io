@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml, initials } from './utils.js';
+import { escapeHtml, initials, safeUrl } from './utils.js';
 
 // Auth and profile data are pulled in dynamically, on purpose. Importing
 // them at the top would chain this module to the Supabase client (and the
@@ -34,8 +34,9 @@ function writeSnapshot(snapshot) {
 
 function profileIconHtml(snapshot) {
   if (!snapshot) return icon('user', { size: 20 });
-  if (snapshot.avatarUrl) {
-    return `<img src="${escapeHtml(snapshot.avatarUrl)}" alt="" class="bottom-nav-avatar" />`;
+  const avatar = safeUrl(snapshot.avatarUrl);
+  if (avatar) {
+    return `<img src="${escapeHtml(avatar)}" alt="" class="bottom-nav-avatar" />`;
   }
   return `<span class="bottom-nav-avatar-fallback">${escapeHtml(initials(snapshot.displayName))}</span>`;
 }

@@ -119,7 +119,7 @@
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { onAuthChange } from '/js/auth.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
@@ -140,7 +140,7 @@
 
     function projectCard(project, profiles, levels = new Map()) {
       const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = profiles.get(project.uid);

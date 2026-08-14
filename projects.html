@@ -100,7 +100,7 @@
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
     import { getFollowingIds } from '/js/follows-data.js';
     import { getCurrentUser } from '/js/auth.js';
@@ -122,7 +122,7 @@
 
     function projectCard(project) {
       const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(project.imageUrl)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.parentElement.textContent='${escapeHtml(project.title.slice(0, 2).toUpperCase())}'" />`
+        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
       const tags = project.tags.slice(0, 4).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = authorProfiles.get(project.uid);

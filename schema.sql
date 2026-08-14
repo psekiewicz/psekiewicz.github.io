@@ -41,9 +41,14 @@ alter table public.projects add column if not exists project_type text not null 
 alter table public.projects add column if not exists media_url text not null default '';
 
 -- The type list used to describe *projects* (website, library, design).
--- It now describes *media*, which is what people come here to find. Old
--- values are folded onto the new ones before the constraint changes, or
--- rows written under the old list would fail the check.
+-- It now describes *media*, which is what people come here to find.
+--
+-- Order matters and is not obvious: the old constraint has to go FIRST.
+-- Rewriting the values while it is still in place makes the UPDATE itself
+-- illegal — 'app' and 'image' aren't in the old list, so the very
+-- statement doing the migration trips the check it is migrating away from.
+alter table public.projects drop constraint if exists projects_project_type_check;
+
 update public.projects set project_type = case project_type
     when 'website' then 'app'
     when 'mobile_app' then 'app'
@@ -54,7 +59,11 @@ update public.projects set project_type = case project_type
   end
 where project_type in ('website', 'mobile_app', 'game', 'library', 'design');
 
-alter table public.projects drop constraint if exists projects_project_type_check;
+-- Anything unexpected (a row written by a client mid-migration) lands on
+-- 'other' rather than blocking the constraint from being added at all.
+update public.projects set project_type = 'other'
+where project_type not in ('music', 'video', 'image', 'app', 'other');
+
 alter table public.projects add constraint projects_project_type_check
   check (project_type in ('music', 'video', 'image', 'app', 'other'));
 

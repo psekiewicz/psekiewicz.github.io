@@ -79,7 +79,7 @@
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
+    import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
@@ -163,16 +163,16 @@
       const commentCount = commentCounts.get(project.id) || 0;
 
       const extra = [];
-      if (project.liveUrl) {
+      if (safeUrl(project.liveUrl)) {
         extra.push(
-          `<a class="scroll-rail-btn" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Visit live site">
+          `<a class="scroll-rail-btn" href="${escapeHtml(safeUrl(project.liveUrl))}" target="_blank" rel="noopener noreferrer" aria-label="Visit live site">
             <span class="scroll-rail-icon">${icon('external-link', { size: 20 })}</span>
           </a>`
         );
       }
-      if (project.repoUrl) {
+      if (safeUrl(project.repoUrl)) {
         extra.push(
-          `<a class="scroll-rail-btn" href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View source">
+          `<a class="scroll-rail-btn" href="${escapeHtml(safeUrl(project.repoUrl))}" target="_blank" rel="noopener noreferrer" aria-label="View source">
             <span class="scroll-rail-icon">${icon('code', { size: 20 })}</span>
           </a>`
         );
@@ -211,7 +211,7 @@
       const bg = media
         ? `<div class="scroll-card-media">${mediaHtml(project.mediaUrl, { inline: true, typeHint: project.type })}</div>`
         : hasImage
-        ? `<img class="scroll-card-bg" src="${escapeHtml(cardImage)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
+        ? `<img class="scroll-card-bg" src="${escapeHtml(safeUrl(cardImage))}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
         : `<div class="scroll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
