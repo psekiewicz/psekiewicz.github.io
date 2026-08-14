@@ -2129,6 +2129,95 @@ body.has-bottom-nav .scroll-card {
   }
 }
 
+/* ---------- Embedded media ---------- */
+.media-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 24px;
+}
+
+/* Audio-shaped players (Spotify, SoundCloud) are wide and short — 16/9
+   would leave most of the box empty. */
+.media-frame.is-compact {
+  aspect-ratio: auto;
+  height: 152px;
+  background: transparent;
+}
+
+.media-frame iframe,
+.media-frame video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.media-audio {
+  margin-bottom: 24px;
+}
+
+.media-audio audio {
+  width: 100%;
+}
+
+.media-image {
+  margin-bottom: 24px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-muted-soft);
+}
+
+.media-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* In the feed the media fills the card behind the text overlay, so the
+   per-embed margins and rounding have to go. */
+.scroll-card-media {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scroll-card-media .media-frame,
+.scroll-card-media .media-image,
+.scroll-card-media .media-audio {
+  margin: 0;
+  border-radius: 0;
+  width: 100%;
+}
+
+.scroll-card-media .media-frame:not(.is-compact) {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.scroll-card-media .media-image img {
+  max-height: 100vh;
+  object-fit: contain;
+}
+
+/* Card text sits above the player, but the player still has to be
+   clickable — so only the text block blocks pointer events. */
+.scroll-card.has-media .scroll-content {
+  pointer-events: none;
+}
+
+.scroll-card.has-media .scroll-content a,
+.scroll-card.has-media .scroll-content button {
+  pointer-events: auto;
+}
+
 /* ---------- Create bottom sheet + rotating add button ---------- */
 
 /* The + becomes an × by rotating, which reads as the same control changing

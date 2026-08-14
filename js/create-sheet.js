@@ -1,6 +1,7 @@
 import { PROJECT_TYPE_OPTIONS, escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
+import { parseMedia } from './media.js';
 
 // Only local modules are imported statically. Anything that reaches
 // Supabase is pulled in when the form is actually submitted, so opening
@@ -33,6 +34,11 @@ function fieldsHtml() {
       <div class="field">
         <label for="sheet-summary">Short summary</label>
         <input type="text" id="sheet-summary" maxlength="200" placeholder="One sentence about it" />
+      </div>
+      <div class="field">
+        <label for="sheet-media">Media link</label>
+        <input type="url" id="sheet-media" placeholder="YouTube, Vimeo, Spotify, SoundCloud, or a direct mp3/mp4/image URL" />
+        <div class="hint" id="sheet-media-hint">This is what plays in the feed and on the page.</div>
       </div>
       <div class="field">
         <label for="sheet-description">Description</label>
@@ -152,6 +158,22 @@ function mount() {
   );
   updatePreview();
 
+  // Tells you straight away whether the link will actually play, rather
+  // than letting you find out after publishing.
+  const mediaInput = sheet.querySelector('#sheet-media');
+  const mediaHint = sheet.querySelector('#sheet-media-hint');
+  mediaInput.addEventListener('input', () => {
+    const value = mediaInput.value.trim();
+    if (!value) {
+      mediaHint.textContent = 'This is what plays in the feed and on the page.';
+      mediaHint.style.color = '';
+      return;
+    }
+    const media = parseMedia(value, sheet.querySelector('#sheet-type').value);
+    mediaHint.textContent = media ? `${media.provider} — will play here` : "Can't play this link; it'll show as a plain link";
+    mediaHint.style.color = media ? 'var(--color-success)' : 'var(--color-text-faint)';
+  });
+
   sheet.querySelector('#sheet-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const alertEl = sheet.querySelector('#sheet-alert');
@@ -183,6 +205,7 @@ function mount() {
       const id = await createProject(user.id, displayNameOf(user), {
         title,
         summary: sheet.querySelector('#sheet-summary').value.trim(),
+        mediaUrl: sheet.querySelector('#sheet-media').value.trim(),
         description: sheet.querySelector('#sheet-description').value.trim(),
         imageUrl: sheet.querySelector('#sheet-image').value.trim(),
         tags: sheet

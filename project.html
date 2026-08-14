@@ -83,6 +83,7 @@
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { logProjectView } from '/js/views-data.js';
     import { shareLink } from '/js/share.js';
+    import { mediaHtml, parseMedia } from '/js/media.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -145,7 +146,16 @@
         </section>
         <section class="section">
           <div class="container">
-            <div class="detail-thumb">${thumb}</div>
+            ${
+              parseMedia(project.mediaUrl, project.type)
+                ? mediaHtml(project.mediaUrl, { typeHint: project.type })
+                : `<div class="detail-thumb">${thumb}</div>`
+            }
+            ${
+              project.mediaUrl && !parseMedia(project.mediaUrl, project.type)
+                ? `<p><a href="${escapeHtml(project.mediaUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(project.mediaUrl)} ↗</a></p>`
+                : ''
+            }
             <div class="detail-body">${escapeHtml(project.description || project.summary || 'No description provided.')}</div>
             <div class="detail-links">${links.join('')}</div>
           </div>

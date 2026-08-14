@@ -31,12 +31,15 @@ export function avatarHtml(avatarUrl, name, sizeClass = '') {
 // the options in the dashboard's "type" select. `other` is the fallback
 // for anything unrecognized (including projects created before this field
 // existed, which default to it server-side too — see schema.sql).
+// What kind of thing this is. The old list described *projects* (website,
+// library, design); this one describes *media*, which is what people
+// actually come here to find. schema.sql migrates the old values onto
+// these and constrains the column to them.
 export const PROJECT_TYPES = {
-  website: { label: 'Website', icon: 'globe' },
-  mobile_app: { label: 'Mobile App', icon: 'smartphone' },
-  game: { label: 'Game', icon: 'gamepad' },
-  design: { label: 'Design', icon: 'palette' },
-  library: { label: 'Library / Tool', icon: 'package' },
+  music: { label: 'Music', icon: 'music' },
+  video: { label: 'Video', icon: 'film' },
+  image: { label: 'Image', icon: 'image' },
+  app: { label: 'App', icon: 'smartphone' },
   other: { label: 'Other', icon: 'folder' },
 };
 

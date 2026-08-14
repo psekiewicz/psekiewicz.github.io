@@ -16,6 +16,7 @@ function toPlainProject(row) {
     liveUrl: row.live_url || '',
     type: row.project_type || 'other',
     viewsCount: row.views_count || 0,
+    mediaUrl: row.media_url || '',
     scrollImageUrl: row.scroll_image_url || '',
     published: Boolean(row.published),
     createdAt: row.created_at,
@@ -94,6 +95,7 @@ export async function createProject(uid, authorName, fields) {
       repo_url: fields.repoUrl,
       live_url: fields.liveUrl,
       project_type: fields.type || 'other',
+      media_url: fields.mediaUrl || '',
       scroll_image_url: fields.scrollImageUrl || '',
       published: Boolean(fields.published),
     })
@@ -135,6 +137,7 @@ export async function updateProject(id, fields) {
     repo_url: fields.repoUrl,
     live_url: fields.liveUrl,
     project_type: fields.type || 'other',
+    media_url: fields.mediaUrl || '',
     scroll_image_url: fields.scrollImageUrl || '',
     published: Boolean(fields.published),
   });

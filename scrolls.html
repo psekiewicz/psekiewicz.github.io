@@ -92,6 +92,7 @@
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
     import { shareLink } from '/js/share.js';
     import { scrollImageFor } from '/js/scroll-styles.js';
+    import { mediaHtml, parseMedia } from '/js/media.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere — past this many cards the ranking has long stopped
@@ -202,10 +203,14 @@
     }
 
     function scrollCard(project, profiles) {
-      // A project can supply a portrait image just for Scrolls.
+      // The media itself is the card wherever it can be played; the image
+      // is the fallback, and initials the fallback for that.
+      const media = parseMedia(project.mediaUrl, project.type);
       const cardImage = scrollImageFor(project);
       const hasImage = Boolean(cardImage);
-      const bg = hasImage
+      const bg = media
+        ? `<div class="scroll-card-media">${mediaHtml(project.mediaUrl, { inline: true, typeHint: project.type })}</div>`
+        : hasImage
         ? `<img class="scroll-card-bg" src="${escapeHtml(cardImage)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
         : `<div class="scroll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
 
@@ -215,7 +220,7 @@
       const rail = railButtonsHtml(project, authorProfile);
 
       return `
-        <section class="scroll-card${hasImage ? ' has-image' : ''}" data-card-project-id="${escapeHtml(project.id)}">
+        <section class="scroll-card${hasImage || media ? ' has-image' : ''}${media ? ' has-media' : ''}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
           <div class="scroll-content">
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">

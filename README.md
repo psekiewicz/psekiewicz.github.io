@@ -62,6 +62,7 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Real authentication** — Supabase Authentication handles registration, login, logout, and password reset ("Forgot your password?" on the login page).
 - **Ownership-based authorization** — enforced server-side by Postgres Row Level Security policies, not just hidden in the UI: only a project's creator can edit, publish/unpublish, or delete it.
 - **Multi-page frontend** — separate HTML documents for each view, not a single-page app. Navigation opts into **cross-document view transitions**, so the browser holds the old page on screen and cross-fades into the new one instead of flashing white; the navbar and bottom bar are named so they're matched across documents and held still rather than redrawn. A full document load still happens underneath — this changes how it looks, not what it does — and browsers without support just navigate normally.
+- **Media that plays** — an entry carries a media link (`projects.media_url`) and `js/media.js` turns it into a player in the page and in the Scrolls feed: YouTube, Vimeo, Spotify, SoundCloud, or a direct audio/video/image URL. A user-supplied URL is **never** put into an iframe `src` — each provider is matched against an allowlist of hosts, the id extracted, and the embed URL rebuilt from a template here, so a link can't point an iframe wherever it likes. Content types are Music / Video / Image / App / Other; the type also acts as a hint, since plenty of image hosts serve without a file extension and sniffing alone would quietly fail on them.
 - **Public gallery** — anyone can browse and search published projects by keyword or tag.
 - **Personal dashboard** — logged-in users manage their own projects (create, edit, publish/unpublish, delete).
 - **Account settings** — edit display name, bio, avatar, and password (changing it requires re-entering the current one) from `settings.html`, plus a self-service "Delete my account" (type-to-confirm) that permanently removes your account and everything you published.
@@ -145,6 +146,7 @@ js/feed-rank.js          Scrolls ranking — engagement/recency scoring, weighte
 js/toast.js              Reward toast stack (achievement / level-up / XP)
 js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent.
                          Re-checks on tab focus and via refreshProgress() after anything that changes your own XP, so a reward doesn't wait for the next navigation
+js/media.js              Turns a pasted link into an embedded player; host-allowlisted, ids rebuilt into the embed URL
 js/levels.js             XP weights + levelFromXp()/levelFromStats()/levelChipHtml(), and getLevelsForUsers() to level a whole page of authors in a fixed four queries — all derived, nothing stored
 js/notifications-data.js Read/count/mark-read for your own notifications (RLS scopes them to you)
 js/notifications-ui.js   Navbar bell, unread badge and dropdown panel, injected rather than written into every page

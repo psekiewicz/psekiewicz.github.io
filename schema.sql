@@ -29,15 +29,34 @@ create table if not exists public.projects (
   updated_at timestamptz not null default now()
 );
 
--- What kind of project this is — drives the badge/icon shown on cards and
--- the filter dropdown on projects.html. Kept as a plain checked text
--- column rather than a Postgres enum so adding a new type later is just
--- one more value in the check constraint, not a type migration.
+-- What kind of thing this is — drives the badge/icon on cards and the
+-- filter dropdown. Kept as a plain checked text column rather than a
+-- Postgres enum so changing the list is a constraint swap, not a type
+-- migration, which is exactly what the move below needs.
 alter table public.projects add column if not exists project_type text not null default 'other';
+
+-- The link that makes an entry playable: a YouTube/Vimeo/Spotify/SoundCloud
+-- page, or a direct URL to an audio, video or image file. js/media.js
+-- decides what it can do with it; nothing here trusts the string.
+alter table public.projects add column if not exists media_url text not null default '';
+
+-- The type list used to describe *projects* (website, library, design).
+-- It now describes *media*, which is what people come here to find. Old
+-- values are folded onto the new ones before the constraint changes, or
+-- rows written under the old list would fail the check.
+update public.projects set project_type = case project_type
+    when 'website' then 'app'
+    when 'mobile_app' then 'app'
+    when 'game' then 'app'
+    when 'library' then 'app'
+    when 'design' then 'image'
+    else project_type
+  end
+where project_type in ('website', 'mobile_app', 'game', 'library', 'design');
 
 alter table public.projects drop constraint if exists projects_project_type_check;
 alter table public.projects add constraint projects_project_type_check
-  check (project_type in ('website', 'mobile_app', 'game', 'design', 'library', 'other'));
+  check (project_type in ('music', 'video', 'image', 'app', 'other'));
 
 create index if not exists projects_user_id_idx on public.projects (user_id);
 create index if not exists projects_published_idx on public.projects (published);

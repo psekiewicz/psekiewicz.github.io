@@ -138,6 +138,11 @@
           <input type="text" id="summary" maxlength="200" placeholder="One sentence describing the project" />
         </div>
         <div class="field">
+          <label for="mediaUrl">Media link</label>
+          <input type="url" id="mediaUrl" placeholder="YouTube, Vimeo, Spotify, SoundCloud, or a direct mp3/mp4/image URL" />
+          <div class="hint" id="mediaUrl-hint">This is what plays in the feed and on the page.</div>
+        </div>
+        <div class="field">
           <label for="description">Description</label>
           <textarea id="description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
         </div>
@@ -191,6 +196,7 @@
     import { getRecentViewTimestamps } from '/js/views-data.js';
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
+    import { parseMedia } from '/js/media.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -205,6 +211,20 @@
     ['scrollImageUrl', 'imageUrl'].forEach((id) =>
       document.getElementById(id).addEventListener('input', updateScrollPreview)
     );
+
+    const mediaInput = document.getElementById('mediaUrl');
+    const mediaHint = document.getElementById('mediaUrl-hint');
+    mediaInput.addEventListener('input', () => {
+      const value = mediaInput.value.trim();
+      if (!value) {
+        mediaHint.textContent = 'This is what plays in the feed and on the page.';
+        mediaHint.style.color = '';
+        return;
+      }
+      const media = parseMedia(value, document.getElementById('type').value);
+      mediaHint.textContent = media ? `${media.provider} — will play here` : "Can't play this link; it'll show as a plain link";
+      mediaHint.style.color = media ? 'var(--color-success)' : 'var(--color-text-faint)';
+    });
 
     let myProjects = [];
     let currentUser = null;
@@ -230,6 +250,7 @@
         document.getElementById('type').value = project.type;
         document.getElementById('summary').value = project.summary;
         document.getElementById('description').value = project.description;
+        document.getElementById('mediaUrl').value = project.mediaUrl;
         document.getElementById('imageUrl').value = project.imageUrl;
         document.getElementById('repoUrl').value = project.repoUrl;
         document.getElementById('liveUrl').value = project.liveUrl;
@@ -271,6 +292,7 @@
         type: document.getElementById('type').value,
         summary: document.getElementById('summary').value.trim(),
         description: document.getElementById('description').value.trim(),
+        mediaUrl: document.getElementById('mediaUrl').value.trim(),
         imageUrl: document.getElementById('imageUrl').value.trim(),
         repoUrl: document.getElementById('repoUrl').value.trim(),
         liveUrl: document.getElementById('liveUrl').value.trim(),
