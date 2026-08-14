@@ -2,7 +2,7 @@
 // (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
 // connection — but never touches Supabase API/auth calls or any other
 // cross-origin request, so account state and project data always stay live.
-const CACHE_VERSION = 'showcase-shell-v13';
+const CACHE_VERSION = 'showcase-shell-v14';
 
 const PRECACHE_URLS = [
   '/',
@@ -26,6 +26,7 @@ const PRECACHE_URLS = [
   '/js/bottom-nav.js',
   '/js/comments-data.js',
   '/js/cookie-consent.js',
+  '/js/create-sheet.js',
   '/js/feed-rank.js',
   '/js/follows-data.js',
   '/js/icons.js',
@@ -39,6 +40,7 @@ const PRECACHE_URLS = [
   '/js/progress-watch.js',
   '/js/projects-data.js',
   '/js/pwa.js',
+  '/js/scroll-styles.js',
   '/js/share.js',
   '/js/shop-data.js',
   '/js/shop-items.js',

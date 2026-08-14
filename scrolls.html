@@ -91,6 +91,7 @@
     import { getFollowingIds } from '/js/follows-data.js';
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
     import { shareLink } from '/js/share.js';
+    import { scrollBgClass, scrollImageFor } from '/js/scroll-styles.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere — past this many cards the ranking has long stopped
@@ -201,9 +202,13 @@
     }
 
     function scrollCard(project, profiles) {
-      const hasImage = Boolean(project.imageUrl);
+      // A project can set its own Scrolls image and/or a gradient — see
+      // js/scroll-styles.js for which wins.
+      const cardImage = scrollImageFor(project);
+      const bgClass = scrollBgClass(project.scrollBg);
+      const hasImage = Boolean(cardImage);
       const bg = hasImage
-        ? `<img class="scroll-card-bg" src="${escapeHtml(project.imageUrl)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
+        ? `<img class="scroll-card-bg" src="${escapeHtml(cardImage)}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
         : `<div class="scroll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
@@ -212,7 +217,7 @@
       const rail = railButtonsHtml(project, authorProfile);
 
       return `
-        <section class="scroll-card${hasImage ? ' has-image' : ''}" data-card-project-id="${escapeHtml(project.id)}">
+        <section class="scroll-card${hasImage ? ' has-image' : ''}${bgClass ? ' ' + bgClass : ''}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
           <div class="scroll-content">
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
@@ -458,12 +463,23 @@
 
         // Ranked rather than newest-first, and deliberately re-shuffled on
         // every visit — see js/feed-rank.js.
-        const feed = rankFeed(projects, {
+        let feed = rankFeed(projects, {
           likeCounts,
           commentCounts: commentCountsMap,
           followingIds,
           seenIds: getSeenIds(),
         }).slice(0, FEED_LIMIT);
+
+        // Arriving from a "View in Scrolls" link: that project has to be the
+        // card you land on, so it's pulled to the front of the ranked feed
+        // (and added if the ranking or the cap left it out).
+        const requestedId = new URLSearchParams(window.location.search).get('project');
+        if (requestedId) {
+          const requested = projects.find((p) => p.id === requestedId);
+          if (requested) {
+            feed = [requested, ...feed.filter((p) => p.id !== requestedId)];
+          }
+        }
 
         root.innerHTML = `<div class="scrolls-container">${feed.map((p) => scrollCard(p, profiles)).join('')}</div>`;
         feed.forEach((p) => {

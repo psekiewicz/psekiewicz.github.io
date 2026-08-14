@@ -160,6 +160,21 @@
           <input type="text" id="tags" placeholder="react, api, side-project" />
           <div class="hint">Comma-separated, up to 10 tags.</div>
         </div>
+        <details class="sheet-details">
+          <summary>Customize Scrolls page</summary>
+          <p class="hint">Scrolls shows your project full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it, or pick a background if you'd rather it be text-only.</p>
+          <div class="field">
+            <label for="scrollImageUrl">Scrolls image URL</label>
+            <input type="url" id="scrollImageUrl" placeholder="https://… (portrait works best)" />
+          </div>
+          <div class="field">
+            <label for="scrollBg">Background</label>
+            <select id="scrollBg"></select>
+            <div class="hint">Choosing one replaces the image on the Scrolls card.</div>
+          </div>
+          <div class="scroll-preview" id="scroll-preview"><span class="scroll-preview-label">Scrolls preview</span></div>
+        </details>
+
         <div class="field checkbox-field">
           <input type="checkbox" id="published" />
           <label for="published" style="margin:0;">Publish immediately</label>
@@ -181,8 +196,29 @@
     import { getRecentViewTimestamps } from '/js/views-data.js';
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
+    import { SCROLL_BACKGROUNDS } from '/js/scroll-styles.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    const scrollBgSelect = document.getElementById('scrollBg');
+    scrollBgSelect.innerHTML = SCROLL_BACKGROUNDS.map(
+      (b) => `<option value="${b.id}">${b.label}</option>`
+    ).join('');
+
+    // Same live preview as the quick-create sheet, so the two agree about
+    // what a given image/background choice will actually look like.
+    function updateScrollPreview() {
+      const preview = document.getElementById('scroll-preview');
+      const bg = scrollBgSelect.value;
+      const img =
+        document.getElementById('scrollImageUrl').value.trim() || document.getElementById('imageUrl').value.trim();
+      preview.className = `scroll-preview${bg ? ' scroll-bg-' + bg : ''}`;
+      preview.style.backgroundImage = !bg && img ? `url(${JSON.stringify(img)})` : '';
+    }
+    ['scrollBg', 'scrollImageUrl', 'imageUrl'].forEach((id) =>
+      document.getElementById(id).addEventListener('input', updateScrollPreview)
+    );
+    scrollBgSelect.addEventListener('change', updateScrollPreview);
 
     let myProjects = [];
     let currentUser = null;
@@ -212,9 +248,14 @@
         document.getElementById('repoUrl').value = project.repoUrl;
         document.getElementById('liveUrl').value = project.liveUrl;
         document.getElementById('tags').value = project.tags.join(', ');
+        document.getElementById('scrollImageUrl').value = project.scrollImageUrl;
+        document.getElementById('scrollBg').value = project.scrollBg;
         document.getElementById('published').checked = project.published;
       }
 
+      // form.reset() above wipes the Scrolls fields too, so the preview has
+      // to be recomputed whether we're editing or starting fresh.
+      updateScrollPreview();
       modal.classList.add('is-open');
       document.getElementById('title').focus();
     }
@@ -249,6 +290,8 @@
         repoUrl: document.getElementById('repoUrl').value.trim(),
         liveUrl: document.getElementById('liveUrl').value.trim(),
         tags: parseTags(document.getElementById('tags').value),
+        scrollImageUrl: document.getElementById('scrollImageUrl').value.trim(),
+        scrollBg: document.getElementById('scrollBg').value,
         published: document.getElementById('published').checked,
       };
     }

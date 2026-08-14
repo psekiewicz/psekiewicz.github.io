@@ -2129,6 +2129,181 @@ body.has-bottom-nav .scroll-card {
   }
 }
 
+/* ---------- Create bottom sheet + rotating add button ---------- */
+
+/* The + becomes an × by rotating, which reads as the same control changing
+   state rather than one button swapping for another. */
+.bottom-nav.is-sheet-open .bottom-nav-add .bottom-nav-icon .icon {
+  transform: rotate(45deg);
+}
+
+.bottom-nav-add {
+  /* It's a <button> when signed in and an <a> when not; this keeps the two
+     visually identical. */
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 30, 0.5);
+  z-index: 150;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.sheet-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease;
+}
+
+.create-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Stops above the tab bar rather than covering it: the + is the control
+     that opened the sheet and has to stay visible and tappable to close it
+     again — that's the whole point of it rotating. */
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  z-index: 160;
+  max-height: 74vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.create-sheet.is-open {
+  transform: translateY(0);
+}
+
+/* Wider than a phone it stops being a sheet and reads better as a panel. */
+@media (min-width: 721px) {
+  .create-sheet {
+    left: 50%;
+    right: auto;
+    width: min(520px, calc(100vw - 40px));
+    transform: translate(-50%, 100%);
+    border-radius: var(--radius-lg);
+    /* No tab bar at this width, so nothing to clear. */
+    bottom: 20px;
+    max-height: 88vh;
+  }
+  .create-sheet.is-open {
+    transform: translate(-50%, 0);
+  }
+}
+
+.sheet-grabber {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+  margin: 10px auto 2px;
+  flex-shrink: 0;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 4px;
+  flex-shrink: 0;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  padding: 8px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* The page behind must not scroll while the sheet is up. */
+body.sheet-open {
+  overflow: hidden;
+}
+
+/* Lifted over the sheet and its overlay only while the sheet is open —
+   raising it permanently would put the tab bar on top of the project modal
+   and the comments drawer too. */
+body.sheet-open .bottom-nav {
+  z-index: 170;
+}
+
+.sheet-details {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.sheet-details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-details[open] > summary {
+  margin-bottom: 10px;
+}
+
+/* ---------- Scrolls appearance presets ---------- */
+.scroll-preview {
+  height: 120px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-muted-soft);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+.scroll-preview-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.scroll-bg-dusk {
+  background-image: linear-gradient(160deg, #f97316, #7c3aed);
+}
+
+.scroll-bg-ocean {
+  background-image: linear-gradient(160deg, #0ea5e9, #0f766e);
+}
+
+.scroll-bg-forest {
+  background-image: linear-gradient(160deg, #16a34a, #14532d);
+}
+
+.scroll-bg-ember {
+  background-image: linear-gradient(160deg, #ef4444, #7f1d1d);
+}
+
+.scroll-bg-violet {
+  background-image: linear-gradient(160deg, #8b5cf6, #1e1b4b);
+}
+
 /* ---------- Notifications bell + panel ---------- */
 
 /* The browser's own `[hidden] { display: none }` comes from the UA
