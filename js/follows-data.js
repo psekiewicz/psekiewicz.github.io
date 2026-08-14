@@ -43,6 +43,16 @@ export async function getFollowerCount(userId) {
   return count || 0;
 }
 
+// Just the ids this user follows — the feed ranker only needs to know
+// "do I follow this author", not their names or avatars, so this skips
+// the profile lookup getFollowing() does.
+export async function getFollowingIds(userId) {
+  if (!userId) return new Set();
+  const { data, error } = await supabase.from('follows').select('following_id').eq('follower_id', userId);
+  if (error) throw new Error(error.message);
+  return new Set(data.map((row) => row.following_id));
+}
+
 // Follower counts for a whole set of users in one round trip — the batch
 // counterpart of getFollowerCount, used to level a page of authors at once.
 // Returns a Map<userId, count>.

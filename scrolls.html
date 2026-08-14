@@ -74,6 +74,13 @@
     import { isAdmin } from '/js/admin-data.js';
     import { logProjectView } from '/js/views-data.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { getFollowingIds } from '/js/follows-data.js';
+    import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
+
+    // The feed is ranked, not chronological, so it has to be capped
+    // somewhere — past this many cards the ranking has long stopped
+    // mattering and it's just DOM nobody will reach.
+    const FEED_LIMIT = 60;
 
     const root = document.getElementById('scrolls-root');
 
@@ -115,6 +122,10 @@
                 if (!viewedProjectIds.has(projectId)) {
                   viewedProjectIds.add(projectId);
                   logProjectView(projectId).catch(() => {});
+                  // Same dwell threshold decides "counted as a view" and
+                  // "you've seen this" — so the ranker demotes it next
+                  // visit rather than showing you the same card again.
+                  markSeen(projectId);
                 }
               }, VIEW_DWELL_MS);
               dwellTimers.set(card, timeoutId);
@@ -395,10 +406,11 @@
         const profiles = await getProfilesByIds(projects.map((p) => p.uid));
 
         const projectIds = projects.map((p) => p.id);
-        const [likeCounts, commentCountsMap, levels] = await Promise.all([
+        const [likeCounts, commentCountsMap, levels, followingIds] = await Promise.all([
           getLikeCounts(projectIds).catch(() => new Map()),
           getCommentCounts(projectIds).catch(() => new Map()),
           getLevelsForUsers(projects.map((p) => p.uid)).catch(() => new Map()),
+          currentUser ? getFollowingIds(currentUser.id).catch(() => new Set()) : Promise.resolve(new Set()),
         ]);
         levels.forEach((info, uid) => authorLevels.set(uid, info));
         projectIds.forEach((pid) => {
@@ -413,10 +425,19 @@
           });
         }
 
-        root.innerHTML = `<div class="scrolls-container">${projects.map((p) => scrollCard(p, profiles)).join('')}</div>`;
-        projectIds.forEach((pid) => {
-          updateLikeUI(pid);
-          updateCommentCountUI(pid);
+        // Ranked rather than newest-first, and deliberately re-shuffled on
+        // every visit — see js/feed-rank.js.
+        const feed = rankFeed(projects, {
+          likeCounts,
+          commentCounts: commentCountsMap,
+          followingIds,
+          seenIds: getSeenIds(),
+        }).slice(0, FEED_LIMIT);
+
+        root.innerHTML = `<div class="scrolls-container">${feed.map((p) => scrollCard(p, profiles)).join('')}</div>`;
+        feed.forEach((p) => {
+          updateLikeUI(p.id);
+          updateCommentCountUI(p.id);
         });
         setupViewTracking();
       } catch (err) {

@@ -66,7 +66,7 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Personal dashboard** — logged-in users manage their own projects (create, edit, publish/unpublish, delete).
 - **Account settings** — edit display name, bio, avatar, and password (changing it requires re-entering the current one) from `settings.html`, plus a self-service "Delete my account" (type-to-confirm) that permanently removes your account and everything you published.
 - **Profiles & followers** — every account has a public profile page (`profile.html?user=<id>`) listing their published work and follower/following counts; anyone signed in can follow/unfollow.
-- **Scrolls** — a TikTok/Reels-style full-screen, swipeable feed of published projects at `scrolls.html`.
+- **Scrolls** — a TikTok/Reels-style full-screen, swipeable feed of published projects at `scrolls.html`, **ranked rather than chronological** (`js/feed-rank.js`). Projects score on engagement (likes, comments, views) decayed by age with Hacker News-style gravity, get a boost if you follow the author, and are pushed down once you've actually watched them (tracked in `localStorage` on the same 3-second dwell that counts a view). The final order comes from weighted random sampling rather than a plain sort, so a good project is *likely* to come up first without the feed being identical on every visit — and a spacing pass keeps one prolific author from owning a run of cards.
 - **Dark mode** — a toggle in the navbar, remembered per-browser (`localStorage`), falling back to the OS theme when no explicit choice has been made.
 - **Mobile bottom nav** — on narrow screens, a fixed bottom tab bar (Home / Scrolls / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop.
 - **Homepage adapts to your session** — signed-in visitors see "Add new project" / "Browse projects" instead of the signed-out "Create free account" pitch.
@@ -131,6 +131,9 @@ js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts f
 js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
 js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
 js/achievements.js       Achievement definitions (incl. display-only `reward` copy) + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
+js/feed-rank.js          Scrolls ranking — engagement/recency scoring, weighted shuffle, seen-tracking and author spacing
+js/toast.js              Reward toast stack (achievement / level-up / XP)
+js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent
 js/levels.js             XP weights + levelFromXp()/levelFromStats()/levelChipHtml(), and getLevelsForUsers() to level a whole page of authors in a fixed four queries — all derived, nothing stored
 js/points-data.js        getAchievementRecords() (permanently-earned vs already-claimed) + recordAchievementUnlock() and claimAchievement(), both server-verified RPCs
 js/shop-items.js         The shop's item catalog (backgrounds/borders/name effects) + effectClass() mapping an item id to its CSS class — display-only copy of the real prices in purchase_item()
