@@ -42,6 +42,7 @@ const PATHS = {
   award:
     '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/>',
   'shopping-bag': '<path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/>',
+  coin: '<circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.3a3 3 0 0 0-2.5-1.2c-1.5 0-2.6.8-2.6 1.9 0 2.6 5.2 1.3 5.2 3.9 0 1.1-1.1 1.9-2.6 1.9a3 3 0 0 1-2.5-1.2"/><path d="M12 6.5v11"/>',
   lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   check: '<path d="M5 12l5 5L20 7"/>',
   music: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',

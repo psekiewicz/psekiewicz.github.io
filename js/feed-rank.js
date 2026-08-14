@@ -6,7 +6,13 @@
 // Everything here runs on numbers the page already fetched (likes, comments,
 // views, who you follow) — no extra tables, no server-side ranking job.
 
-const WEIGHTS = { like: 3, comment: 2, view: 0.1 };
+// Views are scored on a log scale, likes and comments linearly. A view
+// from a signed-out visitor is the one signal here nobody has to
+// authenticate to produce, so a script could otherwise buy its way up the
+// feed with raw hits; log10 means the first ten views matter and the next
+// thousand barely move the number, while a like still has to come from a
+// real account that isn't the author's.
+const WEIGHTS = { like: 3, comment: 2, view: 2 };
 
 // How hard age pushes a project down. 1.5 is the usual Hacker News-ish
 // gravity: a day-old project needs roughly 5x the engagement of a fresh one
@@ -50,7 +56,8 @@ function baseScore(project, { likeCounts, commentCounts, followingIds, seenIds }
 
   // +1 so a brand-new project with no engagement still has a non-zero
   // score and can be sampled at all.
-  const engagement = 1 + likes * WEIGHTS.like + comments * WEIGHTS.comment + views * WEIGHTS.view;
+  const engagement =
+    1 + likes * WEIGHTS.like + comments * WEIGHTS.comment + Math.log10(1 + views) * WEIGHTS.view;
   const ageHours = Math.max(0, (Date.now() - new Date(project.createdAt).getTime()) / 3_600_000);
 
   let score = engagement / (ageHours + 2) ** GRAVITY;

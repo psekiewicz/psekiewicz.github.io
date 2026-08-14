@@ -2727,6 +2727,10 @@ body.sheet-open .bottom-nav {
   background: linear-gradient(135deg, #06b6d4, #3b82f6);
 }
 
+.toast-points .toast-icon {
+  background: linear-gradient(135deg, #eab308, #f59e0b);
+}
+
 .toast-text {
   display: flex;
   flex-direction: column;
@@ -2791,6 +2795,43 @@ body.sheet-open .bottom-nav {
 .level-progress {
   margin-top: 14px;
   max-width: 340px;
+}
+
+/* The four numbers both currencies are made of. Wraps rather than
+   scrolls — on a narrow phone this sits under the level bar and there is
+   nothing here worth hiding off-screen. */
+.reach-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  max-width: 340px;
+}
+
+.reach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  background: var(--color-muted-soft);
+  cursor: help;
+}
+
+.reach-chip strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.profile-header.has-profile-bg .reach-chip {
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.profile-header.has-profile-bg .reach-chip strong {
+  color: #fff;
 }
 
 .level-progress-head {

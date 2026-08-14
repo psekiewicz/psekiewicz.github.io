@@ -362,8 +362,11 @@
               })
               .catch(() => {});
 
+            // Only move the counter if the server actually counted it —
+            // your own views and a re-view within 6 hours don't.
             logProjectView(project.id)
-              .then(() => {
+              .then((counted) => {
+                if (!counted) return;
                 project.viewsCount += 1;
                 const el = document.getElementById('views-count');
                 if (el) el.textContent = project.viewsCount;

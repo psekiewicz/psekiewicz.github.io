@@ -462,13 +462,20 @@ create policy "Likes are publicly readable"
   on public.likes for select
   using (true);
 
+-- Self-likes are rejected outright rather than filtered out later. Likes
+-- are now worth XP and points, so "like your own entry" would be the
+-- cheapest possible way to print currency.
 drop policy if exists "Signed-in users can like as themselves" on public.likes;
 create policy "Signed-in users can like as themselves"
   on public.likes for insert
   with check (
     auth.uid() = user_id
-    and exists (select 1 from public.projects p where p.id = project_id)
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
   );
+
+delete from public.likes l
+using public.projects p
+where p.id = l.project_id and p.user_id = l.user_id;
 
 drop policy if exists "Users can remove their own like" on public.likes;
 create policy "Users can remove their own like"
@@ -494,34 +501,87 @@ create table if not exists public.project_views (
   created_at timestamptz not null default now()
 );
 
+-- Who viewed, so a view can be counted once per person instead of once per
+-- page load. Nullable because signed-out visitors are still counted in the
+-- public number — they just can't be told apart, which is exactly why they
+-- earn nothing (see user_reputation below).
+alter table public.project_views add column if not exists viewer_id uuid references auth.users (id) on delete set null;
+
 create index if not exists project_views_project_id_idx on public.project_views (project_id);
 create index if not exists project_views_created_at_idx on public.project_views (created_at);
+create index if not exists project_views_viewer_idx on public.project_views (project_id, viewer_id, created_at);
 
 alter table public.project_views enable row level security;
 
+-- No select policy at all any more: the log now carries viewer identity, and
+-- the owner-readable policy would have turned the dashboard chart into a
+-- "who looked at your entry" list nobody agreed to. The chart reads
+-- timestamps through the definer function below, which returns no ids.
 drop policy if exists "Project owner or admin can read the view log" on public.project_views;
-create policy "Project owner or admin can read the view log"
-  on public.project_views for select
-  using (
-    exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
-    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
-  );
+
+-- Returns whether the view was actually counted, so the page can move its
+-- counter only when the number behind it moved. It used to return void and
+-- the UI incremented optimistically, which was fine when every call
+-- counted — now that own views and rapid re-views don't, that would show
+-- the owner a number nobody else can see. The drop is needed because a
+-- return type can't be changed by `create or replace`.
+drop function if exists public.log_project_view(uuid);
 
 create or replace function public.log_project_view(p_project_id uuid)
-returns void
+returns boolean
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_owner uuid;
+  v_uid uuid := auth.uid();
 begin
-  if exists (select 1 from public.projects where id = p_project_id) then
-    insert into public.project_views (project_id) values (p_project_id);
-    update public.projects set views_count = views_count + 1 where id = p_project_id;
+  select user_id into v_owner from public.projects where id = p_project_id;
+  if v_owner is null then
+    return false;
   end if;
+
+  -- Reloading your own entry used to mint views, and views drive XP, the
+  -- leaderboard, the Scrolls ranking and now real currency.
+  if v_uid = v_owner then
+    return false;
+  end if;
+
+  -- One view per signed-in viewer per 6h. Signed-out visitors can't be
+  -- deduplicated, so they still count towards the public number and
+  -- towards nothing else.
+  if v_uid is not null and exists (
+    select 1 from public.project_views
+    where project_id = p_project_id and viewer_id = v_uid and created_at > now() - interval '6 hours'
+  ) then
+    return false;
+  end if;
+
+  insert into public.project_views (project_id, viewer_id) values (p_project_id, v_uid);
+  update public.projects set views_count = views_count + 1 where id = p_project_id;
+  return true;
 end;
 $$;
 
 grant execute on function public.log_project_view(uuid) to anon, authenticated;
+
+-- Timestamps only, for the dashboard chart — never viewer ids, and only
+-- ever for projects the caller owns.
+create or replace function public.my_view_timestamps(p_days integer default 14)
+returns setof timestamptz
+language sql
+security definer
+set search_path = public
+as $$
+  select v.created_at
+  from public.project_views v
+  join public.projects p on p.id = v.project_id
+  where p.user_id = auth.uid()
+    and v.created_at > now() - make_interval(days => greatest(1, least(365, p_days)));
+$$;
+
+grant execute on function public.my_view_timestamps(integer) to authenticated;
 
 -- ============================================================
 -- Points & Shop — achievements (see js/achievements.js) pay out points
@@ -531,6 +591,11 @@ grant execute on function public.log_project_view(uuid) to anon, authenticated;
 -- ============================================================
 
 alter table public.profiles add column if not exists points integer not null default 0;
+-- How much of the earnings figure has already been paid out. Declared here
+-- rather than next to collect_earnings() at the bottom of the file so the
+-- guard below can pin it — it is every bit as forgeable as points itself:
+-- setting it negative would make the next collect pay the difference.
+alter table public.profiles add column if not exists points_earned_total integer not null default 0;
 alter table public.profiles add column if not exists equipped_bg text not null default 'none';
 alter table public.profiles add column if not exists equipped_border text not null default 'none';
 alter table public.profiles add column if not exists equipped_name_effect text not null default 'none';
@@ -554,6 +619,7 @@ returns trigger as $$
 begin
   if current_user in ('authenticated', 'anon') then
     new.points := old.points;
+    new.points_earned_total := old.points_earned_total;
   end if;
   return new;
 end;
@@ -671,6 +737,13 @@ begin
       );
     when 'total_views' then
       return (select coalesce(sum(views_count), 0) from public.projects where user_id = p_uid and published = true);
+    -- Reach metrics come from the user_reputation view (defined at the
+    -- bottom of this file) so there is exactly one definition of "a
+    -- distinct viewer" and "a comment someone else left you".
+    when 'unique_viewers' then
+      return (select coalesce(unique_viewers, 0) from public.user_reputation where user_id = p_uid);
+    when 'comments_received' then
+      return (select coalesce(comments_received, 0) from public.user_reputation where user_id = p_uid);
     when 'comment_count' then
       return (select count(*) from public.comments where user_id = p_uid);
     when 'follower_count' then
@@ -801,7 +874,9 @@ insert into public.achievement_defs (id, metric, threshold, reward) values
   ('influencer', 'follower_count', 10, 80),
   ('popular', 'follower_count', 50, 140),
   ('social-butterfly', 'following_count', 10, 25),
-  ('viral', 'total_views', 1000, 90),
+  ('viral', 'unique_viewers', 500, 90),
+  ('reached', 'unique_viewers', 100, 120),
+  ('talked-about', 'comments_received', 25, 80),
   ('collector', 'owned_items_count', 5, 70),
   ('trendsetter', 'stylized', 1, 60),
   ('all-set', 'profile_complete', 1, 15)
@@ -1063,6 +1138,134 @@ drop trigger if exists comments_notify on public.comments;
 create trigger comments_notify
   after insert on public.comments
   for each row execute function public.notify_on_comment();
+
+
+-- ============================================================
+-- Reputation & earnings
+--
+-- XP used to be paid for things you could do to yourself: publishing an
+-- entry was 100 XP, posting a comment 10, and a view counted every time
+-- you reloaded your own page. Ten junk entries and a refresh loop out-
+-- ranked anything anyone actually made, which is the opposite of what a
+-- discovery app should reward.
+--
+-- Both currencies now come from one place: what *other people* did with
+-- your work. Nothing here counts an action you can perform on yourself —
+-- self-likes are rejected by policy, self-views are dropped by
+-- log_project_view(), and your own comments on your own entry are
+-- excluded below.
+--
+-- The two formulas live here rather than in JS on purpose: the browser
+-- can't be the authority on how much a like is worth, and keeping them in
+-- one place stops the client and the server disagreeing about someone's
+-- level. js/levels.js only turns the xp number into a level.
+--
+--   xp      = 2/unique viewer, 30/like, 15/comment received, 60/follower
+--   points  = 1/unique viewer,  5/like,  3/comment received, 10/follower
+--
+-- Aggregates only, and only over published entries, so this is safe to
+-- expose publicly — it's what draws the leaderboard and every level chip.
+-- ============================================================
+
+create or replace view public.user_reputation as
+with pub as (
+  select id, user_id, views_count from public.projects where published = true
+),
+totals as (
+  select user_id, count(*) as published_projects, coalesce(sum(views_count), 0) as total_views
+  from pub group by user_id
+),
+viewers as (
+  select pub.user_id, count(distinct v.viewer_id) as unique_viewers
+  from pub join public.project_views v on v.project_id = pub.id
+  where v.viewer_id is not null
+  group by pub.user_id
+),
+liked as (
+  select pub.user_id, count(*) as likes_received
+  from pub join public.likes l on l.project_id = pub.id
+  group by pub.user_id
+),
+commented as (
+  select pub.user_id, count(*) as comments_received
+  from pub join public.comments c on c.project_id = pub.id and c.user_id <> pub.user_id
+  group by pub.user_id
+),
+followed as (
+  select following_id as user_id, count(*) as followers
+  from public.follows group by following_id
+)
+select
+  p.id as user_id,
+  coalesce(t.published_projects, 0)::integer as published_projects,
+  coalesce(t.total_views, 0)::integer as total_views,
+  coalesce(vw.unique_viewers, 0)::integer as unique_viewers,
+  coalesce(lk.likes_received, 0)::integer as likes_received,
+  coalesce(cm.comments_received, 0)::integer as comments_received,
+  coalesce(fl.followers, 0)::integer as followers,
+  (coalesce(vw.unique_viewers, 0) * 2
+    + coalesce(lk.likes_received, 0) * 30
+    + coalesce(cm.comments_received, 0) * 15
+    + coalesce(fl.followers, 0) * 60)::integer as xp,
+  (coalesce(vw.unique_viewers, 0) * 1
+    + coalesce(lk.likes_received, 0) * 5
+    + coalesce(cm.comments_received, 0) * 3
+    + coalesce(fl.followers, 0) * 10)::integer as lifetime_points
+from public.profiles p
+left join totals t on t.user_id = p.id
+left join viewers vw on vw.user_id = p.id
+left join liked lk on lk.user_id = p.id
+left join commented cm on cm.user_id = p.id
+left join followed fl on fl.user_id = p.id;
+
+grant select on public.user_reputation to anon, authenticated;
+
+-- profiles.points_earned_total (declared with the other points columns
+-- above, so the client-write guard can pin it) is the high-water mark of
+-- what has already been paid out: losing a like never claws points back
+-- out of a balance that may already have been spent, and re-earning it
+-- never pays twice.
+create or replace function public.collect_earnings()
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_lifetime integer;
+  v_paid integer;
+  v_points integer;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select lifetime_points into v_lifetime from public.user_reputation where user_id = v_uid;
+  if v_lifetime is null then
+    v_lifetime := 0;
+  end if;
+
+  select greatest(0, v_lifetime - points_earned_total) into v_paid
+  from public.profiles where id = v_uid;
+
+  if v_paid is null then
+    return json_build_object('paid', 0, 'points', 0);
+  end if;
+
+  if v_paid > 0 then
+    update public.profiles
+      set points = points + v_paid,
+          points_earned_total = points_earned_total + v_paid
+    where id = v_uid;
+  end if;
+
+  select points into v_points from public.profiles where id = v_uid;
+  return json_build_object('paid', v_paid, 'points', v_points);
+end;
+$$;
+
+grant execute on function public.collect_earnings() to authenticated;
 
 
 -- ---------------------------------------------------------------

@@ -56,7 +56,7 @@
         <div class="section-head">
           <div>
             <h1 style="margin-bottom:6px;">Leaderboard</h1>
-            <p style="margin:0;">Ranked by XP — earned from published projects, likes, followers, comments and views.</p>
+            <p style="margin:0;">Ranked by XP — earned only from other people: how many different people opened your entries, liked them, commented on them, and follow you.</p>
           </div>
         </div>
         <div class="filter-bar">
@@ -206,7 +206,7 @@
         .sort((a, b) => b.level.xp - a.level.xp);
 
       if (ranked.length === 0) {
-        root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>Publish a project to get on the board.</p></div>`;
+        root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>XP comes from other people finding your work — publish something and share it.</p></div>`;
         return;
       }
 

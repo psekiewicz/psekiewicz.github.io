@@ -1,37 +1,21 @@
-// Levels are derived, never stored: XP is recomputed from the same
-// activity numbers the achievements system already reads (published
-// projects, likes received, comments posted, followers, views). That means
-// a level can never drift out of sync with reality, there's nothing extra
-// to migrate, and there's no XP column anyone could forge from the browser
-// console — the underlying counts all come from RLS-protected tables.
+// A level is a display of one number — xp — and that number is computed by
+// the database, not here (see the user_reputation view in schema.sql).
 //
-// The trade-off, by design: XP can only ever reflect measurable activity.
-// There's no way to hand out a one-off bonus (an event, a manual reward)
-// without giving XP a table of its own.
-
-export const XP_WEIGHTS = {
-  publishedProject: 100,
-  likeReceived: 25,
-  followerGained: 40,
-  commentPosted: 10,
-  viewReceived: 1,
-};
+// It used to be computed in this file, from stats that included things you
+// could do to yourself: 100 XP per published entry, 10 per comment you
+// posted, 1 per view including your own reloads. Ten throwaway entries and
+// a refresh loop beat anything anyone actually made. XP now comes only
+// from what other people did with your work — distinct viewers, likes,
+// comments received, followers — which is both the honest measure and the
+// expensive one to fake.
+//
+// What's left in this module is the curve and the chip: pure functions of
+// an xp number, with nothing to keep in sync with the server.
 
 // Each level costs quadratically more than the last, so early levels come
 // quickly and later ones stay meaningful: level L starts at 100*(L-1)^2 XP
 // (L1 at 0, L2 at 100, L3 at 400, L4 at 900, L5 at 1600...).
 const LEVEL_CONSTANT = 100;
-
-export function computeXp(stats) {
-  if (!stats) return 0;
-  return Math.round(
-    (stats.projectsPublished || 0) * XP_WEIGHTS.publishedProject +
-      (stats.totalLikes || 0) * XP_WEIGHTS.likeReceived +
-      (stats.followerCount || 0) * XP_WEIGHTS.followerGained +
-      (stats.totalComments || 0) * XP_WEIGHTS.commentPosted +
-      (stats.totalViews || 0) * XP_WEIGHTS.viewReceived
-  );
-}
 
 export function xpForLevel(level) {
   return LEVEL_CONSTANT * (level - 1) ** 2;
@@ -57,8 +41,11 @@ export function levelFromXp(xp) {
   };
 }
 
+// Convenience for callers that already hold a stats object from
+// getUserStats() — `xp` on it is the server's number, carried through
+// untouched.
 export function levelFromStats(stats) {
-  return levelFromXp(computeXp(stats));
+  return levelFromXp(stats ? stats.xp : 0);
 }
 
 // The compact "Lv 7" chip shown next to a name. `size` is 'sm' next to
@@ -67,50 +54,18 @@ export function levelChipHtml(level, size = '') {
   return `<span class="level-chip${size ? ' level-chip-' + size : ''}" title="Level ${level}">Lv ${level}</span>`;
 }
 
-// Levels for a whole page of authors (project cards, comment lists) using a
-// fixed four queries no matter how many users are passed in — the whole
-// reason the batch helpers in the *-data modules exist. Returns a
+// Levels for a whole page of authors (project cards, comment lists) in a
+// single query — it used to take four, one per activity number, and then
+// a fifth for likes once the project ids were known. Returns a
 // Map<userId, levelInfo> shaped exactly like levelFromXp's result.
-//
-// Note this deliberately only gathers the five activity numbers XP is made
-// of, not the full achievement stat set: nothing here needs account age,
-// profile completeness or shop ownership, and skipping them keeps this to
-// four queries instead of six.
+// The reputation module is imported dynamically so that everything above —
+// the curve and the chip, which card rendering uses — stays free of the
+// Supabase client and the CDN it loads from. A page that can't reach the
+// network still draws its chips from whatever xp it already has.
 export async function getLevelsForUsers(userIds) {
-  const uniqueIds = [...new Set(userIds)].filter(Boolean);
   const levels = new Map();
-  if (uniqueIds.length === 0) return levels;
-
-  const [{ getPublishedProjectsByUsers }, { getLikeCounts }, { getCommentCountsByUsers }, { getFollowerCounts }] =
-    await Promise.all([
-      import('./projects-data.js'),
-      import('./likes-data.js'),
-      import('./comments-data.js'),
-      import('./follows-data.js'),
-    ]);
-
-  const [projectsByUser, commentCounts, followerCounts] = await Promise.all([
-    getPublishedProjectsByUsers(uniqueIds).catch(() => new Map()),
-    getCommentCountsByUsers(uniqueIds).catch(() => new Map()),
-    getFollowerCounts(uniqueIds).catch(() => new Map()),
-  ]);
-
-  const allProjectIds = [...projectsByUser.values()].flat().map((p) => p.id);
-  const likeCounts = allProjectIds.length ? await getLikeCounts(allProjectIds).catch(() => new Map()) : new Map();
-
-  uniqueIds.forEach((id) => {
-    const projects = projectsByUser.get(id) || [];
-    levels.set(
-      id,
-      levelFromStats({
-        projectsPublished: projects.length,
-        totalViews: projects.reduce((sum, p) => sum + p.viewsCount, 0),
-        totalLikes: projects.reduce((sum, p) => sum + (likeCounts.get(p.id) || 0), 0),
-        totalComments: commentCounts.get(id) || 0,
-        followerCount: followerCounts.get(id) || 0,
-      })
-    );
-  });
-
+  const { getReputations } = await import('./reputation-data.js');
+  const reputations = await getReputations(userIds).catch(() => new Map());
+  reputations.forEach((reputation, id) => levels.set(id, levelFromXp(reputation.xp)));
   return levels;
 }

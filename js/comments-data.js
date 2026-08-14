@@ -50,19 +50,6 @@ export async function getCommentCounts(projectIds) {
   return map;
 }
 
-// How many comments each of these users has authored, in one round trip —
-// the batch counterpart of getCommentCountByUser below, used to level a
-// whole page of authors at once. Returns a Map<userId, count>.
-export async function getCommentCountsByUsers(userIds) {
-  const uniqueIds = [...new Set(userIds)].filter(Boolean);
-  const map = new Map();
-  if (uniqueIds.length === 0) return map;
-  const { data, error } = await supabase.from(TABLE).select('user_id').in('user_id', uniqueIds);
-  if (error) throw new Error(error.message);
-  data.forEach((row) => map.set(row.user_id, (map.get(row.user_id) || 0) + 1));
-  return map;
-}
-
 // How many comments this user has authored, for the achievements system.
 // Subject to the same RLS as everything else here — a viewer who isn't the
 // author only ever counts comments on projects they can actually see.

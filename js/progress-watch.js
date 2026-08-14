@@ -1,7 +1,8 @@
 import { ACHIEVEMENTS, unrecordedAchievementIds, getUserStats } from './achievements.js';
 import { recordAchievementUnlock, getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
+import { collectEarnings } from './reputation-data.js';
 import { levelFromStats } from './levels.js';
-import { showAchievementToast, showLevelUpToast, showXpToast } from './toast.js';
+import { showAchievementToast, showLevelUpToast, showXpToast, showEarningsToast } from './toast.js';
 
 // XP and levels are derived rather than stored, so there is nothing on the
 // server that says "you just levelled up" — the only way to notice is to
@@ -49,6 +50,13 @@ async function runCheck(userId, stats, records) {
     await Promise.all(justEarned.map((id) => recordAchievementUnlock(id).catch(() => {})));
   }
 
+  // Points for reach are paid here rather than anywhere in the UI, so they
+  // land whichever page you happen to be on when someone finds your work.
+  // The server decides the amount and tracks what it has already paid, so
+  // running this on every check costs one cheap round trip and pays out at
+  // most once per thing earned.
+  const earned = await collectEarnings().catch(() => ({ paid: 0 }));
+
   const unlocked = new Set([...records.unlocked, ...justEarned]);
   const level = levelFromStats(stats);
   const previous = readSnapshot(userId);
@@ -58,7 +66,12 @@ async function runCheck(userId, stats, records) {
   document.dispatchEvent(new CustomEvent(PROGRESS_EVENT, { detail: { stats, records } }));
 
   // First time this browser has seen this account: seed and stay quiet.
+  // The payout above still happened — it's server-side and permanent; only
+  // the announcement is suppressed, so a fresh device doesn't open with a
+  // pile of toasts for things you already knew about.
   if (!previous) return;
+
+  if (earned.paid > 0) showEarningsToast(earned.paid);
 
   const previouslyUnlocked = new Set(previous.achievements || []);
   [...unlocked]

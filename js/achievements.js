@@ -1,9 +1,8 @@
-import { getPublishedProjectsByUser } from './projects-data.js';
-import { getLikeCounts } from './likes-data.js';
 import { getCommentCountByUser } from './comments-data.js';
-import { getFollowerCount, getFollowingCount } from './follows-data.js';
+import { getFollowingCount } from './follows-data.js';
 import { getProfile } from './profiles-data.js';
 import { getOwnedItemIds } from './shop-data.js';
+import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
 
 // Each achievement is independently unlockable — a profile can hold any
 // number of these at once, ordered here by reward (roughly how hard they
@@ -29,6 +28,14 @@ export const ACHIEVEMENTS = [
     icon: 'users',
     reward: 140,
     check: (s) => s.followerCount >= 50,
+  },
+  {
+    id: 'reached',
+    label: 'Reached',
+    description: '100 or more different people have opened your entries.',
+    icon: 'eye',
+    reward: 120,
+    check: (s) => s.uniqueViewers >= 100,
   },
   {
     id: 'crowd-favorite',
@@ -57,10 +64,12 @@ export const ACHIEVEMENTS = [
   {
     id: 'viral',
     label: 'Viral',
-    description: 'Your projects have been viewed 1,000 or more times in total.',
+    // Was "1,000 total views", which counted signed-out hits — the one
+    // number on the site anybody could generate with a loop.
+    description: '500 or more different people have opened your entries.',
     icon: 'eye',
     reward: 90,
-    check: (s) => s.totalViews >= 1000,
+    check: (s) => s.uniqueViewers >= 500,
   },
   {
     id: 'influencer',
@@ -69,6 +78,14 @@ export const ACHIEVEMENTS = [
     icon: 'users',
     reward: 80,
     check: (s) => s.followerCount >= 10,
+  },
+  {
+    id: 'talked-about',
+    label: 'Talked About',
+    description: 'Other people left 25 or more comments on your entries.',
+    icon: 'message-circle',
+    reward: 80,
+    check: (s) => s.commentsReceived >= 25,
   },
   {
     id: 'chatterbox',
@@ -152,27 +169,27 @@ export const ACHIEVEMENTS = [
   },
 ];
 
-// Aggregates the stats every achievement check needs for one user. Reuses
-// the same data-layer functions the rest of the app already calls — no new
-// tables or RPCs required.
+// Aggregates the stats every achievement check needs for one user.
+//
+// The reach numbers (entries, views, distinct viewers, likes, comments
+// received, followers, xp) all arrive in the single user_reputation row —
+// they used to be four separate queries plus a fifth for likes once the
+// project ids were known. What's left alongside it is the handful of
+// things reputation deliberately doesn't cover, because they measure
+// participation rather than reach.
 export async function getUserStats(userId) {
   // Every one of these is individually guarded. Without that, a single
   // failing query rejects the whole thing, and because the only caller
   // wraps it in a bare .catch() the entire progress chain — level chip,
   // achievement recording, toasts — vanishes with no error anywhere.
-  const [projects, followerCount, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
-    getPublishedProjectsByUser(userId).catch(() => []),
-    getFollowerCount(userId).catch(() => 0),
+  const [reputation, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
+    getReputation(userId).catch(() => ({ ...EMPTY_REPUTATION })),
     getFollowingCount(userId).catch(() => 0),
     getCommentCountByUser(userId).catch(() => 0),
     getProfile(userId).catch(() => null),
     getOwnedItemIds(userId).catch(() => new Set()),
   ]);
 
-  const projectIds = projects.map((p) => p.id);
-  const likeCounts = projectIds.length ? await getLikeCounts(projectIds).catch(() => new Map()) : new Map();
-  const totalLikes = [...likeCounts.values()].reduce((sum, n) => sum + n, 0);
-  const totalViews = projects.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
   const accountAgeDays = profile ? (Date.now() - new Date(profile.createdAt).getTime()) / 86_400_000 : 0;
   const profileComplete = Boolean(profile && profile.bio && profile.avatarUrl);
   const stylized = Boolean(
@@ -180,11 +197,15 @@ export async function getUserStats(userId) {
   );
 
   return {
-    projectsPublished: projects.length,
-    totalLikes,
+    projectsPublished: reputation.publishedProjects,
+    totalLikes: reputation.likesReceived,
+    totalViews: reputation.totalViews,
+    uniqueViewers: reputation.uniqueViewers,
+    commentsReceived: reputation.commentsReceived,
+    followerCount: reputation.followers,
+    // The server's number, carried through untouched — see js/levels.js.
+    xp: reputation.xp,
     totalComments,
-    totalViews,
-    followerCount,
     followingCount,
     accountAgeDays,
     profileComplete,

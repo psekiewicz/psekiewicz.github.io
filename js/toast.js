@@ -70,3 +70,16 @@ export function showLevelUpToast(level) {
 export function showXpToast(gained) {
   showToast({ title: `+${gained.toLocaleString()} XP`, iconName: 'flame', variant: 'xp', duration: 4500 });
 }
+
+// Points paid out for reach — someone else viewed, liked, commented on or
+// followed your work. Worth its own toast rather than folding into the XP
+// one: this is spendable currency, not just a number going up.
+export function showEarningsToast(paid) {
+  showToast({
+    title: `+${paid.toLocaleString()} points`,
+    body: 'Earned from people finding your work',
+    iconName: 'coin',
+    variant: 'points',
+    duration: 7000,
+  });
+}

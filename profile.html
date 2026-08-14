@@ -338,6 +338,23 @@
         `
         : '';
 
+      // Both currencies come from these four numbers and nothing else, so
+      // the profile shows them plainly with what each one is worth. Own
+      // profile only — it reads as a to-do list, not a public stat line.
+      const reachChip = (iconName, value, label, rate) =>
+        `<span class="reach-chip" title="${escapeHtml(rate)}">${icon(iconName, { size: 14 })} <strong>${value.toLocaleString()}</strong> ${escapeHtml(label)}</span>`;
+      const reachRow =
+        isOwnProfile && stats
+          ? `
+            <div class="reach-row">
+              ${reachChip('eye', stats.uniqueViewers, 'viewers', '2 XP and 1 point each — counted once per person, not per reload')}
+              ${reachChip('heart', stats.totalLikes, 'likes', '30 XP and 5 points each')}
+              ${reachChip('message-circle', stats.commentsReceived, 'comments', '15 XP and 3 points each — comments other people left you')}
+              ${reachChip('users', stats.followerCount, 'followers', '60 XP and 10 points each')}
+            </div>
+          `
+          : '';
+
       const unlockedCount = achievements.filter((a) => a.unlocked).length;
       const achievementsSection = stats
         ? `
@@ -392,6 +409,7 @@
               </button>
             </div>
             ${levelProgress}
+            ${reachRow}
             ${pointsRow}
           </div>
         </div>
