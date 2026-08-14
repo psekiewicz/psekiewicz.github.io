@@ -25,6 +25,7 @@ export const SHOP_ITEMS = [
   { id: 'name-glow', category: 'name', label: 'Cyan Glow', price: 80 },
   { id: 'name-rainbow', category: 'name', label: 'Rainbow', price: 150 },
   { id: 'name-sparkle', category: 'name', label: 'Sparkle', price: 180 },
+  { id: 'name-oxygene', category: 'name', label: 'Oxygene 1', price: 120 },
 ];
 
 export function itemsByCategory(category) {

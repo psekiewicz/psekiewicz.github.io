@@ -91,6 +91,7 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Hosting:** GitHub Pages (static files only, served from the `main` branch root)
 - **Auth + data:** Supabase Authentication + Postgres, called directly from the browser via the `@supabase/supabase-js` client (loaded from the esm.sh CDN, no build step, no `npm install` required to run the site)
 - **Frontend:** plain HTML/CSS/vanilla JS (ES modules)
+- **Typography:** [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL-licensed) throughout, self-hosted from `fonts/` rather than the Google Fonts CDN — that keeps it in the service worker's app-shell cache and avoids a third-party request on every page load. Only the `latin` and `latin-ext` subsets are shipped (~43 KB total); `latin-ext` is what carries the Polish diacritics.
 
 ## Local development
 
@@ -143,6 +144,7 @@ js/utils.js               escapeHtml / initials / avatarHtml / timeAgo / typeBad
 sw.js                    Service worker — caches the static app shell, always passes Supabase/cross-origin requests straight through
 manifest.webmanifest     Web app manifest — name, icons, standalone display, required for installability
 icons/                   PWA icons (192/512/maskable/apple-touch-icon), generated from the navbar's gradient "S" mark
+fonts/                   Self-hosted webfonts — JetBrains Mono (latin + latin-ext subsets) for the whole UI, plus Oxygene 1 for the shop's nickname effect of the same name (see the licensing note under "Legal / compliance")
 schema.sql              Table definitions + Row Level Security policies — run in the Supabase SQL Editor (see setup above)
 supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion — see "Real bans and account deletion" above
 ```
@@ -242,12 +244,13 @@ Postgres table `public.owned_items`, one row per shop item a user has purchased:
 | `item_id`      | text        | One of the ids in `js/shop-items.js`       |
 | `purchased_at` | timestamptz | Defaults to `now()`                        |
 
-Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Publicly readable (like `likes`/`follows`/`comments`) so the "Collector" achievement can be checked on anyone's profile, not just your own; there's no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which checks a hardcoded price against `profiles.points` before charging.
+Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Publicly readable (like `likes`/`follows`/`comments`) so the "Collector" achievement can be checked on anyone's profile, not just your own; there's no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which reads the price from `public.shop_item_defs` (id → price) and checks it against `profiles.points` before charging. Like `achievement_defs`, that table is what makes adding a shop item a one-line `INSERT` rather than a rewrite of `purchase_item()` — publicly readable, but only ever edited by hand in the SQL Editor.
 
 ## Legal / compliance
 
 - **Age gate** — `register.html` requires checking "I confirm that I am at least 13 years old" before the form will submit; there's no server-side age verification (Supabase doesn't offer one), so this is a self-attestation, same as most consumer sites.
 - **Cookie notice** — `js/cookie-consent.js` shows a one-time banner (dismissal remembered in `localStorage`) describing what's stored: the Supabase auth session, and preferences like the dark-mode choice. No analytics or advertising cookies are set by this app.
+- **⚠️ Oxygene 1 font licensing** — `fonts/oxygene-1.ttf` is © Jakob Fischer (pizzadude.dk) and its bundled license (`fonts/oxygene-1-LICENSE.txt`) says **non-commercial use only** and **"do not distribute without the author's permission"**. Serving it as a webfont from a public site is arguably distribution, so if this site is ever monetised — or if you want to be strictly safe — either email the author for permission or swap the `name-oxygene` shop item for an open-licensed display font. JetBrains Mono has no such restriction (SIL Open Font License).
 
 ## Notes
 

@@ -616,10 +616,28 @@ on conflict (id) do update set
   threshold = excluded.threshold,
   reward = excluded.reward;
 
--- Prices here are the source of truth (js/shop-items.js's `price` field is
--- a display-only copy that must be kept in sync by hand). Charges points
--- and records ownership atomically; buying something already owned is a
--- harmless no-op rather than an error, so a double-click can't double-charge.
+-- Shop prices live in a table for the same reason achievement_defs does:
+-- adding an item later is a one-line INSERT instead of a CREATE OR REPLACE
+-- FUNCTION covering the whole catalog at once.
+create table if not exists public.shop_item_defs (
+  id text primary key,
+  price integer not null check (price >= 0)
+);
+
+alter table public.shop_item_defs enable row level security;
+
+drop policy if exists "Shop prices are publicly readable" on public.shop_item_defs;
+create policy "Shop prices are publicly readable"
+  on public.shop_item_defs for select
+  using (true);
+
+-- No insert/update/delete policy: this table is config, only ever edited
+-- by the site owner directly in the SQL Editor, never by client code.
+
+-- Charges points and records ownership atomically, reading the price from
+-- shop_item_defs rather than trusting anything the client sends. Buying
+-- something already owned is a harmless no-op rather than an error, so a
+-- double-click can't double-charge.
 create or replace function public.purchase_item(p_item_id text)
 returns integer
 language plpgsql
@@ -635,26 +653,8 @@ begin
     raise exception 'Not signed in';
   end if;
 
-  v_price := case p_item_id
-    when 'bg-sunset' then 50
-    when 'bg-ocean' then 50
-    when 'bg-midnight' then 75
-    when 'bg-aurora' then 150
-    when 'bg-confetti' then 200
-    when 'border-bronze' then 30
-    when 'border-silver' then 60
-    when 'border-gold' then 120
-    when 'border-neon' then 150
-    when 'border-rainbow' then 200
-    when 'name-gradient' then 40
-    when 'name-shadow' then 60
-    when 'name-glow' then 80
-    when 'name-rainbow' then 150
-    when 'name-sparkle' then 180
-    else null
-  end;
-
-  if v_price is null then
+  select price into v_price from public.shop_item_defs where id = p_item_id;
+  if not found then
     raise exception 'Unknown item: %', p_item_id;
   end if;
 
@@ -675,6 +675,27 @@ end;
 $$;
 
 grant execute on function public.purchase_item(text) to authenticated;
+
+-- The prices here are the source of truth; js/shop-items.js's `price`
+-- field is a display-only copy that must be kept in sync by hand.
+insert into public.shop_item_defs (id, price) values
+  ('bg-sunset', 50),
+  ('bg-ocean', 50),
+  ('bg-midnight', 75),
+  ('bg-aurora', 150),
+  ('bg-confetti', 200),
+  ('border-bronze', 30),
+  ('border-silver', 60),
+  ('border-gold', 120),
+  ('border-neon', 150),
+  ('border-rainbow', 200),
+  ('name-gradient', 40),
+  ('name-shadow', 60),
+  ('name-glow', 80),
+  ('name-rainbow', 150),
+  ('name-sparkle', 180),
+  ('name-oxygene', 120)
+on conflict (id) do update set price = excluded.price;
 
 -- Guards the three equipped_* columns the same way profiles_guard_is_admin
 -- guards is_admin above: the "update own profile" policy lets a user
