@@ -2093,6 +2093,17 @@ body.has-bottom-nav .scroll-card {
   fill: currentColor;
 }
 
+/* Saved reads the same way liked does: the icon fills in rather than the
+   button changing shape, so the rail doesn't shift under your thumb. */
+.scroll-rail .save-btn.is-saved .scroll-rail-icon {
+  color: var(--color-primary);
+}
+
+.scroll-rail .save-btn.is-saved .icon {
+  fill: currentColor;
+  animation: like-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .scroll-rail-avatar-img {
   width: 44px;
   height: 44px;

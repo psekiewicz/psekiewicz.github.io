@@ -85,6 +85,7 @@
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
+    import { getSavedSet, saveProject, unsaveProject } from '/js/saves-data.js';
     import { getComments, addComment, deleteComment, getCommentCounts } from '/js/comments-data.js';
     import { refreshProgress } from '/js/progress-watch.js';
     import { isAdmin } from '/js/admin-data.js';
@@ -193,6 +194,10 @@
             <span class="scroll-rail-icon">${icon('message-circle', { size: 21 })}</span>
             <span class="scroll-rail-count" data-role="comment-count">${commentCount}</span>
           </button>
+          <button class="scroll-rail-btn save-btn${savedIds.has(project.id) ? ' is-saved' : ''}" type="button" data-action="save" data-project-id="${escapeHtml(project.id)}" aria-pressed="${savedIds.has(project.id)}" aria-label="Save for later">
+            <span class="scroll-rail-icon">${icon('bookmark', { size: 20 })}</span>
+            <span class="scroll-rail-count">Save</span>
+          </button>
           <button class="scroll-rail-btn" type="button" data-action="share" data-project-id="${escapeHtml(project.id)}" aria-label="Share">
             <span class="scroll-rail-icon">${icon('share', { size: 20 })}</span>
           </button>
@@ -256,6 +261,42 @@
         const countEl = btn.querySelector('[data-role="comment-count"]');
         if (countEl) countEl.textContent = count;
       });
+    }
+
+    // Which cards this account has already shelved. Fetched once for the
+    // whole feed rather than per card, the same way liked state is.
+    const savedIds = new Set();
+
+    function updateSaveUI(projectId) {
+      const saved = savedIds.has(projectId);
+      root.querySelectorAll(`[data-action="save"][data-project-id="${CSS.escape(projectId)}"]`).forEach((btn) => {
+        btn.classList.toggle('is-saved', saved);
+        btn.setAttribute('aria-pressed', String(saved));
+        const label = btn.querySelector('.scroll-rail-count');
+        if (label) label.textContent = saved ? 'Saved' : 'Save';
+      });
+    }
+
+    async function toggleSave(projectId) {
+      if (!currentUser) {
+        window.location.href = 'login.html?next=' + encodeURIComponent('/scrolls.html');
+        return;
+      }
+      const next = !savedIds.has(projectId);
+      // Painted first and rolled back on failure — on a feed you swipe
+      // through, a bookmark that waits for the network reads as ignored.
+      if (next) savedIds.add(projectId);
+      else savedIds.delete(projectId);
+      updateSaveUI(projectId);
+      try {
+        if (next) await saveProject(currentUser.id, projectId);
+        else await unsaveProject(currentUser.id, projectId);
+      } catch (err) {
+        if (next) savedIds.delete(projectId);
+        else savedIds.add(projectId);
+        updateSaveUI(projectId);
+        alert(err.message);
+      }
     }
 
     async function toggleLike(projectId) {
@@ -403,6 +444,11 @@
         toggleLike(likeBtn.dataset.projectId);
         return;
       }
+      const saveBtn = e.target.closest('[data-action="save"]');
+      if (saveBtn) {
+        toggleSave(saveBtn.dataset.projectId);
+        return;
+      }
       const commentBtn = e.target.closest('[data-action="comments"]');
       if (commentBtn) {
         openCommentsDrawer(commentBtn.dataset.projectId);
@@ -459,11 +505,15 @@
           commentCounts.set(pid, commentCountsMap.get(pid) || 0);
         });
         if (currentUser) {
-          const liked = await getLikedSet(currentUser.id, projectIds).catch(() => new Set());
+          const [liked, saved] = await Promise.all([
+            getLikedSet(currentUser.id, projectIds).catch(() => new Set()),
+            getSavedSet(currentUser.id, projectIds).catch(() => new Set()),
+          ]);
           liked.forEach((pid) => {
             const state = likeState.get(pid);
             if (state) state.liked = true;
           });
+          saved.forEach((pid) => savedIds.add(pid));
         }
 
         // Ranked rather than newest-first, and deliberately re-shuffled on
