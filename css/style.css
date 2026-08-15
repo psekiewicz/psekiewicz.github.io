@@ -1475,11 +1475,27 @@ tbody tr {
 }
 
 /* ---------- Engagement bar (likes, edit) ---------- */
+/* Six controls (like, Scrolls, save, share, edit, report) do not fit on a
+   phone in one row, and without wrapping the last one — Report — simply
+   left the screen and took the whole page's horizontal scroll with it.
+   Wrapping is the fix; the row-gap keeps the second line from touching
+   the first. */
 .engagement-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   margin-top: 18px;
+}
+
+/* Report is the one destructive-ish action here, so on a wide screen it
+   sits apart from the things you actually came to do. On a wrapped phone
+   layout the auto margin just right-aligns it on its own line, which is
+   the same idea. */
+@media (min-width: 720px) {
+  .engagement-bar #report-btn {
+    margin-left: auto;
+  }
 }
 
 .like-btn {
