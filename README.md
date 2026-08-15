@@ -137,6 +137,8 @@ login.html             Email/password login + "forgot password"
 register.html          Account creation
 dashboard.html         Protected — create/edit/publish/delete your own projects
 404.html                GitHub Pages' custom not-found page
+robots.txt              Crawler rules — allows public pages, disallows the protected/auth-gated ones
+sitemap.xml             Lists the public, statically-linkable pages for search engines
 css/style.css          Shared design system (dark theme tokens, bottom nav, scrolls, profile, admin styles)
 js/supabase-config.js  Your Supabase project's public URL + anon key — EDIT THIS
 js/supabase-init.js     Initializes the Supabase client, exports `supabase`
