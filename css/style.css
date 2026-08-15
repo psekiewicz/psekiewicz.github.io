@@ -3425,8 +3425,8 @@ body.sheet-open .bottom-nav {
 }
 
 .shop-item-card.is-equipped {
-  border-color: transparent;
-  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-surface));
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 /* No background/color here: every real use combines this with either a
@@ -3527,5 +3527,471 @@ body.sheet-open .bottom-nav {
 @media (max-width: 720px) {
   .profile-header.has-profile-bg {
     padding: 20px;
+  }
+}
+
+/* ============================================================
+   Shop, second batch
+   ------------------------------------------------------------
+   Same three slots as the originals (profile background, avatar
+   border, nickname effect), so nothing here needs new markup — an
+   item is a price row in shop_item_defs, a line in js/shop-items.js
+   and one rule below.
+
+   Everything is CSS: no image downloads, and each one adapts to
+   light/dark on its own. The animated ones are all flattened by the
+   global prefers-reduced-motion rule near the top of this file.
+   ============================================================ */
+
+/* ---------- Profile backgrounds ---------- */
+
+/* The site's own paper, for people who don't want a light show. */
+.shop-bg-paper {
+  background-color: #efe9dd;
+  background-image: repeating-linear-gradient(45deg, transparent 0 7px, rgba(120, 105, 80, 0.09) 7px 8px);
+}
+
+.shop-bg-grid {
+  background-color: #16283d;
+  background-image: linear-gradient(rgba(120, 190, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 190, 255, 0.22) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.shop-bg-sunrise {
+  background: linear-gradient(160deg, #7c2d12, #ea580c 55%, #fbbf24);
+}
+
+.shop-bg-forest {
+  background: linear-gradient(150deg, #052e21, #0f5132 60%, #1a7f4b);
+}
+
+/* A prompt, a cursor and scanlines. The stripes are a hard-stop
+   repeating gradient rather than an image so they stay crisp at any
+   height the header happens to be. */
+.shop-bg-terminal {
+  background-color: #08120b;
+  background-image: repeating-linear-gradient(
+      0deg,
+      rgba(74, 222, 128, 0.22) 0 1px,
+      transparent 1px 4px
+    ),
+    radial-gradient(120% 90% at 50% 120%, rgba(74, 222, 128, 0.35), transparent 70%);
+}
+
+.shop-bg-halftone {
+  background-color: #c03a17;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.42) 22%, transparent 23%);
+  background-size: 14px 14px;
+}
+
+.shop-bg-topo {
+  background-color: #1c1a16;
+  background-image: repeating-radial-gradient(
+    circle at 30% 40%,
+    rgba(240, 160, 60, 0.35) 0 2px,
+    transparent 2px 22px
+  );
+}
+
+/* Colour bars with a tracking band drifting down them. */
+.shop-bg-vhs {
+  background: linear-gradient(
+    90deg,
+    #c0c0c0 0 14.28%,
+    #c0c000 14.28% 28.56%,
+    #00c0c0 28.56% 42.84%,
+    #00c000 42.84% 57.12%,
+    #c000c0 57.12% 71.4%,
+    #c00000 71.4% 85.68%,
+    #0000c0 85.68% 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-bg-vhs::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14%;
+  background: linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  animation: shop-vhs-band 3.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes shop-vhs-band {
+  from {
+    top: -14%;
+  }
+  to {
+    top: 100%;
+  }
+}
+
+.shop-bg-starfield {
+  background-color: #070912;
+  background-image: radial-gradient(1.6px 1.6px at 12% 22%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 68% 14%, #cbd5ff, transparent),
+    radial-gradient(1.8px 1.8px at 38% 68%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 84% 58%, #ffe9c4, transparent),
+    radial-gradient(1.5px 1.5px at 24% 86%, #fff, transparent),
+    radial-gradient(1.3px 1.3px at 92% 88%, #dbeafe, transparent);
+  background-size: 88px 76px;
+  animation: shop-star-twinkle 4.5s ease-in-out infinite;
+}
+
+@keyframes shop-star-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+/* Sun, then the horizon grid — the grid is a single gradient skewed by
+   its own background-size gradient rather than a 3D transform, which
+   would need an extra element and a perspective context. */
+.shop-bg-vaporwave {
+  background-color: #1a0b2e;
+  background-image: repeating-linear-gradient(
+      0deg,
+      rgba(255, 106, 213, 0.55) 0 1px,
+      transparent 1px 18px
+    ),
+    repeating-linear-gradient(90deg, rgba(255, 106, 213, 0.4) 0 1px, transparent 1px 26px),
+    linear-gradient(180deg, #ff2e88 0%, #ff9a3c 34%, #1a0b2e 62%);
+}
+
+/* Analogue noise: two dot layers sliding across each other. */
+.shop-bg-static {
+  background-color: #101010;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.45) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 5px 5px, 7px 7px;
+  animation: shop-static-shift 0.35s steps(4) infinite;
+}
+
+@keyframes shop-static-shift {
+  0% {
+    background-position: 0 0, 3px 4px;
+  }
+  25% {
+    background-position: 2px 3px, 0 2px;
+  }
+  50% {
+    background-position: 4px 1px, 5px 0;
+  }
+  75% {
+    background-position: 1px 4px, 2px 5px;
+  }
+  100% {
+    background-position: 3px 2px, 4px 3px;
+  }
+}
+
+.shop-bg-lava {
+  background-color: #240b02;
+  background-image: radial-gradient(closest-side at 28% 30%, #ff7a18 0%, rgba(255, 122, 24, 0) 100%),
+    radial-gradient(closest-side at 72% 66%, #e11d48 0%, rgba(225, 29, 72, 0) 100%),
+    radial-gradient(closest-side at 52% 88%, #f59e0b 0%, rgba(245, 158, 11, 0) 100%);
+  background-size: 60% 70%, 55% 65%, 45% 55%;
+  background-repeat: no-repeat;
+  animation: shop-lava-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes shop-lava-drift {
+  0% {
+    background-position: 10% 10%, 80% 70%, 45% 95%;
+  }
+  50% {
+    background-position: 30% 60%, 60% 20%, 70% 40%;
+  }
+  100% {
+    background-position: 5% 80%, 90% 40%, 20% 20%;
+  }
+}
+
+/* ---------- Avatar borders ----------
+   The plain ones are a box-shadow ring: it doesn't affect layout and
+   follows the avatar's border-radius for free. The three that need a
+   gradient, a moving part or a halo use a pseudo-element instead, and
+   those have to opt out of the avatar's overflow:hidden — which is
+   there to clip the photo, so the photo gets its own radius back. */
+.shop-border-ink {
+  box-shadow: 0 0 0 2px var(--color-text);
+}
+
+/* outline, not box-shadow: dashes are the whole point and box-shadow
+   has no dash. outline-offset keeps it clear of the photo, and like
+   box-shadow it takes up no layout space. */
+.shop-border-dashed {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: 2px;
+}
+
+.shop-border-double {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 5px var(--color-text);
+}
+
+.shop-border-emerald {
+  box-shadow: 0 0 0 3px #10b981;
+}
+
+.shop-border-violet {
+  box-shadow: 0 0 0 3px #8b5cf6;
+}
+
+.shop-border-ember {
+  animation: shop-ember-breathe 3s ease-in-out infinite;
+}
+
+@keyframes shop-ember-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #ea580c, 0 0 8px 1px rgba(234, 88, 12, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #f59e0b, 0 0 16px 4px rgba(245, 158, 11, 0.75);
+  }
+}
+
+.shop-border-orbit,
+.shop-border-conic,
+.shop-border-halo {
+  overflow: visible;
+  position: relative;
+}
+
+.shop-border-orbit img,
+.shop-border-conic img,
+.shop-border-halo img {
+  border-radius: 50%;
+}
+
+.shop-border-orbit {
+  box-shadow: 0 0 0 2px var(--color-border-strong);
+}
+
+/* A single dot going round. The dot is drawn at the top of a box the
+   size of the avatar and the whole box spins, which is far cheaper than
+   animating a path and stays centred at any avatar size. */
+.shop-border-orbit::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 0, var(--color-primary) 0 3px, transparent 4px);
+  animation: shop-orbit-spin 3.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes shop-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A conic gradient masked into a ring — a gradient border, which a
+   box-shadow cannot do at all. The mask punches out everything inside
+   the ring so the avatar underneath still shows through. */
+.shop-border-conic::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(#ef4444, #f59e0b, #facc15, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 4px), #000 calc(50% - 4px));
+  mask: radial-gradient(circle, transparent calc(50% - 4px), #000 calc(50% - 4px));
+  animation: shop-orbit-spin 4s linear infinite;
+  pointer-events: none;
+}
+
+.shop-border-halo::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  /* Transparent through the middle: filled all the way across, the glow
+     sat on top of the face instead of around it. */
+  background: radial-gradient(
+    circle,
+    rgba(250, 204, 21, 0) 0 47%,
+    rgba(250, 204, 21, 0.6) 53%,
+    rgba(250, 204, 21, 0) 76%
+  );
+  animation: shop-halo-pulse 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.shop-border-halo {
+  box-shadow: 0 0 0 2px #facc15;
+}
+
+@keyframes shop-halo-pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.shop-border-glitch {
+  animation: shop-border-glitch-shift 1.6s steps(2, end) infinite;
+}
+
+@keyframes shop-border-glitch-shift {
+  0% {
+    box-shadow: -3px 0 0 0 #ff003c, 3px 0 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+  }
+  50% {
+    box-shadow: 3px 0 0 0 #ff003c, -3px 0 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+  }
+  100% {
+    box-shadow: -2px 2px 0 0 #ff003c, 2px -2px 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+  }
+}
+
+/* The pseudo-element borders overhang their avatar, which is fine over
+   empty space but would sit on the text that follows one inline. Same
+   reservation the Blue Flame frame makes. */
+.profile-header .shop-border-orbit,
+.profile-header .shop-border-halo {
+  margin-right: 10px;
+}
+
+.avatar.shop-border-orbit,
+.avatar.shop-border-halo {
+  margin: 0 5px;
+}
+
+/* ---------- Nickname effects ---------- */
+.shop-name-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.shop-name-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.24em;
+}
+
+/* Sits behind the bottom half of the text like a marker stroke, and
+   because it's a background it survives any colour the name already
+   has. */
+.shop-name-marker {
+  background: linear-gradient(transparent 55%, rgba(250, 204, 21, 0.75) 55%);
+  padding: 0 2px;
+}
+
+.shop-name-emboss {
+  color: var(--color-text);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Hollow letters. Needs a colour behind it to read, so the stroke is the
+   text colour and the fill is knocked out. */
+.shop-name-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--color-text);
+  paint-order: stroke fill;
+}
+
+.shop-name-terminal {
+  color: #4ade80;
+  font-weight: 500;
+}
+
+.shop-name-terminal::after {
+  content: '█';
+  margin-left: 0.15em;
+  animation: shop-terminal-blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes shop-terminal-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.shop-name-ice {
+  background: linear-gradient(180deg, #e0f2fe, #38bdf8 55%, #0369a1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+.shop-name-fire {
+  background: linear-gradient(0deg, #7c2d12, #ea580c 40%, #facc15 90%);
+  background-size: 100% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shop-name-fire-flicker 2.4s ease-in-out infinite;
+}
+
+@keyframes shop-name-fire-flicker {
+  0%,
+  100% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 60%;
+  }
+}
+
+.shop-name-gold {
+  background: linear-gradient(100deg, #5c410a, #d9b746 28%, #f7e9a8 44%, #b8912a 62%, #5c410a);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shop-name-gold-sheen 6s linear infinite;
+}
+
+@keyframes shop-name-gold-sheen {
+  to {
+    background-position: 250% center;
+  }
+}
+
+/* RGB split. The two coloured copies are text-shadows rather than
+   duplicated elements, so it works on a name of any length without the
+   markup knowing anything about it. */
+.shop-name-glitch {
+  color: var(--color-text);
+  animation: shop-name-glitch-split 2.2s steps(2, end) infinite;
+}
+
+@keyframes shop-name-glitch-split {
+  0% {
+    text-shadow: -2px 0 #ff003c, 2px 0 #00e5ff;
+  }
+  40% {
+    text-shadow: 2px 0 #ff003c, -2px 0 #00e5ff;
+  }
+  60% {
+    text-shadow: -1px 1px #ff003c, 1px -1px #00e5ff;
+  }
+  100% {
+    text-shadow: -2px 0 #ff003c, 2px 0 #00e5ff;
   }
 }
