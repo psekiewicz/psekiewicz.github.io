@@ -153,8 +153,12 @@
             <option value="other" selected>Other</option>
           </select>
         </div>
+        <!-- Labelled Description and Content; the ids and the columns behind
+             them stay `summary` and `description` — renaming those means a
+             migration and every read path that touches them. Label above,
+             column below, deliberately not matching. -->
         <div class="field">
-          <label for="summary">Short summary</label>
+          <label for="summary">Description</label>
           <input type="text" id="summary" maxlength="200" placeholder="One sentence describing the project" />
         </div>
         <div class="field">
@@ -163,7 +167,7 @@
           <div class="hint" id="mediaUrl-hint">This is what plays in the feed and on the page.</div>
         </div>
         <div class="field">
-          <label for="description">Description</label>
+          <label for="description">Content</label>
           <textarea id="description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
         </div>
         <div class="field">

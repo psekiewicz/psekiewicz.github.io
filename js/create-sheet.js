@@ -16,6 +16,11 @@ let sheet = null;
 let overlay = null;
 let onStateChange = null;
 
+// Note on the two text fields: they're labelled "Description" and
+// "Content", while their ids — and the columns behind them — stay `summary`
+// and `description`. Renaming those means a migration plus every read path
+// that touches them, for a wording change. Label and column deliberately
+// don't line up; the mapping is summary→Description, description→Content.
 function fieldsHtml() {
   const types = PROJECT_TYPE_OPTIONS.map(
     (t) => `<option value="${t.value}"${t.value === 'other' ? ' selected' : ''}>${escapeHtml(t.label)}</option>`
@@ -32,7 +37,7 @@ function fieldsHtml() {
         <select id="sheet-type">${types}</select>
       </div>
       <div class="field">
-        <label for="sheet-summary">Short summary</label>
+        <label for="sheet-summary">Description</label>
         <input type="text" id="sheet-summary" maxlength="200" placeholder="One sentence about it" />
       </div>
       <div class="field">
@@ -41,7 +46,7 @@ function fieldsHtml() {
         <div class="hint" id="sheet-media-hint">This is what plays in the feed and on the page.</div>
       </div>
       <div class="field">
-        <label for="sheet-description">Description</label>
+        <label for="sheet-description">Content</label>
         <textarea id="sheet-description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
       </div>
       <div class="field">
