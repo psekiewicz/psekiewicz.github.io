@@ -4260,18 +4260,31 @@ body.sheet-open .bottom-nav {
 .shop-bundle-price {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   font-size: 0.78rem;
   color: var(--color-text-faint);
 }
 
+/* Neither figure may break across lines — "215" on one line and "pts" on
+   the next is how the partly-owned card fell apart, since the sentence
+   after it is long enough to force a wrap. The sentence wraps instead. */
+.shop-bundle-price strong,
+.shop-bundle-was {
+  white-space: nowrap;
+}
+
+/* The set price is the number to read; the separate price is context. */
 .shop-bundle-price strong {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--color-text);
 }
 
 .shop-bundle-was {
   text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  color: var(--color-text-faint);
 }
 
 .shop-bundle-save {

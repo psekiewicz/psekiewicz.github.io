@@ -96,6 +96,7 @@
       effectClass,
       findItem,
       bundleListPrice,
+      bundleMissingListPrice,
       bundlePriceFor,
     } from '/js/shop-items.js';
     import { escapeHtml, initials } from '/js/utils.js';
@@ -151,17 +152,24 @@
       const list = bundleListPrice(bundle);
       const price = bundlePriceFor(bundle, ownedIds);
 
+      // Struck-through separate price first, then what the set actually
+      // costs — read left to right that's "this much, no, this much".
+      // When some of the set is already owned, both numbers are for the
+      // members still missing, so the comparison stays honest: the pro-
+      // rated charge against what those same pieces cost individually.
       let priceLine;
       if (complete) {
         priceLine = `<span class="shop-bundle-price">${icon('check', { size: 13 })} Owned</span>`;
       } else if (ownedCount > 0) {
-        // The pro-rated figure, so the card can't promise one price and the
-        // server charge another.
-        priceLine = `<span class="shop-bundle-price"><strong>${price} pts</strong>
+        const missingList = bundleMissingListPrice(bundle, ownedIds);
+        priceLine = `<span class="shop-bundle-price">
+          <span class="shop-bundle-was">${missingList} pts</span>
+          <strong>${price} pts</strong>
           <span>for the ${bundle.items.length - ownedCount} you're missing</span></span>`;
       } else {
-        priceLine = `<span class="shop-bundle-price"><strong>${price} pts</strong>
-          <span class="shop-bundle-was">${list}</span>
+        priceLine = `<span class="shop-bundle-price">
+          <span class="shop-bundle-was">${list} pts</span>
+          <strong>${price} pts</strong>
           <span class="shop-bundle-save">save ${list - price}</span></span>`;
       }
 

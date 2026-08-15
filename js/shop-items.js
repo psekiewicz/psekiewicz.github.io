@@ -147,6 +147,15 @@ export function bundlePriceFor(bundle, ownedIds) {
   return Math.ceil((bundle.price * missing) / list);
 }
 
+// What the members you don't own yet would cost bought separately — the
+// number the set's price is struck through against. For a set you own
+// none of, this is the same as bundleListPrice().
+export function bundleMissingListPrice(bundle, ownedIds) {
+  return bundle.items
+    .filter((id) => !ownedIds.has(id))
+    .reduce((sum, id) => sum + (findItem(id)?.price || 0), 0);
+}
+
 export function itemsByCategory(category) {
   return SHOP_ITEMS.filter((item) => item.category === category);
 }
