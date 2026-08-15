@@ -1160,8 +1160,17 @@ create trigger comments_notify
 -- one place stops the client and the server disagreeing about someone's
 -- level. js/levels.js only turns the xp number into a level.
 --
---   xp      = 2/unique viewer, 30/like, 15/comment received, 60/follower
---   points  = 1/unique viewer,  5/like,  3/comment received, 10/follower
+--   xp      = 25/published entry (first 20 only), 2/unique viewer,
+--             30/like, 15/comment received, 60/follower
+--   points  = 1/unique viewer, 5/like, 3/comment received, 10/follower
+--
+-- Publishing pays XP again — putting something out is the thing this site
+-- is for, and a level of 0 until a stranger turns up was a cold start
+-- nobody deserved. It is deliberately worth less than a single like, and
+-- it stops counting after the twentieth entry: that keeps it a reward for
+-- posting rather than a reason to post twenty times. Points are untouched
+-- and still come only from reach — currency stays something other people
+-- decide you've earned.
 --
 -- Aggregates only, and only over published entries, so this is safe to
 -- expose publicly — it's what draws the leaderboard and every level chip.
@@ -1203,7 +1212,8 @@ select
   coalesce(lk.likes_received, 0)::integer as likes_received,
   coalesce(cm.comments_received, 0)::integer as comments_received,
   coalesce(fl.followers, 0)::integer as followers,
-  (coalesce(vw.unique_viewers, 0) * 2
+  (least(coalesce(t.published_projects, 0), 20) * 25
+    + coalesce(vw.unique_viewers, 0) * 2
     + coalesce(lk.likes_received, 0) * 30
     + coalesce(cm.comments_received, 0) * 15
     + coalesce(fl.followers, 0) * 60)::integer as xp,

@@ -20,7 +20,8 @@
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#14120f" media="(prefers-color-scheme: dark)" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -338,15 +339,16 @@
         `
         : '';
 
-      // Both currencies come from these four numbers and nothing else, so
-      // the profile shows them plainly with what each one is worth. Own
-      // profile only — it reads as a to-do list, not a public stat line.
+      // Where both currencies come from, shown plainly with what each one
+      // is worth. Own profile only — it reads as a to-do list, not a
+      // public stat line.
       const reachChip = (iconName, value, label, rate) =>
         `<span class="reach-chip" title="${escapeHtml(rate)}">${icon(iconName, { size: 14 })} <strong>${value.toLocaleString()}</strong> ${escapeHtml(label)}</span>`;
       const reachRow =
         isOwnProfile && stats
           ? `
             <div class="reach-row">
+              ${reachChip('grid', stats.projectsPublished, 'published', '25 XP each for your first 20 entries — no points, those come from reach')}
               ${reachChip('eye', stats.uniqueViewers, 'viewers', '2 XP and 1 point each — counted once per person, not per reload')}
               ${reachChip('heart', stats.totalLikes, 'likes', '30 XP and 5 points each')}
               ${reachChip('message-circle', stats.commentsReceived, 'comments', '15 XP and 3 points each — comments other people left you')}

@@ -1,12 +1,12 @@
 {
   "name": "Showcase",
   "short_name": "Showcase",
-  "description": "Publish your projects and get discovered — browse, follow, like, and comment on what the community is building.",
+  "description": "Find music, video, images and small apps people made \u2014 playable where you find them, ranked by what other people kept watching.",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f8fb",
-  "theme_color": "#4f46e5",
+  "background_color": "#f2efe9",
+  "theme_color": "#c03a17",
   "orientation": "portrait-primary",
   "icons": [
     {
