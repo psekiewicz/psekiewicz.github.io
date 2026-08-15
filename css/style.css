@@ -3995,3 +3995,331 @@ body.sheet-open .bottom-nav {
     text-shadow: -2px 0 #ff003c, 2px 0 #00e5ff;
   }
 }
+
+/* ============================================================
+   Set cosmetics
+   ------------------------------------------------------------
+   The pieces drawn to go together (see SHOP_BUNDLES in
+   js/shop-items.js). They're ordinary items — a set is only a list
+   of ids — so each one still works on its own.
+   ============================================================ */
+
+/* Four toes and a pad, drawn as five radial gradients and tiled. Two
+   tiles offset from each other so the prints don't line up in a grid,
+   which is what would give away that it's a pattern. */
+.shop-bg-paws {
+  background-color: #e8d5b7;
+  background-image: radial-gradient(ellipse 7px 9px at 22px 30px, #a97142 60%, transparent 62%),
+    radial-gradient(ellipse 3.5px 4.5px at 13px 20px, #a97142 60%, transparent 62%),
+    radial-gradient(ellipse 3.5px 4.5px at 20px 16px, #a97142 60%, transparent 62%),
+    radial-gradient(ellipse 3.5px 4.5px at 27px 16px, #a97142 60%, transparent 62%),
+    radial-gradient(ellipse 3.5px 4.5px at 33px 21px, #a97142 60%, transparent 62%);
+  background-size: 62px 62px;
+}
+
+.shop-bg-beach {
+  background: linear-gradient(
+    180deg,
+    #7dd3fc 0%,
+    #38bdf8 34%,
+    #0ea5e9 46%,
+    #0284c7 58%,
+    #fde68a 62%,
+    #f5d689 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-bg-beach::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  right: 12%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe6 40%, #fbbf24 70%, rgba(251, 191, 36, 0) 72%);
+}
+
+/* Flakes on two layers falling at different speeds — the parallax is what
+   stops it reading as a texture sliding down the page in one piece. */
+.shop-bg-snow {
+  background-color: #1e293b;
+  background-image: radial-gradient(2px 2px at 12% 18%, #fff, transparent),
+    radial-gradient(1.6px 1.6px at 62% 12%, #e0f2fe, transparent),
+    radial-gradient(2.2px 2.2px at 34% 62%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 82% 48%, #fff, transparent),
+    radial-gradient(1.8px 1.8px at 48% 86%, #e0f2fe, transparent);
+  background-size: 90px 90px, 130px 130px, 90px 90px, 130px 130px, 90px 90px;
+  animation: shop-snow-fall 9s linear infinite;
+}
+
+@keyframes shop-snow-fall {
+  to {
+    background-position: 0 90px, 0 130px, 0 90px, 0 130px, 0 90px;
+  }
+}
+
+/* ---------- Set borders ---------- */
+
+/* The ring is the collar; the tag hangs off the bottom of it. */
+.shop-border-collar {
+  box-shadow: 0 0 0 4px #b91c1c;
+  overflow: visible;
+  position: relative;
+}
+
+.shop-border-collar img {
+  border-radius: 50%;
+}
+
+.shop-border-collar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -22%;
+  width: 30%;
+  height: 30%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fde68a, #d97706 70%);
+  box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.6);
+  pointer-events: none;
+}
+
+/* Rays cut from a repeating conic gradient, masked to a ring so the
+   avatar shows through, turning slowly. */
+.shop-border-sun,
+.shop-border-frost {
+  overflow: visible;
+  position: relative;
+}
+
+.shop-border-sun img,
+.shop-border-frost img {
+  border-radius: 50%;
+}
+
+.shop-border-sun {
+  box-shadow: 0 0 0 3px #f59e0b;
+}
+
+.shop-border-sun::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#fbbf24 0deg 9deg, transparent 9deg 24deg);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 9px), #000 calc(50% - 9px));
+  mask: radial-gradient(circle, transparent calc(50% - 9px), #000 calc(50% - 9px));
+  animation: shop-orbit-spin 22s linear infinite;
+  pointer-events: none;
+}
+
+.shop-border-frost {
+  box-shadow: 0 0 0 3px #bae6fd, 0 0 12px 2px rgba(186, 230, 253, 0.55);
+}
+
+.shop-border-frost::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(224, 242, 254, 0.95) 0deg 3deg, transparent 3deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 7px), #000 calc(50% - 7px));
+  mask: radial-gradient(circle, transparent calc(50% - 7px), #000 calc(50% - 7px));
+  animation: shop-frost-shimmer 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shop-frost-shimmer {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(12deg);
+  }
+}
+
+.profile-header .shop-border-collar,
+.profile-header .shop-border-sun,
+.profile-header .shop-border-frost {
+  margin-right: 12px;
+}
+
+.avatar.shop-border-collar,
+.avatar.shop-border-sun,
+.avatar.shop-border-frost {
+  margin: 0 6px;
+}
+
+/* ---------- Set nickname effects ---------- */
+.shop-name-woof {
+  color: #92400e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.shop-name-woof::after {
+  content: '🐾';
+  margin-left: 0.3em;
+  font-size: 0.7em;
+  animation: shop-woof-wag 1.8s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes shop-woof-wag {
+  0%,
+  100% {
+    transform: rotate(-12deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+.shop-name-tropic {
+  background: linear-gradient(92deg, #0e7490, #22d3ee 35%, #fde047 70%, #fb923c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* The teal end of the ramp sits on sky blue in the Summer set, which is
+     where this name is most likely to be worn — the shadow is what keeps
+     it off the background it was designed to sit on. */
+  filter: drop-shadow(0 1px 1px rgba(0, 40, 60, 0.45));
+}
+
+/* ---------- Set cards on the shop page ---------- */
+.shop-bundle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.shop-bundle-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  animation: fade-in-up 0.35s ease both;
+}
+
+/* The three members shown as one strip: background, avatar, name — the
+   same order they appear on a profile, so the card reads as a preview of
+   the profile rather than as three unrelated swatches. */
+.shop-bundle-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 62px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.shop-bundle-preview .shop-item-preview-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.shop-bundle-preview-name {
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-bundle-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.shop-bundle-name {
+  font-weight: 600;
+}
+
+.shop-bundle-blurb {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  min-height: 2.4em;
+}
+
+.shop-bundle-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+}
+
+.shop-bundle-price strong {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.shop-bundle-was {
+  text-decoration: line-through;
+}
+
+.shop-bundle-save {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+/* Light backgrounds need dark text on them.
+   The profile header assumes its background is dark and forces white
+   text with a shadow, which is right for fourteen of the sixteen and
+   invisible on the two pale ones. These win on specificity (three
+   classes to the header rule's two) and also cover the shop's set
+   preview, which inherits the page's text colour and would otherwise
+   put cream on cream in dark mode. */
+.shop-bg-paper,
+.shop-bg-beach {
+  color: #191713;
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .profile-info h1,
+.profile-header.has-profile-bg.shop-bg-paper .profile-info > p,
+.profile-header.has-profile-bg.shop-bg-paper .profile-stat .num,
+.profile-header.has-profile-bg.shop-bg-beach .profile-info h1,
+.profile-header.has-profile-bg.shop-bg-beach .profile-info > p,
+.profile-header.has-profile-bg.shop-bg-beach .profile-stat .num {
+  color: #191713;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .profile-stat .label,
+.profile-header.has-profile-bg.shop-bg-paper .level-progress-head,
+.profile-header.has-profile-bg.shop-bg-beach .profile-stat .label,
+.profile-header.has-profile-bg.shop-bg-beach .level-progress-head {
+  color: rgba(25, 23, 19, 0.72);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .reach-chip,
+.profile-header.has-profile-bg.shop-bg-beach .reach-chip {
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(25, 23, 19, 0.8);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .reach-chip strong,
+.profile-header.has-profile-bg.shop-bg-beach .reach-chip strong {
+  color: #191713;
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .level-progress-track,
+.profile-header.has-profile-bg.shop-bg-beach .level-progress-track {
+  background: rgba(25, 23, 19, 0.2);
+}

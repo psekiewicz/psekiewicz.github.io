@@ -997,8 +997,167 @@ insert into public.shop_item_defs (id, price) values
   ('name-fire', 140),
   ('name-gold', 170),
   ('name-glitch', 200),
-  ('name-oxygene', 120)
+  ('name-oxygene', 120),
+  ('bg-paws', 70),
+  ('bg-beach', 80),
+  ('bg-snow', 95),
+  ('border-collar', 90),
+  ('border-sun', 110),
+  ('border-frost', 120),
+  ('name-woof', 80),
+  ('name-tropic', 90)
 on conflict (id) do update set price = excluded.price;
+
+-- ---------------------------------------------------------------
+-- Sets: a background, a border and a nickname effect drawn to go
+-- together, sold for less than the three separately.
+--
+-- A set owns no cosmetics of its own — it is a list of item ids — so
+-- buying one is the same as buying its members, and an item can belong
+-- to more than one set. Both tables are publicly readable and edited
+-- only by hand here, exactly like shop_item_defs.
+-- ---------------------------------------------------------------
+create table if not exists public.shop_bundle_defs (
+  id text primary key,
+  price integer not null check (price >= 0)
+);
+
+create table if not exists public.shop_bundle_items (
+  bundle_id text not null references public.shop_bundle_defs (id) on delete cascade,
+  item_id text not null references public.shop_item_defs (id) on delete cascade,
+  primary key (bundle_id, item_id)
+);
+
+alter table public.shop_bundle_defs enable row level security;
+alter table public.shop_bundle_items enable row level security;
+
+drop policy if exists "Set prices are publicly readable" on public.shop_bundle_defs;
+create policy "Set prices are publicly readable"
+  on public.shop_bundle_defs for select
+  using (true);
+
+drop policy if exists "Set contents are publicly readable" on public.shop_bundle_items;
+create policy "Set contents are publicly readable"
+  on public.shop_bundle_items for select
+  using (true);
+
+insert into public.shop_bundle_defs (id, price) values
+  ('set-puppy', 190),
+  ('set-summer', 220),
+  ('set-winter', 265),
+  ('set-terminal', 150),
+  ('set-retro', 430),
+  ('set-paper', 105)
+on conflict (id) do update set price = excluded.price;
+
+-- Rewritten wholesale on every run rather than upserted: a set's contents
+-- can change, and an upsert would leave the removed member behind.
+delete from public.shop_bundle_items
+where bundle_id in ('set-puppy', 'set-summer', 'set-winter', 'set-terminal', 'set-retro', 'set-paper');
+
+insert into public.shop_bundle_items (bundle_id, item_id) values
+  ('set-puppy', 'bg-paws'),
+  ('set-puppy', 'border-collar'),
+  ('set-puppy', 'name-woof'),
+  ('set-summer', 'bg-beach'),
+  ('set-summer', 'border-sun'),
+  ('set-summer', 'name-tropic'),
+  ('set-winter', 'bg-snow'),
+  ('set-winter', 'border-frost'),
+  ('set-winter', 'name-ice'),
+  ('set-terminal', 'bg-terminal'),
+  ('set-terminal', 'border-ink'),
+  ('set-terminal', 'name-terminal'),
+  ('set-retro', 'bg-vhs'),
+  ('set-retro', 'border-glitch'),
+  ('set-retro', 'name-glitch'),
+  ('set-paper', 'bg-paper'),
+  ('set-paper', 'border-double'),
+  ('set-paper', 'name-caps')
+on conflict (bundle_id, item_id) do nothing;
+
+-- Charges for a set and grants everything in it.
+--
+-- The price is pro-rated against what the buyer already owns: pay the
+-- set's share of the members still missing, worked out from those
+-- members' individual list prices. Without that, buying the Winter set
+-- after already owning Ice would charge full price for two items, which
+-- makes a set a worse deal than buying the rest of it piece by piece —
+-- and a shop that punishes people for having shopped there before is a
+-- bug, not a pricing strategy.
+--
+-- Everything comes from the two tables above; nothing is taken from the
+-- client but the set's id.
+create or replace function public.purchase_bundle(p_bundle_id text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_bundle_price integer;
+  v_list_total integer;
+  v_missing_total integer;
+  v_charge integer;
+  v_points integer;
+  v_granted integer;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select price into v_bundle_price from public.shop_bundle_defs where id = p_bundle_id;
+  if not found then
+    raise exception 'Unknown set: %', p_bundle_id;
+  end if;
+
+  select coalesce(sum(d.price), 0) into v_list_total
+  from public.shop_bundle_items b
+  join public.shop_item_defs d on d.id = b.item_id
+  where b.bundle_id = p_bundle_id;
+
+  select coalesce(sum(d.price), 0) into v_missing_total
+  from public.shop_bundle_items b
+  join public.shop_item_defs d on d.id = b.item_id
+  where b.bundle_id = p_bundle_id
+    and not exists (
+      select 1 from public.owned_items o where o.user_id = v_uid and o.item_id = b.item_id
+    );
+
+  if v_missing_total = 0 then
+    raise exception 'You already own everything in this set';
+  end if;
+
+  -- ceil, so rounding never works out in the buyer's favour by a point
+  -- and never charges a fraction.
+  v_charge := ceil(v_bundle_price::numeric * v_missing_total / v_list_total);
+
+  select points into v_points from public.profiles where id = v_uid;
+  if v_points < v_charge then
+    raise exception 'Not enough points';
+  end if;
+
+  update public.profiles set points = points - v_charge where id = v_uid;
+
+  insert into public.owned_items (user_id, item_id)
+  select v_uid, b.item_id
+  from public.shop_bundle_items b
+  where b.bundle_id = p_bundle_id
+  on conflict (user_id, item_id) do nothing;
+
+  get diagnostics v_granted = row_count;
+
+  return json_build_object(
+    'charged', v_charge,
+    'granted', v_granted,
+    'points', (select points from public.profiles where id = v_uid)
+  );
+end;
+$$;
+
+grant execute on function public.purchase_bundle(text) to authenticated;
+
 
 -- Guards the three equipped_* columns the same way profiles_guard_is_admin
 -- guards is_admin above: the "update own profile" policy lets a user

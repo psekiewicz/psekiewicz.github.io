@@ -63,6 +63,7 @@
           <span class="points-chip" id="shop-points"></span>
         </div>
         <p>Don't have enough points yet? Head to your <a id="shop-profile-link" href="#">profile</a> and claim any achievements you've already earned.</p>
+        <div id="shop-bundles"></div>
         <div class="shop-categories" id="shop-categories"></div>
       </div>
     </section>
@@ -87,8 +88,16 @@
   <script type="module">
     import { onAuthChange } from '/js/auth.js';
     import { getProfile } from '/js/profiles-data.js';
-    import { getOwnedItemIds, purchaseItem, equipItem } from '/js/shop-data.js';
-    import { SHOP_CATEGORIES, itemsByCategory, effectClass } from '/js/shop-items.js';
+    import { getOwnedItemIds, purchaseItem, purchaseBundle, equipItem } from '/js/shop-data.js';
+    import {
+      SHOP_CATEGORIES,
+      SHOP_BUNDLES,
+      itemsByCategory,
+      effectClass,
+      findItem,
+      bundleListPrice,
+      bundlePriceFor,
+    } from '/js/shop-items.js';
     import { escapeHtml, initials } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
@@ -97,6 +106,7 @@
     const shopSection = document.getElementById('shop-section');
     const loadingRegion = document.getElementById('loading-region');
     const categoriesRoot = document.getElementById('shop-categories');
+    const bundlesRoot = document.getElementById('shop-bundles');
     const pointsChip = document.getElementById('shop-points');
 
     let currentUser = null;
@@ -125,6 +135,59 @@
       return `<div class="shop-item-preview shop-item-preview-name"><span class="${effectClass(item.id)}">${escapeHtml(
         profile.displayName
       )}</span></div>`;
+    }
+
+    // A set previews as the three pieces arranged the way they'd sit on a
+    // profile — background behind, avatar on it, name beside — so the card
+    // shows what you'd actually be wearing rather than three swatches.
+    function bundleCardHtml(bundle) {
+      const items = bundle.items.map(findItem).filter(Boolean);
+      const bg = items.find((i) => i.category === 'bg');
+      const border = items.find((i) => i.category === 'border');
+      const nameEffect = items.find((i) => i.category === 'name');
+
+      const ownedCount = bundle.items.filter((id) => ownedIds.has(id)).length;
+      const complete = ownedCount === bundle.items.length;
+      const list = bundleListPrice(bundle);
+      const price = bundlePriceFor(bundle, ownedIds);
+
+      let priceLine;
+      if (complete) {
+        priceLine = `<span class="shop-bundle-price">${icon('check', { size: 13 })} Owned</span>`;
+      } else if (ownedCount > 0) {
+        // The pro-rated figure, so the card can't promise one price and the
+        // server charge another.
+        priceLine = `<span class="shop-bundle-price"><strong>${price} pts</strong>
+          <span>for the ${bundle.items.length - ownedCount} you're missing</span></span>`;
+      } else {
+        priceLine = `<span class="shop-bundle-price"><strong>${price} pts</strong>
+          <span class="shop-bundle-was">${list}</span>
+          <span class="shop-bundle-save">save ${list - price}</span></span>`;
+      }
+
+      const action = complete
+        ? ''
+        : `<button class="btn btn-primary btn-sm" type="button" data-action="buy-bundle" data-bundle="${bundle.id}">Buy set</button>`;
+
+      return `
+        <div class="shop-bundle-card">
+          <div class="shop-bundle-preview ${bg ? effectClass(bg.id) : ''}">
+            <span class="shop-item-preview shop-item-preview-avatar ${border ? effectClass(border.id) : ''}">${escapeHtml(
+              initials(profile.displayName)
+            )}</span>
+            <span class="shop-bundle-preview-name ${nameEffect ? effectClass(nameEffect.id) : ''}">${escapeHtml(
+              profile.displayName
+            )}</span>
+          </div>
+          <div class="shop-bundle-head">
+            <span class="shop-bundle-name">${escapeHtml(bundle.label)}</span>
+            ${complete || ownedCount === 0 ? '' : `<span class="shop-item-price">${ownedCount}/${bundle.items.length} owned</span>`}
+          </div>
+          <p class="shop-bundle-blurb">${escapeHtml(bundle.blurb)}</p>
+          ${priceLine}
+          ${action}
+        </div>
+      `;
     }
 
     function cardHtml(item) {
@@ -158,6 +221,12 @@
       pointsChip.innerHTML = `${icon('award', { size: 16 })} ${profile.points} pts`;
       document.getElementById('shop-profile-link').href = `profile.html?user=${encodeURIComponent(currentUser.id)}`;
 
+      bundlesRoot.innerHTML = `
+        <h2 style="margin-bottom:4px;">Sets</h2>
+        <p class="shop-category-hint">A background, a border and a nickname effect that go together — cheaper than the three on their own.</p>
+        <div class="shop-bundle-grid">${SHOP_BUNDLES.map(bundleCardHtml).join('')}</div>
+      `;
+
       categoriesRoot.innerHTML = SHOP_CATEGORIES.map(
         (cat) => `
           <div>
@@ -169,13 +238,15 @@
       ).join('');
     }
 
-    categoriesRoot.addEventListener('click', async (e) => {
+    async function handleShopClick(e) {
       const btn = e.target.closest('button[data-action]');
       if (!btn) return;
       btn.disabled = true;
 
       try {
-        if (btn.dataset.action === 'buy') {
+        if (btn.dataset.action === 'buy-bundle') {
+          await purchaseBundle(btn.dataset.bundle);
+        } else if (btn.dataset.action === 'buy') {
           await purchaseItem(btn.dataset.item);
         } else if (btn.dataset.action === 'equip') {
           await equipItem(currentUser.id, btn.dataset.category, btn.dataset.item);
@@ -188,7 +259,10 @@
         alert(err.message);
         btn.disabled = false;
       }
-    });
+    }
+
+    categoriesRoot.addEventListener('click', handleShopClick);
+    bundlesRoot.addEventListener('click', handleShopClick);
 
     let initialized = false;
     onAuthChange(async (user) => {

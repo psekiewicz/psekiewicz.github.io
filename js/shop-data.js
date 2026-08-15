@@ -23,6 +23,17 @@ export async function purchaseItem(itemId) {
   return data;
 }
 
+// Buys a whole set and returns { charged, granted, points }.
+// purchase_bundle() in schema.sql owns both the set's price and its
+// contents, and works out what to charge from the members the caller
+// doesn't already have — so a set is never a worse deal than buying
+// what's left of it one item at a time.
+export async function purchaseBundle(bundleId) {
+  const { data, error } = await supabase.rpc('purchase_bundle', { p_bundle_id: bundleId });
+  if (error) throw new Error(error.message);
+  return { charged: data?.charged || 0, granted: data?.granted || 0, points: data?.points || 0 };
+}
+
 // Equips (or un-equips with itemId 'none') a purchased item into one of
 // the three cosmetic slots. A database trigger (prevent_unowned_equip in
 // schema.sql) silently reverts this if itemId isn't 'none' and isn't

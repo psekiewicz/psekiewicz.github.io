@@ -26,6 +26,9 @@ export const SHOP_ITEMS = [
   { id: 'bg-vaporwave', category: 'bg', label: 'Vaporwave', price: 175 },
   { id: 'bg-static', category: 'bg', label: 'Static', price: 190 },
   { id: 'bg-lava', category: 'bg', label: 'Lava Lamp', price: 220 },
+  { id: 'bg-paws', category: 'bg', label: 'Paw Prints', price: 70 },
+  { id: 'bg-beach', category: 'bg', label: 'Beach Day', price: 80 },
+  { id: 'bg-snow', category: 'bg', label: 'Snowfall', price: 95 },
 
   { id: 'border-bronze', category: 'border', label: 'Bronze Ring', price: 30 },
   { id: 'border-silver', category: 'border', label: 'Silver Ring', price: 60 },
@@ -43,6 +46,9 @@ export const SHOP_ITEMS = [
   { id: 'border-conic', category: 'border', label: 'Spectrum Spin', price: 210 },
   { id: 'border-glitch', category: 'border', label: 'Glitch', price: 230 },
   { id: 'border-halo', category: 'border', label: 'Halo', price: 260 },
+  { id: 'border-collar', category: 'border', label: 'Dog Collar', price: 90 },
+  { id: 'border-sun', category: 'border', label: 'Sunburst', price: 110 },
+  { id: 'border-frost', category: 'border', label: 'Frost', price: 120 },
 
   { id: 'name-gradient', category: 'name', label: 'Gradient', price: 40 },
   { id: 'name-shadow', category: 'name', label: 'Pop Shadow', price: 60 },
@@ -60,7 +66,86 @@ export const SHOP_ITEMS = [
   { id: 'name-fire', category: 'name', label: 'Fire', price: 140 },
   { id: 'name-gold', category: 'name', label: 'Gold Leaf', price: 170 },
   { id: 'name-glitch', category: 'name', label: 'Glitch', price: 200 },
+  { id: 'name-woof', category: 'name', label: 'Woof', price: 80 },
+  { id: 'name-tropic', category: 'name', label: 'Tropical', price: 90 },
 ];
+
+// Sets: one background, one border and one nickname effect that were
+// drawn to go together, sold for less than the three separately.
+//
+// A set is just a list of item ids — it owns no cosmetics of its own, so
+// buying one is exactly the same as buying its members one at a time, and
+// an item can appear in more than one set. The price here is display copy:
+// purchase_bundle() in schema.sql holds the real one, and works out what
+// to charge from what you don't already own (see below).
+export const SHOP_BUNDLES = [
+  {
+    id: 'set-puppy',
+    label: 'Puppy Pack',
+    blurb: 'Paw prints, a collar with a name tag, and a nose-print on your name.',
+    price: 190,
+    items: ['bg-paws', 'border-collar', 'name-woof'],
+  },
+  {
+    id: 'set-summer',
+    label: 'Summer Pack',
+    blurb: 'Sea, sand and a sun that turns behind your avatar.',
+    price: 220,
+    items: ['bg-beach', 'border-sun', 'name-tropic'],
+  },
+  {
+    id: 'set-winter',
+    label: 'Winter Pack',
+    blurb: 'Falling snow, a frozen ring and a name cut from ice.',
+    price: 265,
+    items: ['bg-snow', 'border-frost', 'name-ice'],
+  },
+  {
+    id: 'set-terminal',
+    label: 'Terminal Pack',
+    blurb: 'Phosphor green, a plain ink ring and a blinking cursor.',
+    price: 150,
+    items: ['bg-terminal', 'border-ink', 'name-terminal'],
+  },
+  {
+    id: 'set-retro',
+    label: 'Retro Pack',
+    blurb: 'Tracking bars, a tape-damaged ring and a name that will not sit still.',
+    price: 430,
+    items: ['bg-vhs', 'border-glitch', 'name-glitch'],
+  },
+  {
+    id: 'set-paper',
+    label: 'Paper Pack',
+    blurb: 'The house style: paper, a double rule and small caps.',
+    price: 105,
+    items: ['bg-paper', 'border-double', 'name-caps'],
+  },
+];
+
+export function findBundle(bundleId) {
+  return SHOP_BUNDLES.find((bundle) => bundle.id === bundleId) || null;
+}
+
+// What the three items would cost bought separately — the number a set's
+// price is compared against.
+export function bundleListPrice(bundle) {
+  return bundle.items.reduce((sum, id) => sum + (findItem(id)?.price || 0), 0);
+}
+
+// What a set costs *this* buyer. Members you already own are deducted
+// proportionally, so a set is never a worse deal than buying what's left
+// of it one at a time. purchase_bundle() computes the same figure from
+// the same numbers server-side and charges that; this is only for display.
+export function bundlePriceFor(bundle, ownedIds) {
+  const list = bundleListPrice(bundle);
+  if (list === 0) return 0;
+  const missing = bundle.items
+    .filter((id) => !ownedIds.has(id))
+    .reduce((sum, id) => sum + (findItem(id)?.price || 0), 0);
+  if (missing === 0) return 0;
+  return Math.ceil((bundle.price * missing) / list);
+}
 
 export function itemsByCategory(category) {
   return SHOP_ITEMS.filter((item) => item.category === category);
