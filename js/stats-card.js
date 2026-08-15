@@ -79,23 +79,30 @@ function drawCheck(ctx, cx, cy, size, color) {
 // The shop's 58 items (js/shop-items.js) are CSS classes defined in
 // css/style.css — gradients, tiled patterns, conic-gradient masks,
 // pseudo-elements, keyframe animations, two image-based items. An earlier
-// version of this tried to rasterize the real DOM (via an SVG
-// <foreignObject>) into an image and draw *that* onto the canvas — it
-// turns out any <svg> containing a <foreignObject> permanently taints a
-// canvas it's drawn onto, unconditionally, regardless of same-origin-ness
-// or content (a deliberate browser security restriction, not a bug to
-// route around), which makes canvas.toBlob()/toDataURL() throw for every
-// card with any cosmetic at all.
+// version tried rasterizing the real DOM (via an SVG <foreignObject>) into
+// an image and drawing *that* onto the canvas — it turns out any <svg>
+// containing a <foreignObject> permanently taints a canvas it's drawn onto,
+// unconditionally, regardless of same-origin-ness or content (a deliberate
+// browser restriction, not a bug to route around), which made
+// canvas.toBlob()/toDataURL() throw for every card with a cosmetic.
 //
-// Instead: read the *computed* CSS off a real, hidden, off-screen element
-// wearing the exact class profile.html/nav.js already use, and rebuild
-// the visual with canvas's own gradient/shadow/stroke APIs.
-// getComputedStyle() only ever returns strings — never pixels — so this
-// can't taint anything. It can't replicate everything (tiled patterns,
-// masks, pseudo-element artwork, animations collapse to their static
-// colors), but it covers gradients, box-shadow rings, conic-gradient
-// rings, and text effects with real fidelity, and needs zero maintenance
-// as the shop grows since it never hand-copies an item's definition.
+// The background now goes through html2canvas instead (loaded lazily from
+// esm.sh, the same no-build-step CDN pattern already used for
+// @supabase/supabase-js in js/supabase-init.js): it walks the real DOM and
+// paints it primitive-by-primitive rather than through an SVG image, so it
+// never hits that tainting wall, and it covers tiled patterns and the one
+// image-based background that no hand-written parser could. If it fails
+// to load at all (offline, blocked CDN), the background falls back to the
+// computed-style parser below, and only then to no cosmetic.
+//
+// Border and name effect stay on the computed-style parser, not
+// html2canvas, for two different reasons found by actually testing it
+// rather than assuming: html2canvas renders `background-clip: text`
+// gradient text as a flat color (a long-standing, unfixable gap in the
+// library), and it renders plain box-shadow rings — the technique 11 of
+// the shop's 19 border items use — as a solid filled disc covering the
+// whole avatar instead of a ring. Both would be real regressions from what
+// the parser already gets right.
 function withHiddenClone(html) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute;left:-99999px;top:-99999px;';
@@ -210,6 +217,63 @@ function parseConicColors(value) {
   const colors = value.match(/rgba?\([^)]+\)|hsla?\([^)]+\)|#[0-9a-f]{3,8}/gi);
   return colors && colors.length >= 2 ? colors : null;
 }
+
+// Lazy CDN import, fetched only the first time a card actually needs it —
+// matches js/supabase-init.js's existing esm.sh pattern, so this stays
+// true to "no build step, no npm install" while still pulling in real
+// third-party code for the one thing a hand-written parser can't do.
+let html2canvasPromise = null;
+function loadHtml2Canvas() {
+  if (!html2canvasPromise) {
+    html2canvasPromise = import('https://esm.sh/html2canvas@1.4.1').then((m) => m.default);
+  }
+  return html2canvasPromise;
+}
+
+// Same-origin content only (no avatar photo, no cross-origin anything), so
+// reading pixels back out never taints — used to decide legible text color
+// against whatever html2canvas actually painted, the same way
+// drawBgCosmetic()'s gradient-stop average does for the fallback path.
+function sampleLuminance(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const grid = 6;
+  let total = 0;
+  let count = 0;
+  for (let i = 0; i < grid; i++) {
+    for (let j = 0; j < grid; j++) {
+      const x = Math.min(w - 1, Math.floor((w * (i + 0.5)) / grid));
+      const y = Math.min(h - 1, Math.floor((h * (j + 0.5)) / grid));
+      const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+      total += (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      count++;
+    }
+  }
+  return count ? total / count : null;
+}
+
+async function captureBgHtml2Canvas(bgClass, w, h) {
+  if (!bgClass) return null;
+  const wrap = withHiddenClone(`<div class="profile-header has-profile-bg ${bgClass}" style="width:${w}px;height:${h}px;"></div>`);
+  try {
+    const html2canvas = await loadHtml2Canvas();
+    return await html2canvas(wrap.firstElementChild, { backgroundColor: null, logging: false });
+  } catch {
+    return null;
+  } finally {
+    wrap.remove();
+  }
+}
+
+// Borders were tried through html2canvas too, but it renders plain
+// box-shadow rings — the technique 11 of the shop's 19 border items use —
+// as a solid filled disc covering the whole avatar instead of a thin ring,
+// a real regression found by actually testing it rather than assuming.
+// Conic-gradient and the image-based border render fine through it, but
+// that's a minority; the computed-style parser below gets the common case
+// right, so borders stay on that path entirely rather than a per-item
+// split that would need maintaining forever.
 
 // ---- Background ----
 
@@ -425,14 +489,22 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
   const bgW = CARD_W - pad * 2;
   const bgH = CARD_H - pad * 2;
 
-  const bgCosmetic = readBgCosmetic(profile.equippedBg && profile.equippedBg !== 'none' ? `shop-${profile.equippedBg}` : '');
-  const borderCosmetic = readBorderCosmetic(
-    profile.equippedBorder && profile.equippedBorder !== 'none' ? `shop-${profile.equippedBorder}` : ''
-  );
-  const nameCosmetic = await readNameCosmetic(
-    profile.equippedNameEffect && profile.equippedNameEffect !== 'none' ? `shop-${profile.equippedNameEffect}` : '',
-    profile.displayName
-  );
+  const bgClassName = profile.equippedBg && profile.equippedBg !== 'none' ? `shop-${profile.equippedBg}` : '';
+  const borderClassName = profile.equippedBorder && profile.equippedBorder !== 'none' ? `shop-${profile.equippedBorder}` : '';
+  const nameClassName =
+    profile.equippedNameEffect && profile.equippedNameEffect !== 'none' ? `shop-${profile.equippedNameEffect}` : '';
+
+  // html2canvas is the primary path for the background (real fidelity —
+  // tiled patterns, the one image-based background); the computed-style
+  // parser is the fallback if it can't load at all, and only then does the
+  // card fall back further to no cosmetic. Border and name never go
+  // through html2canvas (see the comments above) — both are read directly.
+  const [bgCanvas, borderCosmetic, nameCosmetic] = await Promise.all([
+    captureBgHtml2Canvas(bgClassName, bgW, bgH),
+    Promise.resolve(readBorderCosmetic(borderClassName)),
+    readNameCosmetic(nameClassName, profile.displayName),
+  ]);
+  const bgCosmeticFallback = !bgCanvas && bgClassName ? readBgCosmetic(bgClassName) : null;
 
   ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
@@ -443,7 +515,13 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
   ctx.save();
   roundRect(ctx, pad, pad, bgW, bgH, 14);
   ctx.clip();
-  const bgLum = drawBgCosmetic(ctx, bgCosmetic, pad, pad, bgW, bgH);
+  let bgLum = null;
+  if (bgCanvas) {
+    ctx.drawImage(bgCanvas, pad, pad, bgW, bgH);
+    bgLum = sampleLuminance(bgCanvas);
+  } else {
+    bgLum = drawBgCosmetic(ctx, bgCosmeticFallback, pad, pad, bgW, bgH);
+  }
   ctx.restore();
   ctx.lineWidth = 2;
   ctx.strokeStyle = c.border;
