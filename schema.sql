@@ -1041,6 +1041,8 @@ create policy "Set contents are publicly readable"
   on public.shop_bundle_items for select
   using (true);
 
+grant select on public.shop_bundle_defs, public.shop_bundle_items to anon, authenticated;
+
 insert into public.shop_bundle_defs (id, price) values
   ('set-puppy', 190),
   ('set-summer', 220),
@@ -1509,6 +1511,12 @@ create policy "Users can remove their own saves"
   on public.saves for delete
   using (auth.uid() = user_id);
 
+-- Supabase grants these to new tables in `public` by default, so this is
+-- belt and braces — but a database where that default isn't in place
+-- fails with "permission denied for table saves" and no hint as to why,
+-- and the policies above are what actually restrict the rows.
+grant select, insert, delete on public.saves to authenticated;
+
 
 -- ============================================================
 -- Reports — the missing half of moderation.
@@ -1558,6 +1566,11 @@ create policy "Admins can update reports"
   on public.reports for update
   using (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true))
   with check (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
+
+-- Table-level access; the policies above decide the rows. select/update
+-- are granted to every signed-in account on purpose — without a matching
+-- policy they return nothing, which is the point.
+grant select, insert, update on public.reports to authenticated;
 
 -- The queue an admin actually works from: one row per reported entry with
 -- its report count, not one row per report. security definer because the
