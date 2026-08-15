@@ -76,35 +76,60 @@
      light-themed even when the page itself is dark. */
   color-scheme: light;
 
-  --color-bg: #f7f8fb;
-  --color-surface: #ffffff;
-  --color-border: #e4e7ee;
-  --color-text: #1a1d29;
-  --color-text-muted: #5b6072;
-  --color-text-faint: #8a8fa3;
+  /* Ink on paper, with one signal colour.
+     The palette used to be indigo→cyan on cool grey, which is the default
+     look of every dashboard template on the internet and sat oddly under a
+     monospace face. Warm paper and near-black ink give the type something
+     to be typeset on, and a single vermilion accent means an accent
+     actually marks something instead of decorating everything. */
+  --color-bg: #f2efe9;
+  --color-surface: #fbf9f5;
+  --color-border: #ddd7cb;
+  --color-border-strong: #c3bcac;
+  --color-text: #191713;
+  --color-text-muted: #5d594e;
+  --color-text-faint: #8b867a;
 
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
-  --color-primary-soft: #eef0fe;
-  --color-accent: #06b6d4;
+  --color-primary: #c03a17;
+  --color-primary-hover: #9c2f12;
+  --color-primary-soft: #f6e6dd;
+  --color-accent: #16645c;
 
-  --color-danger: #dc2626;
-  --color-danger-soft: #fdecec;
-  --color-success: #16a34a;
-  --color-success-soft: #eafaf0;
-  --color-muted-soft: #f1f2f6;
-  --navbar-bg: rgba(255, 255, 255, 0.85);
+  --color-danger: #b3261e;
+  --color-danger-soft: #f8e3e0;
+  --color-success: #1f6b3a;
+  --color-success-soft: #e3f0e6;
+  --color-muted-soft: #e9e5dc;
+  --navbar-bg: rgba(242, 239, 233, 0.92);
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  /* Squared off. Pill-shaped everything was the other half of the
+     template look; corners this tight read as built rather than styled,
+     and they suit the mono face. Genuinely round things — avatars, dots,
+     progress tracks — set 50%/999px themselves. */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
 
-  --shadow-sm: 0 1px 2px rgba(20, 22, 40, 0.06);
-  --shadow-md: 0 8px 24px rgba(20, 22, 40, 0.08);
-  --shadow-lg: 0 20px 45px rgba(20, 22, 40, 0.14);
+  /* Depth is for things that genuinely float (menus, modals, sheets,
+     toasts). Cards state their edges with a border instead — a grid of
+     drop-shadowed rectangles is what made the page look sprayed on. */
+  --shadow-sm: 0 1px 0 rgba(25, 23, 19, 0.05);
+  --shadow-md: 0 2px 10px rgba(25, 23, 19, 0.08);
+  --shadow-lg: 0 14px 34px rgba(25, 23, 19, 0.16);
 
   --container: 1120px;
   --font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Micro-labels: uppercase, tracked out, small. A monospace face is at its
+   best doing this, and it gives every section a quiet header without
+   another box or another colour. */
+.eyebrow,
+.section-head p,
+.card-meta,
+.stat-label,
+.label-caps {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Dark theme: applied automatically when the OS prefers dark (unless the
@@ -114,56 +139,58 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --color-bg: #0e1015;
-    --color-surface: #171a22;
-    --color-border: #2a2e3a;
-    --color-text: #eef0f5;
-    --color-text-muted: #a8adc0;
-    --color-text-faint: #6f7488;
+    --color-bg: #14120f;
+    --color-surface: #1c1a16;
+    --color-border: #302c26;
+    --color-border-strong: #48423a;
+    --color-text: #f0ece3;
+    --color-text-muted: #a49e91;
+    --color-text-faint: #78726a;
 
-    --color-primary: #818cf8;
-    --color-primary-hover: #a5b0fb;
-    --color-primary-soft: #232640;
-    --color-accent: #22d3ee;
+    --color-primary: #ef6b3c;
+    --color-primary-hover: #ff8558;
+    --color-primary-soft: #2e1d14;
+    --color-accent: #4fbfae;
 
-    --color-danger: #f87171;
-    --color-danger-soft: #3a1e20;
-    --color-success: #4ade80;
-    --color-success-soft: #17301f;
-    --color-muted-soft: #232732;
-    --navbar-bg: rgba(14, 16, 21, 0.85);
+    --color-danger: #e5675c;
+    --color-danger-soft: #35201d;
+    --color-success: #5aa86f;
+    --color-success-soft: #1a2b1f;
+    --color-muted-soft: #262319;
+    --navbar-bg: rgba(20, 18, 15, 0.92);
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.6);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg: #0e1015;
-  --color-surface: #171a22;
-  --color-border: #2a2e3a;
-  --color-text: #eef0f5;
-  --color-text-muted: #a8adc0;
-  --color-text-faint: #6f7488;
+  --color-bg: #14120f;
+  --color-surface: #1c1a16;
+  --color-border: #302c26;
+  --color-border-strong: #48423a;
+  --color-text: #f0ece3;
+  --color-text-muted: #a49e91;
+  --color-text-faint: #78726a;
 
-  --color-primary: #818cf8;
-  --color-primary-hover: #a5b0fb;
-  --color-primary-soft: #232640;
-  --color-accent: #22d3ee;
+  --color-primary: #ef6b3c;
+  --color-primary-hover: #ff8558;
+  --color-primary-soft: #2e1d14;
+  --color-accent: #4fbfae;
 
-  --color-danger: #f87171;
-  --color-danger-soft: #3a1e20;
-  --color-success: #4ade80;
-  --color-success-soft: #17301f;
-  --color-muted-soft: #232732;
-  --navbar-bg: rgba(14, 16, 21, 0.85);
+  --color-danger: #e5675c;
+  --color-danger-soft: #35201d;
+  --color-success: #5aa86f;
+  --color-success-soft: #1a2b1f;
+  --color-muted-soft: #262319;
+  --navbar-bg: rgba(20, 18, 15, 0.92);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -213,14 +240,27 @@ main {
   flex: 1;
 }
 
+/* Monospace headings need help: at display sizes the fixed advance width
+   makes them look gappy, so they get negative tracking and the weight
+   comes down from 700 to 600 — a mono bold at 3rem reads as shouting. */
 h1,
 h2,
 h3,
 h4 {
-  line-height: 1.2;
+  line-height: 1.15;
   margin: 0 0 0.5em;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+h1 {
+  letter-spacing: -0.05em;
+}
+
+/* Numbers line up in columns — counts, XP, prices, view totals all sit in
+   tables and stat rows where a jittering digit width is visible. */
+body {
+  font-variant-numeric: tabular-nums;
 }
 
 p {
@@ -233,8 +273,13 @@ a {
   text-decoration: none;
 }
 
+/* Underline from the baseline rather than through the descenders, and
+   only on hover — an offset underline is the one link decoration that
+   doesn't fight a monospace face. */
 a:hover {
   text-decoration: underline;
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
 }
 
 img {
@@ -254,9 +299,10 @@ img {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px 20px;
-  font-size: 0.95rem;
+  padding: 10px 18px;
+  font-size: 0.86rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
@@ -273,24 +319,28 @@ img {
 .btn-primary {
   background: var(--color-primary);
   color: #fff;
+  border-color: var(--color-primary);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
   text-decoration: none;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
 }
 
+/* The secondary button is a hairline box, not a second filled shape —
+   two solid buttons side by side never say which one is the point. */
 .btn-secondary {
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
 }
 
 .btn-secondary:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--color-text);
+  background: var(--color-muted-soft);
+  color: var(--color-text);
   text-decoration: none;
   transform: translateY(-1px);
 }
@@ -318,8 +368,8 @@ img {
 }
 
 .btn-sm {
-  padding: 7px 14px;
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  font-size: 0.78rem;
 }
 
 .btn-block {
@@ -337,7 +387,10 @@ img {
   top: 0;
   z-index: 50;
   background: var(--navbar-bg);
-  backdrop-filter: saturate(180%) blur(10px);
+  /* Light blur only. The heavy saturate(180%) frosted-glass bar is period
+     decoration; this keeps text legible over whatever scrolls under it
+     without turning the header into an effect. */
+  backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -345,15 +398,16 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 68px;
+  height: 60px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 800;
-  font-size: 1.15rem;
+  gap: 9px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.04em;
   color: var(--color-text);
 }
 
@@ -361,17 +415,20 @@ img {
   text-decoration: none;
 }
 
+/* One flat square of the signal colour. It was a rounded indigo→cyan
+   gradient tile, which is the single most recognisable stock-template
+   mark there is. */
 .brand-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  width: 26px;
+  height: 26px;
+  border-radius: 2px;
+  background: var(--color-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 0.82rem;
 }
 
 .nav-links {
@@ -381,21 +438,35 @@ img {
 }
 
 .nav-link {
-  padding: 8px 14px;
+  position: relative;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-weight: 500;
+  font-size: 0.84rem;
 }
 
 .nav-link:hover {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  background: var(--color-muted-soft);
+  color: var(--color-text);
   text-decoration: none;
 }
 
+/* The current page is marked with a rule under the label rather than by
+   recolouring it — colour is reserved for things you can act on. */
 .nav-link.active {
-  color: var(--color-primary);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  background: var(--color-primary);
 }
 
 .nav-right {
@@ -444,12 +515,13 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 6px;
-  border-radius: 999px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-weight: 600;
-  font-size: 0.88rem;
+  padding: 5px 10px 5px 5px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .user-chip:hover {
@@ -461,8 +533,8 @@ img {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -621,28 +693,43 @@ img {
 }
 
 /* ---------- Hero ---------- */
+/* No coloured glow behind the headline. The hero is set left, on the same
+   paper as everything else, and closed with a rule — the page starts by
+   saying something rather than by lighting itself. */
 .hero {
-  padding: 96px 0 72px;
-  background: radial-gradient(1200px 500px at 50% -10%, var(--color-primary-soft) 0%, transparent 60%);
+  padding: 72px 0 56px;
+  border-bottom: 1px solid var(--color-border);
 }
 
+/* The markup puts .container and .hero-inner on the same element, so this
+   must not fight the container's centring — the measure is set on the text
+   itself instead, which also keeps the headline from running to a
+   ten-word line on a wide screen. */
 .hero-inner {
-  max-width: 720px;
-  margin: 0 auto;
-  text-align: center;
+  text-align: left;
+}
+
+.hero-inner h1 {
+  max-width: 18ch;
 }
 
 .eyebrow {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--color-primary-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--color-primary);
-  font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: currentColor;
 }
 
 .hero h1 {
@@ -651,39 +738,47 @@ img {
 }
 
 .hero p.lead {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1.7;
   color: var(--color-text-muted);
-  margin-bottom: 32px;
+  margin-bottom: 30px;
+  max-width: 56ch;
 }
 
 .hero-actions {
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 /* ---------- Sections ---------- */
 .section {
-  padding: 64px 0;
+  padding: 56px 0;
 }
 
+/* A section header is a label and a rule, not a big centred title. */
 .section-head {
   display: flex;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
 .section-head h2 {
-  font-size: 1.7rem;
+  font-size: 1.05rem;
   margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .section-head p {
-  margin: 6px 0 0;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
 }
 
 .features {
@@ -692,24 +787,28 @@ img {
   gap: 20px;
 }
 
+/* Feature cards lose their boxes: on a page that already has a grid of
+   real content cards, three more outlined rectangles just add noise. Each
+   one is now a rule, an icon and text. */
 .feature-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 28px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.feature-card h3 {
+  font-size: 0.95rem;
 }
 
 .feature-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--color-primary-soft);
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  background: none;
   color: var(--color-primary);
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  margin-bottom: 16px;
+  justify-content: flex-start;
+  margin-bottom: 12px;
 }
 
 /* ---------- Project grid & cards ---------- */
@@ -733,28 +832,37 @@ img {
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
   animation: fade-in-up 0.35s ease both;
 }
 
+/* Hover firms up the edge instead of casting a shadow. The lift stays —
+   it's what makes the grid feel alive under a cursor. */
 .card:hover {
-  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
 }
 
+/* The empty thumbnail is a hatched placeholder rather than a pastel
+   gradient — it reads as "no image yet" instead of as decoration. */
 .card-thumb {
   aspect-ratio: 16 / 9.5;
-  background: linear-gradient(135deg, var(--color-primary-soft), #e5f7fb);
+  background-color: var(--color-muted-soft);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 6px,
+    rgba(125, 118, 105, 0.14) 6px 7px
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
-  font-size: 2rem;
-  font-weight: 800;
+  color: var(--color-text-faint);
+  font-size: 1.6rem;
+  font-weight: 600;
   overflow: hidden;
 }
 
@@ -842,31 +950,41 @@ img {
   gap: 6px;
 }
 
+/* Tags read as typed metadata, not as sweets. */
 .tag {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.tag::before {
+  content: '#';
+  opacity: 0.5;
 }
 
 .tag.is-muted {
-  background: var(--color-muted-soft);
-  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  color: var(--color-text-faint);
 }
 
 .type-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px 3px 8px;
-  border-radius: 999px;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
   background: var(--color-muted-soft);
   color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 /* ---------- Forms ---------- */
@@ -876,17 +994,15 @@ img {
   align-items: center;
   justify-content: center;
   padding: 48px 20px;
-  background: radial-gradient(900px 400px at 50% 0%, var(--color-primary-soft) 0%, transparent 60%);
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 40px 36px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 36px 32px;
   animation: auth-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -902,32 +1018,35 @@ img {
 }
 
 .auth-card h1 {
-  font-size: 1.5rem;
-  text-align: center;
+  font-size: 1.25rem;
 }
 
 .auth-card .sub {
-  text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 26px;
+  font-size: 0.84rem;
 }
 
 .form-panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
+  border-radius: var(--radius-md);
+  padding: 28px;
 }
 
 .field {
   margin-bottom: 18px;
 }
 
+/* Field labels are the small-caps micro-label used everywhere else, so a
+   form reads as part of the same document rather than as a widget. */
 .field label {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   margin-bottom: 6px;
-  color: var(--color-text);
+  color: var(--color-text-muted);
 }
 
 .field .hint {
@@ -940,12 +1059,12 @@ img {
 .field textarea,
 .field select {
   width: 100%;
-  padding: 11px 13px;
-  border: 1px solid var(--color-border);
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   font: inherit;
-  font-size: 0.95rem;
-  background: var(--color-surface);
+  font-size: 0.88rem;
+  background: var(--color-bg);
   color: var(--color-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -955,7 +1074,7 @@ img {
 .field select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .field textarea {
@@ -1037,24 +1156,30 @@ img {
   margin-bottom: 32px;
 }
 
+/* Numbers read as a ledger: a rule on top, the figure large and plain,
+   the label small-caps under it. Four outlined boxes said nothing the
+   numbers weren't already saying. */
 .stat-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 20px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  padding: 14px 0 0;
 }
 
 .stat-card .num {
-  font-size: 1.8rem;
-  font-weight: 800;
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
 }
 
 .stat-card .label {
-  font-size: 0.82rem;
+  font-size: 0.68rem;
   color: var(--color-text-faint);
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.1em;
 }
 
 .dash-charts {
@@ -1198,20 +1323,32 @@ tbody tr {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-pill::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .status-pill.published {
-  background: var(--color-success-soft);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
   color: var(--color-success);
 }
 
 .status-pill.draft {
-  background: var(--color-muted-soft);
-  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-faint);
 }
 
 .row-actions {
@@ -1246,9 +1383,10 @@ tbody tr {
   width: 100%;
   max-width: 560px;
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  padding: 32px;
+  padding: 28px;
   transform: scale(0.94) translateY(12px);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1293,13 +1431,18 @@ tbody tr {
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 28px;
-  background: linear-gradient(135deg, var(--color-primary-soft), #e5f7fb);
+  background-color: var(--color-muted-soft);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 6px,
+    rgba(125, 118, 105, 0.14) 6px 7px
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
-  font-size: 2.6rem;
-  font-weight: 800;
+  color: var(--color-text-faint);
+  font-size: 2rem;
+  font-weight: 600;
 }
 
 .detail-thumb img {
@@ -1426,7 +1569,7 @@ tbody tr {
 .comment-form textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .comments-list {
@@ -1528,14 +1671,15 @@ tbody tr {
 /* ---------- Empty state ---------- */
 .empty-state {
   text-align: center;
-  padding: 64px 24px;
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
+  padding: 56px 24px;
+  background: none;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
 }
 
 .empty-state h3 {
   margin-bottom: 6px;
+  font-size: 0.95rem;
 }
 
 /* ---------- Filters ---------- */
@@ -1548,11 +1692,13 @@ tbody tr {
 
 .filter-bar input,
 .filter-bar select {
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
+  padding: 9px 12px;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   font: inherit;
-  background: var(--color-surface);
+  font-size: 0.85rem;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .filter-bar input {
@@ -1573,7 +1719,9 @@ tbody tr {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--color-text-faint);
 }
 
@@ -1762,8 +1910,8 @@ tbody tr {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1777,13 +1925,12 @@ tbody tr {
   justify-content: center;
   width: 44px;
   height: 32px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
   color: #fff;
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 600;
   margin-top: -14px;
-  box-shadow: var(--shadow-md);
 }
 
 @media (max-width: 720px) {
@@ -1816,7 +1963,7 @@ body.has-bottom-nav .scrolls-container {
   display: flex;
   align-items: flex-end;
   overflow: hidden;
-  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-bg));
+  background: #0d0c0a;
 }
 
 body.has-bottom-nav .scroll-card {
@@ -2022,13 +2169,13 @@ body.has-bottom-nav .scroll-card {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.8rem;
+  font-weight: 600;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -2080,14 +2227,13 @@ body.has-bottom-nav .scroll-card {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: var(--color-accent);
   color: #fff;
   vertical-align: middle;
   margin-left: 8px;
-  box-shadow: var(--shadow-sm);
 }
 
 .user-chip .name-badge {
@@ -2543,12 +2689,12 @@ body.sheet-open .bottom-nav {
 }
 
 .leaderboard-row-wrap:hover {
-  background: var(--color-primary-soft);
+  background: var(--color-muted-soft);
 }
 
 .leaderboard-row-wrap.is-me {
   background: var(--color-primary-soft);
-  box-shadow: inset 3px 0 0 var(--color-primary);
+  box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
 .leaderboard-row {
@@ -2570,32 +2716,41 @@ body.sheet-open .bottom-nav {
   flex-shrink: 0;
 }
 
+/* Rank is a figure in a column, not a bubble — the medals are the only
+   three that get filled in. */
 .leaderboard-rank {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  justify-content: flex-end;
+  width: 28px;
+  height: 24px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
-  font-size: 0.82rem;
-  font-weight: 800;
-  background: var(--color-muted-soft);
-  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: none;
+  color: var(--color-text-faint);
+}
+
+.leaderboard-rank-1,
+.leaderboard-rank-2,
+.leaderboard-rank-3 {
+  justify-content: center;
+  font-weight: 600;
 }
 
 .leaderboard-rank-1 {
-  background: linear-gradient(135deg, #f7d046, #e0a80d);
-  color: #4a3500;
+  background: #d9a520;
+  color: #2b1f00;
 }
 
 .leaderboard-rank-2 {
-  background: linear-gradient(135deg, #e2e5ea, #b3b9c4);
-  color: #3d4149;
+  background: #b6bcc6;
+  color: #23272e;
 }
 
 .leaderboard-rank-3 {
-  background: linear-gradient(135deg, #e0a173, #b1703f);
+  background: #b37a52;
   color: #40260f;
 }
 
@@ -2605,7 +2760,7 @@ body.sheet-open .bottom-nav {
   gap: 8px;
   flex: 1;
   min-width: 0;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* The name can be long, and the level chip and XP after it must not get
@@ -2620,20 +2775,20 @@ body.sheet-open .bottom-nav {
 }
 
 .leaderboard-you {
-  font-size: 0.62rem;
-  font-weight: 800;
+  font-size: 0.6rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 6px;
-  border-radius: 999px;
+  letter-spacing: 0.12em;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: #fff;
   flex-shrink: 0;
 }
 
 .leaderboard-xp {
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 500;
   color: var(--color-text-faint);
   flex-shrink: 0;
 }
@@ -2707,28 +2862,32 @@ body.sheet-open .bottom-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .toast-achievement .toast-icon {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .toast-level .toast-icon {
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .toast-xp .toast-icon {
-  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  background: #2f6f8f;
+  color: #fff;
 }
 
 .toast-points .toast-icon {
-  background: linear-gradient(135deg, #eab308, #f59e0b);
+  background: #c69214;
+  color: #1c1400;
 }
 
 .toast-text {
@@ -2766,12 +2925,12 @@ body.sheet-open .bottom-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 0.68rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.35;
   vertical-align: middle;
@@ -2812,9 +2971,9 @@ body.sheet-open .bottom-nav {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
   color: var(--color-text-muted);
   background: var(--color-muted-soft);
   cursor: help;
@@ -2839,8 +2998,10 @@ body.sheet-open .bottom-nav {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--color-text-faint);
   margin-bottom: 6px;
 }
@@ -2850,8 +3011,8 @@ body.sheet-open .bottom-nav {
 }
 
 .level-progress-track {
-  height: 8px;
-  border-radius: 999px;
+  height: 6px;
+  border-radius: 0;
   background: var(--color-muted-soft);
   overflow: hidden;
 }
@@ -2862,8 +3023,8 @@ body.sheet-open .bottom-nav {
 
 .level-progress-fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 0;
+  background: var(--color-primary);
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -2892,7 +3053,7 @@ body.sheet-open .bottom-nav {
 
 .achievement-badge:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border-strong);
 }
 
 .achievement-badge .achievement-icon {
@@ -2910,12 +3071,12 @@ body.sheet-open .bottom-nav {
 }
 
 .achievement-badge.is-unlocked {
-  border-color: transparent;
-  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-surface));
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
 }
 
 .achievement-badge.is-unlocked .achievement-icon {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: var(--color-accent);
   color: #fff;
 }
 
