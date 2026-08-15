@@ -77,8 +77,20 @@ Deno.serve(async (req) => {
 
   try {
     if (action === 'ban') {
+      // Banning yourself locks you out of the panel that unbans people,
+      // and there is no second admin in the general case — the only way
+      // back is the Supabase dashboard. It is never a thing anyone means
+      // to do, and it's one misplaced click in a table of rows that all
+      // look alike.
+      if (targetUserId === caller.id) {
+        return json({ error: "You can't ban your own account." }, 400);
+      }
+
       const hours = Number(durationHours);
-      if (!hours || hours <= 0) {
+      // Number('') is 0 and Number('abc') is NaN, both caught by the
+      // check below; Infinity is not, and `${Infinity}h` is not a
+      // duration Supabase can parse.
+      if (!Number.isFinite(hours) || hours <= 0) {
         return json({ error: 'durationHours must be a positive number' }, 400);
       }
       const { error } = await admin.auth.admin.updateUserById(targetUserId, { ban_duration: `${hours}h` });

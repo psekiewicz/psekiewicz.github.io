@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Limits what a page is allowed to load and where it may talk to.
+       Scripts come from this origin and esm.sh (the two CDN imports:
+       supabase-js and html2canvas); frames only from the four embed
+       providers js/media.js rebuilds URLs for, so a media_url that
+       slipped past that allowlist still cannot frame anything;
+       object-src/base-uri shut the two classic ways an injected tag
+       rewrites where the rest of the page loads from. Images and media
+       stay open to any https host because entries legitimately point at
+       one. Change the connect-src host if you move Supabase projects. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://esm.sh; frame-src https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com; worker-src 'self'; manifest-src 'self'" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scrolls — Showcase</title>

@@ -14,6 +14,20 @@ import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
 // eligibility server-side; keep the two in sync by hand.
 export const ACHIEVEMENTS = [
   {
+    id: 'viral',
+    label: 'Viral',
+    // Was "1,000 total views", which counted signed-out hits — the one
+    // number on the site anybody could generate with a loop.
+    description: '500 or more different people have opened your entries.',
+    icon: 'eye',
+    // Viral is Reached five times over and used to pay 90 against
+    // Reached's 120, which also sorted it below Reached in this list —
+    // and since the badge shown next to a name is the first unlocked
+    // entry here, passing 500 viewers swapped your badge for a lesser one.
+    reward: 200,
+    check: (s) => s.uniqueViewers >= 500,
+  },
+  {
     id: 'icon',
     label: 'Icon',
     description: 'Received 100 or more likes across your projects.',
@@ -60,16 +74,6 @@ export const ACHIEVEMENTS = [
     icon: 'star',
     reward: 90,
     check: (s) => s.accountAgeDays >= 730,
-  },
-  {
-    id: 'viral',
-    label: 'Viral',
-    // Was "1,000 total views", which counted signed-out hits — the one
-    // number on the site anybody could generate with a loop.
-    description: '500 or more different people have opened your entries.',
-    icon: 'eye',
-    reward: 90,
-    check: (s) => s.uniqueViewers >= 500,
   },
   {
     id: 'influencer',

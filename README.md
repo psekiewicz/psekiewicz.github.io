@@ -55,6 +55,8 @@ The fix is a tiny **Supabase Edge Function** — server-side code that Supabase 
 
 Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete my account" button call this function. Everything else about the site (auth, projects, follows) is completely unaffected if you skip this — those features just won't work until you deploy it.
 
+**If you deployed this function before August 2026, redeploy it** (`supabase functions deploy admin-actions`): it now refuses `ban` when the target is the caller. Banning yourself locks you out of the panel that unbans people, and with a single admin account the only way back is the Supabase dashboard.
+
 **What a ban actually does:** it sets `banned_until` on the Supabase Auth user (native support, not something this app invented) and Supabase rejects new logins/token refreshes for that account until it passes. A banned user's *already-issued* access token can keep working until it next needs to refresh (typically within an hour), since revoking a live token isn't something Supabase's ban exposes — this matches how bans normally behave against JWT-based auth.
 
 ## Features
@@ -281,6 +283,17 @@ Postgres table `public.owned_items`, one row per shop item a user has purchased:
 | `purchased_at` | timestamptz | Defaults to `now()`                        |
 
 Primary key is `(user_id, item_id)`, so buying the same item twice is a no-op. Publicly readable (like `likes`/`follows`/`comments`) so the "Collector" achievement can be checked on anyone's profile, not just your own; there's no insert/update/delete policy — rows are only ever written by `purchase_item()` (`security definer`), which reads the price from `public.shop_item_defs` (id → price) and checks it against `profiles.points` before charging. Like `achievement_defs`, that table is what makes adding a shop item a one-line `INSERT` rather than a rewrite of `purchase_item()` — publicly readable, but only ever edited by hand in the SQL Editor.
+
+## Browser-side hardening
+
+Access control lives in Postgres (RLS + `security definer` functions), and that's still where the real answers are. These are the controls that sit in front of it, in the page itself:
+
+- **Content-Security-Policy** — every page carries a `<meta http-equiv="Content-Security-Policy">`. Scripts may come from this origin and `esm.sh` (the two CDN imports); **frames only from the four embed hosts** `js/media.js` rebuilds URLs for, so even a `media_url` that somehow got past that allowlist can't frame anything else; `object-src 'none'` and `base-uri 'self'` close the two classic ways an injected tag redirects the rest of the page's loads. Images and media stay open to any `https:` host, because entries legitimately point at one. It runs with `'unsafe-inline'` for scripts — every page's logic is an inline `<script type="module">`, and a nonce needs a server to mint it — so this is a blast-radius limit on an injection, not a claim that injection is impossible. The escaping in `js/utils.js` is still the control that matters most.
+  - **If you point this at your own Supabase project**, update `connect-src` — it allows `https://*.supabase.co`, which covers any Supabase-hosted project but not a custom domain.
+- **Pinned CDN dependency** — `js/supabase-init.js` imports an exact version (`@supabase/supabase-js@2.112.3`), not the `@2` range it used to. A range hands the choice of what code runs in every visitor's browser to whatever the CDN resolves that day, in the one module that holds the auth client. Bump it deliberately.
+- **Post-login redirect** — `?next=` is resolved against the real origin and only honoured if it resolves back to it (`safeNextPath()` in `js/utils.js`). The previous check was `next.startsWith('/')`, which `//evil.example` satisfies: it's a protocol-relative URL, so the login page would happily send you off-site after a genuine login. A login page is the worst possible place to hold an open redirect.
+- **Input limits in the database** — `title`, comment `body` and report `note` had length checks; nothing else did. A `maxlength` attribute is a hint to a browser and nothing at all to a script, so a 5 MB `description` was accepted, stored, and then shipped to everyone who loaded a feed containing it. `profiles` (display name, bio, avatar URL) and `projects` (summary, description, the four URL columns, tag count) now carry `CHECK` constraints, added `NOT VALID` so re-running `schema.sql` over existing rows doesn't fail; per-tag length is trimmed in the write guard, which is the only place it can be done.
+- **View counting** — `log_project_view()` now refuses anything that isn't published (it's `security definer`, so it could previously run up a draft's counter for someone who couldn't even see the entry, and its return value was a working existence oracle for any project id), and won't count two signed-out views of the same entry within the same two seconds. The public counter is still soft by construction — a signed-out visitor carries no identity, so there's no honest way to count them once per person. Nothing that matters is downstream of it: XP, points and `unique_viewers` all require a signed-in identity, and the feed ranker scores views on a log scale for exactly this reason.
 
 ## Legal / compliance
 

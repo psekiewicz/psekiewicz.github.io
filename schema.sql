@@ -108,6 +108,19 @@ begin
 
     select display_name into v_display_name from public.profiles where id = new.user_id;
     new.author_name := coalesce(v_display_name, '');
+
+    -- tags — the client slices to 10 and the column took whatever arrived,
+    -- so a direct write could store thousands of them, each any length,
+    -- and every card that entry appears on would render the lot. Trimmed
+    -- rather than rejected: an over-long tag isn't worth failing somebody's
+    -- whole entry over. The count limit also has a CHECK constraint behind
+    -- it (see "Input limits" near the bottom of this file); per-tag length
+    -- can only be done here, because check expressions can't run the
+    -- subquery over unnest() that it needs.
+    new.tags := coalesce(
+      (select array_agg(left(tag, 40)) from unnest(new.tags[1:10]) as tag where char_length(trim(tag)) > 0),
+      '{}'::text[]
+    );
   end if;
   return new;
 end;
@@ -535,16 +548,37 @@ set search_path = public
 as $$
 declare
   v_owner uuid;
+  v_published boolean;
   v_uid uuid := auth.uid();
 begin
-  select user_id into v_owner from public.projects where id = p_project_id;
-  if v_owner is null then
+  -- This function is security definer, so the lookup below sees every
+  -- project regardless of RLS — including other people's drafts. Reading
+  -- `published` and refusing anything that isn't matters twice over: a
+  -- draft's counter could be run up by someone who can't even see the
+  -- entry, and the true/false this returns was a working existence oracle
+  -- for any project id, published or not.
+  select user_id, published into v_owner, v_published from public.projects where id = p_project_id;
+  if v_owner is null or v_published is not true then
     return false;
   end if;
 
   -- Reloading your own entry used to mint views, and views drive XP, the
   -- leaderboard, the Scrolls ranking and now real currency.
   if v_uid = v_owner then
+    return false;
+  end if;
+
+  -- Signed-out visitors carry no identity, so there is no honest way to
+  -- count them once per person — the public counter is a soft number by
+  -- construction and this only takes the cheapest abuse off the table: a
+  -- tight loop from one tab (including an owner's own, signed out) can no
+  -- longer add a view per request. Real traffic never arrives fast enough
+  -- for this to drop anything; a determined script still can't touch XP,
+  -- points or unique_viewers, all of which need a signed-in identity.
+  if v_uid is null and exists (
+    select 1 from public.project_views
+    where project_id = p_project_id and viewer_id is null and created_at > now() - interval '2 seconds'
+  ) then
     return false;
   end if;
 
@@ -618,8 +652,26 @@ create or replace function public.guard_profile_client_writes()
 returns trigger as $$
 begin
   if current_user in ('authenticated', 'anon') then
-    new.points := old.points;
-    new.points_earned_total := old.points_earned_total;
+    if tg_op = 'UPDATE' then
+      new.points := old.points;
+      new.points_earned_total := old.points_earned_total;
+    else
+      -- INSERT. Every other guard on this table (points above, is_admin
+      -- and the equipped_* columns below) was written as BEFORE UPDATE
+      -- only, on the reasoning that handle_new_user() has already created
+      -- the row so a client insert always hits the primary key. That holds
+      -- today, but it makes the whole column-level story depend on a
+      -- trigger on a different table having fired first — and the insert
+      -- policy does allow a client to insert its own row. Pinning the
+      -- privileged columns on insert as well costs nothing and removes the
+      -- dependency.
+      new.points := 0;
+      new.points_earned_total := 0;
+      new.is_admin := false;
+      new.equipped_bg := 'none';
+      new.equipped_border := 'none';
+      new.equipped_name_effect := 'none';
+    end if;
   end if;
   return new;
 end;
@@ -627,7 +679,7 @@ $$ language plpgsql;
 
 drop trigger if exists profiles_guard_client_writes on public.profiles;
 create trigger profiles_guard_client_writes
-  before update on public.profiles
+  before insert or update on public.profiles
   for each row execute function public.guard_profile_client_writes();
 
 -- One row per (user, achievement) the user has ever earned. This is what
@@ -874,7 +926,11 @@ insert into public.achievement_defs (id, metric, threshold, reward) values
   ('influencer', 'follower_count', 10, 80),
   ('popular', 'follower_count', 50, 140),
   ('social-butterfly', 'following_count', 10, 25),
-  ('viral', 'unique_viewers', 500, 90),
+  -- Viral is Reached five times over, so it has to pay more than Reached.
+  -- It paid 90 against Reached's 120, which also put it below Reached in
+  -- the reward-ordered list the "best badge" next to a name is picked
+  -- from — reaching 500 people replaced your badge with a lesser one.
+  ('viral', 'unique_viewers', 500, 200),
   ('reached', 'unique_viewers', 100, 120),
   ('talked-about', 'comments_received', 25, 80),
   ('collector', 'owned_items_count', 5, 70),
@@ -1645,6 +1701,58 @@ $$;
 
 grant execute on function public.admin_close_reports(uuid, text) to authenticated;
 
+
+-- ============================================================
+-- Input limits
+--
+-- `title`, comment `body` and report `note` were the only text a client
+-- could write that had a length limit on it. Everything else — a bio, a
+-- description, a pasted URL, the tag list — was bounded by a maxlength
+-- attribute on an input, which is a hint to a browser and nothing at all
+-- to a script: `supabase.from('projects').update({ description: 'x'.repeat(5e6) })`
+-- was accepted, stored, and then shipped to every visitor of the feed that
+-- entry appears in, because the feed reads whole rows. Storage limits
+-- belong next to the storage.
+--
+-- Added NOT VALID so re-running this file on a database that already has
+-- longer rows in it succeeds: the constraint applies to everything written
+-- from now on and leaves what's already there alone. Wrapped in a DO block
+-- because ALTER TABLE ... ADD CONSTRAINT has no IF NOT EXISTS, and this
+-- file has to stay re-runnable.
+-- ============================================================
+
+do $$
+declare
+  c record;
+begin
+  for c in
+    select *
+    from (values
+      ('profiles', 'profiles_display_name_len', 'char_length(display_name) <= 50'),
+      ('profiles', 'profiles_bio_len',          'char_length(bio) <= 500'),
+      ('profiles', 'profiles_avatar_url_len',   'char_length(avatar_url) <= 2048'),
+      ('projects', 'projects_summary_len',      'char_length(summary) <= 300'),
+      ('projects', 'projects_description_len',  'char_length(description) <= 5000'),
+      ('projects', 'projects_image_url_len',    'char_length(image_url) <= 2048'),
+      ('projects', 'projects_media_url_len',    'char_length(media_url) <= 2048'),
+      ('projects', 'projects_repo_url_len',     'char_length(repo_url) <= 2048'),
+      ('projects', 'projects_live_url_len',     'char_length(live_url) <= 2048'),
+      ('projects', 'projects_scroll_image_len', 'char_length(scroll_image_url) <= 2048'),
+      ('projects', 'projects_tags_count',       'coalesce(array_length(tags, 1), 0) <= 10')
+    ) as t(table_name, constraint_name, expression)
+  loop
+    if not exists (
+      select 1 from pg_constraint where conname = c.constraint_name and conrelid = ('public.' || c.table_name)::regclass
+    ) then
+      execute format('alter table public.%I add constraint %I check (%s) not valid', c.table_name, c.constraint_name, c.expression);
+    end if;
+  end loop;
+end;
+$$;
+
+-- Per-tag length is not here because a CHECK constraint can't hold the
+-- subquery over unnest() that it would need; guard_project_client_writes()
+-- at the top of this file trims the tag list instead.
 
 -- ============================================================
 -- Rate limits

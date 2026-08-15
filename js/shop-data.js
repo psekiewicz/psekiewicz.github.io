@@ -6,8 +6,11 @@ const EQUIP_COLUMN = {
   name: 'equipped_name_effect',
 };
 
-// Item ids the given user has purchased. owned_items is RLS-restricted to
-// its own owner, so this only ever returns rows for the signed-in user.
+// Item ids the given user has purchased. owned_items is publicly readable
+// (a profile page shows anyone's cosmetics, and the "Collector" achievement
+// has to be checkable on anyone's profile), so the user filter here is what
+// scopes the result — not RLS, which an earlier version of this comment
+// claimed and which stopped being true when the read policy was opened up.
 export async function getOwnedItemIds(userId) {
   const { data, error } = await supabase.from('owned_items').select('item_id').eq('user_id', userId);
   if (error) throw new Error(error.message);

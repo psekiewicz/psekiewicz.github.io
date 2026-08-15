@@ -28,8 +28,26 @@ function sortByCreatedDesc(projects) {
   return [...projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
-export async function getPublishedProjects() {
-  const { data, error } = await supabase.from(TABLE).select('*').eq('published', true);
+// Newest published entries first.
+//
+// This used to be `select('*') where published` with no ordering and no
+// limit, sorted afterwards in the browser: every caller pulled the entire
+// table, whole rows, description included. The homepage did that to show
+// three cards. Ordering and limiting belong in the query — Postgres reads
+// the newest rows off the index instead of the site shipping everything it
+// has ever published to every visitor.
+//
+// The default cap is deliberately generous: the gallery filters and the
+// Scrolls ranker both work over the pool they're handed, so it has to be
+// big enough not to change what those pages do, and finite so a page load
+// can't grow without bound.
+export async function getPublishedProjects(limit = 500) {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('published', true)
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (error) throw new Error(error.message);
   return sortByCreatedDesc(data.map(toPlainProject));
 }
@@ -42,14 +60,22 @@ export async function getPublishedProjectsByUser(uid) {
 
 // Every project regardless of owner or published state. Only returns
 // anything for admins — RLS enforces that, this function doesn't check.
-export async function getAllProjects() {
-  const { data, error } = await supabase.from(TABLE).select('*');
+export async function getAllProjects(limit = 1000) {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (error) throw new Error(error.message);
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
 export async function getMyProjects(uid) {
-  const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid);
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('user_id', uid)
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return sortByCreatedDesc(data.map(toPlainProject));
 }

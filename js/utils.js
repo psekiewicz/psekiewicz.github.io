@@ -31,6 +31,31 @@ export function safeUrl(raw) {
   }
 }
 
+// Where a `?next=` parameter is allowed to send you after logging in.
+//
+// The old check was `next.startsWith('/')`, which is not the same question:
+// `//evil.example` and `/\evil.example` both start with a slash and are
+// protocol-relative URLs, so assigning either to location.href leaves the
+// site entirely. On a login page that is a phishing primitive — the link
+// looks like this site, the login is real, and the redirect afterwards
+// lands on somebody else's page.
+//
+// Resolving against the real origin and comparing it back is the check
+// that can't be talked around: whatever the string looks like, only a URL
+// that genuinely resolves to this origin is returned, and only ever as a
+// path so nothing else about it survives.
+export function safeNextPath(raw, fallback = '/dashboard.html') {
+  const value = String(raw ?? '').trim();
+  if (!value || !value.startsWith('/')) return fallback;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return fallback;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return fallback;
+  }
+}
+
 export function initials(name) {
   if (!name) return '?';
   return name

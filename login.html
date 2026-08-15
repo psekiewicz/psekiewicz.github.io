@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Limits what a page is allowed to load and where it may talk to.
+       Scripts come from this origin and esm.sh (the two CDN imports:
+       supabase-js and html2canvas); frames only from the four embed
+       providers js/media.js rebuilds URLs for, so a media_url that
+       slipped past that allowlist still cannot frame anything;
+       object-src/base-uri shut the two classic ways an injected tag
+       rewrites where the rest of the page loads from. Images and media
+       stay open to any https host because entries legitimately point at
+       one. Change the connect-src host if you move Supabase projects. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://esm.sh; frame-src https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com; worker-src 'self'; manifest-src 'self'" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Log in — Showcase</title>
@@ -86,6 +96,7 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { loginUser, resetPassword, getCurrentUser } from '/js/auth.js';
+    import { safeNextPath } from '/js/utils.js';
 
     const form = document.getElementById('login-form');
     const alertBox = document.getElementById('form-alert');
@@ -114,7 +125,7 @@
       try {
         await loginUser(document.getElementById('email').value, document.getElementById('password').value);
         const next = new URLSearchParams(window.location.search).get('next');
-        window.location.href = next && next.startsWith('/') ? next : '/dashboard.html';
+        window.location.href = safeNextPath(next);
       } catch (err) {
         showError(err.message);
         submitBtn.disabled = false;
@@ -137,10 +148,15 @@
       }
     });
 
-    // If already logged in, skip straight to the dashboard.
+    // If already logged in, skip the form — but honour ?next= while doing
+    // it. Opening a "log in to comment" link in a second tab of a session
+    // that is still valid used to land on the dashboard and quietly lose
+    // the page you were trying to get back to.
     (async () => {
       const user = await getCurrentUser();
-      if (user) window.location.href = '/dashboard.html';
+      if (user) {
+        window.location.href = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+      }
     })();
   </script>
 </body>
