@@ -31,22 +31,33 @@ function themeColors() {
 
 // crossOrigin='anonymous' without a matching CORS header makes the image
 // fail to load outright (onerror), rather than loading "tainted" — so a
-// missing/misconfigured avatar host safely falls through to the initials
-// fallback below instead of throwing when the canvas is later read as a
-// blob.
-function loadImage(url) {
+// missing/misconfigured avatar host safely falls through instead of
+// throwing when the canvas is later read as a blob.
+function loadImageDirect(url) {
   return new Promise((resolve) => {
-    const safe = safeUrl(url);
-    if (!safe) {
-      resolve(null);
-      return;
-    }
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = safe;
+    img.src = url;
   });
+}
+
+// avatarUrl is any URL someone pastes into settings.html's plain text
+// field — not a Supabase Storage upload — so it can point at a host that
+// never sends CORS headers at all, which makes the direct load above fail
+// even though the very same URL displays fine in an ordinary <img>
+// elsewhere on the site. Re-fetching it through images.weserv.nl (a free,
+// purpose-built image proxy that always adds permissive CORS headers)
+// turns that into a real photo instead of a silent fallback to initials.
+function corsProxyUrl(url) {
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+}
+
+async function loadImage(url) {
+  const safe = safeUrl(url);
+  if (!safe) return null;
+  return (await loadImageDirect(safe)) || (await loadImageDirect(corsProxyUrl(safe)));
 }
 
 function roundRect(ctx, x, y, w, h, r) {
