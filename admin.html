@@ -82,6 +82,14 @@
         </div>
 
         <div class="section-head">
+          <h2>Reports</h2>
+          <p>Open reports, newest first</p>
+        </div>
+        <div id="reports-region" style="margin-bottom:40px;">
+          <p>Loading reports…</p>
+        </div>
+
+        <div class="section-head">
           <h2>Users</h2>
         </div>
         <div class="filter-bar">
@@ -134,6 +142,7 @@
     import { getAllProjects, togglePublish, deleteProject } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
+    import { adminListReports, adminCloseReports } from '/js/reports-data.js';
     import { icon } from '/js/icons.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -142,6 +151,61 @@
     const deniedRegion = document.getElementById('denied-region');
     const loadingRegion = document.getElementById('loading-region');
     const tableRegion = document.getElementById('table-region');
+    const reportsRegion = document.getElementById('reports-region');
+
+    // One row per reported entry rather than per report: five people
+    // reporting the same broken link is one thing to look at, not five.
+    async function loadReports() {
+      const reports = await adminListReports();
+      if (reports.length === 0) {
+        reportsRegion.innerHTML = `<div class="empty-state"><h3>Nothing reported</h3><p>Reports from readers show up here.</p></div>`;
+        return;
+      }
+      reportsRegion.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Entry</th><th>Reasons</th><th>Reports</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${reports
+                .map(
+                  (r) => `
+                <tr data-report-project="${escapeHtml(r.projectId)}">
+                  <td>
+                    <a href="project.html?id=${encodeURIComponent(r.projectId)}">${escapeHtml(r.title)}</a>
+                    <div style="color:var(--color-text-faint);font-size:0.72rem;">by ${escapeHtml(r.authorName)}</div>
+                    ${r.latestNote ? `<div style="color:var(--color-text-muted);font-size:0.72rem;">“${escapeHtml(r.latestNote)}”</div>` : ''}
+                  </td>
+                  <td>${escapeHtml(r.reasons)}</td>
+                  <td>${r.reportCount}</td>
+                  <td>${r.published ? '<span class="status-pill published">Published</span>' : '<span class="status-pill draft">Draft</span>'}</td>
+                  <td style="white-space:nowrap;">
+                    <button class="btn btn-secondary btn-sm" type="button" data-report-action="dismissed">Dismiss</button>
+                    <button class="btn btn-primary btn-sm" type="button" data-report-action="resolved">Mark handled</button>
+                  </td>
+                </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      reportsRegion.querySelectorAll('button[data-report-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const row = btn.closest('tr[data-report-project]');
+          btn.disabled = true;
+          try {
+            await adminCloseReports(row.dataset.reportProject, btn.dataset.reportAction);
+            await loadReports();
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
     const usersTableRegion = document.getElementById('users-table-region');
     const projectSearchInput = document.getElementById('project-search-input');
     const userSearchInput = document.getElementById('user-search-input');
@@ -426,6 +490,11 @@
       // not existing yet because schema.sql hasn't been re-run) shows an
       // error in *that* section instead of leaving it stuck on "Loading…"
       // while the other section's error gets shown instead.
+      try {
+        await loadReports();
+      } catch (err) {
+        reportsRegion.innerHTML = `<p>Could not load reports: ${escapeHtml(err.message)}</p>`;
+      }
       try {
         await loadUsers();
       } catch (err) {

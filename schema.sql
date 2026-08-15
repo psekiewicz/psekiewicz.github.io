@@ -1469,6 +1469,282 @@ $$;
 grant execute on function public.collect_earnings() to authenticated;
 
 
+-- ============================================================
+-- Saves — a private "come back to this" list.
+--
+-- A discovery app's whole job is putting something in front of you that
+-- you weren't looking for, and until now there was nowhere to put it if
+-- you couldn't watch it right then. Unlike likes, this is nobody else's
+-- business: there is no public read policy, no count shown anywhere, and
+-- it earns the author nothing — otherwise it becomes another number to
+-- farm rather than a shelf.
+-- ============================================================
+
+create table if not exists public.saves (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  project_id uuid not null references public.projects (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, project_id)
+);
+
+create index if not exists saves_user_id_idx on public.saves (user_id, created_at desc);
+
+alter table public.saves enable row level security;
+
+drop policy if exists "Users can read their own saves" on public.saves;
+create policy "Users can read their own saves"
+  on public.saves for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can save as themselves" on public.saves;
+create policy "Users can save as themselves"
+  on public.saves for insert
+  with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.projects p where p.id = project_id)
+  );
+
+drop policy if exists "Users can remove their own saves" on public.saves;
+create policy "Users can remove their own saves"
+  on public.saves for delete
+  using (auth.uid() = user_id);
+
+
+-- ============================================================
+-- Reports — the missing half of moderation.
+--
+-- admin.html could already unpublish and delete, but nothing told an
+-- admin where to look: a broken link or a stolen upload sat there until
+-- somebody happened to scroll past it. Reports are write-only for
+-- ordinary users — you can file one and that's all, you can't read
+-- anyone's (including your own, which would let you check whether a
+-- report landed and re-file until it did).
+-- ============================================================
+
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects (id) on delete cascade,
+  reporter_id uuid references auth.users (id) on delete set null,
+  reason text not null check (reason in ('spam', 'broken', 'stolen', 'nsfw', 'other')),
+  note text not null default '' check (char_length(note) <= 500),
+  status text not null default 'open' check (status in ('open', 'resolved', 'dismissed')),
+  created_at timestamptz not null default now()
+);
+
+-- One report per person per entry: re-filing the same complaint is how a
+-- reporting queue turns into a way to bury somebody.
+create unique index if not exists reports_one_per_reporter_idx
+  on public.reports (project_id, reporter_id);
+
+create index if not exists reports_status_idx on public.reports (status, created_at desc);
+
+alter table public.reports enable row level security;
+
+drop policy if exists "Signed-in users can report as themselves" on public.reports;
+create policy "Signed-in users can report as themselves"
+  on public.reports for insert
+  with check (
+    auth.uid() = reporter_id
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+  );
+
+drop policy if exists "Admins can read reports" on public.reports;
+create policy "Admins can read reports"
+  on public.reports for select
+  using (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
+
+drop policy if exists "Admins can update reports" on public.reports;
+create policy "Admins can update reports"
+  on public.reports for update
+  using (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true))
+  with check (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
+
+-- The queue an admin actually works from: one row per reported entry with
+-- its report count, not one row per report. security definer because the
+-- projects it joins may be unpublished, and the admin check is inside.
+create or replace function public.admin_list_reports()
+returns table (
+  project_id uuid,
+  title text,
+  author_name text,
+  owner_id uuid,
+  published boolean,
+  report_count bigint,
+  reasons text,
+  latest_note text,
+  last_reported_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and is_admin = true) then
+    raise exception 'Not authorized';
+  end if;
+
+  return query
+  select p.id,
+         p.title,
+         p.author_name,
+         p.user_id,
+         p.published,
+         count(*) as report_count,
+         string_agg(distinct r.reason, ', ' order by r.reason) as reasons,
+         (array_agg(r.note order by r.created_at desc) filter (where r.note <> ''))[1] as latest_note,
+         max(r.created_at) as last_reported_at
+  from public.reports r
+  join public.projects p on p.id = r.project_id
+  where r.status = 'open'
+  group by p.id, p.title, p.author_name, p.user_id, p.published
+  order by max(r.created_at) desc;
+end;
+$$;
+
+grant execute on function public.admin_list_reports() to authenticated;
+
+-- Closes every open report on one entry in a single step, so working the
+-- queue doesn't mean clicking through five rows about the same thing.
+create or replace function public.admin_close_reports(p_project_id uuid, p_status text)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_closed integer;
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and is_admin = true) then
+    raise exception 'Not authorized';
+  end if;
+
+  if p_status not in ('resolved', 'dismissed') then
+    raise exception 'Unknown status: %', p_status;
+  end if;
+
+  update public.reports set status = p_status
+  where project_id = p_project_id and status = 'open';
+
+  get diagnostics v_closed = row_count;
+  return v_closed;
+end;
+$$;
+
+grant execute on function public.admin_close_reports(uuid, text) to authenticated;
+
+
+-- ============================================================
+-- Rate limits
+--
+-- Everything below this line is cheap to do and expensive to receive: a
+-- script can post a thousand comments or file a thousand reports as fast
+-- as the network allows, and RLS has nothing to say about volume — it
+-- only ever answers "may this row exist", never "how many of these in the
+-- last hour". These are BEFORE INSERT triggers rather than anything in
+-- the client, because the client is not where the attacker is.
+--
+-- The numbers are set well above what a person does and well below what a
+-- loop does.
+-- ============================================================
+
+-- Counting has to bypass RLS: `reports` has no select policy for ordinary
+-- users at all, so a count run as the caller would come back 0 and the
+-- limit would never fire. This is `security definer` for that reason and
+-- nothing else — the table/column pair is checked against a fixed list
+-- and the actor is always auth.uid(), so calling it directly tells you
+-- only how many of your own rows you just wrote.
+create or replace function public.rate_limit_count(p_table text, p_column text, p_window interval)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  if (p_table, p_column) not in (
+    ('comments', 'user_id'),
+    ('projects', 'user_id'),
+    ('likes', 'user_id'),
+    ('follows', 'follower_id'),
+    ('reports', 'reporter_id'),
+    ('saves', 'user_id')
+  ) then
+    raise exception 'Not a rate-limited table: %.%', p_table, p_column;
+  end if;
+
+  if auth.uid() is null then
+    return 0;
+  end if;
+
+  execute format(
+    'select count(*) from public.%I where %I = $1 and created_at > now() - $2',
+    p_table,
+    p_column
+  )
+  into v_count
+  using auth.uid(), p_window;
+
+  return v_count;
+end;
+$$;
+
+-- Deliberately NOT security definer, and this is the whole point: inside a
+-- definer function current_user is the function's owner, so a check for
+-- 'authenticated' there is always false and the limit silently never
+-- fires. The first version of this file made exactly that mistake and
+-- accepted 25 comments against a limit of 20. The counting is delegated to
+-- the definer helper above; the role check stays out here where the role
+-- is still real.
+create or replace function public.enforce_rate_limit()
+returns trigger as $$
+declare
+  v_count integer;
+begin
+  if current_user not in ('authenticated', 'anon') then
+    return new;
+  end if;
+
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  v_count := public.rate_limit_count(tg_table_name, tg_argv[2], tg_argv[1]::interval);
+
+  if v_count >= tg_argv[0]::integer then
+    raise exception 'Slow down — too many in a short time. Try again later.';
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists comments_rate_limit on public.comments;
+create trigger comments_rate_limit
+  before insert on public.comments
+  for each row execute function public.enforce_rate_limit('20', '1 hour', 'user_id');
+
+drop trigger if exists projects_rate_limit on public.projects;
+create trigger projects_rate_limit
+  before insert on public.projects
+  for each row execute function public.enforce_rate_limit('15', '1 hour', 'user_id');
+
+drop trigger if exists likes_rate_limit on public.likes;
+create trigger likes_rate_limit
+  before insert on public.likes
+  for each row execute function public.enforce_rate_limit('120', '1 hour', 'user_id');
+
+drop trigger if exists follows_rate_limit on public.follows;
+create trigger follows_rate_limit
+  before insert on public.follows
+  for each row execute function public.enforce_rate_limit('60', '1 hour', 'follower_id');
+
+drop trigger if exists reports_rate_limit on public.reports;
+create trigger reports_rate_limit
+  before insert on public.reports
+  for each row execute function public.enforce_rate_limit('20', '1 hour', 'reporter_id');
+
+
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor
 -- (this does NOT run automatically as part of this file — uncomment

@@ -93,6 +93,14 @@
         <div id="table-region">
           <p>Loading your projects…</p>
         </div>
+
+        <div class="section-head" style="margin-top:48px;">
+          <h2>Saved</h2>
+          <p>Private — only you see this</p>
+        </div>
+        <div id="saved-region">
+          <p>Loading saved entries…</p>
+        </div>
       </div>
     </section>
 
@@ -199,6 +207,7 @@
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { parseMedia } from '/js/media.js';
+    import { getSavedProjects, unsaveProject } from '/js/saves-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -234,6 +243,51 @@
     const dashboardSection = document.getElementById('dashboard-section');
     const loadingRegion = document.getElementById('loading-region');
     const tableRegion = document.getElementById('table-region');
+    const savedRegion = document.getElementById('saved-region');
+
+    // The shelf. Anything unpublished or deleted since it was saved simply
+    // isn't returned — the join reads through the projects table's own
+    // RLS, so this never shows a card that leads to a dead page.
+    async function loadSaved() {
+      const saved = await getSavedProjects(currentUser.id);
+      if (saved.length === 0) {
+        savedRegion.innerHTML = `<div class="empty-state"><h3>Nothing saved yet</h3><p>Hit Save on anything you want to come back to.</p><a class="btn btn-secondary" href="scrolls.html">Open Scrolls</a></div>`;
+        return;
+      }
+      savedRegion.innerHTML = `
+        <div class="project-grid">
+          ${saved
+            .map(
+              (p) => `
+            <article class="card" data-saved-id="${escapeHtml(p.id)}">
+              <div class="card-body">
+                <h3 style="margin:0;"><a href="project.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a></h3>
+                <p style="margin:0;font-size:0.8rem;">${escapeHtml(p.summary)}</p>
+                <div class="card-meta">
+                  ${typeBadgeHtml(p.type)}
+                  <span style="color:var(--color-text-faint);font-size:0.72rem;">by ${escapeHtml(p.authorName)} · saved ${timeAgo(p.savedAt)}</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" type="button" data-unsave="${escapeHtml(p.id)}">Remove</button>
+              </div>
+            </article>`
+            )
+            .join('')}
+        </div>
+      `;
+
+      savedRegion.querySelectorAll('button[data-unsave]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await unsaveProject(currentUser.id, btn.dataset.unsave);
+            await loadSaved();
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
     const modal = document.getElementById('project-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalAlert = document.getElementById('modal-alert');
@@ -563,6 +617,14 @@
         await loadProjects();
       } catch (err) {
         tableRegion.innerHTML = `<p>Could not load your projects: ${escapeHtml(err.message)}</p>`;
+      }
+      // Loaded separately so a failure here — most likely saves not
+      // existing yet because schema.sql hasn't been re-run — shows in the
+      // saved section instead of taking the projects table down with it.
+      try {
+        await loadSaved();
+      } catch (err) {
+        savedRegion.innerHTML = `<p>Could not load saved entries: ${escapeHtml(err.message)}</p>`;
       }
 
       const params = new URLSearchParams(window.location.search);

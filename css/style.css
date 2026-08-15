@@ -4336,3 +4336,14 @@ body.sheet-open .bottom-nav {
 .profile-header.has-profile-bg.shop-bg-beach .level-progress-track {
   background: rgba(25, 23, 19, 0.2);
 }
+
+/* Saved state on the project page's Save button — filled rather than
+   recoloured, the same way the like heart reads as on/off. */
+.btn.is-saved {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn.is-saved .icon {
+  fill: currentColor;
+}

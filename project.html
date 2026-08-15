@@ -61,6 +61,17 @@
     <div id="comments-root"></div>
   </main>
 
+  <!-- Report modal -->
+  <div class="modal-overlay" id="report-modal">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-head">
+        <h2 style="margin:0;">Report entry</h2>
+        <button class="modal-close" id="report-modal-close" type="button" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div id="report-modal-body"></div>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="container">
       <span>© <span id="year"></span> Showcase</span>
@@ -85,10 +96,18 @@
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
     import { logProjectView } from '/js/views-data.js';
     import { shareLink } from '/js/share.js';
+    import { isSaved, saveProject, unsaveProject } from '/js/saves-data.js';
+    import { REPORT_REASONS, reportProject } from '/js/reports-data.js';
     import { mediaHtml, parseMedia } from '/js/media.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    const reportModal = document.getElementById('report-modal');
+    document.getElementById('report-modal-close').addEventListener('click', () => reportModal.classList.remove('is-open'));
+    reportModal.addEventListener('click', (e) => {
+      if (e.target === reportModal) reportModal.classList.remove('is-open');
+    });
 
     const root = document.getElementById('project-root');
     const commentsRoot = document.getElementById('comments-root');
@@ -98,6 +117,111 @@
     let currentUserIsAdmin = false;
     let currentProject = null;
     const likeState = { liked: false, count: 0, wired: false };
+
+    // Saving is private: no count is shown, nothing is announced to the
+    // author, and it pays them nothing. It's a shelf, not a signal.
+    let saveState = { saved: false, wired: false };
+
+    async function wireSaveButton(projectId) {
+      const btn = document.getElementById('save-btn');
+      if (!btn) return;
+
+      if (!currentUser) {
+        btn.disabled = false;
+        btn.addEventListener('click', () => {
+          window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+        });
+        return;
+      }
+
+      try {
+        saveState.saved = await isSaved(currentUser.id, projectId);
+      } catch {
+        saveState.saved = false;
+      }
+      paintSaveButton();
+      btn.disabled = false;
+
+      if (saveState.wired) return;
+      saveState.wired = true;
+      btn.addEventListener('click', async () => {
+        const next = !saveState.saved;
+        // Painted before the round trip and rolled back if it fails —
+        // a bookmark that lags behind the tap feels broken.
+        saveState.saved = next;
+        paintSaveButton();
+        try {
+          if (next) await saveProject(currentUser.id, projectId);
+          else await unsaveProject(currentUser.id, projectId);
+        } catch (err) {
+          saveState.saved = !next;
+          paintSaveButton();
+          alert(err.message);
+        }
+      });
+    }
+
+    function paintSaveButton() {
+      const btn = document.getElementById('save-btn');
+      const label = document.getElementById('save-label');
+      if (!btn || !label) return;
+      btn.setAttribute('aria-pressed', String(saveState.saved));
+      btn.classList.toggle('is-saved', saveState.saved);
+      label.textContent = saveState.saved ? 'Saved' : 'Save';
+    }
+
+    function wireReportButton(projectId) {
+      const btn = document.getElementById('report-btn');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+          return;
+        }
+        if (currentProject && currentProject.uid === currentUser.id) {
+          alert("This is your own entry — edit or delete it instead.");
+          return;
+        }
+        openReportModal(projectId);
+      });
+    }
+
+    function openReportModal(projectId) {
+      const overlay = document.getElementById('report-modal');
+      const body = document.getElementById('report-modal-body');
+      body.innerHTML = `
+        <div class="field">
+          <label for="report-reason">What's wrong with it?</label>
+          <select id="report-reason">
+            ${REPORT_REASONS.map((r) => `<option value="${escapeHtml(r.id)}">${escapeHtml(r.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label for="report-note">Anything to add? (optional)</label>
+          <textarea id="report-note" rows="3" maxlength="500"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" id="report-submit" type="button">Send report</button>
+      `;
+      overlay.classList.add('is-open');
+
+      document.getElementById('report-submit').addEventListener('click', async (e) => {
+        e.target.disabled = true;
+        try {
+          const filed = await reportProject(
+            projectId,
+            currentUser.id,
+            document.getElementById('report-reason').value,
+            document.getElementById('report-note').value
+          );
+          body.innerHTML = filed
+            ? '<p>Thanks — an admin will take a look.</p>'
+            : '<p>You already reported this one. An admin will take a look.</p>';
+        } catch (err) {
+          alert(err.message);
+          e.target.disabled = false;
+        }
+      });
+    }
 
     function render(project, authorProfile) {
       document.getElementById('page-title').textContent = `${project.title} — Showcase`;
@@ -141,8 +265,10 @@
                 ${icon('heart', { size: 17 })} <span id="like-count">–</span>
               </button>
               <a class="btn btn-secondary btn-sm" href="scrolls.html?project=${encodeURIComponent(project.id)}">${icon('film', { size: 15 })} View in Scrolls</a>
+              <button class="btn btn-secondary btn-sm" id="save-btn" type="button" aria-pressed="false" disabled>${icon('bookmark', { size: 15 })} <span id="save-label">Save</span></button>
               <button class="btn btn-secondary btn-sm" id="share-btn" type="button">${icon('share', { size: 15 })} Share</button>
               ${editButton}
+              <button class="btn btn-ghost btn-sm" id="report-btn" type="button" title="Report this entry">${icon('flag', { size: 15 })} Report</button>
             </div>
           </div>
         </section>
@@ -163,6 +289,9 @@
           </div>
         </section>
       `;
+
+      wireSaveButton(project.id);
+      wireReportButton(project.id);
 
       const shareBtn = document.getElementById('share-btn');
       if (shareBtn) {
