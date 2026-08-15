@@ -90,6 +90,7 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 - **Scrolls image per project** — Scrolls shows a project full-screen and portrait, where a wide thumbnail crops badly, so a project can supply its own image just for that feed (`projects.scroll_image_url`), offered in both the create sheet and the dashboard editor with a live preview.
 - **View in Scrolls** — a project page links straight to its own card in the feed via `scrolls.html?project=<id>`, which pins that project to the front of the ranked feed (adding it if the ranking or the 60-card cap left it out) so the link always lands on it.
 - **Share** — every project has a Share control (detail page and the Scrolls rail) using the native share sheet on phones via the Web Share API, falling back to copying the link with a toast. Both APIs need a user gesture, so `js/share.js` is only ever called from a click.
+- **Share your stats card** — "Share stats card" on your own profile renders a `<canvas>` "wrapped"-style PNG (avatar, level, XP bar, published/followers/likes/viewers, top achievement) via `js/stats-card.js` and hands it to the native share sheet when it can carry a file, falling back to a download. Nothing is server-rendered — the card is drawn client-side from the same numbers already on the page, reading the live theme's CSS colour tokens so it matches light/dark mode, and re-drawn fresh every time so it's never stale. Own profile only, for the same reason the reach numbers themselves are: it's a card worth posting, not a stat line worth exposing about someone else.
 - **Following actually does something** — Projects has an "Everyone / People I follow" filter (shown only once you follow somebody), and the Scrolls ranker already boosts people you follow. Before this, following someone changed nothing about what you saw.
 - **Finding people** — the leaderboard doubles as people discovery: search by name, and Follow/Unfollow inline without leaving the list. Ranks stay absolute while searching, so filtering never tells you someone is #1 when they're #23.
 - **Link previews** — every page carries Open Graph and Twitter card tags with a generated 1200×630 preview image, so a shared link renders as a card instead of a bare URL. Note the limit of static hosting: previews are site-level, not per-project — crawlers don't run the JavaScript that fills a project page in, so per-project preview cards would need server-side rendering.
@@ -137,6 +138,8 @@ login.html             Email/password login + "forgot password"
 register.html          Account creation
 dashboard.html         Protected — create/edit/publish/delete your own projects
 404.html                GitHub Pages' custom not-found page
+robots.txt              Crawler rules — allows public pages, disallows the protected/auth-gated ones
+sitemap.xml             Lists the public, statically-linkable pages for search engines
 css/style.css          Shared design system (dark theme tokens, bottom nav, scrolls, profile, admin styles)
 js/supabase-config.js  Your Supabase project's public URL + anon key — EDIT THIS
 js/supabase-init.js     Initializes the Supabase client, exports `supabase`
@@ -162,6 +165,7 @@ js/shop-items.js         The shop's item catalog (backgrounds/borders/name effec
 js/create-sheet.js       Bottom-sheet quick create (mobile + tab), incl. the Scrolls customization
 js/scroll-styles.js     Picks which image a Scrolls card uses
 js/share.js              Web Share API with a clipboard fallback
+js/stats-card.js         Draws the shareable stats-card PNG on a canvas and shares/downloads it
 js/shop-data.js          getOwnedItemIds() + purchaseItem() (calls purchase_item()) + equipItem() for the three cosmetic slots on `profiles`
 js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
 js/icons.js               Outline SVG icon set shared by every page

@@ -2132,6 +2132,24 @@ body.has-bottom-nav .scroll-card {
   border-color: var(--color-border);
 }
 
+/* Full-bleed suits a phone screen; stretched across a desktop window it
+   turns a portrait video into a sliver lost in a sea of black letterboxing.
+   YouTube's own desktop Shorts player solves this the same way: cap the
+   whole card to a phone-shaped column and centre it, rather than trying to
+   fill the width. */
+@media (min-width: 721px) {
+  .scrolls-container {
+    background: var(--color-bg);
+  }
+
+  .scroll-card {
+    max-width: 460px;
+    margin: 0 auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
 /* ---------- Comments drawer (used on scrolls.html) ---------- */
 .comments-drawer-overlay {
   position: fixed;

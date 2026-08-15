@@ -322,6 +322,13 @@
         ? `<a class="points-chip" href="shop.html" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts — Shop</a>`
         : '';
 
+      // A shareable "wrapped"-style image of your own stats — own profile
+      // only, same reasoning as reachRow above: it's a card worth posting,
+      // not a stat line worth exposing about someone else.
+      const shareCardRow = isOwnProfile && stats
+        ? `<button class="btn btn-secondary btn-sm" id="share-stats-btn" type="button" style="margin-top:10px;">${icon('share', { size: 14 })} Share stats card</button>`
+        : '';
+
       // Derived from the same stats the achievements grid uses, so the
       // level can never disagree with what the badges below it show.
       const lvl = stats ? levelFromStats(stats) : null;
@@ -414,6 +421,7 @@
             ${levelProgress}
             ${reachRow}
             ${pointsRow}
+            ${shareCardRow}
           </div>
         </div>
         ${achievementsSection}
@@ -461,6 +469,24 @@
           }
         });
       });
+
+      const shareStatsBtn = document.getElementById('share-stats-btn');
+      if (shareStatsBtn) {
+        const originalLabel = shareStatsBtn.innerHTML;
+        shareStatsBtn.addEventListener('click', async () => {
+          shareStatsBtn.disabled = true;
+          shareStatsBtn.textContent = 'Generating…';
+          try {
+            const { shareStatsCard } = await import('/js/stats-card.js');
+            await shareStatsCard({ profile, lvl, stats, topAchievement });
+          } catch (err) {
+            alert(err.message);
+          } finally {
+            shareStatsBtn.disabled = false;
+            shareStatsBtn.innerHTML = originalLabel;
+          }
+        });
+      }
 
       root.querySelectorAll('.achievement-badge').forEach((badgeEl) => {
         badgeEl.addEventListener('click', () => {
