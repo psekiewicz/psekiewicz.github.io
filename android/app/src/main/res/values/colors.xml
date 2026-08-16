@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors the site's own palette: the light/dark page background from the
+         <meta name="theme-color"> pair in the HTML, and the ember gradient the
+         web app manifest's maskable icon is drawn in. -->
+    <color name="page_background">#f2efe9</color>
+    <color name="page_background_dark">#14120f</color>
+    <color name="brand_dark">#b3320f</color>
+    <color name="brand_mid">#d9541c</color>
+    <color name="brand_light">#f29f3b</color>
+    <color name="black">#000000</color>
+</resources>

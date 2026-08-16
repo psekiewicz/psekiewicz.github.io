@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The same top-left → bottom-right ember gradient as the web app manifest's
+     maskable icon, redrawn as a vector so it stays crisp at every density. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="@color/brand_dark"
+        android:centerColor="@color/brand_mid"
+        android:endColor="@color/brand_light" />
+</shape>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Stats cards are rendered in the page, handed to the app as bytes and
+         written here just long enough for the share sheet to read them back. -->
+    <cache-path name="shared" path="shared/" />
+</paths>

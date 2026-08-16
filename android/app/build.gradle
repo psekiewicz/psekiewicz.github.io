@@ -1,0 +1,89 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing is optional. Point the build at a keystore either through
+// android/keystore.properties (git-ignored) or through the environment
+// (SHOWCASE_KEYSTORE / SHOWCASE_KEYSTORE_PASSWORD / SHOWCASE_KEY_ALIAS /
+// SHOWCASE_KEY_PASSWORD), which is what the GitHub Actions workflow uses.
+// With neither configured the release APK is signed with the local debug
+// key instead — still installable by sideloading, just not publishable to
+// Play, and note that an APK signed with a different key can't upgrade one
+// signed with this one.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+def keystorePath = keystoreProps.getProperty('storeFile') ?: System.getenv('SHOWCASE_KEYSTORE')
+def keystorePassword = keystoreProps.getProperty('storePassword') ?: System.getenv('SHOWCASE_KEYSTORE_PASSWORD')
+def keystoreAlias = keystoreProps.getProperty('keyAlias') ?: System.getenv('SHOWCASE_KEY_ALIAS')
+def keystoreKeyPassword = keystoreProps.getProperty('keyPassword') ?: System.getenv('SHOWCASE_KEY_PASSWORD')
+def hasReleaseKeystore = keystorePath && keystorePassword && keystoreAlias && keystoreKeyPassword
+
+android {
+    namespace 'io.github.psekiewicz.showcase'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.psekiewicz.showcase'
+        minSdk 24
+        targetSdk 35
+        versionCode project.hasProperty('versionCode') ? project.versionCode.toInteger() : 1
+        versionName project.hasProperty('versionName') ? project.versionName : '1.0.0'
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keystoreAlias
+                keyPassword keystoreKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
+        }
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+if (!hasReleaseKeystore) {
+    gradle.taskGraph.whenReady { graph ->
+        if (graph.hasTask(':app:assembleRelease')) {
+            logger.warn('No release keystore configured — signing the release APK with the debug key. ' +
+                    'See android/README.md to set one up.')
+        }
+    }
+}
+
+dependencies {
+    // AndroidX drags in two generations of the Kotlin stdlib (1.6's split
+    // -jdk7/-jdk8 artifacts alongside 1.8's merged one), which collide at dex
+    // time. The BOM pins one version across all of them; from 1.8 onwards the
+    // -jdk7/-jdk8 artifacts are empty shims, so the duplicates disappear.
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.24')
+
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

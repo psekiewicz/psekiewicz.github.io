@@ -1,1 +1,10 @@
 .DS_Store
+
+# Android wrapper (see android/README.md)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore

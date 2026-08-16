@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Showcase</string>
+    <string name="site_url" translatable="false">https://psekiewicz.github.io/</string>
+    <string name="site_host" translatable="false">psekiewicz.github.io</string>
+    <string name="site_origin" translatable="false">https://psekiewicz.github.io</string>
+
+    <string name="offline_title">You\'re offline</string>
+    <string name="offline_body">Showcase needs a connection to load new projects. Anything already cached will still open.</string>
+    <string name="offline_retry">Try again</string>
+
+    <string name="share_chooser">Share</string>
+    <string name="saved_to_downloads">Saved to Downloads</string>
+    <string name="save_failed">Couldn\'t save the file</string>
+    <string name="no_browser">No app on this phone can open that link</string>
+</resources>

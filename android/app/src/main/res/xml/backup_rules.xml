@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- The signed-in Supabase session and the theme choice live in the
+         WebView's local storage under app_webview; everything else is server
+         state and re-fetches on first open. -->
+    <include domain="root" path="app_webview" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>
