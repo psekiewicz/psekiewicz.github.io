@@ -47,20 +47,35 @@ export function EditorScreen({ route, navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const resetForm = () => {
+    setTitle('');
+    setSummary('');
+    setDescription('');
+    setImageUrl('');
+    setMediaUrl('');
+    setScrollImageUrl('');
+    setRepoUrl('');
+    setLiveUrl('');
+    setTags('');
+    setProjectType('other');
+    setPublished(false);
+    setError('');
+  };
+
+  // As a tab, this screen stays mounted after you publish something, so
+  // returning to it would otherwise show the entry you just posted still
+  // sitting in the fields. Only the param-less (Add tab) case resets — the
+  // pushed Editor screen always carries a projectId and must keep its values.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (!projectId) resetForm();
+    });
+    return unsubscribe;
+  }, [navigation, projectId]);
+
   useEffect(() => {
     if (!projectId) {
-      // Coming back to the Add tab: reset rather than showing the last edit.
-      setTitle('');
-      setSummary('');
-      setDescription('');
-      setImageUrl('');
-      setMediaUrl('');
-      setScrollImageUrl('');
-      setRepoUrl('');
-      setLiveUrl('');
-      setTags('');
-      setProjectType('other');
-      setPublished(false);
+      resetForm();
       setLoading(false);
       return;
     }
@@ -85,7 +100,7 @@ export function EditorScreen({ route, navigation }: any) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [projectId, route.params?.key]);
+  }, [projectId]);
 
   const save = async (publish: boolean) => {
     if (!user) return navigation.navigate('Login');

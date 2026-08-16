@@ -33,6 +33,9 @@ function Tabs() {
 
   return (
     <Tab.Navigator
+      // React Navigation 7 types `id` as required even though it's optional at
+      // runtime; passing undefined is the documented way to say "no id".
+      id={undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -61,19 +64,10 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Scrolls" component={ScrollsScreen} />
-      <Tab.Screen
-        name="Add"
-        component={EditorScreen}
-        // The Add tab is a shortcut into the editor, not a place you come back
-        // to — resetting its params on every focus means it always opens as a
-        // blank new entry rather than whatever was last edited there.
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate('Add', { projectId: undefined, key: Date.now() });
-          },
-        })}
-      />
+      {/* The Add tab carries no params, so it is always a blank new entry.
+          Editing goes to the `Editor` stack screen instead. Keeping the tab
+          param-less is what lets the editor tell the two apart. */}
+      <Tab.Screen name="Add" component={EditorScreen} />
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -109,6 +103,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
+        id={undefined}
         screenOptions={{
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
