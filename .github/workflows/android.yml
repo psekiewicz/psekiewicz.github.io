@@ -105,7 +105,13 @@ jobs:
           fi
           # These property names are the ones plugins/withReleaseSigning.js
           # made the generated build.gradle read.
+          #
+          # The leading blank line is load-bearing: prebuild writes
+          # gradle.properties with no trailing newline, so appending without it
+          # welds the first property onto `android.minSdkVersion=24` and Gradle
+          # dies parsing `24SHOWCASE_STORE_FILE=...` before it builds anything.
           {
+            echo ""
             echo "SHOWCASE_STORE_FILE=release.keystore"
             echo "SHOWCASE_STORE_PASSWORD=$store_password"
             echo "SHOWCASE_KEY_ALIAS=$key_alias"
@@ -133,10 +139,28 @@ jobs:
             echo "::error::No APK was produced."
             exit 1
           fi
-          if "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" | grep -qi 'CN=Android Debug'; then
+
+          # Resolve exactly one apksigner. Runners carry several build-tools
+          # versions, so a `build-tools/*/apksigner` glob expands to several
+          # paths and the shell passes the extras as arguments — apksigner then
+          # rejects its own sibling as an unknown command, writes to stderr, and
+          # a piped `grep` finds no debug certificate in the empty stdout. That
+          # reports a pass without having verified anything, which is the exact
+          # failure this step exists to catch.
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          if [ -z "$apksigner" ]; then
+            echo "::error::No apksigner found under $ANDROID_HOME/build-tools."
+            exit 1
+          fi
+
+          # Capture first: under `set -e` a non-zero apksigner aborts the step,
+          # so a broken invocation can never be mistaken for a clean signature.
+          certs=$("$apksigner" verify --print-certs "$apk")
+          if printf '%s' "$certs" | grep -qi 'CN=Android Debug'; then
             echo "::error::The APK is signed with the Android debug key — the signing properties did not reach Gradle."
             exit 1
           fi
+          printf '%s\n' "$certs"
           echo "Signature check passed."
         working-directory: mobile/android
 
