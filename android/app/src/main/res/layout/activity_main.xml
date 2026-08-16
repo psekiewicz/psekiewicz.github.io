@@ -14,8 +14,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Stands in for the page whenever there is nothing to show: no connection,
+         or a WebView too old to run the site. -->
     <LinearLayout
-        android:id="@+id/offline"
+        android:id="@+id/message"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -25,16 +27,17 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/offline_title"
-            android:layout_width="wrap_content"
+            android:id="@+id/message_title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:text="@string/offline_title"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="?android:attr/textColorPrimary" />
 
         <TextView
-            android:id="@+id/offline_body"
+            android:id="@+id/message_body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -44,11 +47,22 @@
             android:textColor="?android:attr/textColorSecondary" />
 
         <Button
-            android:id="@+id/offline_retry"
+            android:id="@+id/message_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="@string/offline_retry" />
+
+        <!-- Only used by the out-of-date-WebView screen, whose version check is
+             a judgement call: this is the way past it if the guess is wrong. -->
+        <Button
+            android:id="@+id/message_secondary"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:visibility="gone"
+            android:text="@string/webview_old_continue" />
     </LinearLayout>
 
     <!-- Where a fullscreened <video> or YouTube embed gets re-parented; it sits

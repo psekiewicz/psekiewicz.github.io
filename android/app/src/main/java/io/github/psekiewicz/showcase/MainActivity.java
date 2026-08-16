@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -25,7 +26,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -66,8 +69,18 @@ public class MainActivity extends AppCompatActivity {
     private static final String BRIDGE_OBJECT = "ShowcaseHost";
     private static final String STATE_WEBVIEW = "webview";
 
+    /**
+     * The oldest Chromium the site actually runs on. Its scripts are ES modules
+     * using dynamic import and Object.fromEntries, and the stylesheet lays out
+     * with `aspect-ratio` and flexbox `gap` — M88 is where the last of those
+     * landed. It is also where this app's own page bridge becomes available.
+     * Below it the page renders blank or badly broken, which is worth saying out
+     * loud rather than showing an empty screen.
+     */
+    private static final int MIN_WEBVIEW_MAJOR = 88;
+
     private WebView webView;
-    private View offlineView;
+    private View messageView;
     private FrameLayout fullscreenContainer;
     private View rootView;
 
@@ -95,18 +108,22 @@ public class MainActivity extends AppCompatActivity {
 
         rootView = findViewById(R.id.root);
         webView = findViewById(R.id.webview);
-        offlineView = findViewById(R.id.offline);
+        messageView = findViewById(R.id.message);
         fullscreenContainer = findViewById(R.id.fullscreen_container);
 
-        findViewById(R.id.offline_retry).setOnClickListener(v -> retry());
-
         applyInsetPadding(webView);
-        applyInsetPadding(offlineView);
+        applyInsetPadding(messageView);
 
         configureWebView();
         registerBridge();
         registerBackHandling();
         pruneShareCache();
+
+        PackageInfo webViewPackage = outdatedWebView();
+        if (webViewPackage != null) {
+            showOutdatedWebView(webViewPackage);
+            return;
+        }
 
         if (savedInstanceState != null) {
             Bundle state = savedInstanceState.getBundle(STATE_WEBVIEW);
@@ -313,16 +330,84 @@ public class MainActivity extends AppCompatActivity {
 
     /* ---------------- offline state ---------------- */
 
+    /**
+     * Takes over the screen with an explanation and a way out. {@code secondary}
+     * is optional and only used where the app might be wrong about the problem.
+     */
+    private void showMessage(int titleRes, int bodyRes, int actionRes, Runnable action,
+                             int secondaryRes, @Nullable Runnable secondary) {
+        ((TextView) findViewById(R.id.message_title)).setText(titleRes);
+        ((TextView) findViewById(R.id.message_body)).setText(bodyRes);
+
+        Button primary = findViewById(R.id.message_action);
+        primary.setText(actionRes);
+        primary.setOnClickListener(v -> action.run());
+
+        Button secondaryButton = findViewById(R.id.message_secondary);
+        if (secondary == null) {
+            secondaryButton.setVisibility(View.GONE);
+        } else {
+            secondaryButton.setText(secondaryRes);
+            secondaryButton.setOnClickListener(v -> secondary.run());
+            secondaryButton.setVisibility(View.VISIBLE);
+        }
+
+        messageView.setVisibility(View.VISIBLE);
+        if (webView != null) webView.setVisibility(View.INVISIBLE);
+    }
+
     private void showOffline() {
         if (webView == null) return;
-        offlineView.setVisibility(View.VISIBLE);
-        webView.setVisibility(View.INVISIBLE);
+        showMessage(R.string.offline_title, R.string.offline_body, R.string.offline_retry,
+                this::retry, 0, null);
     }
 
     private void showPage() {
         if (webView == null) return;
-        offlineView.setVisibility(View.GONE);
+        messageView.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * The app is only as capable as the WebView the phone provides, and that is
+     * updated separately from Android itself — an Android 7 phone kept current
+     * through the Play Store runs a far newer engine than an Android 7 emulator
+     * image that has never been updated.
+     *
+     * @return the WebView package when it is too old to run the site, else null.
+     */
+    @Nullable
+    private PackageInfo outdatedWebView() {
+        PackageInfo info = WebViewCompat.getCurrentWebViewPackage(this);
+        if (info == null || info.versionName == null) return null;
+
+        int dot = info.versionName.indexOf('.');
+        String major = dot == -1 ? info.versionName : info.versionName.substring(0, dot);
+        try {
+            return Integer.parseInt(major) < MIN_WEBVIEW_MAJOR ? info : null;
+        } catch (NumberFormatException err) {
+            // An unrecognisable version string is no reason to block the app.
+            return null;
+        }
+    }
+
+    private void showOutdatedWebView(PackageInfo webViewPackage) {
+        showMessage(R.string.webview_old_title, R.string.webview_old_body,
+                R.string.webview_old_action, () -> openStorePage(webViewPackage.packageName),
+                R.string.webview_old_continue, () -> {
+                    showPage();
+                    webView.loadUrl(startUrl(getIntent()));
+                });
+    }
+
+    private void openStorePage(String packageName) {
+        Intent store = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(store);
+        } catch (ActivityNotFoundException err) {
+            openExternally(Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
+        }
     }
 
     private void retry() {
