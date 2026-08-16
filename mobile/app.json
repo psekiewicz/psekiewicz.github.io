@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Showcase",
+    "slug": "showcase",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "showcase",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f2efe9"
+    },
+    "android": {
+      "package": "io.github.psekiewicz.showcase",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#f2efe9"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.INTERNET"]
+    },
+    "plugins": [
+      "expo-video",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24
+          }
+        }
+      ]
+    ]
+  }
+}

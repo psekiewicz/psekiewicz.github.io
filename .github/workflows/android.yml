@@ -1,0 +1,188 @@
+name: Build Android app
+
+# Produces a real .apk and .aab from mobile/ — no WebView, no local Android
+# SDK needed. The runner installs the JDK and Android SDK, `expo prebuild`
+# generates the native android/ project (which is why it isn't committed), and
+# Gradle builds it.
+#
+# The APK is the one you sideload onto a phone to try it. The AAB is the format
+# Google Play requires for an upload. Both land in the run's Artifacts section.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'mobile/**'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No npm cache here on purpose: caching keys off a lockfile, and there
+      # isn't one committed yet. Once the first run has produced a
+      # package-lock.json worth committing, add:
+      #   cache: npm
+      #   cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Reconcile dependency versions with the Expo SDK
+        # Pinning React Native and every expo-* package by hand is how a build
+        # ends up failing on a combination that was never meant to go together.
+        # This asks Expo which versions its installed SDK actually wants and
+        # corrects package.json to match before anything is generated.
+        run: npx expo install --fix
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      # Release builds must be signed or Android won't install them. With no
+      # keystore in secrets this generates one so the APK is installable for
+      # testing — but it's a *fresh* key every run, which Play Store uploads
+      # can't use (all updates to an app must carry the same signature).
+      # To ship: create a keystore once, add the four secrets below, and this
+      # step uses yours instead.
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "Using the keystore from repository secrets."
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            store_password="$KEYSTORE_PASSWORD"
+            key_alias="$KEY_ALIAS"
+            key_password="$KEY_PASSWORD"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret set — generating a throwaway key. The APK installs for testing but cannot be uploaded to Google Play."
+            keytool -genkeypair -v \
+              -keystore android/app/release.keystore \
+              -alias showcase -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass showcase -keypass showcase \
+              -dname "CN=Showcase, OU=Dev, O=Showcase, L=-, S=-, C=PL"
+            store_password=showcase
+            key_alias=showcase
+            key_password=showcase
+          fi
+          {
+            echo "SHOWCASE_STORE_FILE=release.keystore"
+            echo "SHOWCASE_STORE_PASSWORD=$store_password"
+            echo "SHOWCASE_KEY_ALIAS=$key_alias"
+            echo "SHOWCASE_KEY_PASSWORD=$key_password"
+          } >> android/gradle.properties
+
+      - name: Point the release build at that key
+        # Expo's generated build.gradle signs the release build with the debug
+        # key. This adds a real `release` signing config and switches the
+        # release build type onto it. It fails loudly rather than quietly
+        # shipping a debug-signed artifact if the generated file ever changes
+        # shape enough that the patch doesn't apply.
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          path = pathlib.Path('android/app/build.gradle')
+          text = path.read_text()
+
+          release_config = """
+        release {
+            if (project.hasProperty('SHOWCASE_STORE_FILE')) {
+                storeFile file(SHOWCASE_STORE_FILE)
+                storePassword SHOWCASE_STORE_PASSWORD
+                keyAlias SHOWCASE_KEY_ALIAS
+                keyPassword SHOWCASE_KEY_PASSWORD
+            }
+        }
+"""
+
+          text, n = re.subn(r'(signingConfigs\s*\{\n)', r'\1' + release_config, text, count=1)
+          if n != 1:
+              sys.exit('Could not find a signingConfigs block to extend.')
+
+          # Switch only the release build type. The debug build type keeps the
+          # debug config, so the two occurrences are told apart by which block
+          # they sit in rather than by counting.
+          def fix_release_block(match):
+              block = match.group(0)
+              return block.replace('signingConfigs.debug', 'signingConfigs.release')
+
+          text, n = re.subn(
+              r'release\s*\{(?:[^{}]|\{[^{}]*\})*signingConfig\s+signingConfigs\.debug(?:[^{}]|\{[^{}]*\})*\}',
+              fix_release_block,
+              text,
+              count=1,
+          )
+          if n != 1:
+              sys.exit('Could not find the release build type signing line to patch.')
+
+          path.write_text(text)
+          print('Patched release signing config.')
+          PY
+
+      - name: Make the Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: mobile/android
+
+      - name: Build AAB
+        run: ./gradlew bundleRelease --no-daemon
+        working-directory: mobile/android
+
+      - name: Confirm the artifacts are not debug-signed
+        # A release build that silently fell back to the debug key is worse
+        # than a failed build, because it looks like a shippable APK.
+        run: |
+          set -euo pipefail
+          apk=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          if "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" | grep -qi 'CN=Android Debug'; then
+            echo "::error::The APK is signed with the Android debug key — the signing patch did not take effect."
+            exit 1
+          fi
+          echo "Signature check passed."
+        working-directory: mobile/android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-apk
+          path: mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-aab
+          path: mobile/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
