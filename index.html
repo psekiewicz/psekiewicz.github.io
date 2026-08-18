@@ -94,6 +94,15 @@
     </section>
 
     <section class="section" style="padding-top:0;">
+      <div class="container text-center">
+        <p class="hint">
+          There's an Android app too — same account, same entries.
+          <a href="/download/">Get it here →</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0;">
       <div class="container">
         <div class="section-head">
           <h2>Recently published</h2>
@@ -131,13 +140,24 @@
       const heroActions = document.getElementById('hero-actions');
       heroActions.innerHTML = user
         ? `
-          <a class="btn btn-primary" href="dashboard.html?new=1">Add new project</a>
+          <button class="btn btn-primary" id="hero-new-project" type="button" aria-haspopup="dialog">Add new project</button>
           <a class="btn btn-secondary" href="projects.html">Browse projects</a>
         `
         : `
           <a class="btn btn-primary" href="register.html">Create free account</a>
           <a class="btn btn-secondary" href="projects.html">Browse projects</a>
         `;
+
+      // Used to be a link to dashboard.html?new=1 — a page load, and a page
+      // you didn't ask for, before you could type a title. The form opens
+      // over the home page instead, the same way the phone's + tab does.
+      const newBtn = document.getElementById('hero-new-project');
+      if (newBtn) {
+        newBtn.addEventListener('click', async () => {
+          const sheet = await import('/js/create-sheet.js');
+          sheet.openSheet();
+        });
+      }
     });
 
     function projectCard(project, profiles, levels = new Map()) {

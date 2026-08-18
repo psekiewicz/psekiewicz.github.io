@@ -13,6 +13,12 @@ they apply identically to a request from an APK and a request from a browser.
 
 ## Getting the .apk / .aab
 
+For just installing it, there is a download page at
+[psekiewicz.github.io/download](https://psekiewicz.github.io/download/) —
+`download/showcase.apk` in this repository, served straight off GitHub Pages.
+That copy is updated by hand, so it is only as new as the last time someone
+committed it; the workflow below is where the current build comes from.
+
 The build runs in GitHub Actions, so you don't need Node, a JDK or the Android
 SDK on your machine.
 
