@@ -74,6 +74,19 @@ function Tabs() {
   );
 }
 
+// A share arriving from another app reaches here as `showcase://share?...`,
+// rewritten from Android's ACTION_SEND by plugins/withShareIntent.js. Declaring
+// it as a deep link means React Navigation does the routing and the query
+// string lands as route params, with no separate listener to keep in step.
+const linking = {
+  prefixes: ['showcase://'],
+  config: {
+    screens: {
+      Editor: 'share',
+    },
+  },
+};
+
 export function RootNavigator() {
   const { colors, dark } = useTheme();
   const { loading } = useAuth();
@@ -101,7 +114,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} linking={linking}>
       <Stack.Navigator
         id={undefined}
         screenOptions={{

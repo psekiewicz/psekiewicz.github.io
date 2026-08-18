@@ -23,12 +23,26 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.INTERNET"
+      ],
+      "intentFilters": [
+        {
+          "action": "SEND",
+          "category": [
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "text/plain"
+            }
+          ]
+        }
       ]
     },
     "plugins": [
       "expo-video",
       "./plugins/withReleaseSigning",
       "./plugins/withCrashLog",
+      "./plugins/withShareIntent",
       [
         "expo-build-properties",
         {

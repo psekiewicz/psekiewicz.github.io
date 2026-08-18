@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
@@ -28,6 +29,10 @@ import { space, typography } from '../theme/tokens';
 // that knows whether it has an id is simpler and behaves identically.
 export function EditorScreen({ route, navigation }: any) {
   const projectId = route.params?.projectId;
+  // Present when Android's share sheet opened this screen; see
+  // plugins/withShareIntent.js and the linking config in RootNavigator.
+  const sharedMediaUrl = route.params?.mediaUrl;
+  const sharedTitle = route.params?.title;
   const { colors } = useTheme();
   const { user, profile } = useAuth();
 
@@ -66,12 +71,14 @@ export function EditorScreen({ route, navigation }: any) {
   // returning to it would otherwise show the entry you just posted still
   // sitting in the fields. Only the param-less (Add tab) case resets — the
   // pushed Editor screen always carries a projectId and must keep its values.
+  // A screen opened from the share sheet has no projectId either, so blanking
+  // on "no projectId" alone would throw away the link that brought you here.
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      if (!projectId) resetForm();
+      if (!projectId && !sharedMediaUrl && !sharedTitle) resetForm();
     });
     return unsubscribe;
-  }, [navigation, projectId]);
+  }, [navigation, projectId, sharedMediaUrl, sharedTitle]);
 
   useEffect(() => {
     if (!projectId) {
@@ -101,6 +108,24 @@ export function EditorScreen({ route, navigation }: any) {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [projectId]);
+
+  // Declared after the reset above so it runs after it in the same commit —
+  // otherwise the blanking a new entry needs would wipe the shared link out
+  // again the moment it arrived.
+  useEffect(() => {
+    if (projectId) return;
+    if (sharedMediaUrl) setMediaUrl(sharedMediaUrl);
+    if (sharedTitle) setTitle(sharedTitle);
+  }, [projectId, sharedMediaUrl, sharedTitle]);
+
+  const pasteInto = async (setter: (value: string) => void) => {
+    const text = (await Clipboard.getStringAsync().catch(() => '')).trim();
+    // Saying nothing when the clipboard is empty is worse than saying so: the
+    // button would look broken rather than idle.
+    if (!text) return setError('Nothing in the clipboard to paste.');
+    setError('');
+    setter(text);
+  };
 
   const save = async (publish: boolean) => {
     if (!user) return navigation.navigate('Login');
@@ -218,6 +243,17 @@ export function EditorScreen({ route, navigation }: any) {
           onChangeText={setMediaUrl}
           placeholder="https://…"
           hint="A direct .mp4/.mp3/.jpg plays in the app. YouTube, Vimeo, Spotify and SoundCloud links open in their own app."
+        />
+        {/* The other half of not having to type a URL on a phone: sharing to
+            the app covers apps with a share sheet, this covers everything you
+            have merely copied. */}
+        <Button
+          label="Paste from clipboard"
+          icon="clipboard"
+          variant="ghost"
+          small
+          onPress={() => pasteInto(setMediaUrl)}
+          style={{ alignSelf: 'flex-start', marginTop: -space.sm, marginBottom: space.md }}
         />
         <Field
           label="Cover image URL"
