@@ -10,6 +10,19 @@ import { levelFromStats, levelChipHtml } from './levels.js';
 import { watchProgress, PROGRESS_EVENT } from './progress-watch.js';
 import { mountNotifications, unmountNotifications } from './notifications-ui.js';
 
+// Tracked at module scope so the keyboard shortcut below can tell whether
+// there is anyone to create a project as, without re-querying Supabase on
+// every keystroke.
+let signedInUser = null;
+
+// Opening the quick-create sheet is the same gesture the phone's + tab makes,
+// pointed at the same module — the sheet already has a desktop layout (it
+// becomes a centred panel above 720px), it simply had no trigger up here.
+async function openCreateSheet() {
+  const sheet = await import('./create-sheet.js');
+  sheet.openSheet();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');
   const links = document.querySelector('.nav-links');
@@ -26,13 +39,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if (link.getAttribute('href') === path) link.classList.add('active');
   });
 
+  bindNewProjectShortcut();
+
   const actions = document.getElementById('nav-actions');
   if (!actions) return;
 
   onAuthChange((user) => renderNavActions(actions, user));
 });
 
+// A phone gets the + tab within thumb reach on every screen; the equivalent
+// convenience on a keyboard is not having to reach for the mouse at all.
+function bindNewProjectShortcut() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'n' && e.key !== 'N') return;
+    // Chorded presses belong to the browser and the OS, not to us.
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!signedInUser) return;
+
+    // Typing an 'n' into any field must stay an 'n'. contentEditable covers
+    // rich-text areas, where the target is a div rather than an input.
+    const el = document.activeElement;
+    if (el && (el.isContentEditable || /^(input|textarea|select)$/i.test(el.tagName))) return;
+
+    e.preventDefault();
+    openCreateSheet();
+  });
+}
+
 async function renderNavActions(container, user) {
+  signedInUser = user;
+
   if (!user) {
     unmountNotifications();
     document.querySelectorAll('[data-mobile-logout]').forEach((el) => el.remove());
@@ -60,7 +96,14 @@ async function renderNavActions(container, user) {
     // keep the initials fallback, no effects
   }
 
+  // The + tab is the fastest thing about the phone app: publishing never
+  // means navigating anywhere first. .nav-actions is hidden at exactly the
+  // width the tab bar appears, so this button is its desktop counterpart
+  // rather than a second copy of it.
   container.innerHTML = `
+    <button class="btn btn-primary btn-sm nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New project" title="New project (press N)">
+      ${icon('plus', { size: 15 })}<span>New project</span>
+    </button>
     <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
     <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}">
       ${avatarHtml(avatarUrl, name, borderClass)}
@@ -68,6 +111,8 @@ async function renderNavActions(container, user) {
     </a>
     <button class="btn btn-secondary btn-sm" id="nav-logout-btn" type="button">Log out</button>
   `;
+
+  container.querySelector('#nav-new-project').addEventListener('click', openCreateSheet);
 
   container.querySelector('#nav-logout-btn').addEventListener('click', async (e) => {
     e.target.disabled = true;

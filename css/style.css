@@ -480,6 +480,54 @@ img {
   gap: 10px;
 }
 
+/* Desktop's answer to the phone's + tab (wired up in js/nav.js). It only
+   ever shows above 720px, because below that .nav-actions is hidden and the
+   bottom tab bar is carrying the same action. */
+.nav-new-btn {
+  flex-shrink: 0;
+}
+
+/* Five nav links plus four account controls stop fitting well before the
+   layout actually breaks. The label is the part that can go — the icon still
+   reads as "add", and the title attribute keeps it named for anyone hovering
+   or using a screen reader. */
+@media (max-width: 1000px) {
+  .nav-new-btn span {
+    display: none;
+  }
+  .nav-new-btn {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  /* Five links carry 120px of horizontal padding between them at this width,
+     which is where the room for the button comes from. The links keep their
+     hit area vertically and only lose slack either side of the words. */
+  .nav-link {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  /* A display name is the one item here with no upper bound, so a long one
+     would push the row wide however much slack is found elsewhere.
+     Truncating keeps the avatar and level chip — the parts you actually
+     navigate by — at full size. */
+  .user-chip > span:not(.level-chip):not(.name-badge) {
+    max-width: 7ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Between the tab bar's cutoff (720px) and here, the navbar already runs past
+   its container with the account controls alone — a pre-existing squeeze this
+   button should not deepen. It stands down over that stretch; below 720px the
+   + in the tab bar is the one carrying the action anyway. */
+@media (max-width: 860px) {
+  .nav-new-btn {
+    display: none;
+  }
+}
+
 .nav-toggle {
   display: none;
   background: none;

@@ -25,6 +25,7 @@
     },
     "plugins": [
       "expo-video",
+      "./plugins/withReleaseSigning",
       [
         "expo-build-properties",
         {

@@ -17,7 +17,14 @@ on:
   pull_request:
     paths:
       - 'mobile/**'
+      - '.github/workflows/android.yml'
   workflow_dispatch: {}
+
+# A second push while a build is still running makes the first one's artifacts
+# obsolete. Android builds are slow and minutes are finite, so drop the old one.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -29,14 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # No npm cache here on purpose: caching keys off a lockfile, and there
-      # isn't one committed yet. Once the first run has produced a
-      # package-lock.json worth committing, add:
-      #   cache: npm
-      #   cache-dependency-path: mobile/package-lock.json
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
@@ -45,20 +49,26 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
-      - name: Install dependencies
-        run: npm install
+      # Caches ~/.gradle across runs. A cold Android build spends a long time
+      # just fetching AGP and the React Native artifacts.
+      - uses: gradle/actions/setup-gradle@v4
 
-      - name: Reconcile dependency versions with the Expo SDK
-        # Pinning React Native and every expo-* package by hand is how a build
-        # ends up failing on a combination that was never meant to go together.
-        # This asks Expo which versions its installed SDK actually wants and
-        # corrects package.json to match before anything is generated.
-        run: npx expo install --fix
+      # `npm ci` rather than `npm install`: it installs exactly what the
+      # committed lockfile pins, so a build that passed once keeps passing
+      # instead of drifting when a transitive dependency publishes.
+      #
+      # Note there is deliberately no `expo install --fix` step. It rewrites
+      # package.json mid-build, which would defeat the point of installing from
+      # a lockfile. Run it locally when bumping the Expo SDK, then commit the
+      # result — `mobile/README.md` says so.
+      - name: Install dependencies
+        run: npm ci
 
       - name: Typecheck
         run: npx tsc --noEmit
-        continue-on-error: true
 
+      # Also applies plugins/withReleaseSigning.js, which is what gives the
+      # generated project a release signing config to point at below.
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --no-install
 
@@ -93,64 +103,20 @@ jobs:
             key_alias=showcase
             key_password=showcase
           fi
+          # These property names are the ones plugins/withReleaseSigning.js
+          # made the generated build.gradle read.
+          #
+          # The leading blank line is load-bearing: prebuild writes
+          # gradle.properties with no trailing newline, so appending without it
+          # welds the first property onto `android.minSdkVersion=24` and Gradle
+          # dies parsing `24SHOWCASE_STORE_FILE=...` before it builds anything.
           {
+            echo ""
             echo "SHOWCASE_STORE_FILE=release.keystore"
             echo "SHOWCASE_STORE_PASSWORD=$store_password"
             echo "SHOWCASE_KEY_ALIAS=$key_alias"
             echo "SHOWCASE_KEY_PASSWORD=$key_password"
           } >> android/gradle.properties
-
-      - name: Point the release build at that key
-        # Expo's generated build.gradle signs the release build with the debug
-        # key. This adds a real `release` signing config and switches the
-        # release build type onto it. It fails loudly rather than quietly
-        # shipping a debug-signed artifact if the generated file ever changes
-        # shape enough that the patch doesn't apply.
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import re, sys, pathlib
-
-          path = pathlib.Path('android/app/build.gradle')
-          text = path.read_text()
-
-          release_config = """
-        release {
-            if (project.hasProperty('SHOWCASE_STORE_FILE')) {
-                storeFile file(SHOWCASE_STORE_FILE)
-                storePassword SHOWCASE_STORE_PASSWORD
-                keyAlias SHOWCASE_KEY_ALIAS
-                keyPassword SHOWCASE_KEY_PASSWORD
-            }
-        }
-"""
-
-          text, n = re.subn(r'(signingConfigs\s*\{\n)', r'\1' + release_config, text, count=1)
-          if n != 1:
-              sys.exit('Could not find a signingConfigs block to extend.')
-
-          # Switch only the release build type. The debug build type keeps the
-          # debug config, so the two occurrences are told apart by which block
-          # they sit in rather than by counting.
-          def fix_release_block(match):
-              block = match.group(0)
-              return block.replace('signingConfigs.debug', 'signingConfigs.release')
-
-          text, n = re.subn(
-              r'release\s*\{(?:[^{}]|\{[^{}]*\})*signingConfig\s+signingConfigs\.debug(?:[^{}]|\{[^{}]*\})*\}',
-              fix_release_block,
-              text,
-              count=1,
-          )
-          if n != 1:
-              sys.exit('Could not find the release build type signing line to patch.')
-
-          path.write_text(text)
-          print('Patched release signing config.')
-          PY
-
-      - name: Make the Gradle wrapper executable
-        run: chmod +x android/gradlew
 
       - name: Build APK
         run: ./gradlew assembleRelease --no-daemon
@@ -162,14 +128,39 @@ jobs:
 
       - name: Confirm the artifacts are not debug-signed
         # A release build that silently fell back to the debug key is worse
-        # than a failed build, because it looks like a shippable APK.
+        # than a failed build, because it looks like a shippable APK. The
+        # signing config falls back to the debug key by design when the Gradle
+        # properties are missing, so this is the check that the properties
+        # actually arrived.
         run: |
           set -euo pipefail
           apk=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          if "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" | grep -qi 'CN=Android Debug'; then
-            echo "::error::The APK is signed with the Android debug key — the signing patch did not take effect."
+          if [ -z "$apk" ]; then
+            echo "::error::No APK was produced."
             exit 1
           fi
+
+          # Resolve exactly one apksigner. Runners carry several build-tools
+          # versions, so a `build-tools/*/apksigner` glob expands to several
+          # paths and the shell passes the extras as arguments — apksigner then
+          # rejects its own sibling as an unknown command, writes to stderr, and
+          # a piped `grep` finds no debug certificate in the empty stdout. That
+          # reports a pass without having verified anything, which is the exact
+          # failure this step exists to catch.
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          if [ -z "$apksigner" ]; then
+            echo "::error::No apksigner found under $ANDROID_HOME/build-tools."
+            exit 1
+          fi
+
+          # Capture first: under `set -e` a non-zero apksigner aborts the step,
+          # so a broken invocation can never be mistaken for a clean signature.
+          certs=$("$apksigner" verify --print-certs "$apk")
+          if printf '%s' "$certs" | grep -qi 'CN=Android Debug'; then
+            echo "::error::The APK is signed with the Android debug key — the signing properties did not reach Gradle."
+            exit 1
+          fi
+          printf '%s\n' "$certs"
           echo "Signature check passed."
         working-directory: mobile/android
 

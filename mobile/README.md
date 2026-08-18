@@ -13,6 +13,12 @@ they apply identically to a request from an APK and a request from a browser.
 
 ## Getting the .apk / .aab
 
+For just installing it, there is a download page at
+[psekiewicz.github.io/download](https://psekiewicz.github.io/download/) —
+`download/showcase.apk` in this repository, served straight off GitHub Pages.
+That copy is updated by hand, so it is only as new as the last time someone
+committed it; the workflow below is where the current build comes from.
+
 The build runs in GitHub Actions, so you don't need Node, a JDK or the Android
 SDK on your machine.
 
@@ -47,11 +53,26 @@ Then add four repository secrets (*Settings → Secrets and variables → Action
 Keep the `.jks` file somewhere safe and out of git — losing it means you can
 never update the app on Play under the same listing.
 
+How it's wired: `android/` is generated on every run and never committed, so
+there's no `build.gradle` to edit by hand. [`plugins/withReleaseSigning.js`](plugins/withReleaseSigning.js)
+is an Expo config plugin that runs during `prebuild` and gives the generated
+project a `release` signing config reading four Gradle properties; CI appends
+those properties (and the keystore itself) after prebuild. No key material is
+in the repo. If the properties are absent — a plain local release build — it
+stays on the debug key exactly as the stock template does, and CI's
+`apksigner` check is what guarantees a *published* artifact never does.
+
 ## Running it locally (optional)
 
-Needs Node 20+. `npx expo start` then scan the QR with Expo Go for a quick
-look, or `npx expo run:android` for a real debug build (that one also needs
-JDK 17 and Android Studio's SDK).
+Needs Node 20+. `npm ci`, then `npx expo start` and scan the QR with Expo Go
+for a quick look, or `npx expo run:android` for a real debug build (that one
+also needs JDK 17 and Android Studio's SDK).
+
+CI installs from `package-lock.json` with `npm ci`, so dependency changes are
+made here and committed rather than resolved during a build. When bumping the
+Expo SDK, run `npx expo install --fix` locally to let Expo reconcile React
+Native and every `expo-*` package to versions its SDK actually expects, then
+commit the resulting `package.json` **and** `package-lock.json` together.
 
 ## Layout
 
@@ -64,6 +85,8 @@ src/
   components/  ui.tsx (the design system), ProjectCard, CommentsSheet
   theme/       the site's CSS custom properties, transcribed
   context/     AuthContext — session, profile, and the cold-start gate
+plugins/       Expo config plugins — build-time edits to the generated
+               android/ project, which is regenerated and never committed
 ```
 
 The `data/` modules are deliberately near-identical to their web counterparts,

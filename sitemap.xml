@@ -21,6 +21,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://psekiewicz.github.io/download/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://psekiewicz.github.io/shop.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.3</priority>
