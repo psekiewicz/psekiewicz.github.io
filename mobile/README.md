@@ -14,10 +14,15 @@ they apply identically to a request from an APK and a request from a browser.
 ## Getting the .apk / .aab
 
 For just installing it, there is a download page at
-[psekiewicz.github.io/download](https://psekiewicz.github.io/download/) —
-`download/showcase.apk` in this repository, served straight off GitHub Pages.
-That copy is updated by hand, so it is only as new as the last time someone
-committed it; the workflow below is where the current build comes from.
+[psekiewicz.github.io/download](https://psekiewicz.github.io/download/), whose
+button points at the newest release:
+
+    https://github.com/psekiewicz/psekiewicz.github.io/releases/latest/download/showcase.apk
+
+That link never changes. The workflow below publishes a release on every green
+build of `main`, so it always serves the current APK without anyone editing a
+page or committing a binary — a 75 MB file per version, in git, is history that
+cannot be pruned later.
 
 The build runs in GitHub Actions, so you don't need Node, a JDK or the Android
 SDK on your machine.
@@ -34,8 +39,8 @@ An app's signing key is its identity. Android installs an update over an
 existing app only when both carry the same signature, and Play ties a listing
 to one key for good — so the key has to outlive any single build.
 
-The release key for this app exists and `download/showcase.apk` is signed with
-it. Its certificate fingerprint is:
+The release key for this app exists and every published APK is signed with it.
+Its certificate fingerprint is:
 
 ```
 SHA-256  8E:67:A9:EE:3F:5C:E4:4A:6E:72:7B:36:53:C2:B7:03:EF:80:79:58:67:8B:3B:26:4A:15:99:8A:70:8E:B3:66
@@ -116,6 +121,23 @@ The `data/` modules are deliberately near-identical to their web counterparts,
 down to the comments, so a change to one has an obvious counterpart in the
 other. The only structural difference is the Supabase client import and
 AsyncStorage in place of `localStorage`.
+
+## What the app does that the site can't
+
+**It receives Android's Share.** Showcase appears in the share sheet of
+anything that shares plain text — a browser, YouTube, Spotify — and opens the
+editor with the link already in place and any accompanying text as a starting
+title. Entries here are links, so this removes the entire find-copy-return-paste
+errand that made the app feel like a worse copy of the website.
+
+React Native's `Linking` only reads an intent's data URI and knows nothing of
+`ACTION_SEND`, so [`plugins/withShareIntent.js`](plugins/withShareIntent.js)
+rewrites the share into a `showcase://share?...` VIEW intent before React Native
+sees it. From there it is an ordinary deep link, routed by the `linking` config
+in `src/navigation/RootNavigator.tsx`.
+
+A share sheet only helps where the source app offers one, so the editor also has
+a **Paste from clipboard** button for links you have merely copied.
 
 ## What differs from the website, and why
 

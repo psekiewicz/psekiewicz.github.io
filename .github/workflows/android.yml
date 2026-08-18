@@ -26,6 +26,10 @@ concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
 
+# Only what the release step below needs. Everything else stays read-only.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -177,3 +181,40 @@ jobs:
           name: showcase-aab
           path: mobile/android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+
+      # Run artifacts expire after 90 days and need a GitHub login to fetch, so
+      # they can't be what the download page points at. A release can: GitHub
+      # serves the newest one's assets from a permanent
+      # /releases/latest/download/<name> URL, which is what download/index.html
+      # links to. It also keeps the APK out of the repository — a 75 MB binary
+      # per version, committed, is history nobody can prune later.
+      #
+      # Pull requests are excluded: a proposed change should not become the
+      # thing people download.
+      - name: Publish a release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./app.json').expo.version")
+          tag="android-v${version}-${{ github.run_number }}"
+
+          apk=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          aab=$(find android/app/build/outputs/bundle/release -name '*.aab' | head -1)
+
+          # Fixed asset names: the permanent download URL is built from them,
+          # so they must not carry the version or the link would move.
+          cp "$apk" showcase.apk
+          cp "$aab" showcase.aab
+
+          gh release create "$tag" showcase.apk showcase.aab \
+            --title "Showcase ${version} (build ${{ github.run_number }})" \
+            --latest \
+            --notes "Android build ${{ github.run_number }} from \`${{ github.sha }}\`.
+
+          Install \`showcase.apk\` on a phone; \`showcase.aab\` is the format Google Play takes.
+
+          Always available at the unchanging link
+          https://github.com/${{ github.repository }}/releases/latest/download/showcase.apk"
+        working-directory: mobile
