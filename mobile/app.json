@@ -7,7 +7,7 @@
     "scheme": "showcase",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
@@ -21,7 +21,9 @@
         "backgroundColor": "#f2efe9"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.INTERNET"]
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
     },
     "plugins": [
       "expo-video",
