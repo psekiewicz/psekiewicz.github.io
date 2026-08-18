@@ -7,7 +7,7 @@
     "scheme": "showcase",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
@@ -28,6 +28,7 @@
     "plugins": [
       "expo-video",
       "./plugins/withReleaseSigning",
+      "./plugins/withCrashLog",
       [
         "expo-build-properties",
         {
