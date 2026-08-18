@@ -30,28 +30,51 @@ SDK on your machine.
 
 ### Signing
 
-With no secrets configured, the workflow generates a throwaway keystore so the
-APK is installable. That's fine for testing and **not** fine for Play: every
-update to a published app must be signed with the same key, and a fresh key
-each run can't satisfy that.
+An app's signing key is its identity. Android installs an update over an
+existing app only when both carry the same signature, and Play ties a listing
+to one key for good — so the key has to outlive any single build.
 
-To ship, create a keystore once:
+The release key for this app exists and `download/showcase.apk` is signed with
+it. Its certificate fingerprint is:
 
-```bash
-keytool -genkeypair -v -keystore showcase-release.jks -alias showcase -keyalg RSA -keysize 2048 -validity 10000
+```
+SHA-256  8E:67:A9:EE:3F:5C:E4:4A:6E:72:7B:36:53:C2:B7:03:EF:80:79:58:67:8B:3B:26:4A:15:99:8A:70:8E:B3:66
 ```
 
-Then add four repository secrets (*Settings → Secrets and variables → Actions*):
+Anything claiming to be this app should match that. To check a file you have
+downloaded:
+
+```bash
+apksigner verify --print-certs showcase.apk
+```
+
+The keystore is deliberately **not** in this repository — it is a private key,
+and this repository is public and is also the website, so committing it would
+publish it. It is held outside git; see the four repository secrets below.
+
+**The workflow only uses that key once these four secrets exist**
+(*Settings → Secrets and variables → Actions*). Until they do, each run falls
+back to generating a throwaway key, and its APK will not install over one
+signed with the real key:
 
 | Secret | Value |
 | --- | --- |
 | `ANDROID_KEYSTORE_BASE64` | `base64 -w0 showcase-release.jks` |
-| `ANDROID_KEYSTORE_PASSWORD` | the store password you chose |
+| `ANDROID_KEYSTORE_PASSWORD` | the store password |
 | `ANDROID_KEY_ALIAS` | `showcase` |
-| `ANDROID_KEY_PASSWORD` | the key password you chose |
+| `ANDROID_KEY_PASSWORD` | the key password (same value — PKCS12 requires it) |
 
-Keep the `.jks` file somewhere safe and out of git — losing it means you can
-never update the app on Play under the same listing.
+Losing the `.jks` means never updating this app under the same listing, or
+over the top of any copy already installed. Back it up somewhere that is not
+only this machine.
+
+To generate a replacement from scratch — which starts a new identity, with the
+same consequences as losing the old one:
+
+```bash
+keytool -genkeypair -v -keystore showcase-release.jks -storetype PKCS12 \
+  -alias showcase -keyalg RSA -keysize 2048 -validity 10000
+```
 
 How it's wired: `android/` is generated on every run and never committed, so
 there's no `build.gradle` to edit by hand. [`plugins/withReleaseSigning.js`](plugins/withReleaseSigning.js)
