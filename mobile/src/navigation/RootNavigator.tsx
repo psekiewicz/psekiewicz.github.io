@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,13 @@ const Stack = createNativeStackNavigator();
 // Home / Scrolls / Add / Dashboard / Profile.
 function Tabs() {
   const { colors } = useTheme();
+  // The app draws edge to edge, so the bottom of the window sits *behind* the
+  // system navigation bar. React Navigation normally pads the tab bar clear of
+  // it on its own — but only while it owns the height, and setting height and
+  // paddingBottom below takes that over. Without adding the inset back, the
+  // whole bar renders underneath the system one: invisible, untappable, and
+  // with it every screen except this one.
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -44,8 +52,8 @@ function Tabs() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: StyleSheet.hairlineWidth * 2,
-          height: 58,
-          paddingBottom: 6,
+          height: 58 + insets.bottom,
+          paddingBottom: 6 + insets.bottom,
           paddingTop: 6,
           elevation: 0,
         },

@@ -11,6 +11,7 @@ import { getLikeCounts } from '../data/likes';
 import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { getPublishedProjects, Project } from '../data/projects';
+import { useCardColumns, padRow } from '../lib/layout';
 import { getLevelsForUsers } from '../lib/levels';
 import { PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -19,6 +20,9 @@ import { radius, space } from '../theme/tokens';
 export function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  // One column on a phone, more as the screen gets wider — the same rule the
+  // site's project grid follows.
+  const columns = useCardColumns();
   const { user } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -193,8 +197,13 @@ export function HomeScreen({ navigation }: any) {
         <Loading label="Loading entries" />
       ) : (
         <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
+          // React Native refuses to change numColumns on a mounted list, so the
+          // key forces a fresh one when the tablet is rotated.
+          key={`grid-${columns}`}
+          numColumns={columns}
+          {...(columns > 1 ? { columnWrapperStyle: { gap: space.lg } } : null)}
+          data={padRow(filtered, columns)}
+          keyExtractor={(item, index) => item?.id ?? `blank-${index}`}
           contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}
           refreshControl={
             <RefreshControl
@@ -218,17 +227,23 @@ export function HomeScreen({ navigation }: any) {
               }
             />
           }
-          renderItem={({ item }) => (
-            <ProjectCard
-              project={item}
-              author={authors.get(item.uid)}
-              level={levels.get(item.uid)?.level}
-              likeCount={likeCounts.get(item.id) || 0}
-              commentCount={commentCounts.get(item.id) || 0}
-              onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-              onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
-            />
-          )}
+          renderItem={({ item }) => {
+            // A blank from padRow: holds a column open so the last real card
+            // keeps the width of every other one.
+            if (!item) return <View style={{ flex: 1 }} />;
+            const card = (
+              <ProjectCard
+                project={item}
+                author={authors.get(item.uid)}
+                level={levels.get(item.uid)?.level}
+                likeCount={likeCounts.get(item.id) || 0}
+                commentCount={commentCounts.get(item.id) || 0}
+                onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+                onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
+              />
+            );
+            return columns > 1 ? <View style={{ flex: 1 }}>{card}</View> : card;
+          }}
         />
       )}
     </View>
