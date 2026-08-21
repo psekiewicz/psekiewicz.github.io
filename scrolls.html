@@ -79,7 +79,7 @@
   <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
-    import { getPublishedProjects } from '/js/projects-data.js';
+    import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
@@ -475,7 +475,10 @@
       loaded = true;
 
       try {
-        const projects = await getPublishedProjects();
+        // Ranking needs candidates, not the archive: this page already threw
+        // all but FEED_LIMIT of them away, after downloading and ranking every
+        // one. The pool is bounded now and the cap below still trims the DOM.
+        const projects = await getPublishedProjects({ limit: DISCOVER_POOL });
         if (projects.length === 0) {
           root.innerHTML = `
             <div class="container" style="padding-top:48px;">

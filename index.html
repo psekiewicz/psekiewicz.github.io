@@ -189,7 +189,9 @@
     (async () => {
       const container = document.getElementById('latest-projects');
       try {
-        const projects = await getPublishedProjects();
+        // Three cards are shown, so three are asked for. This used to pull
+        // the whole archive down to slice the front off it.
+        const projects = await getPublishedProjects({ limit: 3 });
         const latest = projects.slice(0, 3);
         if (latest.length === 0) {
           container.outerHTML = `

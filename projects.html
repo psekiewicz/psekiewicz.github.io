@@ -100,7 +100,7 @@
   <script type="module" src="/js/cookie-consent.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
-    import { getPublishedProjects } from '/js/projects-data.js';
+    import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
@@ -194,7 +194,11 @@
 
     (async () => {
       try {
-        allProjects = await getPublishedProjects();
+        // The search, the tag list and the type filter all run over what has
+        // been fetched, so the pool is asked for explicitly. Past this many
+        // entries the gallery stops seeing the older ones; searching
+        // server-side is the honest fix and a larger change than this.
+        allProjects = await getPublishedProjects({ limit: DISCOVER_POOL });
         authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
         populateTags();
         render();
