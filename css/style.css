@@ -415,20 +415,16 @@ img {
   text-decoration: none;
 }
 
-/* One flat square of the signal colour. It was a rounded indigo→cyan
-   gradient tile, which is the single most recognisable stock-template
-   mark there is. */
+/* Two flat, sharp-cornered tiles in the app's own primary/accent pair -
+   the same shape language as every project card in the feed, just two of
+   them stacked like a small pile of the things this app shows off. No
+   gradient: that's the one thing the old single-letter mark got right,
+   and worth keeping. */
 .brand-mark {
   width: 26px;
   height: 26px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.82rem;
+  display: block;
+  flex-shrink: 0;
 }
 
 .nav-links {
@@ -2398,11 +2394,89 @@ body.has-bottom-nav .scroll-card {
 }
 
 .media-audio {
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
 }
 
+/* The real <audio> element stays off-screen; initAudioPlayers (media.js)
+   drives it and the markup below reflects its state. */
 .media-audio audio {
+  display: none;
+}
+
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
+  max-width: 360px;
+  padding: 8px 16px 8px 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.audio-player-toggle {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.audio-player-toggle .audio-icon-play {
+  /* The play triangle is drawn off-centre in its box; nudged to look
+     centred inside the round button. */
+  margin-left: 2px;
+}
+
+.audio-player-toggle .audio-icon-pause {
+  display: none;
+}
+
+.media-audio.is-playing .audio-player-toggle .audio-icon-play {
+  display: none;
+}
+
+.media-audio.is-playing .audio-player-toggle .audio-icon-pause {
+  display: inline-block;
+}
+
+.audio-player-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-player-bar {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+  cursor: pointer;
+}
+
+.audio-player-progress {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.audio-player-time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .media-image {
@@ -2444,6 +2518,43 @@ body.has-bottom-nav .scroll-card {
 .scroll-card-media .media-image img {
   max-height: 100vh;
   object-fit: contain;
+}
+
+/* Sits above the video itself (not in the action rail - it's a playback
+   setting, not a social action) so it reads as part of the video, not
+   part of the like/comment/save stack. */
+.scroll-mute-btn {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 14px;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.scroll-mute-btn:active {
+  transform: scale(0.9);
+}
+
+.scroll-mute-btn .mute-icon-off {
+  display: none;
+}
+
+.scroll-mute-btn.is-muted .mute-icon-on {
+  display: none;
+}
+
+.scroll-mute-btn.is-muted .mute-icon-off {
+  display: inline-block;
 }
 
 /* Card text sits above the player, but the player still has to be

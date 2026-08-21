@@ -32,7 +32,7 @@
   <nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
-        <span class="brand-mark">S</span>
+        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="9" y="3" width="14" height="14" rx="3" fill="var(--color-accent)"/><rect x="3" y="9" width="14" height="14" rx="3" fill="var(--color-primary)"/></svg>
         Showcase
       </a>
       <div class="nav-links">
@@ -95,7 +95,7 @@
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
     import { shareLink } from '/js/share.js';
     import { scrollImageFor } from '/js/scroll-styles.js';
-    import { mediaHtml, parseMedia } from '/js/media.js';
+    import { mediaHtml, parseMedia, initAudioPlayers } from '/js/media.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere - past this many cards the ranking has long stopped
@@ -167,7 +167,20 @@
     // (it has sound, and starting that without asking is exactly what
     // muting video is designed to avoid) but still gets paused on exit, so
     // it doesn't keep playing under a card the user has scrolled past.
+    //
+    // soundOn persists across cards: unmuting one video keeps the next one
+    // unmuted too, the same way every short-video feed handles it, rather
+    // than forcing a re-tap on every single card.
     let mediaObserver = null;
+    let soundOn = false;
+
+    function syncMuteButton(card, muted) {
+      const btn = card.querySelector('[data-action="mute-toggle"]');
+      if (!btn) return;
+      btn.classList.toggle('is-muted', muted);
+      btn.setAttribute('aria-pressed', String(!muted));
+      btn.setAttribute('aria-label', muted ? 'Unmute video' : 'Mute video');
+    }
 
     function setupMediaPlayback() {
       if (mediaObserver) mediaObserver.disconnect();
@@ -182,7 +195,11 @@
             const video = card.querySelector('.scroll-card-media video');
             const audio = card.querySelector('.scroll-card-media audio');
             if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-              if (video) video.play().catch(() => {});
+              if (video) {
+                video.muted = !soundOn;
+                syncMuteButton(card, video.muted);
+                video.play().catch(() => {});
+              }
             } else {
               if (video) video.pause();
               if (audio) audio.pause();
@@ -260,9 +277,20 @@
 
       const rail = railButtonsHtml(project, authorProfile);
 
+      // Muted is the starting state for every video card (see
+      // setupMediaPlayback), so the button starts in sync with that.
+      const muteButton =
+        media && media.kind === 'video'
+          ? `<button class="scroll-mute-btn is-muted" type="button" data-action="mute-toggle" aria-label="Unmute video" aria-pressed="false">
+              <span class="mute-icon mute-icon-on">${icon('volume-2', { size: 18 })}</span>
+              <span class="mute-icon mute-icon-off">${icon('volume-x', { size: 18 })}</span>
+            </button>`
+          : '';
+
       return `
         <section class="scroll-card${hasImage || media ? ' has-image' : ''}${media ? ' has-media' : ''}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
+          ${muteButton}
           <div class="scroll-content">
             <a class="scroll-author" href="profile.html?user=${encodeURIComponent(project.uid)}">
               ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'scroll-avatar')}
@@ -498,6 +526,17 @@
             text: project.summary || '',
           });
         }
+        return;
+      }
+      const muteBtn = e.target.closest('[data-action="mute-toggle"]');
+      if (muteBtn) {
+        const card = muteBtn.closest('.scroll-card');
+        const video = card && card.querySelector('.scroll-card-media video');
+        if (video) {
+          video.muted = !video.muted;
+          soundOn = !video.muted;
+          syncMuteButton(card, video.muted);
+        }
       }
     });
 
@@ -580,6 +619,7 @@
         });
         setupViewTracking();
         setupMediaPlayback();
+        initAudioPlayers(root);
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load projects: ${escapeHtml(err.message)}</p></div>`;
       }

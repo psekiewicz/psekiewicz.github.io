@@ -32,7 +32,7 @@
   <nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
-        <span class="brand-mark">S</span>
+        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="9" y="3" width="14" height="14" rx="3" fill="var(--color-accent)"/><rect x="3" y="9" width="14" height="14" rx="3" fill="var(--color-primary)"/></svg>
         Showcase
       </a>
       <div class="nav-links">
@@ -98,7 +98,7 @@
     import { shareLink } from '/js/share.js';
     import { isSaved, saveProject, unsaveProject } from '/js/saves-data.js';
     import { REPORT_REASONS, reportProject } from '/js/reports-data.js';
-    import { mediaHtml, parseMedia } from '/js/media.js';
+    import { mediaHtml, parseMedia, initAudioPlayers } from '/js/media.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -292,6 +292,7 @@
 
       wireSaveButton(project.id);
       wireReportButton(project.id);
+      initAudioPlayers(root);
 
       const shareBtn = document.getElementById('share-btn');
       if (shareBtn) {

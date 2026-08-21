@@ -52,6 +52,9 @@ const PATHS = {
   bookmark: '<path d="M6 4h12v17l-6-4.2L6 21V4Z"/>',
   flag: '<path d="M5 21V4"/><path d="M5 5h10l-1.4 3L15 11H5"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  pause: '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>',
+  'volume-2': '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/>',
+  'volume-x': '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9l6 6M22 9l-6 6"/>',
 };
 
 export function icon(name, { size = 20, strokeWidth = 1.8, className = '' } = {}) {

@@ -1,4 +1,5 @@
 import { escapeHtml } from './utils.js';
+import { icon } from './icons.js';
 
 // Turning a pasted link into something playable in the page.
 //
@@ -112,7 +113,28 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   }
 
   if (media.kind === 'audio') {
-    return `<div class="media-audio"><audio src="${escapeHtml(media.src)}" controls preload="none"></audio></div>`;
+    // A real <audio> element drives playback; everything visible is a
+    // custom control bound to it by initAudioPlayers, since the browser's
+    // own bar is a plain grey strip that looks nothing like the rest of
+    // the app.
+    return `<div class="media-audio">
+      <audio src="${escapeHtml(media.src)}" preload="metadata"></audio>
+      <div class="audio-player">
+        <button class="audio-player-toggle" type="button" data-audio-toggle aria-label="Play">
+          ${icon('play', { size: 16, className: 'audio-icon-play' })}
+          ${icon('pause', { size: 16, className: 'audio-icon-pause' })}
+        </button>
+        <div class="audio-player-body">
+          <div class="audio-player-bar" data-audio-bar>
+            <div class="audio-player-progress" data-audio-progress></div>
+          </div>
+          <div class="audio-player-time">
+            <span data-audio-current>0:00</span>
+            <span data-audio-duration>-:--</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }
 
   if (media.kind === 'image') {
@@ -122,4 +144,58 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   }
 
   return '';
+}
+
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) return '-:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${mins}:${secs}`;
+}
+
+// Wires every not-yet-wired .media-audio produced by mediaHtml() within
+// root: play/pause, the progress bar (both as a readout and a click-to-seek
+// target), and the elapsed/duration labels. Safe to call repeatedly on the
+// same root - already-wired players are skipped.
+export function initAudioPlayers(root) {
+  root.querySelectorAll('.media-audio').forEach((wrap) => {
+    if (wrap.dataset.wired) return;
+    wrap.dataset.wired = 'true';
+
+    const audio = wrap.querySelector('audio');
+    const toggle = wrap.querySelector('[data-audio-toggle]');
+    const bar = wrap.querySelector('[data-audio-bar]');
+    const progress = wrap.querySelector('[data-audio-progress]');
+    const currentEl = wrap.querySelector('[data-audio-current]');
+    const durationEl = wrap.querySelector('[data-audio-duration]');
+    if (!audio || !toggle || !bar || !progress) return;
+
+    toggle.addEventListener('click', () => {
+      if (audio.paused) audio.play().catch(() => {});
+      else audio.pause();
+    });
+
+    audio.addEventListener('play', () => wrap.classList.add('is-playing'));
+    audio.addEventListener('pause', () => wrap.classList.remove('is-playing'));
+    audio.addEventListener('loadedmetadata', () => {
+      durationEl.textContent = formatTime(audio.duration);
+    });
+    audio.addEventListener('timeupdate', () => {
+      currentEl.textContent = formatTime(audio.currentTime);
+      if (audio.duration) progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+    });
+    audio.addEventListener('ended', () => {
+      progress.style.width = '0%';
+      currentEl.textContent = formatTime(0);
+    });
+
+    bar.addEventListener('click', (e) => {
+      if (!audio.duration) return;
+      const rect = bar.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      audio.currentTime = ratio * audio.duration;
+    });
+  });
 }
