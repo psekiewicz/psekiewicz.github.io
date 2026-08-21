@@ -10,7 +10,7 @@ import { getCommentCounts } from '../data/comments';
 import { getLikeCounts } from '../data/likes';
 import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
-import { getPublishedProjects, Project } from '../data/projects';
+import { DISCOVER_POOL, getPublishedProjects, Project } from '../data/projects';
 import { useCardColumns, padRow } from '../lib/layout';
 import { getLevelsForUsers } from '../lib/levels';
 import { PROJECT_TYPE_OPTIONS } from '../lib/utils';
@@ -41,7 +41,12 @@ export function HomeScreen({ navigation }: any) {
   const load = useCallback(async () => {
     setError('');
     try {
-      const rows = await getPublishedProjects();
+      // Search and the type filter run over what has been fetched, so the
+      // pool is asked for explicitly rather than inheriting the feed's page
+      // size. Past this many entries the search stops seeing the older ones —
+      // the honest fix is to search server-side, which is a bigger change than
+      // this one.
+      const rows = await getPublishedProjects({ limit: DISCOVER_POOL });
       setProjects(rows);
 
       const ids = rows.map((p) => p.id);

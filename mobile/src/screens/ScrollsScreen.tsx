@@ -22,7 +22,7 @@ import { getCommentCounts } from '../data/comments';
 import { getFollowingIds } from '../data/follows';
 import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '../data/likes';
 import { getProfilesByIds, Profile } from '../data/profiles';
-import { getPublishedProjects, Project } from '../data/projects';
+import { FEED_PAGE_SIZE, getPublishedProjects, Project } from '../data/projects';
 import { getSavedSet, saveProject, unsaveProject } from '../data/saves';
 import { logProjectView } from '../data/views';
 import { loadSeenIds, markSeen, rankFeed } from '../lib/feedRank';
@@ -57,35 +57,83 @@ export function ScrollsScreen({ navigation }: any) {
     Dimensions.get('window').height - 58 - insets.bottom
   );
 
-  const load = useCallback(async () => {
-    try {
-      const rows = await getPublishedProjects();
-      const ids = rows.map((p) => p.id);
-      const uids = rows.map((p) => p.uid);
+  // Paging state lives in refs: the loader reads it while it runs, and a
+  // re-render in the middle of a fetch must not hand it stale values.
+  const cursorRef = useRef<string | null>(null);
+  const exhaustedRef = useRef(false);
+  const busyRef = useRef(false);
+  // Fetched once per session rather than once per page — neither depends on
+  // which slice of the feed is being loaded.
+  const followingRef = useRef<Set<string>>(new Set());
+  const seenRef = useRef<Map<string, number>>(new Map());
 
-      const [likes, comments, followingIds, seenIds, profileMap, likedSet, savedSet] =
-        await Promise.all([
-          getLikeCounts(ids).catch(() => new Map()),
-          getCommentCounts(ids).catch(() => new Map()),
-          getFollowingIds(user?.id ?? null).catch(() => new Set<string>()),
-          loadSeenIds(),
-          getProfilesByIds(uids).catch(() => new Map()),
+  const loadPage = useCallback(
+    async (reset: boolean) => {
+      if (busyRef.current) return;
+      if (!reset && exhaustedRef.current) return;
+      busyRef.current = true;
+
+      try {
+        if (reset) {
+          cursorRef.current = null;
+          exhaustedRef.current = false;
+          followingRef.current = await getFollowingIds(user?.id ?? null).catch(
+            () => new Set<string>()
+          );
+          seenRef.current = await loadSeenIds();
+        }
+
+        const rows = await getPublishedProjects({ before: cursorRef.current ?? undefined });
+        // A short page means there is nothing older left; asking again would
+        // just repeat the same empty answer on every scroll to the bottom.
+        if (rows.length < FEED_PAGE_SIZE) exhaustedRef.current = true;
+        if (rows.length === 0) {
+          if (reset) setFeed([]);
+          return;
+        }
+        // Rows come back newest first, so the oldest is the cursor for the
+        // next page.
+        cursorRef.current = rows[rows.length - 1].createdAt;
+
+        const ids = rows.map((p) => p.id);
+        const uids = rows.map((p) => p.uid);
+        const [likes, comments, profileMap, likedSet, savedSet] = await Promise.all([
+          getLikeCounts(ids).catch(() => new Map<string, number>()),
+          getCommentCounts(ids).catch(() => new Map<string, number>()),
+          getProfilesByIds(uids).catch(() => new Map<string, Profile>()),
           getLikedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
           getSavedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
         ]);
 
-      setLikeCounts(likes);
-      setCommentCounts(comments);
-      setAuthors(profileMap);
-      setLiked(likedSet);
-      setSaved(savedSet);
-      setFeed(rankFeed(rows, { likeCounts: likes, commentCounts: comments, followingIds, seenIds }));
-    } catch {
-      setFeed([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+        const merge = <K, V>(prev: Map<K, V>, next: Map<K, V>) =>
+          reset ? next : new Map([...prev, ...next]);
+        setLikeCounts((prev) => merge(prev, likes));
+        setCommentCounts((prev) => merge(prev, comments));
+        setAuthors((prev) => merge(prev, profileMap));
+        setLiked((prev) => (reset ? likedSet : new Set([...prev, ...likedSet])));
+        setSaved((prev) => (reset ? savedSet : new Set([...prev, ...savedSet])));
+
+        // Each page is ranked among itself. Ranking across the whole archive
+        // would mean holding the whole archive, which is the thing this
+        // replaces; within a page the ordering still does its work.
+        const ranked = rankFeed(rows, {
+          likeCounts: likes,
+          commentCounts: comments,
+          followingIds: followingRef.current,
+          seenIds: seenRef.current,
+        });
+        setFeed((prev) => (reset ? ranked : [...prev, ...ranked]));
+      } catch {
+        if (reset) setFeed([]);
+      } finally {
+        busyRef.current = false;
+        setLoading(false);
+      }
+    },
+    [user?.id]
+  );
+
+  const load = useCallback(() => loadPage(true), [loadPage]);
 
   useEffect(() => {
     load();
@@ -199,6 +247,10 @@ export function ScrollsScreen({ navigation }: any) {
         snapToInterval={cardHeight}
         snapToAlignment="start"
         decelerationRate="fast"
+        // Two screens of runway: the next page starts arriving while there
+        // are still cards left to watch, so the feed never stops at the seam.
+        onEndReached={() => loadPage(false)}
+        onEndReachedThreshold={2}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
         getItemLayout={(_, index) => ({
