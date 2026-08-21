@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, EmptyState, ErrorNote, Eyebrow, LevelChip, Loading } from '../components/ui';
+import { Avatar, DisplayName, EmptyState, ErrorNote, Eyebrow, LevelChip, Loading } from '../components/ui';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { getTopByXp, Reputation } from '../data/reputation';
 import { levelFromXp } from '../lib/levels';
@@ -85,9 +85,13 @@ export function LeaderboardScreen({ navigation }: any) {
             />
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontWeight: '700', fontSize: 13, color: colors.text }} numberOfLines={1}>
-                  {profile?.displayName || 'Unknown'}
-                </Text>
+                {/* The site's leaderboard wears the equipped name effect here
+                    (leaderboard.html); a plain Text dropped it on the floor. */}
+                <DisplayName
+                  name={profile?.displayName || 'Unknown'}
+                  effect={profile?.equippedNameEffect}
+                  style={{ fontSize: 13 }}
+                />
                 <LevelChip level={level.level} small />
               </View>
               <Text style={[typography.small, { color: colors.textFaint }]}>

@@ -285,17 +285,25 @@ export function Avatar({ url, name, size = 40, ring }: any) {
 
   if (!cosmetic) return inner;
 
-  return (
-    <View
-      style={{
-        padding: ringWidth,
-        borderRadius: (size + ringWidth * 2) / 2,
-        backgroundColor: cosmetic.color,
-      }}
-    >
-      {inner}
-    </View>
-  );
+  const ring_ = { padding: ringWidth, borderRadius: (size + ringWidth * 2) / 2 };
+
+  // Two borders — rainbow and conic — are defined as gradients. Painting them
+  // with the flat `color` threw that away, which made the two showiest things
+  // in the shop the two that looked like nothing in particular.
+  if (cosmetic.gradient) {
+    return (
+      <LinearGradient
+        colors={cosmetic.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={ring_}
+      >
+        {inner}
+      </LinearGradient>
+    );
+  }
+
+  return <View style={[ring_, { backgroundColor: cosmetic.color }]}>{inner}</View>;
 }
 
 // The display name, wearing whichever nickname effect the account has equipped.
