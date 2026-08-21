@@ -161,6 +161,40 @@
       document.querySelectorAll('.scroll-card').forEach((card) => viewObserver.observe(card));
     }
 
+    // Video autoplays (muted, per parseMedia/mediaHtml) once its card is
+    // mostly on screen, and pauses the moment it isn't - otherwise every
+    // video in the feed would be playing at once. Audio never autoplays
+    // (it has sound, and starting that without asking is exactly what
+    // muting video is designed to avoid) but still gets paused on exit, so
+    // it doesn't keep playing under a card the user has scrolled past.
+    let mediaObserver = null;
+
+    function setupMediaPlayback() {
+      if (mediaObserver) mediaObserver.disconnect();
+
+      const container = document.querySelector('.scrolls-container');
+      if (!container) return;
+
+      mediaObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const card = entry.target;
+            const video = card.querySelector('.scroll-card-media video');
+            const audio = card.querySelector('.scroll-card-media audio');
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+              if (video) video.play().catch(() => {});
+            } else {
+              if (video) video.pause();
+              if (audio) audio.pause();
+            }
+          });
+        },
+        { root: container, threshold: [0, 0.6, 1] }
+      );
+
+      document.querySelectorAll('.scroll-card').forEach((card) => mediaObserver.observe(card));
+    }
+
     function railButtonsHtml(project, authorProfile) {
       const likeInfo = likeState.get(project.id) || { liked: false, count: 0 };
       const commentCount = commentCounts.get(project.id) || 0;
@@ -545,6 +579,7 @@
           updateCommentCountUI(p.id);
         });
         setupViewTracking();
+        setupMediaPlayback();
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load projects: ${escapeHtml(err.message)}</p></div>`;
       }
