@@ -1,4 +1,4 @@
-// The shop's item catalog — client-side display copy. The actual prices
+// The shop's item catalog - client-side display copy. The actual prices
 // that get charged live in schema.sql's purchase_item(), which does not
 // trust a client-passed price; keep the two in sync by hand when editing.
 export const SHOP_CATEGORIES = [
@@ -73,7 +73,7 @@ export const SHOP_ITEMS = [
 // Sets: one background, one border and one nickname effect that were
 // drawn to go together, sold for less than the three separately.
 //
-// A set is just a list of item ids — it owns no cosmetics of its own, so
+// A set is just a list of item ids - it owns no cosmetics of its own, so
 // buying one is exactly the same as buying its members one at a time, and
 // an item can appear in more than one set. The price here is display copy:
 // purchase_bundle() in schema.sql holds the real one, and works out what
@@ -127,7 +127,7 @@ export function findBundle(bundleId) {
   return SHOP_BUNDLES.find((bundle) => bundle.id === bundleId) || null;
 }
 
-// What the three items would cost bought separately — the number a set's
+// What the three items would cost bought separately - the number a set's
 // price is compared against.
 export function bundleListPrice(bundle) {
   return bundle.items.reduce((sum, id) => sum + (findItem(id)?.price || 0), 0);
@@ -147,7 +147,7 @@ export function bundlePriceFor(bundle, ownedIds) {
   return Math.ceil((bundle.price * missing) / list);
 }
 
-// What the members you don't own yet would cost bought separately — the
+// What the members you don't own yet would cost bought separately - the
 // number the set's price is struck through against. For a set you own
 // none of, this is the same as bundleListPrice().
 export function bundleMissingListPrice(bundle, ownedIds) {
@@ -164,7 +164,7 @@ export function findItem(itemId) {
   return SHOP_ITEMS.find((item) => item.id === itemId) || null;
 }
 
-// The CSS class an equipped/previewed item id maps to — 'none' (or
+// The CSS class an equipped/previewed item id maps to - 'none' (or
 // anything unrecognized) renders as no class at all.
 export function effectClass(itemId) {
   return itemId && itemId !== 'none' && findItem(itemId) ? `shop-${itemId}` : '';

@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Account settings — Showcase</title>
+  <title>Account settings - Showcase</title>
   <meta name="description" content="Update how you appear across Showcase." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Account settings — Showcase" />
+  <meta property="og:title" content="Account settings - Showcase" />
   <meta property="og:description" content="Update how you appear across Showcase." />
   <meta property="og:url" content="https://psekiewicz.github.io/settings.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Account settings — Showcase" />
+  <meta name="twitter:title" content="Account settings - Showcase" />
   <meta name="twitter:description" content="Update how you appear across Showcase." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -108,7 +108,7 @@
 
         <div class="form-panel">
           <h3>Session</h3>
-          <p>Signed in — log out to switch accounts or end your session on this device.</p>
+          <p>Signed in - log out to switch accounts or end your session on this device.</p>
           <button class="btn btn-danger btn-block" id="settings-logout-btn" type="button">Log out</button>
         </div>
 
@@ -216,7 +216,7 @@
 
       try {
         // Re-authenticating confirms the current password is correct
-        // before we're willing to change it — Supabase has no separate
+        // before we're willing to change it - Supabase has no separate
         // "verify current password" call, so signing in again with it is
         // the standard way to check it.
         await loginUser(currentUser.email, currentPassword);

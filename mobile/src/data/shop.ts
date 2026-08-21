@@ -15,7 +15,7 @@ export async function getOwnedItemIds(userId: string) {
 }
 
 // Charges points and records ownership server-side (purchase_item() in
-// schema.sql owns the real price list) — resolves with the new balance.
+// schema.sql owns the real price list) - resolves with the new balance.
 export async function purchaseItem(itemId: string) {
   const { data, error } = await supabase.rpc('purchase_item', { p_item_id: itemId });
   if (error) throw new Error(error.message);
@@ -75,7 +75,7 @@ export async function recordAchievementUnlock(achievementId: string) {
   if (error) throw new Error(error.message);
 }
 
-// Pays out the reward exactly once — resolves with the new points balance.
+// Pays out the reward exactly once - resolves with the new points balance.
 export async function claimAchievement(achievementId: string) {
   const { data, error } = await supabase.rpc('claim_achievement', {
     p_achievement_id: achievementId,

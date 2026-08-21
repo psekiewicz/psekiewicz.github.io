@@ -75,7 +75,7 @@ export function CommentsSheet({ projectId, visible, onClose, onCountChange, owne
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
       if (projectId) onCountChange?.(projectId, -1);
     } catch {
-      // RLS refused it — nothing to undo locally.
+      // RLS refused it - nothing to undo locally.
     }
   };
 

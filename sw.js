@@ -1,6 +1,6 @@
 // Service worker for the installable PWA shell. Caches the static app shell
 // (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
-// connection — but never touches Supabase API/auth calls or any other
+// connection - but never touches Supabase API/auth calls or any other
 // cross-origin request, so account state and project data always stay live.
 const CACHE_VERSION = 'showcase-shell-v28';
 
@@ -97,7 +97,7 @@ self.addEventListener('fetch', (event) => {
 
   // Page navigations always go network-first (bypassing the HTTP cache, not
   // just the Cache Storage): serving a possibly-stale cached shell first is
-  // exactly what made deploys look like they "didn't update" — worse on
+  // exactly what made deploys look like they "didn't update" - worse on
   // Firefox, which caches plain fetch() responses more aggressively than
   // Chrome does for this kind of request, so a stale copy could keep
   // re-confirming itself as "fresh" indefinitely.
@@ -129,7 +129,7 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
 
   // cache: 'no-store' forces this past the browser's own HTTP cache, not
-  // just the service worker's Cache Storage — without it, this "network"
+  // just the service worker's Cache Storage - without it, this "network"
   // fetch could itself be satisfied from a stale HTTP cache entry and we'd
   // just re-confirm the same old bytes into Cache Storage forever.
   const networkFetch = fetch(request, { cache: 'no-store' })

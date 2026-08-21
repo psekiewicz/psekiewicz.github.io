@@ -71,7 +71,7 @@ export function SettingsScreen({ navigation }: any) {
         avatarUrl: avatarUrl.trim(),
       });
       // The profiles table is the source of truth, but auth metadata is what
-      // some surfaces read — keep the two from drifting.
+      // some surfaces read - keep the two from drifting.
       await updateDisplayNameMetadata(displayName.trim()).catch(() => {});
       await refreshProfile();
       setNotice('Profile saved.');
@@ -132,7 +132,7 @@ export function SettingsScreen({ navigation }: any) {
               await logoutUser();
             } catch (e: any) {
               setError(
-                `${e.message} — account deletion needs the admin-actions Edge Function deployed.`
+                `${e.message} - account deletion needs the admin-actions Edge Function deployed.`
               );
             }
           },

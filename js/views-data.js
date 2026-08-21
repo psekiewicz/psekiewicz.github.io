@@ -5,7 +5,7 @@ import { supabase } from './supabase-init.js';
 // for signed-out visitors too, without opening up public write access to
 // the projects table itself.
 // Resolves to whether the view was actually counted. It isn't for your own
-// entry, and isn't again for the same signed-in person within 6 hours — so
+// entry, and isn't again for the same signed-in person within 6 hours - so
 // the caller has to ask rather than assume, or the counter on screen drifts
 // away from the number everyone else sees.
 export async function logProjectView(projectId) {

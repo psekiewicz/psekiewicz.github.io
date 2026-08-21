@@ -2,11 +2,11 @@ import { safeUrl } from './utils';
 
 // The web build (js/media.js) turns a media URL into either a native <video>/
 // <audio>/<img> or a provider iframe. There are no iframes here, and by design
-// no WebView either — so the split matters more:
+// no WebView either - so the split matters more:
 //
-//   direct  — an .mp4/.mp3/.jpg URL plays or renders in a real Android player
+//   direct  - an .mp4/.mp3/.jpg URL plays or renders in a real Android player
 //             (expo-video / expo-image). This is the native path.
-//   provider— YouTube, Vimeo, Spotify and SoundCloud do not expose a playable
+//   provider- YouTube, Vimeo, Spotify and SoundCloud do not expose a playable
 //             stream URL; the only in-app way to play them is the embed, which
 //             means a WebView. Rather than smuggle one in, the app resolves the
 //             canonical link and hands it to Android, which opens the official
@@ -105,7 +105,7 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
   if (IMAGE_EXT.test(url)) return { kind: 'image', url };
 
   // Plenty of image hosts serve without a file extension, so the declared
-  // content type acts as the hint — exactly as js/media.js uses it.
+  // content type acts as the hint - exactly as js/media.js uses it.
   if (declaredType === 'image') return { kind: 'image', url };
   if (declaredType === 'video') return { kind: 'video', url };
   if (declaredType === 'music') return { kind: 'audio', url };

@@ -12,7 +12,7 @@ function friendlyError(err) {
 }
 
 // Returns { user, session }. `session` is null when the project has email
-// confirmation enabled (Supabase's default) — the caller must handle that
+// confirmation enabled (Supabase's default) - the caller must handle that
 // case by prompting the user to check their inbox rather than assuming
 // they're immediately logged in.
 export async function registerUser(email, password, displayName) {
@@ -42,7 +42,7 @@ export async function resetPassword(email) {
   if (error) throw new Error(friendlyError(error));
 }
 
-// Resolves once with the current user (or null) — handy for one-off checks
+// Resolves once with the current user (or null) - handy for one-off checks
 // like "am I already logged in?" on the login/register pages.
 export async function getCurrentUser() {
   const {

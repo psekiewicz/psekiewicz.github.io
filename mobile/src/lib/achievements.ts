@@ -5,7 +5,7 @@ import { EMPTY_REPUTATION, getReputation } from '../data/reputation';
 import { getOwnedItemIds } from '../data/shop';
 
 // Each achievement is independently unlockable, ordered here by reward
-// (roughly how hard it is to get) — used as the display order and to pick the
+// (roughly how hard it is to get) - used as the display order and to pick the
 // single "best" badge shown next to a name. `reward` is a display-only copy of
 // the real reward table in claim_achievement() in schema.sql, which is what
 // actually pays out and re-verifies eligibility server-side.
@@ -108,14 +108,14 @@ export function computeAchievements(stats: UserStats, unlockedIds?: Set<string>)
   return ACHIEVEMENTS.map((a) => ({ ...a, unlocked: isUnlocked(a, stats, unlockedIds) }));
 }
 
-// The single most prestigious unlocked achievement — the compact badge shown
+// The single most prestigious unlocked achievement - the compact badge shown
 // next to a name. Null if none.
 export function getTopAchievement(stats: UserStats, unlockedIds?: Set<string>) {
   return ACHIEVEMENTS.find((a) => isUnlocked(a, stats, unlockedIds)) || null;
 }
 
 // Achievements the live stats currently qualify for but that haven't been
-// recorded server-side yet — the profile screen records these so they stick.
+// recorded server-side yet - the profile screen records these so they stick.
 export function unrecordedAchievementIds(stats: UserStats, unlockedIds: Set<string>) {
   return ACHIEVEMENTS.filter((a) => a.check(stats) && !unlockedIds.has(a.id)).map((a) => a.id);
 }

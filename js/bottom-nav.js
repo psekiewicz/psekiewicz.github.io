@@ -4,12 +4,12 @@ import { escapeHtml, initials, safeUrl } from './utils.js';
 // Auth and profile data are pulled in dynamically, on purpose. Importing
 // them at the top would chain this module to the Supabase client (and the
 // CDN it comes from), so a slow or failed load would leave the bar missing
-// entirely — the one piece of navigation that has to be there on mobile.
+// entirely - the one piece of navigation that has to be there on mobile.
 // Only icons and escaping are static, and both are local.
 
 // The bar used to wait for the session to restore and the profile to come
 // back over the network before it rendered anything, so tapping a tab made
-// it blank out and rebuild on the next page — a visible flash on every
+// it blank out and rebuild on the next page - a visible flash on every
 // navigation. It now paints instantly from a snapshot of whatever it showed
 // last time and only re-renders if the fresh data actually differs, which
 // makes it look like a persistent bar rather than part of the page.
@@ -28,7 +28,7 @@ function writeSnapshot(snapshot) {
     if (snapshot) localStorage.setItem(CACHE_KEY, JSON.stringify(snapshot));
     else localStorage.removeItem(CACHE_KEY);
   } catch {
-    // Storage unavailable — the bar just goes back to rendering on load.
+    // Storage unavailable - the bar just goes back to rendering on load.
   }
 }
 
@@ -92,7 +92,7 @@ async function syncWithAccount(nav) {
       import('./profiles-data.js'),
     ]);
   } catch {
-    // Supabase unreachable — the cached bar stays exactly as painted.
+    // Supabase unreachable - the cached bar stays exactly as painted.
     return;
   }
 
@@ -113,7 +113,7 @@ async function syncWithAccount(nav) {
 
     writeSnapshot(snapshot);
 
-    // Only touch the DOM when something actually changed — re-assigning
+    // Only touch the DOM when something actually changed - re-assigning
     // identical markup is exactly what made the bar flicker before.
     const html = navHtml(snapshot);
     if (nav.innerHTML !== html) {

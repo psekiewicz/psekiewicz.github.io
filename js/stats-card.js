@@ -1,7 +1,7 @@
 import { initials, safeUrl, escapeHtml } from './utils.js';
 import { showToast } from './toast.js';
 
-// A shareable "wrapped"-style PNG of one account's stats — same numbers
+// A shareable "wrapped"-style PNG of one account's stats - same numbers
 // already shown on their own profile (js/levels.js, js/achievements.js),
 // packaged as an image instead of DOM so it can leave the site. Everything
 // happens client-side on a <canvas>; there's no server to render it, and
@@ -30,7 +30,7 @@ function themeColors() {
 }
 
 // crossOrigin='anonymous' without a matching CORS header makes the image
-// fail to load outright (onerror), rather than loading "tainted" — so a
+// fail to load outright (onerror), rather than loading "tainted" - so a
 // missing/misconfigured avatar host safely falls through instead of
 // throwing when the canvas is later read as a blob.
 function loadImageDirect(url) {
@@ -44,7 +44,7 @@ function loadImageDirect(url) {
 }
 
 // avatarUrl is any URL someone pastes into settings.html's plain text
-// field — not a Supabase Storage upload — so it can point at a host that
+// field - not a Supabase Storage upload - so it can point at a host that
 // never sends CORS headers at all, which makes the direct load above fail
 // even though the very same URL displays fine in an ordinary <img>
 // elsewhere on the site. Re-fetching it through images.weserv.nl (a free,
@@ -88,10 +88,10 @@ function drawCheck(ctx, cx, cy, size, color) {
 // Shop cosmetics on the card.
 //
 // The shop's 58 items (js/shop-items.js) are CSS classes defined in
-// css/style.css — gradients, tiled patterns, conic-gradient masks,
+// css/style.css - gradients, tiled patterns, conic-gradient masks,
 // pseudo-elements, keyframe animations, two image-based items. An earlier
 // version tried rasterizing the real DOM (via an SVG <foreignObject>) into
-// an image and drawing *that* onto the canvas — it turns out any <svg>
+// an image and drawing *that* onto the canvas - it turns out any <svg>
 // containing a <foreignObject> permanently taints a canvas it's drawn onto,
 // unconditionally, regardless of same-origin-ness or content (a deliberate
 // browser restriction, not a bug to route around), which made
@@ -110,8 +110,8 @@ function drawCheck(ctx, cx, cy, size, color) {
 // html2canvas, for two different reasons found by actually testing it
 // rather than assuming: html2canvas renders `background-clip: text`
 // gradient text as a flat color (a long-standing, unfixable gap in the
-// library), and it renders plain box-shadow rings — the technique 11 of
-// the shop's 19 border items use — as a solid filled disc covering the
+// library), and it renders plain box-shadow rings - the technique 11 of
+// the shop's 19 border items use - as a solid filled disc covering the
 // whole avatar instead of a ring. Both would be real regressions from what
 // the parser already gets right.
 function withHiddenClone(html) {
@@ -122,7 +122,7 @@ function withHiddenClone(html) {
   return wrap;
 }
 
-// Splits on top-level commas only — the ones separating gradient stops or
+// Splits on top-level commas only - the ones separating gradient stops or
 // box-shadow layers, not the ones inside a nested rgb(...)/hsl(...).
 function splitTopLevel(str) {
   const parts = [];
@@ -156,7 +156,7 @@ function luminance(rgb) {
 // Parses a *single* linear-/radial-gradient() (or its repeating- variant)
 // computed value into { type, angleDeg, stops }. Multi-layer backgrounds
 // (tiled dot patterns, layered textures) come back as more than one
-// top-level function and are deliberately not handled here — the caller
+// top-level function and are deliberately not handled here - the caller
 // falls back to the element's flat background-color instead, which is
 // usually a reasonable single-color stand-in for a busier pattern.
 function parseSingleGradient(value) {
@@ -179,10 +179,10 @@ function parseSingleGradient(value) {
   const stops = [];
   for (let i = 0; i < stopArgs.length; i++) {
     const m = stopArgs[i].match(COLOR_RE);
-    if (!m) return null; // a stop we can't read (e.g. a px offset) — bail rather than mis-render
+    if (!m) return null; // a stop we can't read (e.g. a px offset) - bail rather than mis-render
     const rest = stopArgs[i].slice(m[0].length).trim();
     const pctMatch = rest.match(/^([\d.]+)%$/);
-    if (!pctMatch && rest) return null; // px-based stops etc. — same bail
+    if (!pctMatch && rest) return null; // px-based stops etc. - same bail
     const pct = pctMatch ? parseFloat(pctMatch[1]) : (i / Math.max(1, stopArgs.length - 1)) * 100;
     stops.push({ color: m[1], pct });
   }
@@ -229,7 +229,7 @@ function parseConicColors(value) {
   return colors && colors.length >= 2 ? colors : null;
 }
 
-// Lazy CDN import, fetched only the first time a card actually needs it —
+// Lazy CDN import, fetched only the first time a card actually needs it -
 // matches js/supabase-init.js's existing esm.sh pattern, so this stays
 // true to "no build step, no npm install" while still pulling in real
 // third-party code for the one thing a hand-written parser can't do.
@@ -242,7 +242,7 @@ function loadHtml2Canvas() {
 }
 
 // Same-origin content only (no avatar photo, no cross-origin anything), so
-// reading pixels back out never taints — used to decide legible text color
+// reading pixels back out never taints - used to decide legible text color
 // against whatever html2canvas actually painted, the same way
 // drawBgCosmetic()'s gradient-stop average does for the fallback path.
 function sampleLuminance(canvas) {
@@ -278,7 +278,7 @@ async function captureBgHtml2Canvas(bgClass, w, h) {
 }
 
 // Borders were tried through html2canvas too, but it renders plain
-// box-shadow rings — the technique 11 of the shop's 19 border items use —
+// box-shadow rings - the technique 11 of the shop's 19 border items use -
 // as a solid filled disc covering the whole avatar instead of a thin ring,
 // a real regression found by actually testing it rather than assuming.
 // Conic-gradient and the image-based border render fine through it, but
@@ -392,14 +392,14 @@ function drawBorderCosmetic(ctx, cosmetic, cx, cy, avatarR) {
     return true;
   }
 
-  return false; // e.g. the one image-based border (Blue Flame) — caller keeps the plain ring
+  return false; // e.g. the one image-based border (Blue Flame) - caller keeps the plain ring
 }
 
 // ---- Name effect ----
 
 async function readNameCosmetic(nameClass, displayName) {
   if (!nameClass) return null;
-  // The one cosmetic that swaps typefaces — give its font a chance to
+  // The one cosmetic that swaps typefaces - give its font a chance to
   // actually finish loading before it's measured/drawn.
   if (nameClass === 'shop-name-oxygene') {
     await document.fonts.load("700 58px 'Oxygene 1'").catch(() => {});
@@ -426,7 +426,7 @@ async function readNameCosmetic(nameClass, displayName) {
 
 // Draws the name with as much of the cosmetic as canvas can express
 // natively; returns false (caller falls back to plain themed text) only
-// when there's truly nothing usable to draw with — e.g. gradient-clipped
+// when there's truly nothing usable to draw with - e.g. gradient-clipped
 // text whose specific gradient this parser didn't recognize.
 function drawNameCosmetic(ctx, cosmetic, rawText, cx, y, fontPx) {
   if (!cosmetic) return false;
@@ -505,11 +505,11 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
   const nameClassName =
     profile.equippedNameEffect && profile.equippedNameEffect !== 'none' ? `shop-${profile.equippedNameEffect}` : '';
 
-  // html2canvas is the primary path for the background (real fidelity —
+  // html2canvas is the primary path for the background (real fidelity -
   // tiled patterns, the one image-based background); the computed-style
   // parser is the fallback if it can't load at all, and only then does the
   // card fall back further to no cosmetic. Border and name never go
-  // through html2canvas (see the comments above) — both are read directly.
+  // through html2canvas (see the comments above) - both are read directly.
   const [bgCanvas, borderCosmetic, nameCosmetic] = await Promise.all([
     captureBgHtml2Canvas(bgClassName, bgW, bgH),
     Promise.resolve(readBorderCosmetic(borderClassName)),
@@ -539,7 +539,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
   ctx.stroke();
 
   // A cosmetic background can be any color, so text legibility is decided
-  // from its actual measured brightness rather than a hardcoded id list —
+  // from its actual measured brightness rather than a hardcoded id list -
   // this keeps working automatically for any background the shop adds later.
   const textScheme =
     bgLum === null
@@ -583,7 +583,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
 
   y += 90;
 
-  // Avatar photo — the only place a cross-origin image is ever loaded,
+  // Avatar photo - the only place a cross-origin image is ever loaded,
   // via the CORS-safe crossOrigin='anonymous' path (fails cleanly to the
   // initials fallback on a CORS miss, never taints).
   const img = await loadImage(profile.avatarUrl);
@@ -636,7 +636,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
 
   y += 52;
 
-  // Level chip — drawn on the solid primary swatch, not the card
+  // Level chip - drawn on the solid primary swatch, not the card
   // background, so it keeps its own fixed contrast regardless of textScheme.
   const levelLabel = `Lv ${lvl.level}`;
   ctx.font = `700 26px ${FONT}`;
@@ -661,7 +661,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
 
   y += 30;
 
-  // XP progress bar — theme-colored, unchanged regardless of a background
+  // XP progress bar - theme-colored, unchanged regardless of a background
   // cosmetic (the real profile page doesn't tint this under one either).
   const barW = CARD_W - pad * 2 - 160;
   const barX = cx - barW / 2;
@@ -684,7 +684,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
 
   y += 64;
 
-  // Stat grid — the same four numbers as the profile's own reach row.
+  // Stat grid - the same four numbers as the profile's own reach row.
   const statItems = [
     { value: stats.projectsPublished, label: 'PUBLISHED' },
     { value: stats.followerCount, label: 'FOLLOWERS' },
@@ -757,7 +757,7 @@ function canvasToBlob(canvas) {
 
 // Shares the card through the native share sheet when it can carry a file
 // (most phones); otherwise downloads the PNG, since a static site has
-// nowhere to host the image for a URL-based share. Needs a user gesture —
+// nowhere to host the image for a URL-based share. Needs a user gesture -
 // only ever call this from a click handler.
 export async function shareStatsCard(opts) {
   const canvas = await renderStatsCard(opts);
@@ -771,7 +771,7 @@ export async function shareStatsCard(opts) {
       await navigator.share({
         files: [file],
         title: 'My Showcase stats',
-        text: `Lv ${opts.lvl.level} on Showcase — find things worth your time at psekiewicz.github.io`,
+        text: `Lv ${opts.lvl.level} on Showcase - find things worth your time at psekiewicz.github.io`,
       });
       return;
     } catch (err) {

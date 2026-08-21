@@ -31,7 +31,7 @@ import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
 
-// Scrolls is full-bleed dark in both themes — a feed of media reads better on
+// Scrolls is full-bleed dark in both themes - a feed of media reads better on
 // black, and the web build makes the same call.
 const INK = '#ffffff';
 const SUBTLE = 'rgba(255,255,255,0.75)';
@@ -62,7 +62,7 @@ export function ScrollsScreen({ navigation }: any) {
   const cursorRef = useRef<string | null>(null);
   const exhaustedRef = useRef(false);
   const busyRef = useRef(false);
-  // Fetched once per session rather than once per page — neither depends on
+  // Fetched once per session rather than once per page - neither depends on
   // which slice of the feed is being loaded.
   const followingRef = useRef<Set<string>>(new Set());
   const seenRef = useRef<Map<string, number>>(new Map());
@@ -139,7 +139,7 @@ export function ScrollsScreen({ navigation }: any) {
     load();
   }, [load]);
 
-  // A view counts on a 3-second dwell — the same threshold the web build uses,
+  // A view counts on a 3-second dwell - the same threshold the web build uses,
   // and the same one that marks a card seen for ranking purposes.
   const dwellTimer = useRef<any>(null);
   const startDwell = useCallback((project: Project) => {
@@ -258,7 +258,7 @@ export function ScrollsScreen({ navigation }: any) {
           offset: cardHeight * index,
           index,
         })}
-        // Only the active card and its immediate neighbours stay mounted —
+        // Only the active card and its immediate neighbours stay mounted -
         // a feed of video players all alive at once is what kills the frame
         // rate on a mid-range phone.
         windowSize={3}
@@ -468,7 +468,7 @@ function ScrollMedia({ media, poster, active, height }: any) {
     );
   }
 
-  // Audio and provider entries have no picture of their own — the poster is
+  // Audio and provider entries have no picture of their own - the poster is
   // whatever the author set, and failing that a plain field so the text rail
   // still has something to sit on.
   return <View style={{ width: '100%', height, backgroundColor: '#14120f' }} />;

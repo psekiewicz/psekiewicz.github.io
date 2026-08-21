@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title id="page-title">Profile — Showcase</title>
+  <title id="page-title">Profile - Showcase</title>
   <meta name="description" content="Showcase user, nothing weird." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Profile — Showcase" />
+  <meta property="og:title" content="Profile - Showcase" />
   <meta property="og:description" content="Showcase user, nothing weird." />
   <meta property="og:url" content="https://psekiewicz.github.io/profile.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Profile — Showcase" />
+  <meta name="twitter:title" content="Profile - Showcase" />
   <meta name="twitter:description" content="Showcase user, nothing weird." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -150,7 +150,7 @@
     });
 
     // Tapping a badge is the only reliable way to see "how do I earn this"
-    // on mobile — a `title` tooltip needs a hover that touchscreens don't have.
+    // on mobile - a `title` tooltip needs a hover that touchscreens don't have.
     function openAchievementModal(achievement, isOwnProfile, claimed, onClaimed) {
       achievementModalTitle.textContent = achievement.label;
       const statusClass = achievement.unlocked ? 'is-unlocked' : 'is-locked';
@@ -253,7 +253,7 @@
         return;
       }
 
-      document.getElementById('page-title').textContent = `${profile.displayName} — Showcase`;
+      document.getElementById('page-title').textContent = `${profile.displayName} - Showcase`;
 
       const currentUser = await getCurrentUser();
       const isOwnProfile = currentUser && currentUser.id === profileUserId;
@@ -270,7 +270,7 @@
 
       // Anything the stats currently qualify for but that isn't on record
       // yet gets written down now, so it survives the project being
-      // deleted later. Only possible on your own profile — the RPC records
+      // deleted later. Only possible on your own profile - the RPC records
       // for the signed-in user and re-checks eligibility server-side.
       if (isOwnProfile && stats) {
         const toRecord = unrecordedAchievementIds(stats, records.unlocked);
@@ -310,7 +310,7 @@
           : `<div class="project-grid">${projects.map((p) => projectCard(p, isOwnProfile)).join('')}</div>`;
 
       const nameBadge = topAchievement
-        ? `<span class="name-badge" title="${escapeHtml(topAchievement.label)} — ${escapeHtml(topAchievement.description)}">${icon(topAchievement.icon, { size: 17 })}</span>`
+        ? `<span class="name-badge" title="${escapeHtml(topAchievement.label)} - ${escapeHtml(topAchievement.description)}">${icon(topAchievement.icon, { size: 17 })}</span>`
         : '';
 
       const nameEffectClass = effectClass(profile.equippedNameEffect);
@@ -319,10 +319,10 @@
       const headerClass = `profile-header${bgEffectClass ? ` has-profile-bg ${bgEffectClass}` : ''}`;
 
       const pointsRow = isOwnProfile
-        ? `<a class="points-chip" href="shop.html" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts — Shop</a>`
+        ? `<a class="points-chip" href="shop.html" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts - Shop</a>`
         : '';
 
-      // A shareable "wrapped"-style image of your own stats — own profile
+      // A shareable "wrapped"-style image of your own stats - own profile
       // only, same reasoning as reachRow above: it's a card worth posting,
       // not a stat line worth exposing about someone else.
       const shareCardRow = isOwnProfile && stats
@@ -348,7 +348,7 @@
         : '';
 
       // Where both currencies come from, shown plainly with what each one
-      // is worth. Own profile only — it reads as a to-do list, not a
+      // is worth. Own profile only - it reads as a to-do list, not a
       // public stat line.
       const reachChip = (iconName, value, label, rate) =>
         `<span class="reach-chip" title="${escapeHtml(rate)}">${icon(iconName, { size: 14 })} <strong>${value.toLocaleString()}</strong> ${escapeHtml(label)}</span>`;
@@ -356,10 +356,10 @@
         isOwnProfile && stats
           ? `
             <div class="reach-row">
-              ${reachChip('grid', stats.projectsPublished, 'published', '25 XP each for your first 20 entries — no points, those come from reach')}
-              ${reachChip('eye', stats.uniqueViewers, 'viewers', '2 XP and 1 point each — counted once per person, not per reload')}
+              ${reachChip('grid', stats.projectsPublished, 'published', '25 XP each for your first 20 entries - no points, those come from reach')}
+              ${reachChip('eye', stats.uniqueViewers, 'viewers', '2 XP and 1 point each - counted once per person, not per reload')}
               ${reachChip('heart', stats.totalLikes, 'likes', '30 XP and 5 points each')}
-              ${reachChip('message-circle', stats.commentsReceived, 'comments', '15 XP and 3 points each — comments other people left you')}
+              ${reachChip('message-circle', stats.commentsReceived, 'comments', '15 XP and 3 points each - comments other people left you')}
               ${reachChip('users', stats.followerCount, 'followers', '60 XP and 10 points each')}
             </div>
           `

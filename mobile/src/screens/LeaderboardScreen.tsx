@@ -18,7 +18,7 @@ export function LeaderboardScreen({ navigation }: any) {
 
   useEffect(() => {
     // Ranked by the server rather than by pulling every profile and sorting
-    // here — the view already knows the order.
+    // here - the view already knows the order.
     getTopByXp(50)
       .then(async (top) => {
         setRows(top);

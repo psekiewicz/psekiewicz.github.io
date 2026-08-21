@@ -1,4 +1,4 @@
-// A level is a display of one number — xp — computed by the database, not
+// A level is a display of one number - xp - computed by the database, not
 // here (see the user_reputation view in schema.sql). What lives in this module
 // is the curve: pure functions of an xp number, with nothing to keep in sync
 // with the server.

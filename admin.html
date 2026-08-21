@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — Showcase</title>
+  <title>Admin - Showcase</title>
   <meta name="description" content="Moderation tools for Showcase." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Admin — Showcase" />
+  <meta property="og:title" content="Admin - Showcase" />
   <meta property="og:description" content="Moderation tools for Showcase." />
   <meta property="og:url" content="https://psekiewicz.github.io/admin.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Admin — Showcase" />
+  <meta name="twitter:title" content="Admin - Showcase" />
   <meta name="twitter:description" content="Moderation tools for Showcase." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -381,7 +381,7 @@
                   ${u.isAdmin ? '<span class="tag" style="margin-left:6px;">Admin</span>' : ''}
                 </span>
               </td>
-              <td>${escapeHtml(u.email || '—')}</td>
+              <td>${escapeHtml(u.email || '-')}</td>
               <td>${timeAgo(u.createdAt)}</td>
               <td>${statusHtml}</td>
               <td>${actionsHtml}</td>

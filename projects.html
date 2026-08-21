@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Browse Projects — Showcase</title>
+  <title>Browse Projects - Showcase</title>
   <meta name="description" content="Discover what the community has published." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Browse Projects — Showcase" />
+  <meta property="og:title" content="Browse Projects - Showcase" />
   <meta property="og:description" content="Discover what the community has published." />
   <meta property="og:url" content="https://psekiewicz.github.io/projects.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Browse Projects — Showcase" />
+  <meta name="twitter:title" content="Browse Projects - Showcase" />
   <meta name="twitter:description" content="Discover what the community has published." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -114,7 +114,7 @@
     let authorLevels = new Map();
     // Following someone used to change nothing about what you saw. Empty
     // until the session resolves, which is also why the filter stays hidden
-    // for signed-out visitors — there'd be nothing to filter by.
+    // for signed-out visitors - there'd be nothing to filter by.
     let followingIds = new Set();
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
@@ -168,7 +168,7 @@
 
       if (filtered.length === 0) {
         const emptyBody = onlyFollowing
-          ? `<h3>Nothing from people you follow</h3><p>Follow a few more builders — or switch back to Everyone.</p><a class="btn btn-primary" href="leaderboard.html">Find people to follow</a>`
+          ? `<h3>Nothing from people you follow</h3><p>Follow a few more builders - or switch back to Everyone.</p><a class="btn btn-primary" href="leaderboard.html">Find people to follow</a>`
           : `<h3>No projects match your filters</h3><p>Try a different search term or tag.</p>`;
         container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">${emptyBody}</div>`;
         return;

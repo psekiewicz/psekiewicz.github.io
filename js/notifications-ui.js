@@ -5,7 +5,7 @@ import { escapeHtml, avatarHtml, timeAgo } from './utils.js';
 import { icon } from './icons.js';
 
 // The bell is injected rather than written into all twelve pages, and it
-// goes in .nav-right beside the theme toggle — not inside .nav-actions,
+// goes in .nav-right beside the theme toggle - not inside .nav-actions,
 // which is hidden on mobile in favour of the bottom tab bar.
 let mounted = false;
 
@@ -70,7 +70,7 @@ export function mountNotifications() {
       badge.hidden = unread === 0;
       badge.textContent = unread > 9 ? '9+' : String(unread);
     } catch {
-      // Notifications not set up yet (the SQL hasn't been run) — leave the
+      // Notifications not set up yet (the SQL hasn't been run) - leave the
       // bell quiet rather than showing an error in the navbar.
       badge.hidden = true;
     }
@@ -90,7 +90,7 @@ export function mountNotifications() {
     }
 
     if (notifications.length === 0) {
-      list.innerHTML = '<p class="hint">Nothing yet — likes, comments and new followers show up here.</p>';
+      list.innerHTML = '<p class="hint">Nothing yet - likes, comments and new followers show up here.</p>';
       return;
     }
 

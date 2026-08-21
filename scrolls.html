@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scrolls — Showcase</title>
+  <title>Scrolls - Showcase</title>
   <meta name="description" content="Swipe your way through published projects." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Scrolls — Showcase" />
+  <meta property="og:title" content="Scrolls - Showcase" />
   <meta property="og:description" content="Swipe your way through published projects." />
   <meta property="og:url" content="https://psekiewicz.github.io/scrolls.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Scrolls — Showcase" />
+  <meta name="twitter:title" content="Scrolls - Showcase" />
   <meta name="twitter:description" content="Swipe your way through published projects." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -98,7 +98,7 @@
     import { mediaHtml, parseMedia } from '/js/media.js';
 
     // The feed is ranked, not chronological, so it has to be capped
-    // somewhere — past this many cards the ranking has long stopped
+    // somewhere - past this many cards the ranking has long stopped
     // mattering and it's just DOM nobody will reach.
     const FEED_LIMIT = 60;
 
@@ -115,7 +115,7 @@
     const authorLevels = new Map(); // userId -> levelInfo
 
     // A view counts once a card has been at least 75% on screen for 3
-    // straight seconds — scrolling past it faster than that doesn't count,
+    // straight seconds - scrolling past it faster than that doesn't count,
     // matching how Scrolls is meant to be skimmed vs. actually looked at.
     const VIEW_DWELL_MS = 3000;
     const viewedProjectIds = new Set();
@@ -143,7 +143,7 @@
                   viewedProjectIds.add(projectId);
                   logProjectView(projectId).catch(() => {});
                   // Same dwell threshold decides "counted as a view" and
-                  // "you've seen this" — so the ranker demotes it next
+                  // "you've seen this" - so the ranker demotes it next
                   // visit rather than showing you the same card again.
                   markSeen(projectId);
                 }
@@ -317,7 +317,7 @@
         return;
       }
       const next = !savedIds.has(projectId);
-      // Painted first and rolled back on failure — on a feed you swipe
+      // Painted first and rolled back on failure - on a feed you swipe
       // through, a bookmark that waits for the network reads as ignored.
       if (next) savedIds.add(projectId);
       else savedIds.delete(projectId);
@@ -416,7 +416,7 @@
               return commentItemHtml(c, profiles.get(c.userId), canDelete, levels.get(c.userId));
             })
             .join('')
-        : '<p class="hint">No comments yet — be the first to say something.</p>';
+        : '<p class="hint">No comments yet - be the first to say something.</p>';
 
       const form = currentUser
         ? `
@@ -554,7 +554,7 @@
         }
 
         // Ranked rather than newest-first, and deliberately re-shuffled on
-        // every visit — see js/feed-rank.js.
+        // every visit - see js/feed-rank.js.
         let feed = rankFeed(projects, {
           likeCounts,
           commentCounts: commentCountsMap,

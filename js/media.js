@@ -16,7 +16,7 @@ const AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac)(\?.*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
 const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|svg|bmp)(\?.*)?$/i;
 
-// Only ids that look like ids — keeps anything odd out of the rebuilt URL.
+// Only ids that look like ids - keeps anything odd out of the rebuilt URL.
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 function parseUrl(raw) {
@@ -41,7 +41,7 @@ function youtubeId(url) {
 // `typeHint` is the entry's declared type. It matters because plenty of
 // image hosts serve without a file extension (picsum, unsplash, most
 // CDNs), so extension sniffing alone quietly fails on perfectly good
-// image links — if someone said this is an image, believe them.
+// image links - if someone said this is an image, believe them.
 export function parseMedia(raw, typeHint = '') {
   const url = parseUrl(raw);
   if (!url) return null;
@@ -59,7 +59,7 @@ export function parseMedia(raw, typeHint = '') {
 
   if (SPOTIFY_HOSTS.includes(host)) {
     const parts = url.pathname.split('/').filter(Boolean);
-    // /track/ID, /album/ID, /playlist/ID — and the /embed/ form of each.
+    // /track/ID, /album/ID, /playlist/ID - and the /embed/ form of each.
     const kindIndex = parts[0] === 'embed' ? 1 : 0;
     const what = parts[kindIndex];
     const id = parts[kindIndex + 1] || '';
@@ -70,7 +70,7 @@ export function parseMedia(raw, typeHint = '') {
 
   if (SOUNDCLOUD_HOSTS.includes(host)) {
     // SoundCloud's player takes the track URL as a parameter rather than an
-    // id, so this is the one case where the original URL travels — the host
+    // id, so this is the one case where the original URL travels - the host
     // check above is what makes that safe, and it's re-encoded here.
     return {
       kind: 'iframe',

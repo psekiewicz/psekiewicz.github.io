@@ -1,4 +1,4 @@
-// Minimal outline ("no-fill") icon set — stroke-only, currentColor, 24x24
+// Minimal outline ("no-fill") icon set - stroke-only, currentColor, 24x24
 // viewBox. Keeps the whole app's iconography consistent without pulling in
 // an icon font or library.
 const PATHS = {

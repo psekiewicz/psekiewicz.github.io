@@ -31,7 +31,7 @@ export async function getSavedSet(userId: string | null, projectIds: string[]) {
 
 export async function saveProject(userId: string, projectId: string) {
   const { error } = await supabase.from(TABLE).insert({ user_id: userId, project_id: projectId });
-  // Saving something already saved is a no-op, not an error — the button can be
+  // Saving something already saved is a no-op, not an error - the button can be
   // double-tapped and two devices can disagree about the state.
   if (error && (error as any).code !== '23505') throw new Error(error.message);
 }

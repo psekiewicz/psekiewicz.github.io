@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 // Fire-and-forget: logs one view and bumps projects.views_count via a
 // security-definer RPC, so it works for signed-out visitors too without
 // opening up public write access to the projects table.
-// Resolves to whether the view was actually counted — it isn't for your own
+// Resolves to whether the view was actually counted - it isn't for your own
 // entry, and isn't again for the same signed-in person within 6 hours.
 export async function logProjectView(projectId: string) {
   const { data, error } = await supabase.rpc('log_project_view', { p_project_id: projectId });

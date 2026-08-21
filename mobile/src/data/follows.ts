@@ -47,7 +47,7 @@ export async function getFollowerCount(userId: string) {
   return count || 0;
 }
 
-// Just the ids this user follows — the feed ranker only needs "do I follow this
+// Just the ids this user follows - the feed ranker only needs "do I follow this
 // author", not their names or avatars.
 export async function getFollowingIds(userId: string | null) {
   if (!userId) return new Set<string>();

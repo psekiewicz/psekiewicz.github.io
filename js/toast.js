@@ -17,7 +17,7 @@ function getStack() {
 
 const DEFAULT_DURATION = 6000;
 
-// Toasts announce a reward that already happened — dismissing one must
+// Toasts announce a reward that already happened - dismissing one must
 // never look like it cancelled anything, so they fade rather than needing
 // an explicit action, and a click just takes them away early.
 export function showToast({ title, body = '', iconName = 'award', variant = '', duration = DEFAULT_DURATION }) {
@@ -71,7 +71,7 @@ export function showXpToast(gained) {
   showToast({ title: `+${gained.toLocaleString()} XP`, iconName: 'flame', variant: 'xp', duration: 4500 });
 }
 
-// Points paid out for reach — someone else viewed, liked, commented on or
+// Points paid out for reach - someone else viewed, liked, commented on or
 // followed your work. Worth its own toast rather than folding into the XP
 // one: this is spendable currency, not just a number going up.
 export function showEarningsToast(paid) {

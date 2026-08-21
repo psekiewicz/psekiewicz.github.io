@@ -15,7 +15,7 @@ export async function getOwnedItemIds(userId) {
 }
 
 // Charges points and records ownership server-side (see purchase_item()
-// in schema.sql, which owns the real price list) — resolves with the
+// in schema.sql, which owns the real price list) - resolves with the
 // caller's new points balance.
 export async function purchaseItem(itemId) {
   const { data, error } = await supabase.rpc('purchase_item', { p_item_id: itemId });
@@ -26,7 +26,7 @@ export async function purchaseItem(itemId) {
 // Buys a whole set and returns { charged, granted, points }.
 // purchase_bundle() in schema.sql owns both the set's price and its
 // contents, and works out what to charge from the members the caller
-// doesn't already have — so a set is never a worse deal than buying
+// doesn't already have - so a set is never a worse deal than buying
 // what's left of it one item at a time.
 export async function purchaseBundle(bundleId) {
   const { data, error } = await supabase.rpc('purchase_bundle', { p_bundle_id: bundleId });

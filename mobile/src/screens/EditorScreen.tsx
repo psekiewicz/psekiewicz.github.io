@@ -24,7 +24,7 @@ import { parseTags, PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
 
-// Create and edit are the same form — the web build splits them across
+// Create and edit are the same form - the web build splits them across
 // dashboard.html's create sheet and its edit mode, but on a phone one screen
 // that knows whether it has an id is simpler and behaves identically.
 export function EditorScreen({ route, navigation }: any) {
@@ -69,7 +69,7 @@ export function EditorScreen({ route, navigation }: any) {
 
   // As a tab, this screen stays mounted after you publish something, so
   // returning to it would otherwise show the entry you just posted still
-  // sitting in the fields. Only the param-less (Add tab) case resets — the
+  // sitting in the fields. Only the param-less (Add tab) case resets - the
   // pushed Editor screen always carries a projectId and must keep its values.
   // A screen opened from the share sheet has no projectId either, so blanking
   // on "no projectId" alone would throw away the link that brought you here.
@@ -109,7 +109,7 @@ export function EditorScreen({ route, navigation }: any) {
       .finally(() => setLoading(false));
   }, [projectId]);
 
-  // Declared after the reset above so it runs after it in the same commit —
+  // Declared after the reset above so it runs after it in the same commit -
   // otherwise the blanking a new entry needs would wipe the shared link out
   // again the moment it arrived.
   useEffect(() => {
@@ -298,7 +298,7 @@ export function EditorScreen({ route, navigation }: any) {
         </View>
 
         <Text style={[typography.small, { color: colors.textFaint, marginTop: space.lg }]}>
-          Drafts are visible only to you — enforced by the database, not just hidden here.
+          Drafts are visible only to you - enforced by the database, not just hidden here.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

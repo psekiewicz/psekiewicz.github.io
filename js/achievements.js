@@ -4,11 +4,11 @@ import { getProfile } from './profiles-data.js';
 import { getOwnedItemIds } from './shop-data.js';
 import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
 
-// Each achievement is independently unlockable — a profile can hold any
+// Each achievement is independently unlockable - a profile can hold any
 // number of these at once, ordered here by reward (roughly how hard they
-// are to get) — used as the display order and to pick the single "best"
+// are to get) - used as the display order and to pick the single "best"
 // badge shown next to a name elsewhere in the app. `reward` is the points
-// paid out the first time it's claimed (profile.html, own profile only) —
+// paid out the first time it's claimed (profile.html, own profile only) -
 // it's a display-only copy of the real reward table in claim_achievement()
 // in schema.sql, which is what actually pays out and re-verifies
 // eligibility server-side; keep the two in sync by hand.
@@ -64,7 +64,7 @@ export const ACHIEVEMENTS = [
   {
     id: 'viral',
     label: 'Viral',
-    // Was "1,000 total views", which counted signed-out hits — the one
+    // Was "1,000 total views", which counted signed-out hits - the one
     // number on the site anybody could generate with a loop.
     description: '500 or more different people have opened your entries.',
     icon: 'eye',
@@ -172,7 +172,7 @@ export const ACHIEVEMENTS = [
 // Aggregates the stats every achievement check needs for one user.
 //
 // The reach numbers (entries, views, distinct viewers, likes, comments
-// received, followers, xp) all arrive in the single user_reputation row —
+// received, followers, xp) all arrive in the single user_reputation row -
 // they used to be four separate queries plus a fifth for likes once the
 // project ids were known. What's left alongside it is the handful of
 // things reputation deliberately doesn't cover, because they measure
@@ -180,8 +180,8 @@ export const ACHIEVEMENTS = [
 export async function getUserStats(userId) {
   // Every one of these is individually guarded. Without that, a single
   // failing query rejects the whole thing, and because the only caller
-  // wraps it in a bare .catch() the entire progress chain — level chip,
-  // achievement recording, toasts — vanishes with no error anywhere.
+  // wraps it in a bare .catch() the entire progress chain - level chip,
+  // achievement recording, toasts - vanishes with no error anywhere.
   const [reputation, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
     getReputation(userId).catch(() => ({ ...EMPTY_REPUTATION })),
     getFollowingCount(userId).catch(() => 0),
@@ -203,7 +203,7 @@ export async function getUserStats(userId) {
     uniqueViewers: reputation.uniqueViewers,
     commentsReceived: reputation.commentsReceived,
     followerCount: reputation.followers,
-    // The server's number, carried through untouched — see js/levels.js.
+    // The server's number, carried through untouched - see js/levels.js.
     xp: reputation.xp,
     totalComments,
     followingCount,
@@ -217,7 +217,7 @@ export async function getUserStats(userId) {
 // Achievements are permanent: once earned they stay earned, even if the
 // activity behind them goes away (a project is deleted, likes are
 // withdrawn, a follower leaves). `unlockedIds` carries the ids recorded
-// server-side in unlocked_achievements — an achievement counts as unlocked
+// server-side in unlocked_achievements - an achievement counts as unlocked
 // if the live stats qualify *or* it's in that set. Callers that don't have
 // the recorded set yet can omit it and still get live-stats behaviour.
 function isUnlocked(achievement, stats, unlockedIds) {
@@ -229,14 +229,14 @@ export function computeAchievements(stats, unlockedIds) {
   return ACHIEVEMENTS.map((a) => ({ ...a, unlocked: isUnlocked(a, stats, unlockedIds) }));
 }
 
-// The single most prestigious unlocked achievement — used for the compact
+// The single most prestigious unlocked achievement - used for the compact
 // badge shown next to a name (navbar chip, profile header). Null if none.
 export function getTopAchievement(stats, unlockedIds) {
   return ACHIEVEMENTS.find((a) => isUnlocked(a, stats, unlockedIds)) || null;
 }
 
 // Achievements the live stats currently qualify for but that haven't been
-// recorded server-side yet — the profile page records these so they stick
+// recorded server-side yet - the profile page records these so they stick
 // from now on.
 export function unrecordedAchievementIds(stats, unlockedIds) {
   return ACHIEVEMENTS.filter((a) => a.check(stats) && !unlockedIds.has(a.id)).map((a) => a.id);

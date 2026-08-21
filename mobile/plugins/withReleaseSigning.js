@@ -3,7 +3,7 @@
  *
  * `expo prebuild` writes android/ from a template that signs *release* builds
  * with the debug key, and android/ is gitignored because it is regenerated on
- * every CI run — so there is no committed build.gradle to edit by hand. A
+ * every CI run - so there is no committed build.gradle to edit by hand. A
  * config plugin is the supported way to change that file: it runs as part of
  * prebuild, so the generated project comes out already correct.
  *
@@ -11,7 +11,7 @@
  * so no secret ends up in the repo. CI appends them to android/gradle.properties;
  * see .github/workflows/android.yml.
  *
- * When those properties are absent — a plain local `expo run:android` — the
+ * When those properties are absent - a plain local `expo run:android` - the
  * release build stays on the debug key exactly as the stock template leaves it,
  * so this plugin changes nothing about the local workflow.
  */
@@ -82,7 +82,7 @@ function pointReleaseBuildTypeAtIt(contents) {
 
   // `signingConfig signingConfigs.debug` appears in both the debug and the
   // release build type. Scoping the search to the release block's own braces
-  // is what tells the two apart — counting occurrences would silently target
+  // is what tells the two apart - counting occurrences would silently target
   // the wrong one if the template ever reorders them.
   const release = findBlockBody(contents, 'release', buildTypes.start);
   if (!release || release.end > buildTypes.end) {

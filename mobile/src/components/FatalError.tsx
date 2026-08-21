@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 /**
  * The screen of last resort.
  *
- * Deliberately imports nothing but React and react-native — no theme, no
+ * Deliberately imports nothing but React and react-native - no theme, no
  * design system, no icons. It has to render in a process where something has
  * already gone badly wrong, so anything it depended on could be the very thing
  * that is broken. Colours are literals for the same reason.
@@ -19,7 +19,7 @@ export function FatalError({ error, where }: { error: unknown; where: string }) 
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.title}>Showcase couldn't start</Text>
         <Text style={styles.lead}>
-          Something failed while the app was loading. The details below are what went wrong —
+          Something failed while the app was loading. The details below are what went wrong -
           sending them on is what makes this fixable.
         </Text>
 

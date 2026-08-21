@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 // Reputation is what other people did with your work. Everything the
 // progression system runs on comes from the `user_reputation` view in
-// schema.sql — one row per account, aggregates only, publicly readable.
+// schema.sql - one row per account, aggregates only, publicly readable.
 // The weights that turn those counts into XP and points live in the view, not
 // here: the client can't be the authority on what a like is worth.
 const VIEW = 'user_reputation';

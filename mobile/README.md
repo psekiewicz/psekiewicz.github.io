@@ -1,4 +1,4 @@
-# Showcase — Android app
+# Showcase - Android app
 
 A real React Native app, not a WebView. Every screen is built from native
 Android views (`View`, `FlatList`, `TextInput`, ExoPlayer via `expo-video`);
@@ -8,7 +8,7 @@ loads the website.
 It talks to the **same Supabase project** the site does, so accounts, entries,
 likes, comments, follows, points and levels are shared: publish something in
 the app and it's on the site a second later, and vice versa. The Row Level
-Security policies in [`../schema.sql`](../schema.sql) are what enforce access —
+Security policies in [`../schema.sql`](../schema.sql) are what enforce access -
 they apply identically to a request from an APK and a request from a browser.
 
 ## Getting the .apk / .aab
@@ -21,7 +21,7 @@ button points at the newest release:
 
 That link never changes. The workflow below publishes a release on every green
 build of `main`, so it always serves the current APK without anyone editing a
-page or committing a binary — a 75 MB file per version, in git, is history that
+page or committing a binary - a 75 MB file per version, in git, is history that
 cannot be pruned later.
 
 The build runs in GitHub Actions, so you don't need Node, a JDK or the Android
@@ -30,14 +30,14 @@ SDK on your machine.
 1. Push this folder to `main` (or open the repo's **Actions** tab and run
    **Build Android app** manually via *Run workflow*).
 2. When the run finishes, download the artifacts at the bottom of the run page:
-   - **`showcase-apk`** — sideload this onto a phone to try it.
-   - **`showcase-aab`** — the format Google Play requires for an upload.
+   - **`showcase-apk`** - sideload this onto a phone to try it.
+   - **`showcase-aab`** - the format Google Play requires for an upload.
 
 ### Signing
 
 An app's signing key is its identity. Android installs an update over an
 existing app only when both carry the same signature, and Play ties a listing
-to one key for good — so the key has to outlive any single build.
+to one key for good - so the key has to outlive any single build.
 
 The release key for this app exists and every published APK is signed with it.
 Its certificate fingerprint is:
@@ -53,7 +53,7 @@ downloaded:
 apksigner verify --print-certs showcase.apk
 ```
 
-The keystore is deliberately **not** in this repository — it is a private key,
+The keystore is deliberately **not** in this repository - it is a private key,
 and this repository is public and is also the website, so committing it would
 publish it. It is held outside git; see the four repository secrets below.
 
@@ -67,13 +67,13 @@ signed with the real key:
 | `ANDROID_KEYSTORE_BASE64` | `base64 -w0 showcase-release.jks` |
 | `ANDROID_KEYSTORE_PASSWORD` | the store password |
 | `ANDROID_KEY_ALIAS` | `showcase` |
-| `ANDROID_KEY_PASSWORD` | the key password (same value — PKCS12 requires it) |
+| `ANDROID_KEY_PASSWORD` | the key password (same value - PKCS12 requires it) |
 
 Losing the `.jks` means never updating this app under the same listing, or
 over the top of any copy already installed. Back it up somewhere that is not
 only this machine.
 
-To generate a replacement from scratch — which starts a new identity, with the
+To generate a replacement from scratch - which starts a new identity, with the
 same consequences as losing the old one:
 
 ```bash
@@ -86,7 +86,7 @@ there's no `build.gradle` to edit by hand. [`plugins/withReleaseSigning.js`](plu
 is an Expo config plugin that runs during `prebuild` and gives the generated
 project a `release` signing config reading four Gradle properties; CI appends
 those properties (and the keystore itself) after prebuild. No key material is
-in the repo. If the properties are absent — a plain local release build — it
+in the repo. If the properties are absent - a plain local release build - it
 stays on the debug key exactly as the stock template does, and CI's
 `apksigner` check is what guarantees a *published* artifact never does.
 
@@ -106,14 +106,14 @@ commit the resulting `package.json` **and** `package-lock.json` together.
 
 ```
 src/
-  data/        one module per table — direct ports of the site's js/*-data.js
+  data/        one module per table - direct ports of the site's js/*-data.js
   lib/         shared logic: levels, feed ranking, achievements, shop catalog,
                cosmetics, media resolution
   screens/     one per screen
   components/  ui.tsx (the design system), ProjectCard, CommentsSheet
   theme/       the site's CSS custom properties, transcribed
-  context/     AuthContext — session, profile, and the cold-start gate
-plugins/       Expo config plugins — build-time edits to the generated
+  context/     AuthContext - session, profile, and the cold-start gate
+plugins/       Expo config plugins - build-time edits to the generated
                android/ project, which is regenerated and never committed
 ```
 
@@ -125,7 +125,7 @@ AsyncStorage in place of `localStorage`.
 ## What the app does that the site can't
 
 **It receives Android's Share.** Showcase appears in the share sheet of
-anything that shares plain text — a browser, YouTube, Spotify — and opens the
+anything that shares plain text - a browser, YouTube, Spotify - and opens the
 editor with the link already in place and any accompanying text as a starting
 title. Entries here are links, so this removes the entire find-copy-return-paste
 errand that made the app feel like a worse copy of the website.
@@ -146,7 +146,7 @@ than omissions:
 
 **Third-party media doesn't play in-app.** A direct `.mp4`/`.mp3`/`.jpg` URL
 plays in a real Android player. YouTube, Vimeo, Spotify and SoundCloud expose
-no playable stream — the only in-app way to play them is their iframe embed,
+no playable stream - the only in-app way to play them is their iframe embed,
 which means a WebView. Rather than smuggle one in, `lib/media.ts` resolves the
 canonical link and hands it to Android, which opens the official app if it's
 installed. The host allowlist from `js/media.js` is kept, so a user-supplied
@@ -169,7 +169,7 @@ can't paint a gradient into glyphs without a masking layer.
 ## Things that need the Edge Function
 
 Ban, unban and account deletion call the `admin-actions` Supabase Edge Function
-— the same one the site uses, for the same reason: they need the
+- the same one the site uses, for the same reason: they need the
 `service_role` key, which must never ship inside a client. An APK is a client
 that can be unzipped, so this is if anything more true here. If you haven't
 deployed it (see the root README), those buttons return an error and everything

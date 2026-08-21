@@ -1,4 +1,4 @@
-// The shop's item catalog — display copy only. The prices that actually get
+// The shop's item catalog - display copy only. The prices that actually get
 // charged live in schema.sql's purchase_item()/purchase_bundle(), which do not
 // trust anything the client passes; keep the two in sync by hand when editing,
 // exactly as js/shop-items.js says.
@@ -76,7 +76,7 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 // Sets: one background, one border and one nickname effect drawn to go
 // together, sold for less than the three separately. A set owns no cosmetics
-// of its own — buying one is the same as buying its members individually.
+// of its own - buying one is the same as buying its members individually.
 export type ShopBundle = {
   id: string;
   label: string;

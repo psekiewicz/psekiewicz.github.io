@@ -6,7 +6,7 @@ import { useWindowDimensions } from 'react-native';
  * Everything here was written for a ~5" portrait window: one column, images at
  * full width. On a 10" tablet that turns into a single stretched column where
  * one entry fills the display and a 16:9 thumbnail is over a thousand pixels
- * wide — while the website, on the very same tablet, lays the same entries out
+ * wide - while the website, on the very same tablet, lays the same entries out
  * in a readable grid. That gap is the whole reason the app can feel worse than
  * the site it mirrors.
  */
@@ -32,7 +32,7 @@ export function padRow<T>(items: T[], columns: number): (T | null)[] {
   return [...items, ...new Array(columns - remainder).fill(null)];
 }
 
-// Scrolls is a portrait, full-bleed feed — the shape of a phone held upright.
+// Scrolls is a portrait, full-bleed feed - the shape of a phone held upright.
 // Stretched over a tablet it is mostly empty space around a tall video, so it
 // is pinned to a phone-width column and centred, which is exactly what the
 // site does with it on a desktop.

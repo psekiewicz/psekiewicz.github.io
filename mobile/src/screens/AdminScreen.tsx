@@ -45,7 +45,7 @@ export function AdminScreen({ navigation }: any) {
       setLoading(false);
       return;
     }
-    // RLS is what actually gates the data — this check only decides what to
+    // RLS is what actually gates the data - this check only decides what to
     // draw, and an admin-only query returns nothing for anyone else anyway.
     const ok = await isAdmin(user.id).catch(() => false);
     setAllowed(ok);
@@ -107,7 +107,7 @@ export function AdminScreen({ navigation }: any) {
   };
 
   const removeProject = (project: Project) => {
-    Alert.alert('Delete this entry?', `"${project.title}" — this cannot be undone.`, [
+    Alert.alert('Delete this entry?', `"${project.title}" - this cannot be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -139,7 +139,7 @@ export function AdminScreen({ navigation }: any) {
       setNotice(`Banned ${target.displayName}.`);
       load();
     } catch (e: any) {
-      setError(`${e.message} — bans need the admin-actions Edge Function deployed.`);
+      setError(`${e.message} - bans need the admin-actions Edge Function deployed.`);
     }
   };
 
@@ -149,7 +149,7 @@ export function AdminScreen({ navigation }: any) {
       setNotice(`Unbanned ${target.displayName}.`);
       load();
     } catch (e: any) {
-      setError(`${e.message} — bans need the admin-actions Edge Function deployed.`);
+      setError(`${e.message} - bans need the admin-actions Edge Function deployed.`);
     }
   };
 
@@ -167,7 +167,7 @@ export function AdminScreen({ navigation }: any) {
               await deleteAccount(target.id);
               setUsers((prev) => prev.filter((u) => u.id !== target.id));
             } catch (e: any) {
-              setError(`${e.message} — deletion needs the admin-actions Edge Function deployed.`);
+              setError(`${e.message} - deletion needs the admin-actions Edge Function deployed.`);
             }
           },
         },

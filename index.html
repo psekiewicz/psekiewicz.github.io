@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Showcase — Find things</title>
+  <title>Showcase - Find things</title>
   <meta name="description" content="A feed of random stuff." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
@@ -96,7 +96,7 @@
     <section class="section" style="padding-top:0;">
       <div class="container text-center">
         <p class="hint">
-          There's an Android app too — same account, same entries.
+          There's an Android app too - same account, same entries.
           <a href="/download/">Get it here →</a>
         </p>
       </div>
@@ -148,7 +148,7 @@
           <a class="btn btn-secondary" href="projects.html">Browse projects</a>
         `;
 
-      // Used to be a link to dashboard.html?new=1 — a page load, and a page
+      // Used to be a link to dashboard.html?new=1 - a page load, and a page
       // you didn't ask for, before you could type a title. The form opens
       // over the home page instead, the same way the phone's + tab does.
       const newBtn = document.getElementById('hero-new-project');
@@ -206,7 +206,7 @@
         const profiles = await getProfilesByIds(latest.map((p) => p.uid));
         container.innerHTML = latest.map((p) => projectCard(p, profiles)).join('');
 
-        // Painted in after the cards are already up — levels cost a few
+        // Painted in after the cards are already up - levels cost a few
         // extra queries and aren't worth delaying the homepage for.
         const levels = await getLevelsForUsers(latest.map((p) => p.uid)).catch(() => new Map());
         container.innerHTML = latest.map((p) => projectCard(p, profiles, levels)).join('');

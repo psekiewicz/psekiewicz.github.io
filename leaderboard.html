@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Leaderboard — Showcase</title>
+  <title>Leaderboard - Showcase</title>
   <meta name="description" content="The highest-levelled builders on Showcase." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Leaderboard — Showcase" />
+  <meta property="og:title" content="Leaderboard - Showcase" />
   <meta property="og:description" content="The highest-levelled builders on Showcase." />
   <meta property="og:url" content="https://psekiewicz.github.io/leaderboard.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Leaderboard — Showcase" />
+  <meta name="twitter:title" content="Leaderboard - Showcase" />
   <meta name="twitter:description" content="The highest-levelled builders on Showcase." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -58,7 +58,7 @@
         <div class="section-head">
           <div>
             <h1 style="margin-bottom:6px;">Leaderboard</h1>
-            <p style="margin:0;">Ranked by XP — 25 for each of your first 20 published entries, then from other people: 2 per person who opened one, 30 per like, 15 per comment, 60 per follower.</p>
+            <p style="margin:0;">Ranked by XP - 25 for each of your first 20 published entries, then from other people: 2 per person who opened one, 30 per like, 15 per comment, 60 per follower.</p>
           </div>
         </div>
         <div class="filter-bar">
@@ -105,7 +105,7 @@
       // Only the podium gets a medal class; everyone else shows a plain number.
       const medal = position <= 3 ? ` leaderboard-rank-${position}` : '';
       // The row is a link to the profile, so the follow control can't be a
-      // nested <a>/<button> inside it — it sits alongside as a sibling.
+      // nested <a>/<button> inside it - it sits alongside as a sibling.
       const follow =
         currentUser && !isMe
           ? `<button class="btn btn-sm ${followingIds.has(entry.profile.id) ? 'btn-secondary' : 'btn-primary'} leaderboard-follow"
@@ -208,7 +208,7 @@
         .sort((a, b) => b.level.xp - a.level.xp);
 
       if (ranked.length === 0) {
-        root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>XP comes from other people finding your work — publish something and share it.</p></div>`;
+        root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>XP comes from other people finding your work - publish something and share it.</p></div>`;
         return;
       }
 

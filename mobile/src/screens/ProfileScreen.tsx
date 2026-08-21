@@ -49,8 +49,8 @@ export function ProfileScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user, profile: myProfile, refreshProfile } = useAuth();
 
-  // Reached two ways: as the Profile tab (no params — your own) and pushed
-  // from a card (a userId param — somebody else's).
+  // Reached two ways: as the Profile tab (no params - your own) and pushed
+  // from a card (a userId param - somebody else's).
   const targetId = route.params?.userId || user?.id || null;
   const isSelf = !!user && targetId === user.id;
 
@@ -296,7 +296,7 @@ export function ProfileScreen({ route, navigation }: any) {
               </View>
               <ProgressBar progress={level.progress} />
               <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
-                XP comes from what other people did with your work — distinct viewers, likes,
+                XP comes from what other people did with your work - distinct viewers, likes,
                 comments received, followers.
               </Text>
             </Card>

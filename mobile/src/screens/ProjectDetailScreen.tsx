@@ -142,7 +142,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const share = () => {
     if (!project) return;
     Share.share({
-      message: `${project.title} — https://psekiewicz.github.io/project.html?id=${project.id}`,
+      message: `${project.title} - https://psekiewicz.github.io/project.html?id=${project.id}`,
     });
   };
 
@@ -392,7 +392,7 @@ function MediaBlock({ media, colors }: any) {
   return null;
 }
 
-// expo-video plays audio-only sources too — the same player with a short,
+// expo-video plays audio-only sources too - the same player with a short,
 // controls-only frame rather than a video surface.
 function DetailVideo({ url, audio }: { url: string; audio?: boolean }) {
   const { colors } = useTheme();

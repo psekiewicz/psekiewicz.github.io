@@ -6,7 +6,7 @@ import { icon } from './icons.js';
 // > but leaves quotes alone. Almost every use here is inside an attribute
 // (`alt="${escapeHtml(title)}"`, `src="${escapeHtml(url)}"`), so a value
 // containing a double quote closed the attribute and everything after it
-// was parsed as more attributes — a project title of
+// was parsed as more attributes - a project title of
 // `" onmouseover="…` was a stored XSS that ran for every visitor.
 export function escapeHtml(str) {
   return String(str ?? '')
@@ -17,7 +17,7 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Escaping doesn't help against `javascript:` in an href — the quotes are
+// Escaping doesn't help against `javascript:` in an href - the quotes are
 // fine, the scheme is the problem. Anything that isn't plain http(s) comes
 // back empty so the link is inert rather than executable.
 export function safeUrl(raw) {
@@ -56,7 +56,7 @@ export function avatarHtml(avatarUrl, name, sizeClass = '') {
 // Project type: drives the badge shown on cards, the icon next to it, and
 // the options in the dashboard's "type" select. `other` is the fallback
 // for anything unrecognized (including projects created before this field
-// existed, which default to it server-side too — see schema.sql).
+// existed, which default to it server-side too - see schema.sql).
 // What kind of thing this is. The old list described *projects* (website,
 // library, design); this one describes *media*, which is what people
 // actually come here to find. schema.sql migrates the old values onto

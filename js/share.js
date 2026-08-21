@@ -14,7 +14,7 @@ export async function shareLink({ url, title, text = '' }) {
       await navigator.share({ title, text, url: absolute });
       return 'shared';
     } catch (err) {
-      // AbortError means the user closed the sheet on purpose — treat that
+      // AbortError means the user closed the sheet on purpose - treat that
       // as done rather than falling through to copying behind their back.
       if (err && err.name === 'AbortError') return 'cancelled';
     }

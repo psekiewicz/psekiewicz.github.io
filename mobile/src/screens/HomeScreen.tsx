@@ -20,7 +20,7 @@ import { radius, space } from '../theme/tokens';
 export function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  // One column on a phone, more as the screen gets wider — the same rule the
+  // One column on a phone, more as the screen gets wider - the same rule the
   // site's project grid follows.
   const columns = useCardColumns();
   const { user } = useAuth();
@@ -43,7 +43,7 @@ export function HomeScreen({ navigation }: any) {
     try {
       // Search and the type filter run over what has been fetched, so the
       // pool is asked for explicitly rather than inheriting the feed's page
-      // size. Past this many entries the search stops seeing the older ones —
+      // size. Past this many entries the search stops seeing the older ones -
       // the honest fix is to search server-side, which is a bigger change than
       // this one.
       const rows = await getPublishedProjects({ limit: DISCOVER_POOL });
@@ -52,7 +52,7 @@ export function HomeScreen({ navigation }: any) {
       const ids = rows.map((p) => p.id);
       const uids = rows.map((p) => p.uid);
 
-      // Everything a page of cards needs, batched — the same round-trip
+      // Everything a page of cards needs, batched - the same round-trip
       // discipline the web build uses, for the same reason: one query per card
       // is what made the gallery the slowest thing on the site.
       const [profileMap, levelMap, likes, comments] = await Promise.all([

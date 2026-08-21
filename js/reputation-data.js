@@ -3,7 +3,7 @@ import { supabase } from './supabase-init.js';
 // Reputation is what other people did with your work: how many distinct
 // signed-in people opened your entries, liked them, commented on them, and
 // how many follow you. Everything the progression system runs on comes
-// from the `user_reputation` view (see schema.sql) — one row per account,
+// from the `user_reputation` view (see schema.sql) - one row per account,
 // aggregates only, publicly readable.
 //
 // The weights that turn those counts into XP and points live in the view,

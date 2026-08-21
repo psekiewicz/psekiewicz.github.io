@@ -24,7 +24,7 @@ export const lightColors = {
   mutedSoft: '#e9e5dc',
   navbarBg: 'rgba(242, 239, 233, 0.92)',
 
-  // Scrolls is full-bleed dark in both themes — a feed of media reads better
+  // Scrolls is full-bleed dark in both themes - a feed of media reads better
   // on black, and the web build does the same.
   scrim: 'rgba(0, 0, 0, 0.55)',
 };

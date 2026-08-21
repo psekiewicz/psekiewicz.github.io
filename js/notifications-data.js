@@ -14,7 +14,7 @@ function toPlainNotification(row) {
 }
 
 // RLS restricts this to the signed-in user's own rows, so there's no need
-// to filter by recipient here — and no way to read anyone else's.
+// to filter by recipient here - and no way to read anyone else's.
 export async function getNotifications(limit = 20) {
   const { data, error } = await supabase
     .from(TABLE)

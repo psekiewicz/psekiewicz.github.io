@@ -2,7 +2,7 @@
  * Lets the app receive Android's "Share" from anywhere else on the phone.
  *
  * The whole point of an entry here is a link, and until now the only way to
- * get one in was to find it in another app, copy it, come back, and paste —
+ * get one in was to find it in another app, copy it, come back, and paste -
  * which is exactly the errand a phone should be saving you. With this, Showcase
  * appears in the share sheet of YouTube, a browser, Spotify or anything else,
  * and the editor opens with the link already filled in.
@@ -12,7 +12,7 @@
  * add a native module and a bridge to carry that across, this rewrites the
  * incoming share into a `showcase://share?...` VIEW intent before React Native
  * looks at it. From there it is an ordinary deep link, which React Navigation's
- * own linking config already knows how to route — no new JavaScript API, and
+ * own linking config already knows how to route - no new JavaScript API, and
  * one less moving part to keep working.
  */
 
@@ -31,8 +31,8 @@ const METHOD = `
 
     val builder = android.net.Uri.Builder().scheme("showcase").authority("share")
 
-    // Shared text is rarely just a URL — apps tend to send "Look at this
-    // <title> https://..." — so the link is picked out of it and whatever is
+    // Shared text is rarely just a URL - apps tend to send "Look at this
+    // <title> https://..." - so the link is picked out of it and whatever is
     // left over becomes a starting title instead of being thrown away.
     val matcher = android.util.Patterns.WEB_URL.matcher(shared)
     val url = if (matcher.find()) shared.substring(matcher.start(), matcher.end()) else null

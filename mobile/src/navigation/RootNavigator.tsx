@@ -33,7 +33,7 @@ function Tabs() {
   const { colors } = useTheme();
   // The app draws edge to edge, so the bottom of the window sits *behind* the
   // system navigation bar. React Navigation normally pads the tab bar clear of
-  // it on its own — but only while it owns the height, and setting height and
+  // it on its own - but only while it owns the height, and setting height and
   // paddingBottom below takes that over. Without adding the inset back, the
   // whole bar renders underneath the system one: invisible, untappable, and
   // with it every screen except this one.

@@ -13,7 +13,7 @@ function friendlyError(err: any) {
 }
 
 // Returns { user, session }. `session` is null when the project has email
-// confirmation enabled (Supabase's default) — the caller must handle that by
+// confirmation enabled (Supabase's default) - the caller must handle that by
 // prompting the user to check their inbox rather than assuming they're in.
 export async function registerUser(email: string, password: string, displayName: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -36,7 +36,7 @@ export async function logoutUser() {
 }
 
 // The web build sends people back to login.html. Here the reset link opens the
-// site in a browser — the app registers the `showcase://` scheme but Supabase's
+// site in a browser - the app registers the `showcase://` scheme but Supabase's
 // recovery flow is a web page, and pointing it at the deployed site is both
 // simpler and what a user tapping a link in their mail app expects.
 export async function resetPassword(email: string) {
@@ -66,7 +66,7 @@ export async function changePassword(newPassword: string) {
 }
 
 // Changing a password should require proving you know the current one. There's
-// no Supabase API for "verify this password", so this re-signs in with it —
+// no Supabase API for "verify this password", so this re-signs in with it -
 // which fails loudly if it's wrong and is otherwise a no-op on the session.
 export async function verifyPassword(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });

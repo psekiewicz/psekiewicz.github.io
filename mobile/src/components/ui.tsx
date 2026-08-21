@@ -287,7 +287,7 @@ export function Avatar({ url, name, size = 40, ring }: any) {
 
   const ring_ = { padding: ringWidth, borderRadius: (size + ringWidth * 2) / 2 };
 
-  // Two borders — rainbow and conic — are defined as gradients. Painting them
+  // Two borders - rainbow and conic - are defined as gradients. Painting them
   // with the flat `color` threw that away, which made the two showiest things
   // in the shop the two that looked like nothing in particular.
   if (cosmetic.gradient) {

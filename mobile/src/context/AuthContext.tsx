@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Supabase emits INITIAL_SESSION on subscribe, so this fires once with
-    // whatever was persisted and again on every change — no separate
+    // whatever was persisted and again on every change - no separate
     // getSession() call needed.
     const {
       data: { subscription },
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         // A profile row that hasn't been created yet (or an offline start)
-        // shouldn't sign anyone out — the rest of the app handles a null
+        // shouldn't sign anyone out - the rest of the app handles a null
         // profile by falling back to auth metadata.
       });
     return () => {

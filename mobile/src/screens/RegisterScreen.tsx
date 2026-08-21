@@ -28,7 +28,7 @@ export function RegisterScreen({ navigation }: any) {
     try {
       const { session } = await registerUser(email.trim(), password, displayName.trim());
       if (session) {
-        // Signed straight in — the auth listener takes it from here.
+        // Signed straight in - the auth listener takes it from here.
         navigation.goBack();
       } else {
         // Email confirmation is on (Supabase's default), so there is no

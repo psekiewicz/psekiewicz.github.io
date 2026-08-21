@@ -27,12 +27,12 @@ export async function reportProject(projectId, reporterId, reason, note = '') {
   }
   // Note for later: do not chain .select() onto this insert. Reports have
   // no select policy for ordinary users on purpose, and Postgres applies
-  // SELECT policies to a RETURNING clause — asking for the row back turns
+  // SELECT policies to a RETURNING clause - asking for the row back turns
   // a working insert into "new row violates row-level security policy".
   return true;
 }
 
-// One row per reported entry with its report count — not one row per
+// One row per reported entry with its report count - not one row per
 // report, which would make working the queue mean clicking through five
 // rows about the same thing. Admin-only, enforced inside the function.
 export async function adminListReports() {

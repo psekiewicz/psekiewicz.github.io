@@ -5,7 +5,7 @@ import { levelFromStats } from './levels.js';
 import { showAchievementToast, showLevelUpToast, showXpToast, showEarningsToast } from './toast.js';
 
 // XP and levels are derived rather than stored, so there is nothing on the
-// server that says "you just levelled up" — the only way to notice is to
+// server that says "you just levelled up" - the only way to notice is to
 // compare against what this browser last saw. That's what the snapshot
 // below is for. It's per-device by nature; the silent-seed rule in
 // runCheck() is what stops a first visit on a new phone from
@@ -13,7 +13,7 @@ import { showAchievementToast, showLevelUpToast, showXpToast, showEarningsToast 
 const STORAGE_PREFIX = 'showcase:progress:';
 
 // Fired after every check so the navbar can refresh the level chip without
-// re-querying — carries { stats, records }.
+// re-querying - carries { stats, records }.
 export const PROGRESS_EVENT = 'showcase:progress';
 
 function readSnapshot(userId) {
@@ -21,7 +21,7 @@ function readSnapshot(userId) {
     const raw = localStorage.getItem(STORAGE_PREFIX + userId);
     return raw ? JSON.parse(raw) : null;
   } catch {
-    // Private mode / storage disabled — behave as if nothing was ever seen,
+    // Private mode / storage disabled - behave as if nothing was ever seen,
     // which just means no toasts rather than a broken page.
     return null;
   }
@@ -31,7 +31,7 @@ function writeSnapshot(userId, snapshot) {
   try {
     localStorage.setItem(STORAGE_PREFIX + userId, JSON.stringify(snapshot));
   } catch {
-    // Nothing to do — worst case the next check re-seeds silently.
+    // Nothing to do - worst case the next check re-seeds silently.
   }
 }
 
@@ -42,7 +42,7 @@ async function runCheck(userId, stats, records) {
   if (!userId || !stats) return;
 
   // Recording lives here, not just on the profile page, so achievements
-  // become permanent as soon as they're earned — someone who never opens
+  // become permanent as soon as they're earned - someone who never opens
   // their own profile would otherwise keep losing them when the project
   // behind them is deleted.
   const justEarned = unrecordedAchievementIds(stats, records.unlocked);
@@ -66,7 +66,7 @@ async function runCheck(userId, stats, records) {
   document.dispatchEvent(new CustomEvent(PROGRESS_EVENT, { detail: { stats, records } }));
 
   // First time this browser has seen this account: seed and stay quiet.
-  // The payout above still happened — it's server-side and permanent; only
+  // The payout above still happened - it's server-side and permanent; only
   // the announcement is suppressed, so a fresh device doesn't open with a
   // pile of toasts for things you already knew about.
   if (!previous) return;
@@ -81,7 +81,7 @@ async function runCheck(userId, stats, records) {
       if (achievement) showAchievementToast(achievement);
     });
 
-  // A level-up already implies XP was gained, so only one of these fires —
+  // A level-up already implies XP was gained, so only one of these fires -
   // two toasts saying the same thing would just be noise.
   if (level.level > (previous.level || 1)) {
     showLevelUpToast(level.level);
@@ -91,8 +91,8 @@ async function runCheck(userId, stats, records) {
 }
 
 // Re-checks progress from scratch. Call this after anything that can change
-// your own XP — publishing a project, posting a comment, claiming an
-// achievement — otherwise the check only ever happens on page load and the
+// your own XP - publishing a project, posting a comment, claiming an
+// achievement - otherwise the check only ever happens on page load and the
 // reward doesn't show up until you navigate somewhere else.
 export async function refreshProgress() {
   if (!currentUserId || inFlight) return;
@@ -104,7 +104,7 @@ export async function refreshProgress() {
     ]);
     await runCheck(currentUserId, stats, records);
   } catch {
-    // A failed refresh is not worth surfacing — the next one will catch up.
+    // A failed refresh is not worth surfacing - the next one will catch up.
   } finally {
     inFlight = false;
   }
@@ -117,8 +117,8 @@ export async function watchProgress(userId, stats, records) {
 
   if (!listenersBound) {
     listenersBound = true;
-    // Covers rewards earned while you were elsewhere — someone liking your
-    // project, or a new follower — without polling for them.
+    // Covers rewards earned while you were elsewhere - someone liking your
+    // project, or a new follower - without polling for them.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') refreshProgress();
     });

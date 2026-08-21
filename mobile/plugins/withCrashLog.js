@@ -2,14 +2,14 @@
  * Writes a crash report to the device's Downloads folder.
  *
  * This exists because the app dies during native startup, before any
- * JavaScript runs — so the error boundary in src/ never gets a chance, and the
+ * JavaScript runs - so the error boundary in src/ never gets a chance, and the
  * only witness is Android's own log, which needs adb, which needs Developer
  * options, which a managed device may not offer at all. A file in Downloads is
  * something anyone can open and read without a cable or a computer.
  *
  * The handler is installed at the very top of onCreate, ahead of
- * super.onCreate(), because loadReactNative() — where React Native pulls in its
- * native libraries — runs inside it and is the most likely place to fail.
+ * super.onCreate(), because loadReactNative() - where React Native pulls in its
+ * native libraries - runs inside it and is the most likely place to fail.
  *
  * This catches Java and Kotlin throwables, which is what most React Native
  * startup failures are (UnsatisfiedLinkError and friends). A pure native

@@ -27,7 +27,7 @@ export function initials(name: string) {
     .join('');
 }
 
-// There is no innerHTML here, so escaping isn't a concern — but a scheme check
+// There is no innerHTML here, so escaping isn't a concern - but a scheme check
 // still is. Anything that isn't plain http(s) comes back empty, so a link is
 // inert rather than handed to Linking.openURL, which will happily fire an
 // intent:// or a file:// URL at the OS.

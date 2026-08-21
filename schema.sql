@@ -1,7 +1,7 @@
 -- Run this in your Supabase project's SQL Editor
 -- (Dashboard → SQL Editor → New query → paste → Run).
 --
--- Safe to run more than once — every statement is idempotent
+-- Safe to run more than once - every statement is idempotent
 -- (if not exists / or replace / drop-then-create), so if you already ran
 -- an earlier version of this file, just re-run the whole thing to pick up
 -- new tables/policies.
@@ -9,7 +9,7 @@
 -- This creates the `projects`, `profiles`, and `follows` tables and the
 -- Row Level Security (RLS) policies that are the actual access control
 -- for this site: GitHub Pages only serves static files, so it's
--- Postgres/Supabase — not the browser — that enforces "only the owner can
+-- Postgres/Supabase - not the browser - that enforces "only the owner can
 -- edit/delete their project", "drafts are only visible to their owner",
 -- and "you can only follow/unfollow as yourself".
 
@@ -29,7 +29,7 @@ create table if not exists public.projects (
   updated_at timestamptz not null default now()
 );
 
--- What kind of thing this is — drives the badge/icon on cards and the
+-- What kind of thing this is - drives the badge/icon on cards and the
 -- filter dropdown. Kept as a plain checked text column rather than a
 -- Postgres enum so changing the list is a constraint swap, not a type
 -- migration, which is exactly what the move below needs.
@@ -45,7 +45,7 @@ alter table public.projects add column if not exists media_url text not null def
 --
 -- Order matters and is not obvious: the old constraint has to go FIRST.
 -- Rewriting the values while it is still in place makes the UPDATE itself
--- illegal — 'app' and 'image' aren't in the old list, so the very
+-- illegal - 'app' and 'image' aren't in the old list, so the very
 -- statement doing the migration trips the check it is migrating away from.
 alter table public.projects drop constraint if exists projects_project_type_check;
 
@@ -86,12 +86,12 @@ create trigger projects_set_updated_at
 
 -- Same idea for projects. Two things a client must not set:
 --
--- views_count — owners can legitimately update their own row, so nothing
+-- views_count - owners can legitimately update their own row, so nothing
 -- stopped them writing views_count directly, and that number feeds XP,
 -- level, leaderboard position and the Scrolls ranking. It is only ever
 -- meant to move through log_project_view().
 --
--- author_name — a denormalised copy of the owner's display name. It was
+-- author_name - a denormalised copy of the owner's display name. It was
 -- whatever the client sent, so a project could be published under someone
 -- else's name. It is now always derived from the owning profile.
 create or replace function public.guard_project_client_writes()
@@ -155,7 +155,7 @@ alter table public.projects add column if not exists scroll_image_url text not n
 
 
 -- ============================================================
--- Profiles — one row per account, holds the public-facing bits
+-- Profiles - one row per account, holds the public-facing bits
 -- (display name, bio, avatar) that a client is allowed to read
 -- for *other* users. `auth.users` itself is never queryable from
 -- the browser, so profile pages and follower lists read from here.
@@ -171,7 +171,7 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
--- Profiles are public — anyone can view anyone's profile page.
+-- Profiles are public - anyone can view anyone's profile page.
 drop policy if exists "Profiles are publicly readable" on public.profiles;
 create policy "Profiles are publicly readable"
   on public.profiles for select
@@ -209,7 +209,7 @@ create trigger on_auth_user_created
 
 -- Backfill: if you're adding profiles to a project that already had
 -- users/projects, this creates a profile row for every existing account
--- (harmless to re-run — ON CONFLICT skips rows that already have one).
+-- (harmless to re-run - ON CONFLICT skips rows that already have one).
 insert into public.profiles (id, display_name)
 select u.id, coalesce(u.raw_user_meta_data ->> 'display_name', split_part(u.email, '@', 1))
 from auth.users u
@@ -217,7 +217,7 @@ on conflict (id) do nothing;
 
 
 -- ============================================================
--- Follows — who follows whom. A simple join table; "follower count"
+-- Follows - who follows whom. A simple join table; "follower count"
 -- and "following count" are just row counts, computed client-side.
 -- ============================================================
 
@@ -253,10 +253,10 @@ create policy "Users can unfollow as themselves"
 
 
 -- ============================================================
--- Admin role — a flag on profiles that grants moderation powers
+-- Admin role - a flag on profiles that grants moderation powers
 -- (see admin.html): read every project regardless of owner/published
 -- state, and unpublish/delete any project. There is no in-app way to
--- grant this — see the very bottom of this file for how to make an
+-- grant this - see the very bottom of this file for how to make an
 -- account admin. That's deliberate: promoting someone to admin is not
 -- something the client-side app should ever be able to do to itself.
 -- ============================================================
@@ -268,17 +268,17 @@ alter table public.profiles add column if not exists is_admin boolean not null d
 -- any change to is_admin unless the request is already coming from an
 -- admin. Without this, anyone could call
 -- supabase.from('profiles').update({ is_admin: true }) on themselves from
--- the browser console — RLS alone only checks *which row* you may touch,
+-- the browser console - RLS alone only checks *which row* you may touch,
 -- not *which columns*.
 create or replace function public.prevent_self_admin_promotion()
 returns trigger as $$
 begin
   if new.is_admin is distinct from old.is_admin then
     -- auth.uid() is NULL when this runs outside PostgREST (e.g. you,
-    -- running SQL directly in the Supabase SQL Editor) — that path is
+    -- running SQL directly in the Supabase SQL Editor) - that path is
     -- already gated by owning the Supabase project, so let it through.
     -- Only block when there's a real (non-admin) end-user session behind
-    -- the request — i.e. someone hitting this via the anon-key client.
+    -- the request - i.e. someone hitting this via the anon-key client.
     if auth.uid() is not null
        and not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true) then
       new.is_admin = old.is_admin;
@@ -295,7 +295,7 @@ create trigger profiles_guard_is_admin
 
 -- Admins can see every project, including other users' drafts (needed for
 -- the admin panel to list everything). Combines with the owner/published
--- policy above via OR — it only ever adds access, never removes any.
+-- policy above via OR - it only ever adds access, never removes any.
 drop policy if exists "Admins can read all projects" on public.projects;
 create policy "Admins can read all projects"
   on public.projects for select
@@ -314,11 +314,11 @@ create policy "Admins can delete any project"
   using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
 
 -- Lists every account for the admin panel's Users tab, including each
--- user's email and ban status — neither of which live in `profiles`
+-- user's email and ban status - neither of which live in `profiles`
 -- (email is never exposed there, and bans are tracked natively by
 -- Supabase Auth on auth.users, not by this app). `security definer`
 -- lets this function read auth.users despite normal client roles having
--- no access to it; the check below is what keeps that safe — only
+-- no access to it; the check below is what keeps that safe - only
 -- callers who are already admins get any rows back.
 create or replace function public.admin_list_users()
 returns table (
@@ -351,7 +351,7 @@ grant execute on function public.admin_list_users() to authenticated;
 
 
 -- ============================================================
--- Comments — one row per comment on a project. Visibility piggybacks on
+-- Comments - one row per comment on a project. Visibility piggybacks on
 -- the `projects` policies above: "select 1 from projects where id = ..."
 -- only finds a row at all if the *current caller* is allowed to see that
 -- project (published, or its owner, or an admin), because that lookup is
@@ -441,7 +441,7 @@ create policy "Comment author, project owner, or admin can delete"
   );
 
 -- ============================================================
--- Likes — one row per (project, user) like. Public read (so like counts
+-- Likes - one row per (project, user) like. Public read (so like counts
 -- show even to signed-out visitors), but you can only ever like/unlike as
 -- yourself, and only on a project you can actually see.
 -- ============================================================
@@ -484,11 +484,11 @@ create policy "Users can remove their own like"
 
 
 -- ============================================================
--- Views — a public running counter per project (projects.views_count),
+-- Views - a public running counter per project (projects.views_count),
 -- plus a private log (project_views) that only the project's owner or an
 -- admin can read, used to draw the "views over time" chart on the
 -- dashboard. Both are only ever written through log_project_view() below
--- (security definer), never by a direct client insert/update — that's
+-- (security definer), never by a direct client insert/update - that's
 -- what lets a signed-out visitor's page view count at all, without
 -- opening up public write access to the projects table itself.
 -- ============================================================
@@ -503,7 +503,7 @@ create table if not exists public.project_views (
 
 -- Who viewed, so a view can be counted once per person instead of once per
 -- page load. Nullable because signed-out visitors are still counted in the
--- public number — they just can't be told apart, which is exactly why they
+-- public number - they just can't be told apart, which is exactly why they
 -- earn nothing (see user_reputation below).
 alter table public.project_views add column if not exists viewer_id uuid references auth.users (id) on delete set null;
 
@@ -522,7 +522,7 @@ drop policy if exists "Project owner or admin can read the view log" on public.p
 -- Returns whether the view was actually counted, so the page can move its
 -- counter only when the number behind it moved. It used to return void and
 -- the UI incremented optimistically, which was fine when every call
--- counted — now that own views and rapid re-views don't, that would show
+-- counted - now that own views and rapid re-views don't, that would show
 -- the owner a number nobody else can see. The drop is needed because a
 -- return type can't be changed by `create or replace`.
 drop function if exists public.log_project_view(uuid);
@@ -566,7 +566,7 @@ $$;
 
 grant execute on function public.log_project_view(uuid) to anon, authenticated;
 
--- Timestamps only, for the dashboard chart — never viewer ids, and only
+-- Timestamps only, for the dashboard chart - never viewer ids, and only
 -- ever for projects the caller owns.
 create or replace function public.my_view_timestamps(p_days integer default 14)
 returns setof timestamptz
@@ -584,16 +584,16 @@ $$;
 grant execute on function public.my_view_timestamps(integer) to authenticated;
 
 -- ============================================================
--- Points & Shop — achievements (see js/achievements.js) pay out points
+-- Points & Shop - achievements (see js/achievements.js) pay out points
 -- once each, server-verified so the payout can't be forged from the
 -- browser console; points are spendable on cosmetic profile items
--- (backgrounds, avatar borders, nickname effects — see js/shop-items.js).
+-- (backgrounds, avatar borders, nickname effects - see js/shop-items.js).
 -- ============================================================
 
 alter table public.profiles add column if not exists points integer not null default 0;
 -- How much of the earnings figure has already been paid out. Declared here
 -- rather than next to collect_earnings() at the bottom of the file so the
--- guard below can pin it — it is every bit as forgeable as points itself:
+-- guard below can pin it - it is every bit as forgeable as points itself:
 -- setting it negative would make the next collect pay the difference.
 alter table public.profiles add column if not exists points_earned_total integer not null default 0;
 alter table public.profiles add column if not exists equipped_bg text not null default 'none';
@@ -636,7 +636,7 @@ create trigger profiles_guard_client_writes
 -- earned one doesn't take the badge away again.
 --
 -- `claimed_at` is NULL for "earned but the reward hasn't been collected
--- yet" and set once claim_achievement() pays out — that split is what lets
+-- yet" and set once claim_achievement() pays out - that split is what lets
 -- a row exist from the moment of unlocking without the payout logic
 -- mistaking it for an already-paid claim.
 create table if not exists public.unlocked_achievements (
@@ -696,7 +696,7 @@ create policy "Owned items are publicly readable"
 -- Achievement definitions live in a table, not hardcoded in a function, so
 -- adding one later (or tweaking a threshold/reward) is a single small
 -- INSERT/UPDATE instead of a CREATE OR REPLACE FUNCTION covering all of
--- them at once — much easier to paste into the SQL Editor incrementally.
+-- them at once - much easier to paste into the SQL Editor incrementally.
 -- `metric` picks which measurement achievement_metric() below computes;
 -- several achievements share the same metric at different thresholds
 -- (e.g. 'total_likes' backs both well-liked and crowd-favorite).
@@ -831,7 +831,7 @@ begin
   );
 
   -- An already-recorded achievement stays claimable even if the activity
-  -- behind it is gone (the project was deleted, likes were withdrawn) —
+  -- behind it is gone (the project was deleted, likes were withdrawn) -
   -- it was verified server-side when it was recorded, and achievements are
   -- permanent. Only a first-time claim has to prove eligibility now.
   if not v_recorded and public.achievement_metric(v_uid, v_def.metric) < v_def.threshold then
@@ -845,7 +845,7 @@ begin
 
   -- FOUND is true only when a row was actually inserted or updated above.
   -- The `where claimed_at is null` guard means a second claim matches
-  -- nothing, so the reward can never be paid twice — while an unlock that
+  -- nothing, so the reward can never be paid twice - while an unlock that
   -- was merely recorded (claimed_at NULL) still pays out the first time.
   if found then
     update public.profiles set points = points + v_def.reward where id = v_uid;
@@ -1012,7 +1012,7 @@ on conflict (id) do update set price = excluded.price;
 -- Sets: a background, a border and a nickname effect drawn to go
 -- together, sold for less than the three separately.
 --
--- A set owns no cosmetics of its own — it is a list of item ids — so
+-- A set owns no cosmetics of its own - it is a list of item ids - so
 -- buying one is the same as buying its members, and an item can belong
 -- to more than one set. Both tables are publicly readable and edited
 -- only by hand here, exactly like shop_item_defs.
@@ -1084,7 +1084,7 @@ on conflict (bundle_id, item_id) do nothing;
 -- set's share of the members still missing, worked out from those
 -- members' individual list prices. Without that, buying the Winter set
 -- after already owning Ice would charge full price for two items, which
--- makes a set a worse deal than buying the rest of it piece by piece —
+-- makes a set a worse deal than buying the rest of it piece by piece -
 -- and a shop that punishes people for having shopped there before is a
 -- bug, not a pricing strategy.
 --
@@ -1167,7 +1167,7 @@ grant execute on function public.purchase_bundle(text) to authenticated;
 -- _name_effect, so without this a user could equip an item they never
 -- bought by just updating their profile row directly. Silently reverts
 -- to the previous value instead of erroring, since this only ever fires
--- on a forged direct update — the normal equip flow (js/shop-data.js)
+-- on a forged direct update - the normal equip flow (js/shop-data.js)
 -- never sets an unowned item id in the first place.
 create or replace function public.prevent_unowned_equip()
 returns trigger as $$
@@ -1197,7 +1197,7 @@ create trigger profiles_guard_equipped_items
   for each row execute function public.prevent_unowned_equip();
 
 -- ============================================================
--- Notifications — "someone followed you / liked or commented on your
+-- Notifications - "someone followed you / liked or commented on your
 -- project". Written entirely by triggers rather than by the client: the
 -- person who causes a notification is never the person who receives it,
 -- so there's no way to express "you may insert this row" as an RLS policy
@@ -1237,7 +1237,7 @@ create policy "Users can delete their own notifications"
   on public.notifications for delete
   using (auth.uid() = user_id);
 
--- No insert policy at all — see the note above; the triggers below are the
+-- No insert policy at all - see the note above; the triggers below are the
 -- only writers.
 
 -- Skips when the same person already has an unread notification of the
@@ -1343,7 +1343,7 @@ create trigger comments_notify
 -- discovery app should reward.
 --
 -- Both currencies now come from one place: what *other people* did with
--- your work. Nothing here counts an action you can perform on yourself —
+-- your work. Nothing here counts an action you can perform on yourself -
 -- self-likes are rejected by policy, self-views are dropped by
 -- log_project_view(), and your own comments on your own entry are
 -- excluded below.
@@ -1357,16 +1357,16 @@ create trigger comments_notify
 --             30/like, 15/comment received, 60/follower
 --   points  = 1/unique viewer, 5/like, 3/comment received, 10/follower
 --
--- Publishing pays XP again — putting something out is the thing this site
+-- Publishing pays XP again - putting something out is the thing this site
 -- is for, and a level of 0 until a stranger turns up was a cold start
 -- nobody deserved. It is deliberately worth less than a single like, and
 -- it stops counting after the twentieth entry: that keeps it a reward for
 -- posting rather than a reason to post twenty times. Points are untouched
--- and still come only from reach — currency stays something other people
+-- and still come only from reach - currency stays something other people
 -- decide you've earned.
 --
 -- Aggregates only, and only over published entries, so this is safe to
--- expose publicly — it's what draws the leaderboard and every level chip.
+-- expose publicly - it's what draws the leaderboard and every level chip.
 -- ============================================================
 
 create or replace view public.user_reputation as
@@ -1472,13 +1472,13 @@ grant execute on function public.collect_earnings() to authenticated;
 
 
 -- ============================================================
--- Saves — a private "come back to this" list.
+-- Saves - a private "come back to this" list.
 --
 -- A discovery app's whole job is putting something in front of you that
 -- you weren't looking for, and until now there was nowhere to put it if
 -- you couldn't watch it right then. Unlike likes, this is nobody else's
 -- business: there is no public read policy, no count shown anywhere, and
--- it earns the author nothing — otherwise it becomes another number to
+-- it earns the author nothing - otherwise it becomes another number to
 -- farm rather than a shelf.
 -- ============================================================
 
@@ -1512,19 +1512,19 @@ create policy "Users can remove their own saves"
   using (auth.uid() = user_id);
 
 -- Supabase grants these to new tables in `public` by default, so this is
--- belt and braces — but a database where that default isn't in place
+-- belt and braces - but a database where that default isn't in place
 -- fails with "permission denied for table saves" and no hint as to why,
 -- and the policies above are what actually restrict the rows.
 grant select, insert, delete on public.saves to authenticated;
 
 
 -- ============================================================
--- Reports — the missing half of moderation.
+-- Reports - the missing half of moderation.
 --
 -- admin.html could already unpublish and delete, but nothing told an
 -- admin where to look: a broken link or a stolen upload sat there until
 -- somebody happened to scroll past it. Reports are write-only for
--- ordinary users — you can file one and that's all, you can't read
+-- ordinary users - you can file one and that's all, you can't read
 -- anyone's (including your own, which would let you check whether a
 -- report landed and re-file until it did).
 -- ============================================================
@@ -1568,7 +1568,7 @@ create policy "Admins can update reports"
   with check (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
 
 -- Table-level access; the policies above decide the rows. select/update
--- are granted to every signed-in account on purpose — without a matching
+-- are granted to every signed-in account on purpose - without a matching
 -- policy they return nothing, which is the point.
 grant select, insert, update on public.reports to authenticated;
 
@@ -1651,7 +1651,7 @@ grant execute on function public.admin_close_reports(uuid, text) to authenticate
 --
 -- Everything below this line is cheap to do and expensive to receive: a
 -- script can post a thousand comments or file a thousand reports as fast
--- as the network allows, and RLS has nothing to say about volume — it
+-- as the network allows, and RLS has nothing to say about volume - it
 -- only ever answers "may this row exist", never "how many of these in the
 -- last hour". These are BEFORE INSERT triggers rather than anything in
 -- the client, because the client is not where the attacker is.
@@ -1663,7 +1663,7 @@ grant execute on function public.admin_close_reports(uuid, text) to authenticate
 -- Counting has to bypass RLS: `reports` has no select policy for ordinary
 -- users at all, so a count run as the caller would come back 0 and the
 -- limit would never fire. This is `security definer` for that reason and
--- nothing else — the table/column pair is checked against a fixed list
+-- nothing else - the table/column pair is checked against a fixed list
 -- and the actor is always auth.uid(), so calling it directly tells you
 -- only how many of your own rows you just wrote.
 create or replace function public.rate_limit_count(p_table text, p_column text, p_window interval)
@@ -1725,7 +1725,7 @@ begin
   v_count := public.rate_limit_count(tg_table_name, tg_argv[2], tg_argv[1]::interval);
 
   if v_count >= tg_argv[0]::integer then
-    raise exception 'Slow down — too many in a short time. Try again later.';
+    raise exception 'Slow down - too many in a short time. Try again later.';
   end if;
 
   return new;
@@ -1760,7 +1760,7 @@ create trigger reports_rate_limit
 
 -- ---------------------------------------------------------------
 -- To make an account admin, run this separately in the SQL Editor
--- (this does NOT run automatically as part of this file — uncomment
+-- (this does NOT run automatically as part of this file - uncomment
 -- and edit the email first):
 --
 -- update public.profiles set is_admin = true

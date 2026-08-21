@@ -32,7 +32,7 @@ function sortByCreatedDesc(projects) {
 // published, and asking for them stops working long before it gets slow.
 // Unbounded, this had three faults that only appear once a site has grown:
 // PostgREST caps a response at 1000 rows, and with no ORDER BY it is an
-// arbitrary thousand — so the newest entry can simply be absent; callers then
+// arbitrary thousand - so the newest entry can simply be absent; callers then
 // put every returned id into `.in(...)`, a query string that a few hundred ids
 // is enough to push past the URL length limit, so the like and comment counts
 // fail and the ranking silently loses its entire signal; and the payload
@@ -70,7 +70,7 @@ export async function getPublishedProjectsByUser(uid) {
 }
 
 // Every project regardless of owner or published state. Only returns
-// anything for admins — RLS enforces that, this function doesn't check.
+// anything for admins - RLS enforces that, this function doesn't check.
 export async function getAllProjects() {
   const { data, error } = await supabase.from(TABLE).select('*');
   if (error) throw new Error(error.message);
@@ -123,7 +123,7 @@ async function applyUpdate(id, patch) {
   return toPlainProject(data[0]);
 }
 
-// Titles for a set of project ids in one round trip — the notifications
+// Titles for a set of project ids in one round trip - the notifications
 // panel needs "liked <title>" for a handful of unrelated projects.
 // Returns a Map<projectId, title>.
 export async function getProjectTitles(projectIds) {

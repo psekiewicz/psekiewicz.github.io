@@ -14,7 +14,7 @@ type State = { error: unknown };
  * into a screen with the message on it is the difference between a bug that
  * can be fixed and one that can only be guessed at.
  *
- * Must be a class — there is still no hook equivalent of componentDidCatch.
+ * Must be a class - there is still no hook equivalent of componentDidCatch.
  */
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };

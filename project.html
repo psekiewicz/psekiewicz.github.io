@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title id="page-title">Project — Showcase</title>
+  <title id="page-title">Project - Showcase</title>
   <meta name="description" content="A project published on Showcase." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Project — Showcase" />
+  <meta property="og:title" content="Project - Showcase" />
   <meta property="og:description" content="A project published on Showcase." />
   <meta property="og:url" content="https://psekiewicz.github.io/project.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Project — Showcase" />
+  <meta name="twitter:title" content="Project - Showcase" />
   <meta name="twitter:description" content="A project published on Showcase." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -146,7 +146,7 @@
       saveState.wired = true;
       btn.addEventListener('click', async () => {
         const next = !saveState.saved;
-        // Painted before the round trip and rolled back if it fails —
+        // Painted before the round trip and rolled back if it fails -
         // a bookmark that lags behind the tap feels broken.
         saveState.saved = next;
         paintSaveButton();
@@ -179,7 +179,7 @@
           return;
         }
         if (currentProject && currentProject.uid === currentUser.id) {
-          alert("This is your own entry — edit or delete it instead.");
+          alert("This is your own entry - edit or delete it instead.");
           return;
         }
         openReportModal(projectId);
@@ -214,7 +214,7 @@
             document.getElementById('report-note').value
           );
           body.innerHTML = filed
-            ? '<p>Thanks — an admin will take a look.</p>'
+            ? '<p>Thanks - an admin will take a look.</p>'
             : '<p>You already reported this one. An admin will take a look.</p>';
         } catch (err) {
           alert(err.message);
@@ -224,7 +224,7 @@
     }
 
     function render(project, authorProfile) {
-      document.getElementById('page-title').textContent = `${project.title} — Showcase`;
+      document.getElementById('page-title').textContent = `${project.title} - Showcase`;
 
       const thumb = project.imageUrl
         ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
@@ -236,7 +236,7 @@
       if (safeUrl(project.liveUrl)) links.push(`<a class="btn btn-primary" href="${escapeHtml(safeUrl(project.liveUrl))}" target="_blank" rel="noopener noreferrer">Visit live site ↗</a>`);
       if (safeUrl(project.repoUrl)) links.push(`<a class="btn btn-secondary" href="${escapeHtml(safeUrl(project.repoUrl))}" target="_blank" rel="noopener noreferrer">View source ↗</a>`);
 
-      const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft — only visible to you</span>';
+      const draftBadge = project.published ? '' : '<span class="status-pill draft" style="margin-left:10px;">Draft - only visible to you</span>';
 
       const isOwner = Boolean(currentUser && currentUser.id === project.uid);
       const editButton = isOwner
@@ -405,7 +405,7 @@
               return commentItemHtml(c, profiles.get(c.userId), canDelete, levels.get(c.userId));
             })
             .join('')
-        : '<p class="hint">No comments yet — be the first to say something.</p>';
+        : '<p class="hint">No comments yet - be the first to say something.</p>';
 
       const form = currentUser
         ? `
@@ -493,7 +493,7 @@
               })
               .catch(() => {});
 
-            // Only move the counter if the server actually counted it —
+            // Only move the counter if the server actually counted it -
             // your own views and a re-view within 6 hours don't.
             logProjectView(project.id)
               .then((counted) => {

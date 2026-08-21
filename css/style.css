@@ -3,7 +3,7 @@
    service worker can cache them with the rest of the app shell (it only
    ever intercepts same-origin requests) and so there's no third-party
    request on every page load. Both files are the variable font, split
-   into the two subsets this UI actually needs — latin-ext carries the
+   into the two subsets this UI actually needs - latin-ext carries the
    Polish diacritics. */
 @font-face {
   font-family: 'JetBrains Mono';
@@ -25,7 +25,7 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Sold in the shop as the 'name-oxygene' nickname effect — only ever
+/* Sold in the shop as the 'name-oxygene' nickname effect - only ever
    applied to a display name, never to body text. */
 @font-face {
   font-family: 'Oxygene 1';
@@ -44,7 +44,7 @@
    underneath. Chrome/Edge and Safari support it; anywhere else this block
    is simply ignored and navigation behaves exactly as before.
 
-   Naming the navbar and bottom bar keeps them *out* of the cross-fade —
+   Naming the navbar and bottom bar keeps them *out* of the cross-fade -
    the browser matches them across the two documents and holds them still
    instead of dissolving and redrawing them. */
 @view-transition {
@@ -59,7 +59,7 @@
   view-transition-name: site-bottom-nav;
 }
 
-/* The global reduced-motion rule below can't reach these — they're
+/* The global reduced-motion rule below can't reach these - they're
    pseudo-elements, which `*` doesn't match. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
@@ -72,7 +72,7 @@
 /* ---------- Design tokens ---------- */
 :root {
   /* Tells the browser which palette native controls (checkboxes, select
-     dropdown popups, scrollbars) should render in — without this they stay
+     dropdown popups, scrollbars) should render in - without this they stay
      light-themed even when the page itself is dark. */
   color-scheme: light;
 
@@ -104,14 +104,14 @@
 
   /* Squared off. Pill-shaped everything was the other half of the
      template look; corners this tight read as built rather than styled,
-     and they suit the mono face. Genuinely round things — avatars, dots,
-     progress tracks — set 50%/999px themselves. */
+     and they suit the mono face. Genuinely round things - avatars, dots,
+     progress tracks - set 50%/999px themselves. */
   --radius-sm: 3px;
   --radius-md: 5px;
   --radius-lg: 8px;
 
   /* Depth is for things that genuinely float (menus, modals, sheets,
-     toasts). Cards state their edges with a border instead — a grid of
+     toasts). Cards state their edges with a border instead - a grid of
      drop-shadowed rectangles is what made the page look sprayed on. */
   --shadow-sm: 0 1px 0 rgba(25, 23, 19, 0.05);
   --shadow-md: 0 2px 10px rgba(25, 23, 19, 0.08);
@@ -197,7 +197,7 @@
   box-sizing: border-box;
 }
 
-/* Form controls don't inherit the document font by default — without this
+/* Form controls don't inherit the document font by default - without this
    every button/input would silently fall back to the browser's own UI
    font, which now reads as a completely different typeface next to the
    monospace body text. */
@@ -242,7 +242,7 @@ main {
 
 /* Monospace headings need help: at display sizes the fixed advance width
    makes them look gappy, so they get negative tracking and the weight
-   comes down from 700 to 600 — a mono bold at 3rem reads as shouting. */
+   comes down from 700 to 600 - a mono bold at 3rem reads as shouting. */
 h1,
 h2,
 h3,
@@ -257,7 +257,7 @@ h1 {
   letter-spacing: -0.05em;
 }
 
-/* Numbers line up in columns — counts, XP, prices, view totals all sit in
+/* Numbers line up in columns - counts, XP, prices, view totals all sit in
    tables and stat rows where a jittering digit width is visible. */
 body {
   font-variant-numeric: tabular-nums;
@@ -274,7 +274,7 @@ a {
 }
 
 /* Underline from the baseline rather than through the descenders, and
-   only on hover — an offset underline is the one link decoration that
+   only on hover - an offset underline is the one link decoration that
    doesn't fight a monospace face. */
 a:hover {
   text-decoration: underline;
@@ -329,7 +329,7 @@ img {
   transform: translateY(-1px);
 }
 
-/* The secondary button is a hairline box, not a second filled shape —
+/* The secondary button is a hairline box, not a second filled shape -
    two solid buttons side by side never say which one is the point. */
 .btn-secondary {
   background: transparent;
@@ -453,7 +453,7 @@ img {
 }
 
 /* The current page is marked with a rule under the label rather than by
-   recolouring it — colour is reserved for things you can act on. */
+   recolouring it - colour is reserved for things you can act on. */
 .nav-link.active {
   color: var(--color-text);
   font-weight: 600;
@@ -488,7 +488,7 @@ img {
 }
 
 /* Five nav links plus four account controls stop fitting well before the
-   layout actually breaks. The label is the part that can go — the icon still
+   layout actually breaks. The label is the part that can go - the icon still
    reads as "add", and the title attribute keeps it named for anyone hovering
    or using a screen reader. */
 @media (max-width: 1000px) {
@@ -508,8 +508,8 @@ img {
   }
   /* A display name is the one item here with no upper bound, so a long one
      would push the row wide however much slack is found elsewhere.
-     Truncating keeps the avatar and level chip — the parts you actually
-     navigate by — at full size. */
+     Truncating keeps the avatar and level chip - the parts you actually
+     navigate by - at full size. */
   .user-chip > span:not(.level-chip):not(.name-badge) {
     max-width: 7ch;
     overflow: hidden;
@@ -519,7 +519,7 @@ img {
 }
 
 /* Between the tab bar's cutoff (720px) and here, the navbar already runs past
-   its container with the account controls alone — a pre-existing squeeze this
+   its container with the account controls alone - a pre-existing squeeze this
    button should not deepen. It stands down over that stretch; below 720px the
    + in the tab bar is the one carrying the action anyway. */
 @media (max-width: 860px) {
@@ -659,7 +659,7 @@ img {
   transform: scale(0.85);
 }
 
-/* The bell nudges rather than spins — it's a notification, not a toy. */
+/* The bell nudges rather than spins - it's a notification, not a toy. */
 .notif-bell:hover .icon {
   animation: bell-swing 0.6s ease;
   transform-origin: 50% 15%;
@@ -742,7 +742,7 @@ img {
 
 /* ---------- Hero ---------- */
 /* No coloured glow behind the headline. The hero is set left, on the same
-   paper as everything else, and closed with a rule — the page starts by
+   paper as everything else, and closed with a rule - the page starts by
    saying something rather than by lighting itself. */
 .hero {
   padding: 72px 0 56px;
@@ -750,7 +750,7 @@ img {
 }
 
 /* The markup puts .container and .hero-inner on the same element, so this
-   must not fight the container's centring — the measure is set on the text
+   must not fight the container's centring - the measure is set on the text
    itself instead, which also keeps the headline from running to a
    ten-word line on a wide screen. */
 .hero-inner {
@@ -888,7 +888,7 @@ img {
   animation: fade-in-up 0.35s ease both;
 }
 
-/* Hover firms up the edge instead of casting a shadow. The lift stays —
+/* Hover firms up the edge instead of casting a shadow. The lift stays -
    it's what makes the grid feel alive under a cursor. */
 .card:hover {
   border-color: var(--color-border-strong);
@@ -896,7 +896,7 @@ img {
 }
 
 /* The empty thumbnail is a hatched placeholder rather than a pastel
-   gradient — it reads as "no image yet" instead of as decoration. */
+   gradient - it reads as "no image yet" instead of as decoration. */
 .card-thumb {
   aspect-ratio: 16 / 9.5;
   background-color: var(--color-muted-soft);
@@ -1524,7 +1524,7 @@ tbody tr {
 
 /* ---------- Engagement bar (likes, edit) ---------- */
 /* Six controls (like, Scrolls, save, share, edit, report) do not fit on a
-   phone in one row, and without wrapping the last one — Report — simply
+   phone in one row, and without wrapping the last one - Report - simply
    left the screen and took the whole page's horizontal scroll with it.
    Wrapping is the fix; the row-gap keeps the second line from touching
    the first. */
@@ -1664,7 +1664,7 @@ tbody tr {
   line-height: 1.3;
 }
 
-/* The name and its level chip share one row — without this wrapper the chip
+/* The name and its level chip share one row - without this wrapper the chip
    becomes another item in the column above and stretches to full width. */
 .comment-author-row {
   display: flex;
@@ -1708,7 +1708,7 @@ tbody tr {
 
 /* ---------- Cookie consent banner ---------- */
 /* A static bar at the very top of the document (not fixed/floating) so it
-   pushes page content down instead of overlapping it — avoids covering
+   pushes page content down instead of overlapping it - avoids covering
    buttons on short pages like the auth forms. */
 .cookie-banner {
   background: var(--color-surface);
@@ -1874,7 +1874,7 @@ tbody tr {
   .nav-right {
     margin-left: auto;
   }
-  /* The bottom tab bar (js/bottom-nav.js) is the primary nav on mobile —
+  /* The bottom tab bar (js/bottom-nav.js) is the primary nav on mobile -
      it covers everything nav-actions would otherwise show (dashboard,
      profile, log in/out), so hide the top one to avoid it overflowing. */
   .nav-actions {
@@ -2340,7 +2340,7 @@ body.has-bottom-nav .scroll-card {
   height: 12px;
 }
 
-/* Log out inside the burger — mobile only. On desktop the navbar's own
+/* Log out inside the burger - mobile only. On desktop the navbar's own
    button covers it, and .nav-links is a horizontal row where a logout
    item would sit oddly among the section links. It's a <button>, so it
    needs the link styling reset onto it. */
@@ -2379,7 +2379,7 @@ body.has-bottom-nav .scroll-card {
   margin-bottom: 24px;
 }
 
-/* Audio-shaped players (Spotify, SoundCloud) are wide and short — 16/9
+/* Audio-shaped players (Spotify, SoundCloud) are wide and short - 16/9
    would leave most of the box empty. */
 .media-frame.is-compact {
   aspect-ratio: auto;
@@ -2447,7 +2447,7 @@ body.has-bottom-nav .scroll-card {
 }
 
 /* Card text sits above the player, but the player still has to be
-   clickable — so only the text block blocks pointer events. */
+   clickable - so only the text block blocks pointer events. */
 .scroll-card.has-media .scroll-content {
   pointer-events: none;
 }
@@ -2496,7 +2496,7 @@ body.has-bottom-nav .scroll-card {
   right: 0;
   /* Stops above the tab bar rather than covering it: the + is the control
      that opened the sheet and has to stay visible and tappable to close it
-     again — that's the whole point of it rotating. */
+     again - that's the whole point of it rotating. */
   bottom: calc(66px + env(safe-area-inset-bottom, 0px));
   z-index: 160;
   max-height: 74vh;
@@ -2572,7 +2572,7 @@ body.sheet-open {
   overflow: hidden;
 }
 
-/* Lifted over the sheet and its overlay only while the sheet is open —
+/* Lifted over the sheet and its overlay only while the sheet is open -
    raising it permanently would put the tab bar on top of the project modal
    and the comments drawer too. */
 body.sheet-open .bottom-nav {
@@ -2625,7 +2625,7 @@ body.sheet-open .bottom-nav {
 /* ---------- Notifications bell + panel ---------- */
 
 /* The browser's own `[hidden] { display: none }` comes from the UA
-   stylesheet, so any author rule setting `display` beats it — the panel and
+   stylesheet, so any author rule setting `display` beats it - the panel and
    badge below both set one, which left them permanently on screen no matter
    what the `hidden` property said. These restore it at a specificity that
    wins over the class rules. */
@@ -2766,7 +2766,7 @@ body.sheet-open .bottom-nav {
 }
 
 /* The row is a link to the profile and the Follow button is a control, so
-   the button can't live inside the link — this wrapper holds both side by
+   the button can't live inside the link - this wrapper holds both side by
    side and carries the row's own styling. */
 .leaderboard-row-wrap {
   display: flex;
@@ -2809,7 +2809,7 @@ body.sheet-open .bottom-nav {
   flex-shrink: 0;
 }
 
-/* Rank is a figure in a column, not a bubble — the medals are the only
+/* Rank is a figure in a column, not a bubble - the medals are the only
    three that get filled in. */
 .leaderboard-rank {
   display: inline-flex;
@@ -2858,7 +2858,7 @@ body.sheet-open .bottom-nav {
 
 /* The name can be long, and the level chip and XP after it must not get
    pushed off a narrow row. The truncation has to live on the span that
-   actually holds the text — text-overflow does nothing on a flex
+   actually holds the text - text-overflow does nothing on a flex
    container, which just clips the name mid-letter with no ellipsis. */
 .leaderboard-name > span:not(.leaderboard-you) {
   min-width: 0;
@@ -2899,7 +2899,7 @@ body.sheet-open .bottom-nav {
     padding: 11px 12px;
   }
   /* With a Follow button on the row there isn't width for everything, and
-     the name is what matters — the raw XP number goes rather than letting
+     the name is what matters - the raw XP number goes rather than letting
      it get squeezed down to an ellipsis. The level chip still shows
      standing. */
   .leaderboard-xp {
@@ -3037,7 +3037,7 @@ body.sheet-open .bottom-nav {
 }
 
 /* On a profile that has a background equipped, the header text goes white
-   on a saturated gradient — a second gradient chip on top of that reads as
+   on a saturated gradient - a second gradient chip on top of that reads as
    mud, so it flips to a translucent plate instead. */
 .profile-header.has-profile-bg .level-chip {
   background: rgba(0, 0, 0, 0.28);
@@ -3050,7 +3050,7 @@ body.sheet-open .bottom-nav {
 }
 
 /* The four numbers both currencies are made of. Wraps rather than
-   scrolls — on a narrow phone this sits under the level bar and there is
+   scrolls - on a narrow phone this sits under the level bar and there is
    nothing here worth hiding off-screen. */
 .reach-row {
   display: flex;
@@ -3364,13 +3364,13 @@ body.sheet-open .bottom-nav {
    frame is a picture that has to sit *around* the avatar, so it's drawn as
    an oversized pseudo-element. Two consequences handled here:
    - .avatar/.profile-avatar clip their content with overflow:hidden (that's
-     what makes the photo circular), which would cut the frame off — so
+     what makes the photo circular), which would cut the frame off - so
      framed avatars switch to overflow:visible and get their roundness from
      border-radius on the image itself instead.
    - the pseudo-element is sized and offset in percentages of the avatar, so
      one rule works at every avatar size from the 26px navbar chip up.
    The percentages come from measuring the artwork: its transparent inner
-   hole is 377x386 of a 640x584 image, centred at (327, 319.5) — so the
+   hole is 377x386 of a 640x584 image, centred at (327, 319.5) - so the
    frame is 169.76% x 151.30% of the hole, shifted to line the hole's centre
    up with the avatar's. */
 .shop-border-flame {
@@ -3396,7 +3396,7 @@ body.sheet-open .bottom-nav {
 /* The frame overhangs its avatar by roughly a third of the avatar's width on
    each side. That's fine over empty space, but it would sit on top of the
    text that follows the avatar, so framed avatars reserve the room. The
-   pseudo-element itself is pointer-events:none, so this is purely visual —
+   pseudo-element itself is pointer-events:none, so this is purely visual -
    it never swallows a click on whatever it overlaps. */
 .profile-header .shop-border-flame {
   margin-right: 18px;
@@ -3439,7 +3439,7 @@ body.sheet-open .bottom-nav {
 }
 
 /* Swaps the typeface rather than recolouring it, so it stacks visually
-   with none of the other name effects — you pick one or the other.
+   with none of the other name effects - you pick one or the other.
    text-transform is not cosmetic here: this font only draws letterforms in
    its uppercase slots, and its lowercase slots hold decorative dingbats, so
    without forcing uppercase a name like "Peter" renders as unreadable
@@ -3524,7 +3524,7 @@ body.sheet-open .bottom-nav {
 
 /* No background/color here: every real use combines this with either a
    .shop-bg-* class (whose gradient must show through) or the -avatar/-name
-   variants below (which set their own) — a fallback here would compete at
+   variants below (which set their own) - a fallback here would compete at
    equal CSS specificity with .shop-bg-*, and since this rule comes later
    in the file it would silently win, which is exactly the bug this avoids. */
 .shop-item-preview {
@@ -3627,7 +3627,7 @@ body.sheet-open .bottom-nav {
    Shop, second batch
    ------------------------------------------------------------
    Same three slots as the originals (profile background, avatar
-   border, nickname effect), so nothing here needs new markup — an
+   border, nickname effect), so nothing here needs new markup - an
    item is a price row in shop_item_defs, a line in js/shop-items.js
    and one rule below.
 
@@ -3745,7 +3745,7 @@ body.sheet-open .bottom-nav {
   }
 }
 
-/* Sun, then the horizon grid — the grid is a single gradient skewed by
+/* Sun, then the horizon grid - the grid is a single gradient skewed by
    its own background-size gradient rather than a 3D transform, which
    would need an extra element and a perspective context. */
 .shop-bg-vaporwave {
@@ -3812,7 +3812,7 @@ body.sheet-open .bottom-nav {
    The plain ones are a box-shadow ring: it doesn't affect layout and
    follows the avatar's border-radius for free. The three that need a
    gradient, a moving part or a halo use a pseudo-element instead, and
-   those have to opt out of the avatar's overflow:hidden — which is
+   those have to opt out of the avatar's overflow:hidden - which is
    there to clip the photo, so the photo gets its own radius back. */
 .shop-border-ink {
   box-shadow: 0 0 0 2px var(--color-text);
@@ -3888,7 +3888,7 @@ body.sheet-open .bottom-nav {
   }
 }
 
-/* A conic gradient masked into a ring — a gradient border, which a
+/* A conic gradient masked into a ring - a gradient border, which a
    box-shadow cannot do at all. The mask punches out everything inside
    the ring so the avatar underneath still shows through. */
 .shop-border-conic::after {
@@ -4093,8 +4093,8 @@ body.sheet-open .bottom-nav {
    Set cosmetics
    ------------------------------------------------------------
    The pieces drawn to go together (see SHOP_BUNDLES in
-   js/shop-items.js). They're ordinary items — a set is only a list
-   of ids — so each one still works on its own.
+   js/shop-items.js). They're ordinary items - a set is only a list
+   of ids - so each one still works on its own.
    ============================================================ */
 
 /* Four toes and a pad, drawn as five radial gradients and tiled. Two
@@ -4135,7 +4135,7 @@ body.sheet-open .bottom-nav {
   background: radial-gradient(circle, #fffbe6 40%, #fbbf24 70%, rgba(251, 191, 36, 0) 72%);
 }
 
-/* Flakes on two layers falling at different speeds — the parallax is what
+/* Flakes on two layers falling at different speeds - the parallax is what
    stops it reading as a texture sliding down the page in one piece. */
 .shop-bg-snow {
   background-color: #1e293b;
@@ -4280,7 +4280,7 @@ body.sheet-open .bottom-nav {
   background-clip: text;
   color: transparent;
   /* The teal end of the ramp sits on sky blue in the Summer set, which is
-     where this name is most likely to be worn — the shadow is what keeps
+     where this name is most likely to be worn - the shadow is what keeps
      it off the background it was designed to sit on. */
   filter: drop-shadow(0 1px 1px rgba(0, 40, 60, 0.45));
 }
@@ -4303,7 +4303,7 @@ body.sheet-open .bottom-nav {
   animation: fade-in-up 0.35s ease both;
 }
 
-/* The three members shown as one strip: background, avatar, name — the
+/* The three members shown as one strip: background, avatar, name - the
    same order they appear on a profile, so the card reads as a preview of
    the profile rather than as three unrelated swatches. */
 .shop-bundle-preview {
@@ -4359,7 +4359,7 @@ body.sheet-open .bottom-nav {
   color: var(--color-text-faint);
 }
 
-/* Neither figure may break across lines — "215" on one line and "pts" on
+/* Neither figure may break across lines - "215" on one line and "pts" on
    the next is how the partly-owned card fell apart, since the sentence
    after it is long enough to force a wrap. The sentence wraps instead. */
 .shop-bundle-price strong,
@@ -4430,7 +4430,7 @@ body.sheet-open .bottom-nav {
   background: rgba(25, 23, 19, 0.2);
 }
 
-/* Saved state on the project page's Save button — filled rather than
+/* Saved state on the project page's Save button - filled rather than
    recoloured, the same way the like heart reads as on/off. */
 .btn.is-saved {
   border-color: var(--color-primary);

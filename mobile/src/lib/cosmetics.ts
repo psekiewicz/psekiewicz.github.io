@@ -6,7 +6,7 @@ import type { TextStyle } from 'react-native';
 // A background becomes a LinearGradient colour ramp, a border becomes a ring
 // colour + width, a nickname effect becomes a TextStyle. The palettes are
 // taken from the stylesheet so a cosmetic reads as the same thing it does on
-// the web. What does NOT carry over is motion — the animated ones (Lava Lamp,
+// the web. What does NOT carry over is motion - the animated ones (Lava Lamp,
 // Orbit, Spectrum Spin, Glitch, Sparkle) render as a static frame of the same
 // palette rather than a loop, because a per-frame animation behind every
 // avatar in a scrolling list is the kind of thing that costs a feed its frame

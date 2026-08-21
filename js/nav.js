@@ -16,7 +16,7 @@ import { mountNotifications, unmountNotifications } from './notifications-ui.js'
 let signedInUser = null;
 
 // Opening the quick-create sheet is the same gesture the phone's + tab makes,
-// pointed at the same module — the sheet already has a desktop layout (it
+// pointed at the same module - the sheet already has a desktop layout (it
 // becomes a centred panel above 720px), it simply had no trigger up here.
 async function openCreateSheet() {
   const sheet = await import('./create-sheet.js');
@@ -122,7 +122,7 @@ async function renderNavActions(container, user) {
 
   // Progressive enhancement: the chip is already visible and usable above,
   // this just quietly adds the level and best-achievement badges afterwards
-  // — no need to block the rest of the navbar on either.
+  // - no need to block the rest of the navbar on either.
   // Redrawn on every progress check, not just the first, so the level
   // reflects what you just did rather than what you had when the page
   // loaded.
@@ -146,7 +146,7 @@ async function renderNavActions(container, user) {
       badge.className = 'name-badge';
       chip.appendChild(badge);
     }
-    badge.title = `${top.label} — ${top.description}`;
+    badge.title = `${top.label} - ${top.description}`;
     badge.innerHTML = icon(top.icon, { size: 12 });
   }
 
@@ -160,7 +160,7 @@ async function renderNavActions(container, user) {
       paintChipBadges(stats, records);
 
       // The navbar is the one thing that loads on every page while signed
-      // in, so it's also where new rewards get noticed and toasted —
+      // in, so it's also where new rewards get noticed and toasted -
       // piggybacking on the stats it already had to fetch rather than
       // querying for them a second time somewhere else.
       watchProgress(user.id, stats, records);
@@ -170,7 +170,7 @@ async function renderNavActions(container, user) {
   // On mobile .nav-actions (with its Log out button) is hidden in favour of
   // the bottom tab bar, which left the profile page as the only way to sign
   // out. The burger is where the rest of mobile navigation already lives,
-  // so it goes here — hidden on desktop, where the navbar button remains.
+  // so it goes here - hidden on desktop, where the navbar button remains.
   const navLinksEl = document.querySelector('.nav-links');
   if (navLinksEl && !navLinksEl.querySelector('[data-mobile-logout]')) {
     const logout = document.createElement('button');

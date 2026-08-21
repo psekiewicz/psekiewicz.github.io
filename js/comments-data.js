@@ -51,7 +51,7 @@ export async function getCommentCounts(projectIds) {
 }
 
 // How many comments this user has authored, for the achievements system.
-// Subject to the same RLS as everything else here — a viewer who isn't the
+// Subject to the same RLS as everything else here - a viewer who isn't the
 // author only ever counts comments on projects they can actually see.
 export async function getCommentCountByUser(userId) {
   const { count, error } = await supabase.from(TABLE).select('*', { count: 'exact', head: true }).eq('user_id', userId);

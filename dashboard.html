@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Showcase</title>
+  <title>Dashboard - Showcase</title>
   <meta name="description" content="Create, edit and publish your projects." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Dashboard — Showcase" />
+  <meta property="og:title" content="Dashboard - Showcase" />
   <meta property="og:description" content="Create, edit and publish your projects." />
   <meta property="og:url" content="https://psekiewicz.github.io/dashboard.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Dashboard — Showcase" />
+  <meta name="twitter:title" content="Dashboard - Showcase" />
   <meta name="twitter:description" content="Create, edit and publish your projects." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
@@ -96,7 +96,7 @@
 
         <div class="section-head" style="margin-top:48px;">
           <h2>Saved</h2>
-          <p>Private — only you see this</p>
+          <p>Private - only you see this</p>
         </div>
         <div id="saved-region">
           <p>Loading saved entries…</p>
@@ -233,7 +233,7 @@
         return;
       }
       const media = parseMedia(value, document.getElementById('type').value);
-      mediaHint.textContent = media ? `${media.provider} — will play here` : "Can't play this link; it'll show as a plain link";
+      mediaHint.textContent = media ? `${media.provider} - will play here` : "Can't play this link; it'll show as a plain link";
       mediaHint.style.color = media ? 'var(--color-success)' : 'var(--color-text-faint)';
     });
 
@@ -246,7 +246,7 @@
     const savedRegion = document.getElementById('saved-region');
 
     // The shelf. Anything unpublished or deleted since it was saved simply
-    // isn't returned — the join reads through the projects table's own
+    // isn't returned - the join reads through the projects table's own
     // RLS, so this never shows a card that leads to a dead page.
     async function loadSaved() {
       const saved = await getSavedProjects(currentUser.id);
@@ -618,8 +618,8 @@
       } catch (err) {
         tableRegion.innerHTML = `<p>Could not load your projects: ${escapeHtml(err.message)}</p>`;
       }
-      // Loaded separately so a failure here — most likely saves not
-      // existing yet because schema.sql hasn't been re-run — shows in the
+      // Loaded separately so a failure here - most likely saves not
+      // existing yet because schema.sql hasn't been re-run - shows in the
       // saved section instead of taking the projects table down with it.
       try {
         await loadSaved();

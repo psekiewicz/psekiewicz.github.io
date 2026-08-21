@@ -1,12 +1,12 @@
-// A level is a display of one number — xp — and that number is computed by
+// A level is a display of one number - xp - and that number is computed by
 // the database, not here (see the user_reputation view in schema.sql).
 //
 // It used to be computed in this file, from stats that included things you
 // could do to yourself: 100 XP per published entry, 10 per comment you
 // posted, 1 per view including your own reloads. Ten throwaway entries and
 // a refresh loop beat anything anyone actually made. XP now comes only
-// from what other people did with your work — distinct viewers, likes,
-// comments received, followers — which is both the honest measure and the
+// from what other people did with your work - distinct viewers, likes,
+// comments received, followers - which is both the honest measure and the
 // expensive one to fake.
 //
 // What's left in this module is the curve and the chip: pure functions of
@@ -21,7 +21,7 @@ export function xpForLevel(level) {
   return LEVEL_CONSTANT * (level - 1) ** 2;
 }
 
-// Full progress breakdown for one XP total — everything the profile's
+// Full progress breakdown for one XP total - everything the profile's
 // progress bar needs, so the page never has to redo this arithmetic.
 export function levelFromXp(xp) {
   const total = Math.max(0, Math.round(xp || 0));
@@ -42,7 +42,7 @@ export function levelFromXp(xp) {
 }
 
 // Convenience for callers that already hold a stats object from
-// getUserStats() — `xp` on it is the server's number, carried through
+// getUserStats() - `xp` on it is the server's number, carried through
 // untouched.
 export function levelFromStats(stats) {
   return levelFromXp(stats ? stats.xp : 0);
@@ -55,11 +55,11 @@ export function levelChipHtml(level, size = '') {
 }
 
 // Levels for a whole page of authors (project cards, comment lists) in a
-// single query — it used to take four, one per activity number, and then
+// single query - it used to take four, one per activity number, and then
 // a fifth for likes once the project ids were known. Returns a
 // Map<userId, levelInfo> shaped exactly like levelFromXp's result.
-// The reputation module is imported dynamically so that everything above —
-// the curve and the chip, which card rendering uses — stays free of the
+// The reputation module is imported dynamically so that everything above -
+// the curve and the chip, which card rendering uses - stays free of the
 // Supabase client and the CDN it loads from. A page that can't reach the
 // network still draws its chips from whatever xp it already has.
 export async function getLevelsForUsers(userIds) {

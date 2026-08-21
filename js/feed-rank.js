@@ -4,7 +4,7 @@
 // and deliberately injects randomness so the feed differs between visits.
 //
 // Everything here runs on numbers the page already fetched (likes, comments,
-// views, who you follow) — no extra tables, no server-side ranking job.
+// views, who you follow) - no extra tables, no server-side ranking job.
 
 // Views are scored on a log scale, likes and comments linearly. A view
 // from a signed-out visitor is the one signal here nobody has to
@@ -16,7 +16,7 @@ const WEIGHTS = { like: 3, comment: 2 };
 
 // How hard age pushes an entry down. This used to be 1.5, described as costing
 // a day-old entry "roughly 5x" the engagement of a fresh one. It actually cost
-// 47x, and a week-old entry 784x — on a site where entries arrive slowly, that
+// 47x, and a week-old entry 784x - on a site where entries arrive slowly, that
 // is not a ranking, it is a delete. 0.4 keeps recency meaningful at a price the
 // archive can survive: a day costs ~2.2x, a week ~5.9x.
 const GRAVITY = 0.4;
@@ -42,7 +42,7 @@ const SHARPNESS = 1.5;
 
 const FOLLOWED_BOOST = 1.5;
 
-// Something you've already watched shouldn't vanish forever — it should
+// Something you've already watched shouldn't vanish forever - it should
 // just be much less likely to come up again for a while.
 const SEEN_PENALTY = 0.2;
 const SEEN_TTL_MS = 3 * 24 * 60 * 60 * 1000;
@@ -65,7 +65,7 @@ export function markSeen(projectId) {
     seen[projectId] = Date.now();
     localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
   } catch {
-    // Storage unavailable (private mode) — the feed just won't remember,
+    // Storage unavailable (private mode) - the feed just won't remember,
     // which is a fine degradation.
   }
 }
@@ -105,7 +105,7 @@ function baseScore(project, { likeCounts, commentCounts, followingIds, seenIds, 
 // item a key of random()^(1/weight) and sorting by it descending produces an
 // order where higher-scored items are likelier to come first, without ever
 // being guaranteed to. That's what keeps the feed fresh between visits while
-// still favouring good projects — a plain sort would be identical every time.
+// still favouring good projects - a plain sort would be identical every time.
 function weightedShuffle(scored) {
   // Normalised against the mean so SHARPNESS means the same thing whatever
   // magnitude the scores happen to come out at.
@@ -121,8 +121,8 @@ function weightedShuffle(scored) {
 
 // Spacing so one prolific author can't own a run of the feed.
 //
-// The obvious greedy — "take the next project by anyone other than whoever
-// I just placed" — looks right and isn't: it spends the other authors early
+// The obvious greedy - "take the next project by anyone other than whoever
+// I just placed" - looks right and isn't: it spends the other authors early
 // and leaves everything by the prolific one bunched at the end. With five
 // of seven projects by one author it happily produced all five in a row.
 //
@@ -164,7 +164,7 @@ function spaceOutBy(projects, keyOf) {
       }
     }
 
-    // Only the author we just placed has anything left — a repeat here is
+    // Only the author we just placed has anything left - a repeat here is
     // arithmetic, not a scheduling mistake.
     if (choice === null) choice = lastAuthor;
 

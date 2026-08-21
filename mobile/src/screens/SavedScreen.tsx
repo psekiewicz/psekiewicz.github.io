@@ -8,7 +8,7 @@ import { getSavedProjects } from '../data/saves';
 import { useTheme } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
 
-// A private shelf — no counts, no public read policy, and saving something
+// A private shelf - no counts, no public read policy, and saving something
 // earns its author nothing.
 export function SavedScreen({ navigation }: any) {
   const { colors } = useTheme();

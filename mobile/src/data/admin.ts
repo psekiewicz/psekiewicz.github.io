@@ -29,7 +29,7 @@ export type AdminUser = {
   createdAt: string;
 };
 
-// Every account, including email and real ban status — only returns anything
+// Every account, including email and real ban status - only returns anything
 // for admins (see admin_list_users() in schema.sql).
 export async function listUsersForAdmin(): Promise<AdminUser[]> {
   const { data, error } = await supabase.rpc('admin_list_users');
@@ -48,7 +48,7 @@ export async function listUsersForAdmin(): Promise<AdminUser[]> {
 // The three actions below call the admin-actions Edge Function, which is the
 // only place the service_role key needed to actually ban/unban/delete a
 // Supabase Auth account is ever used. That key must never ship inside a client
-// — and an APK is a client that can be unzipped, so this is if anything more
+// - and an APK is a client that can be unzipped, so this is if anything more
 // true here than on the web.
 async function callAdminAction(payload: any) {
   const { data, error } = await supabase.functions.invoke('admin-actions', { body: payload });
@@ -65,7 +65,7 @@ export async function unbanUser(targetUserId: string) {
   return callAdminAction({ action: 'unban', targetUserId });
 }
 
-// Also used for self-service account deletion (targetUserId === your own id) —
+// Also used for self-service account deletion (targetUserId === your own id) -
 // the Edge Function allows that without requiring admin.
 export async function deleteAccount(targetUserId: string) {
   return callAdminAction({ action: 'delete', targetUserId });

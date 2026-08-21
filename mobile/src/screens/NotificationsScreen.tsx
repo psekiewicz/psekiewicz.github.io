@@ -47,7 +47,7 @@ export function NotificationsScreen({ navigation }: any) {
         ]);
         setActors(actorMap);
         setTitles(titleMap);
-        // Opening the screen is the read receipt — the badge on Home clears
+        // Opening the screen is the read receipt - the badge on Home clears
         // when it refocuses.
         markAllRead().catch(() => {});
       })

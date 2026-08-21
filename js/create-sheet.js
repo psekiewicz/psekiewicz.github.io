@@ -5,12 +5,12 @@ import { parseMedia } from './media.js';
 
 // Only local modules are imported statically. Anything that reaches
 // Supabase is pulled in when the form is actually submitted, so opening
-// the sheet — and filling it in — never waits on the network, and a failed
+// the sheet - and filling it in - never waits on the network, and a failed
 // CDN load can't stop the + button from doing anything at all.
 
 // The + tab used to navigate to the dashboard, which meant leaving whatever
 // you were looking at to reach a form. This is the full project editor as a
-// sheet over the current page — every field the dashboard modal has, so
+// sheet over the current page - every field the dashboard modal has, so
 // there's never a reason to go elsewhere to finish creating something.
 let sheet = null;
 let overlay = null;
@@ -170,7 +170,7 @@ function mount() {
       return;
     }
     const media = parseMedia(value, sheet.querySelector('#sheet-type').value);
-    mediaHint.textContent = media ? `${media.provider} — will play here` : "Can't play this link; it'll show as a plain link";
+    mediaHint.textContent = media ? `${media.provider} - will play here` : "Can't play this link; it'll show as a plain link";
     mediaHint.style.color = media ? 'var(--color-success)' : 'var(--color-text-faint)';
   });
 

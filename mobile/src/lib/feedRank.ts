@@ -14,7 +14,7 @@ const WEIGHTS = { like: 3, comment: 2 };
 
 // How hard age pushes an entry down. This used to be 1.5, described as costing
 // a day-old entry "roughly 5x" the engagement of a fresh one. It actually cost
-// 47x, and a week-old entry 784x — on a site where entries arrive slowly, that
+// 47x, and a week-old entry 784x - on a site where entries arrive slowly, that
 // is not a ranking, it is a delete. 0.4 keeps recency meaningful at a price the
 // archive can survive: a day costs ~2.2x, a week ~5.9x.
 const GRAVITY = 0.4;
@@ -39,7 +39,7 @@ const SHARPNESS = 1.5;
 
 const FOLLOWED_BOOST = 1.5;
 
-// Something you've already watched shouldn't vanish forever — it should just
+// Something you've already watched shouldn't vanish forever - it should just
 // be much less likely to come up again for a while.
 const SEEN_PENALTY = 0.2;
 const SEEN_TTL_MS = 3 * 24 * 60 * 60 * 1000;
@@ -68,7 +68,7 @@ export function markSeen(projectId: string) {
     // one just means the feed doesn't remember, which is a fine degradation.
     AsyncStorage.setItem(SEEN_KEY, JSON.stringify(seenCache)).catch(() => {});
   } catch {
-    // Storage unavailable — same fine degradation.
+    // Storage unavailable - same fine degradation.
   }
 }
 
@@ -163,7 +163,7 @@ function spaceOutBy(projects: Project[], keyOf: (p: Project) => string) {
       }
     }
 
-    // Only the author we just placed has anything left — a repeat here is
+    // Only the author we just placed has anything left - a repeat here is
     // arithmetic, not a scheduling mistake.
     if (choice === null) choice = lastAuthor;
 

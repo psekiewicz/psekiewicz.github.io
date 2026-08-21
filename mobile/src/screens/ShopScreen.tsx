@@ -299,7 +299,7 @@ export function ShopScreen({ navigation }: any) {
       </View>
 
       <Text style={[typography.small, { color: colors.textFaint }]}>
-        Prices are charged server-side — what you see here is a copy of the real list.
+        Prices are charged server-side - what you see here is a copy of the real list.
       </Text>
     </ScrollView>
   );

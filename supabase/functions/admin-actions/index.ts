@@ -4,7 +4,7 @@
 // (Supabase's Admin API) and therefore can never run in the browser:
 // banning a user, unbanning them, and deleting an account. Supabase
 // auto-injects SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY into every
-// deployed Edge Function's environment — nothing to set manually, and
+// deployed Edge Function's environment - nothing to set manually, and
 // the key never appears in git. This function does its own authorization
 // check before touching anything.
 //
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   const jwt = authHeader.replace(/^Bearer\s+/i, '');
   if (!jwt) return json({ error: 'Missing Authorization header' }, 401);
 
-  // A client bound to the service role — this is the only place in the
+  // A client bound to the service role - this is the only place in the
   // whole app that key is ever used, and it never leaves this function.
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -59,8 +59,8 @@ Deno.serve(async (req) => {
     return json({ error: 'action and targetUserId are required' }, 400);
   }
 
-  // Anyone may delete their own account. Everything else — banning,
-  // unbanning, or deleting someone else's account — requires the caller
+  // Anyone may delete their own account. Everything else - banning,
+  // unbanning, or deleting someone else's account - requires the caller
   // to be an admin.
   const isSelfDelete = action === 'delete' && targetUserId === caller.id;
 
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
     if (action === 'delete') {
       // profiles/projects/follows rows for this user are removed
-      // automatically — their foreign keys reference auth.users with
+      // automatically - their foreign keys reference auth.users with
       // ON DELETE CASCADE.
       const { error } = await admin.auth.admin.deleteUser(targetUserId);
       if (error) throw error;
