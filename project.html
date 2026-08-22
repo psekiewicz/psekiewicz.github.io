@@ -38,8 +38,8 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="scrolls.html">Scrolls</a>
-        <a class="nav-link" href="shop.html">Shop</a>
+        <a class="nav-link" href="/scrolls">Scrolls</a>
+        <a class="nav-link" href="/shop">Shop</a>
         <a class="nav-link" href="leaderboard.html">Leaderboard</a>
       </div>
       <div class="nav-right">
@@ -264,7 +264,7 @@
               <button class="like-btn" id="like-btn" type="button" aria-pressed="false" disabled>
                 ${icon('heart', { size: 17 })} <span id="like-count">–</span>
               </button>
-              <a class="btn btn-secondary btn-sm" href="scrolls.html?project=${encodeURIComponent(project.id)}">${icon('film', { size: 15 })} View in Scrolls</a>
+              <a class="btn btn-secondary btn-sm" href="/scrolls?project=${encodeURIComponent(project.id)}">${icon('film', { size: 15 })} View in Scrolls</a>
               <button class="btn btn-secondary btn-sm" id="save-btn" type="button" aria-pressed="false" disabled>${icon('bookmark', { size: 15 })} <span id="save-label">Save</span></button>
               <button class="btn btn-secondary btn-sm" id="share-btn" type="button">${icon('share', { size: 15 })} Share</button>
               ${editButton}

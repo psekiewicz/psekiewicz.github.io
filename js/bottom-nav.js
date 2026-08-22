@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { escapeHtml, initials, safeUrl } from './utils.js';
+import { escapeHtml, initials, safeUrl, pageId } from './utils.js';
 
 // Auth and profile data are pulled in dynamically, on purpose. Importing
 // them at the top would chain this module to the Supabase client (and the
@@ -44,21 +44,21 @@ function profileIconHtml(snapshot) {
 // Pure function of (snapshot, current URL) so the caller can compare the
 // result against what's already on screen and skip a pointless repaint.
 function navHtml(snapshot) {
-  const path = window.location.pathname.split('/').pop() || 'index.html';
-  const isActive = (file) => (path === file ? ' active' : '');
+  const current = pageId(window.location.pathname);
+  const isActive = (id) => (current === id ? ' active' : '');
 
-  const loginRedirect = '/login.html?next=' + encodeURIComponent('/' + path);
+  const loginRedirect = '/login.html?next=' + encodeURIComponent(window.location.pathname);
   const profileHref = snapshot ? `/profile.html?user=${encodeURIComponent(snapshot.userId)}` : loginRedirect;
   const dashboardHref = snapshot ? '/dashboard.html' : loginRedirect;
   const isOwnProfile =
-    snapshot && path === 'profile.html' && new URLSearchParams(window.location.search).get('user') === snapshot.userId;
+    snapshot && current === 'profile' && new URLSearchParams(window.location.search).get('user') === snapshot.userId;
 
   return `
-    <a class="bottom-nav-item${isActive('index.html')}" href="/index.html">
+    <a class="bottom-nav-item${isActive('index')}" href="/index.html">
       <span class="bottom-nav-icon">${icon('home', { size: 20 })}</span>
       <span>Home</span>
     </a>
-    <a class="bottom-nav-item${isActive('scrolls.html')}" href="/scrolls.html">
+    <a class="bottom-nav-item${isActive('scrolls')}" href="/scrolls">
       <span class="bottom-nav-icon">${icon('film', { size: 20 })}</span>
       <span>Scrolls</span>
     </a>
@@ -71,7 +71,7 @@ function navHtml(snapshot) {
              <span class="bottom-nav-icon">${icon('plus', { size: 20 })}</span>
            </a>`
     }
-    <a class="bottom-nav-item${isActive('dashboard.html')}" href="${dashboardHref}">
+    <a class="bottom-nav-item${isActive('dashboard')}" href="${dashboardHref}">
       <span class="bottom-nav-icon">${icon('grid', { size: 20 })}</span>
       <span>Dashboard</span>
     </a>
