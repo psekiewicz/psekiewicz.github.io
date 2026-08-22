@@ -95,7 +95,7 @@
     import { rankFeed, getSeenIds, markSeen } from '/js/feed-rank.js';
     import { shareLink } from '/js/share.js';
     import { scrollImageFor } from '/js/scroll-styles.js';
-    import { mediaHtml, parseMedia, initAudioPlayers } from '/js/media.js';
+    import { mediaHtml, parseMedia, initAudioPlayers, controlEmbeddedVideo } from '/js/media.js';
 
     // The feed is ranked, not chronological, so it has to be capped
     // somewhere - past this many cards the ranking has long stopped
@@ -182,6 +182,23 @@
       btn.setAttribute('aria-label', muted ? 'Unmute video' : 'Mute video');
     }
 
+    // A command posted before the embedded player has loaded is silently
+    // dropped, so 'play' also gets resent once the iframe's own load event
+    // fires - covering the case where a card is scrolled to before its
+    // (loading="lazy") iframe has actually loaded.
+    function playIframeWhenReady(iframe) {
+      controlEmbeddedVideo(iframe, 'play');
+      if (iframe.dataset.loaded) return;
+      iframe.addEventListener(
+        'load',
+        () => {
+          iframe.dataset.loaded = 'true';
+          controlEmbeddedVideo(iframe, 'play');
+        },
+        { once: true }
+      );
+    }
+
     function setupMediaPlayback() {
       if (mediaObserver) mediaObserver.disconnect();
 
@@ -194,15 +211,22 @@
             const card = entry.target;
             const video = card.querySelector('.scroll-card-media video');
             const audio = card.querySelector('.scroll-card-media audio');
+            const iframe = card.querySelector('.scroll-card-media iframe[data-video-provider]');
             if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
               if (video) {
                 video.muted = !soundOn;
                 syncMuteButton(card, video.muted);
                 video.play().catch(() => {});
               }
+              if (iframe) {
+                controlEmbeddedVideo(iframe, soundOn ? 'unmute' : 'mute');
+                syncMuteButton(card, !soundOn);
+                playIframeWhenReady(iframe);
+              }
             } else {
               if (video) video.pause();
               if (audio) audio.pause();
+              if (iframe) controlEmbeddedVideo(iframe, 'pause');
             }
           });
         },
@@ -277,10 +301,14 @@
 
       const rail = railButtonsHtml(project, authorProfile);
 
-      // Muted is the starting state for every video card (see
-      // setupMediaPlayback), so the button starts in sync with that.
+      // "video" is a native <video>; an "iframe" with no compact flag is a
+      // YouTube/Vimeo embed (compact ones are audio-shaped - Spotify,
+      // SoundCloud - and stay tap-to-play, no mute button). Muted is the
+      // starting state either way (see setupMediaPlayback), so the button
+      // starts in sync with that.
+      const isVideoLike = media && (media.kind === 'video' || (media.kind === 'iframe' && !media.compact));
       const muteButton =
-        media && media.kind === 'video'
+        isVideoLike
           ? `<button class="scroll-mute-btn is-muted" type="button" data-action="mute-toggle" aria-label="Unmute video" aria-pressed="false">
               <span class="mute-icon mute-icon-on">${icon('volume-2', { size: 18 })}</span>
               <span class="mute-icon mute-icon-off">${icon('volume-x', { size: 18 })}</span>
@@ -532,10 +560,15 @@
       if (muteBtn) {
         const card = muteBtn.closest('.scroll-card');
         const video = card && card.querySelector('.scroll-card-media video');
+        const iframe = card && card.querySelector('.scroll-card-media iframe[data-video-provider]');
         if (video) {
           video.muted = !video.muted;
           soundOn = !video.muted;
           syncMuteButton(card, video.muted);
+        } else if (iframe) {
+          soundOn = !soundOn;
+          controlEmbeddedVideo(iframe, soundOn ? 'unmute' : 'mute');
+          syncMuteButton(card, !soundOn);
         }
       }
     });
