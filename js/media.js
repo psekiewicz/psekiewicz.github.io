@@ -101,8 +101,29 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   if (!media) return '';
 
   if (media.kind === 'iframe') {
+    // In the feed, YouTube/Vimeo embeds are "video" the same way a plain
+    // <video> is - they should autoplay muted and be scroll-controlled by
+    // setupMediaPlayback (scrolls.html), via each provider's postMessage
+    // API (see controlEmbeddedVideo below). `compact` marks the audio-shaped
+    // embeds (Spotify, SoundCloud), which stay tap-to-play like native
+    // audio and are left alone here.
+    let embedUrl = media.embedUrl;
+    let videoProvider = '';
+    if (inline && !media.compact) {
+      const sep = embedUrl.includes('?') ? '&' : '?';
+      const origin = encodeURIComponent(window.location.origin);
+      if (media.provider === 'YouTube') {
+        embedUrl += `${sep}enablejsapi=1&mute=1&playsinline=1&origin=${origin}`;
+        videoProvider = 'youtube';
+      } else if (media.provider === 'Vimeo') {
+        embedUrl += `${sep}muted=1&playsinline=1`;
+        videoProvider = 'vimeo';
+      }
+    }
     return `<div class="media-frame${media.compact ? ' is-compact' : ''}">
-      <iframe src="${escapeHtml(media.embedUrl)}" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="${escapeHtml(media.provider)} player"></iframe>
+      <iframe src="${escapeHtml(embedUrl)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="${escapeHtml(media.provider)} player"${
+      videoProvider ? ` data-video-provider="${videoProvider}"` : ''
+    }></iframe>
     </div>`;
   }
 
@@ -144,6 +165,37 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   }
 
   return '';
+}
+
+// Each provider's minimal remote-control protocol for the commands
+// setupMediaPlayback (scrolls.html) needs - play/pause on scroll, mute/
+// unmute from the same button that drives a native <video>. Both are
+// undocumented-but-stable postMessage APIs the provider's own embed page
+// listens for; there's no script to load, just messages to send.
+const IFRAME_COMMANDS = {
+  youtube: {
+    play: { event: 'command', func: 'playVideo', args: [] },
+    pause: { event: 'command', func: 'pauseVideo', args: [] },
+    mute: { event: 'command', func: 'mute', args: [] },
+    unmute: { event: 'command', func: 'unMute', args: [] },
+  },
+  vimeo: {
+    play: { method: 'play' },
+    pause: { method: 'pause' },
+    mute: { method: 'setVolume', value: 0 },
+    unmute: { method: 'setVolume', value: 1 },
+  },
+};
+
+// iframe must be one produced above with a data-video-provider attribute
+// (i.e. an inline YouTube/Vimeo embed). A command sent before the embedded
+// player has finished loading is silently dropped by the provider, so
+// callers should also resend once the iframe's load event fires.
+export function controlEmbeddedVideo(iframe, action) {
+  const provider = iframe && iframe.dataset.videoProvider;
+  const command = provider && IFRAME_COMMANDS[provider] && IFRAME_COMMANDS[provider][action];
+  if (!command || !iframe.contentWindow) return;
+  iframe.contentWindow.postMessage(JSON.stringify(command), '*');
 }
 
 function formatTime(seconds) {
