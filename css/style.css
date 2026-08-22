@@ -776,6 +776,72 @@ img {
   background: currentColor;
 }
 
+/* A quiet nod to the app's terminal-adjacent identity - it's been in
+   monospace throughout since day one, this just makes that legible as a
+   choice rather than an accident. Respects prefers-reduced-motion via the
+   global animation-killing rule near the top of this file, same as
+   everything else that moves. */
+@keyframes term-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+.term-cursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 3px;
+  background: currentColor;
+  vertical-align: -0.15em;
+  animation: term-blink 1s step-end infinite;
+}
+
+/* An inert little window frame for the hero tagline - three dots for a
+   titlebar, a "$ " prompt for the line itself. Built from the app's own
+   surface/border tokens rather than macOS grey/red/yellow, so it reads as
+   this app's terminal, not a screenshot of somebody else's. */
+.term-window {
+  max-width: 56ch;
+  margin-bottom: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.term-window-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--color-muted-soft);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.term-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.term-window-body {
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+.term-window-body::before {
+  content: '$ ';
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 .hero h1 {
   font-size: clamp(2.1rem, 4.5vw, 3.4rem);
   margin-bottom: 18px;
