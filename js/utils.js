@@ -79,6 +79,17 @@ export function typeBadgeHtml(type) {
   return `<span class="type-badge">${icon(meta.icon, { size: 13 })}${escapeHtml(meta.label)}</span>`;
 }
 
+// Reduces a path or href to a bare page id, so nav.js/bottom-nav.js can
+// match the current URL against a link regardless of which style either
+// happens to use - "scrolls.html", "/scrolls", and "/scrolls/" (query
+// string and hash stripped first) all resolve to "scrolls".
+export function pageId(pathOrHref) {
+  const clean = String(pathOrHref || '').split(/[?#]/)[0];
+  const trimmed = clean.length > 1 && clean.endsWith('/') ? clean.slice(0, -1) : clean;
+  const last = trimmed.split('/').pop();
+  return (last || 'index').replace(/\.html$/, '');
+}
+
 export function timeAgo(isoDate) {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   const mins = Math.floor(diffMs / 60000);

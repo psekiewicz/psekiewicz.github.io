@@ -10,7 +10,7 @@
   <meta property="og:site_name" content="Showcase" />
   <meta property="og:title" content="Shop - Showcase" />
   <meta property="og:description" content="Spend points earned from achievements on profile cosmetics." />
-  <meta property="og:url" content="https://psekiewicz.github.io/shop.html" />
+  <meta property="og:url" content="https://psekiewicz.github.io/shop" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -38,8 +38,8 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="scrolls.html">Scrolls</a>
-        <a class="nav-link" href="shop.html">Shop</a>
+        <a class="nav-link" href="/scrolls">Scrolls</a>
+        <a class="nav-link active" href="/shop">Shop</a>
         <a class="nav-link" href="leaderboard.html">Leaderboard</a>
       </div>
       <div class="nav-right">
@@ -275,7 +275,7 @@
     let initialized = false;
     onAuthChange(async (user) => {
       if (!user) {
-        window.location.href = '/login.html?next=' + encodeURIComponent('/shop.html');
+        window.location.href = '/login.html?next=' + encodeURIComponent('/shop');
         return;
       }
       currentUser = user;

@@ -1,7 +1,7 @@
 import { onAuthChange, logoutUser, displayNameOf } from './auth.js';
 import { getProfile } from './profiles-data.js';
 import { isAdmin } from './admin-data.js';
-import { escapeHtml, avatarHtml } from './utils.js';
+import { escapeHtml, avatarHtml, pageId } from './utils.js';
 import { icon } from './icons.js';
 import { getUserStats, getTopAchievement } from './achievements.js';
 import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
@@ -34,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const path = window.location.pathname.split('/').pop() || 'index.html';
+  const current = pageId(window.location.pathname);
   document.querySelectorAll('.nav-link').forEach((link) => {
-    if (link.getAttribute('href') === path) link.classList.add('active');
+    if (pageId(link.getAttribute('href')) === current) link.classList.add('active');
   });
 
   bindNewProjectShortcut();
@@ -194,8 +194,7 @@ async function renderNavActions(container, user) {
     link.href = 'admin.html';
     link.textContent = 'Admin';
     link.setAttribute('data-admin-link', '');
-    const path = window.location.pathname.split('/').pop() || 'index.html';
-    if (path === 'admin.html') link.classList.add('active');
+    if (pageId(window.location.pathname) === 'admin') link.classList.add('active');
     // Before the logout item, which is always meant to sit last.
     navLinks.insertBefore(link, navLinks.querySelector('[data-mobile-logout]'));
   }

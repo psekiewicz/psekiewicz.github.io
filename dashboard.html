@@ -38,8 +38,8 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="scrolls.html">Scrolls</a>
-        <a class="nav-link" href="shop.html">Shop</a>
+        <a class="nav-link" href="/scrolls">Scrolls</a>
+        <a class="nav-link" href="/shop">Shop</a>
         <a class="nav-link" href="leaderboard.html">Leaderboard</a>
         <a class="nav-link active" href="dashboard.html">Dashboard</a>
       </div>
@@ -251,7 +251,7 @@
     async function loadSaved() {
       const saved = await getSavedProjects(currentUser.id);
       if (saved.length === 0) {
-        savedRegion.innerHTML = `<div class="empty-state"><h3>Nothing saved yet</h3><p>Hit Save on anything you want to come back to.</p><a class="btn btn-secondary" href="scrolls.html">Open Scrolls</a></div>`;
+        savedRegion.innerHTML = `<div class="empty-state"><h3>Nothing saved yet</h3><p>Hit Save on anything you want to come back to.</p><a class="btn btn-secondary" href="/scrolls">Open Scrolls</a></div>`;
         return;
       }
       savedRegion.innerHTML = `

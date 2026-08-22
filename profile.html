@@ -38,8 +38,8 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="scrolls.html">Scrolls</a>
-        <a class="nav-link" href="shop.html">Shop</a>
+        <a class="nav-link" href="/scrolls">Scrolls</a>
+        <a class="nav-link" href="/shop">Shop</a>
         <a class="nav-link" href="leaderboard.html">Leaderboard</a>
       </div>
       <div class="nav-right">
@@ -319,7 +319,7 @@
       const headerClass = `profile-header${bgEffectClass ? ` has-profile-bg ${bgEffectClass}` : ''}`;
 
       const pointsRow = isOwnProfile
-        ? `<a class="points-chip" href="shop.html" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts - Shop</a>`
+        ? `<a class="points-chip" href="/shop" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts - Shop</a>`
         : '';
 
       // A shareable "wrapped"-style image of your own stats - own profile
