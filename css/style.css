@@ -2493,13 +2493,17 @@ body.has-bottom-nav .scroll-card {
 }
 
 /* In the feed the media fills the card behind the text overlay, so the
-   per-embed margins and rounding have to go. */
+   per-embed margins and rounding have to go. container-type lets the video
+   crop below report the card's real pixel size via cqw/cqh - vw/vh would
+   be wrong here, since the desktop breakpoint caps the card at 460px
+   instead of the full viewport. */
 .scroll-card-media {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  container-type: size;
 }
 
 .scroll-card-media .media-frame,
@@ -2513,6 +2517,31 @@ body.has-bottom-nav .scroll-card {
 .scroll-card-media .media-frame:not(.is-compact) {
   height: 100%;
   aspect-ratio: auto;
+  overflow: hidden;
+}
+
+/* A native <video> can be any source aspect ratio, so object-fit does the
+   cropping - it fills the card and clips the overflow, same idea as a CSS
+   background-size: cover. */
+.scroll-card-media .media-frame:not(.is-compact) video {
+  object-fit: cover;
+}
+
+/* An embedded YouTube/Vimeo player always presents as a 16:9 canvas
+   regardless of the source video's real shape, and object-fit has no
+   effect on what a cross-origin iframe draws inside itself - so instead
+   the iframe is oversized by exactly the 16:9 math to guarantee it covers
+   the card, centred, and the wrapper's overflow:hidden above clips it back
+   down to size. */
+.scroll-card-media .media-frame:not(.is-compact) iframe[data-video-provider] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100cqw;
+  height: 100cqh;
+  min-width: 177.78cqh;
+  min-height: 56.25cqw;
+  transform: translate(-50%, -50%);
 }
 
 .scroll-card-media .media-image img {
