@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProjectCard } from '../components/ProjectCard';
@@ -183,6 +183,60 @@ export function ProfileScreen({ route, navigation }: any) {
   const achievements = stats ? computeAchievements(stats, unlocked) : [];
   const unlockedList = achievements.filter((a) => a.unlocked);
 
+  // Shared between the LinearGradient and ImageBackground header wrappers
+  // below - which one wears the equipped background is the only thing that
+  // differs, per bg-blocks being a real image rather than a gradient.
+  const headerBody = (
+    <>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+        <Avatar
+          url={profile?.avatarUrl}
+          name={profile?.displayName}
+          size={64}
+          ring={profile?.equippedBorder}
+        />
+        <View style={{ flex: 1 }} />
+        {isSelf ? (
+          <View style={{ flexDirection: 'row' }}>
+            <IconButton
+              icon="bookmark"
+              label="Saved"
+              color={gradient ? '#fff' : colors.textMuted}
+              onPress={() => navigation.navigate('Saved')}
+            />
+            <IconButton
+              icon="shopping-bag"
+              label="Shop"
+              color={gradient ? '#fff' : colors.textMuted}
+              onPress={() => navigation.navigate('Shop')}
+            />
+            <IconButton
+              icon="settings"
+              label="Settings"
+              color={gradient ? '#fff' : colors.textMuted}
+              onPress={() => navigation.navigate('Settings')}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        <DisplayName
+          name={profile?.displayName || 'Unknown'}
+          effect={profile?.equippedNameEffect}
+          style={{ fontSize: 20, color: gradient ? '#fff' : colors.text }}
+        />
+        <LevelChip level={level.level} />
+      </View>
+
+      {profile?.bio ? (
+        <Text style={[typography.body, { color: gradient ? 'rgba(255,255,255,0.9)' : colors.textMuted }]}>
+          {profile.bio}
+        </Text>
+      ) : null}
+    </>
+  );
+
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -203,65 +257,28 @@ export function ProfileScreen({ route, navigation }: any) {
         <View style={{ gap: space.lg }}>
           {/* Header, wearing the equipped background cosmetic. */}
           <View style={{ paddingTop: route.params?.userId ? 0 : insets.top }}>
-            <LinearGradient
-              colors={
-                gradient
-                  ? (gradient.colors as any)
-                  : [colors.mutedSoft, colors.bg]
-              }
-              start={gradient?.start || { x: 0, y: 0 }}
-              end={gradient?.end || { x: 1, y: 1 }}
-              style={{ paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.md }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Avatar
-                  url={profile?.avatarUrl}
-                  name={profile?.displayName}
-                  size={64}
-                  ring={profile?.equippedBorder}
-                />
-                <View style={{ flex: 1 }} />
-                {isSelf ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <IconButton
-                      icon="bookmark"
-                      label="Saved"
-                      color={gradient ? '#fff' : colors.textMuted}
-                      onPress={() => navigation.navigate('Saved')}
-                    />
-                    <IconButton
-                      icon="shopping-bag"
-                      label="Shop"
-                      color={gradient ? '#fff' : colors.textMuted}
-                      onPress={() => navigation.navigate('Shop')}
-                    />
-                    <IconButton
-                      icon="settings"
-                      label="Settings"
-                      color={gradient ? '#fff' : colors.textMuted}
-                      onPress={() => navigation.navigate('Settings')}
-                    />
-                  </View>
-                ) : null}
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <DisplayName
-                  name={profile?.displayName || 'Unknown'}
-                  effect={profile?.equippedNameEffect}
-                  style={{ fontSize: 20, color: gradient ? '#fff' : colors.text }}
-                />
-                <LevelChip level={level.level} />
-              </View>
-
-              {profile?.bio ? (
-                <Text
-                  style={[typography.body, { color: gradient ? 'rgba(255,255,255,0.9)' : colors.textMuted }]}
-                >
-                  {profile.bio}
-                </Text>
-              ) : null}
-            </LinearGradient>
+            {gradient?.image ? (
+              <ImageBackground
+                source={{ uri: gradient.image }}
+                resizeMode="cover"
+                style={{ paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.md }}
+              >
+                {headerBody}
+              </ImageBackground>
+            ) : (
+              <LinearGradient
+                colors={
+                  gradient
+                    ? (gradient.colors as any)
+                    : [colors.mutedSoft, colors.bg]
+                }
+                start={gradient?.start || { x: 0, y: 0 }}
+                end={gradient?.end || { x: 1, y: 1 }}
+                style={{ paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.md }}
+              >
+                {headerBody}
+              </LinearGradient>
+            )}
           </View>
 
           <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>

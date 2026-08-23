@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -286,6 +287,24 @@ export function Avatar({ url, name, size = 40, ring }: any) {
   if (!cosmetic) return inner;
 
   const ring_ = { padding: ringWidth, borderRadius: (size + ringWidth * 2) / 2 };
+
+  // border-flame is a texture PNG on the web (.shop-border-flame::after),
+  // not a colour - painting it as a flat blue ring threw the actual art
+  // away. Stretched to the ring's exact box the same way the web's
+  // `100% 100%` background-size does, since the PNG already has the
+  // transparent centre baked in.
+  if (cosmetic.image) {
+    return (
+      <ImageBackground
+        source={{ uri: cosmetic.image }}
+        style={ring_}
+        imageStyle={{ borderRadius: ring_.borderRadius }}
+        resizeMode="stretch"
+      >
+        {inner}
+      </ImageBackground>
+    );
+  }
 
   // Two borders - rainbow and conic - are defined as gradients. Painting them
   // with the flat `color` threw that away, which made the two showiest things

@@ -4,17 +4,31 @@ import type { TextStyle } from 'react-native';
 // gradients, pseudo-elements and keyframe animations.
 //
 // A background becomes a LinearGradient colour ramp, a border becomes a ring
-// colour + width, a nickname effect becomes a TextStyle. The palettes are
-// taken from the stylesheet so a cosmetic reads as the same thing it does on
-// the web. What does NOT carry over is motion - the animated ones (Lava Lamp,
+// colour + width, a nickname effect becomes a TextStyle. bg-blocks and
+// border-flame are the two exceptions - real image assets on the web rather
+// than something a gradient approximates, so they carry an `image` URL
+// instead and are fetched from the site itself. The palettes are taken from
+// the stylesheet so a cosmetic reads as the same thing it does on the web.
+// What does NOT carry over is motion - the animated ones (Lava Lamp,
 // Orbit, Spectrum Spin, Glitch, Sparkle) render as a static frame of the same
 // palette rather than a loop, because a per-frame animation behind every
 // avatar in a scrolling list is the kind of thing that costs a feed its frame
 // rate. Everything is still recognisably the item that was bought.
 
-export type Gradient = { colors: string[]; start?: { x: number; y: number }; end?: { x: number; y: number } };
+export type Gradient = {
+  colors: string[];
+  start?: { x: number; y: number };
+  end?: { x: number; y: number };
+  image?: string;
+};
 
 const DIAGONAL = { start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
+
+// bg-blocks and border-flame are real image assets on the web
+// (css/style.css's .shop-bg-blocks / .shop-border-flame), not gradients -
+// fetched from the site rather than bundled, the same way avatar photos
+// already are, so the app doesn't ship two copies of the art.
+const ASSET_BASE = 'https://psekiewicz.github.io/assets/shop';
 
 export const BG_GRADIENTS: Record<string, Gradient> = {
   'bg-sunset': { colors: ['#ff7e5f', '#feb47b'], ...DIAGONAL },
@@ -22,7 +36,7 @@ export const BG_GRADIENTS: Record<string, Gradient> = {
   'bg-midnight': { colors: ['#0f2027', '#203a43', '#2c5364'], ...DIAGONAL },
   'bg-aurora': { colors: ['#00c9ff', '#92fe9d', '#7f00ff'], ...DIAGONAL },
   'bg-confetti': { colors: ['#f857a6', '#ff5858', '#ffc700'], ...DIAGONAL },
-  'bg-blocks': { colors: ['#434343', '#000000'], ...DIAGONAL },
+  'bg-blocks': { colors: ['#434343', '#000000'], ...DIAGONAL, image: `${ASSET_BASE}/bg-blocks.webp` },
   'bg-paper': { colors: ['#f5f0e6', '#e8e0d0'], ...DIAGONAL },
   'bg-grid': { colors: ['#1b3a5c', '#2c5f8a'], ...DIAGONAL },
   'bg-sunrise': { colors: ['#f6d365', '#fda085'], ...DIAGONAL },
@@ -40,7 +54,7 @@ export const BG_GRADIENTS: Record<string, Gradient> = {
   'bg-snow': { colors: ['#e6f2ff', '#b3d9ff', '#8ab6d6'], ...DIAGONAL },
 };
 
-export type BorderStyle = { color: string; width: number; gradient?: string[] };
+export type BorderStyle = { color: string; width: number; gradient?: string[]; image?: string };
 
 export const BORDER_STYLES: Record<string, BorderStyle> = {
   'border-bronze': { color: '#cd7f32', width: 2 },
@@ -48,7 +62,7 @@ export const BORDER_STYLES: Record<string, BorderStyle> = {
   'border-gold': { color: '#ffd700', width: 2 },
   'border-neon': { color: '#39ff14', width: 2 },
   'border-rainbow': { color: '#ff0080', width: 3, gradient: ['#ff0080', '#ffcc00', '#00ff88', '#00ccff'] },
-  'border-flame': { color: '#3ba7ff', width: 3 },
+  'border-flame': { color: '#3ba7ff', width: 3, image: `${ASSET_BASE}/border-flame.png` },
   'border-ink': { color: '#191713', width: 1 },
   'border-dashed': { color: '#8b867a', width: 2 },
   'border-double': { color: '#5d594e', width: 3 },
@@ -68,7 +82,9 @@ export const NAME_STYLES: Record<string, TextStyle> = {
   // React Native can't paint a gradient into glyphs without an extra masking
   // layer, so the gradient effects take their dominant stop as a solid.
   'name-gradient': { color: '#8e2de2' },
-  'name-shadow': { textShadowColor: '#c03a17', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 0 },
+  // The web's .shop-name-shadow shadow is var(--color-accent) (#16645c),
+  // not the primary colour - this had picked the wrong token.
+  'name-shadow': { textShadowColor: '#16645c', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 0 },
   'name-glow': { color: '#00e5ff', textShadowColor: '#00e5ff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
   'name-rainbow': { color: '#ff006e' },
   'name-sparkle': { color: '#ffd166', textShadowColor: '#fff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 },
