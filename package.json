@@ -1,0 +1,13 @@
+{
+  "name": "psekiewicz.github.io",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:rls": "node --test tests/integration/*.test.js",
+    "test:all": "npm test && npm run test:rls"
+  },
+  "devDependencies": {
+    "pg": "^8.23.0"
+  }
+}

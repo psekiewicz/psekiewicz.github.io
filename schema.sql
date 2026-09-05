@@ -1240,6 +1240,72 @@ create policy "Users can delete their own notifications"
 -- No insert policy at all - see the note above; the triggers below are the
 -- only writers.
 
+-- ============================================================
+-- Push tokens - one row per device that's granted notification
+-- permission (see mobile/src/lib/push.ts), so add_notification() below
+-- can reach someone who isn't looking at the app right now. Nothing
+-- ever reads these except send_push() itself.
+-- ============================================================
+
+create table if not exists public.push_tokens (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  token text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, token)
+);
+
+alter table public.push_tokens enable row level security;
+
+drop policy if exists "Users can register their own push token" on public.push_tokens;
+create policy "Users can register their own push token"
+  on public.push_tokens for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can remove their own push token" on public.push_tokens;
+create policy "Users can remove their own push token"
+  on public.push_tokens for delete
+  using (auth.uid() = user_id);
+
+-- Deliberately no select policy - a token is only ever read from inside
+-- send_push() below, a security definer function that (like every other
+-- trigger in this file) runs as the table owner and isn't subject to RLS.
+
+-- pg_net is Supabase's own extension for firing HTTP requests from
+-- Postgres (the same mechanism behind Database Webhooks), pre-installed
+-- on every project - this is what lets a push go out with no server to
+-- host and no Edge Function to deploy.
+create extension if not exists pg_net with schema extensions;
+
+-- One HTTP call to Expo's push relay per notified user, covering every
+-- device they've registered. net.http_post is fire-and-forget - it
+-- queues the request on a background worker and returns immediately -
+-- so a slow or failed delivery here can never block or fail the insert
+-- that triggered it.
+create or replace function public.send_push(p_user_id uuid, p_title text, p_body text, p_data jsonb default '{}'::jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_tokens text[];
+begin
+  select array_agg(token) into v_tokens from public.push_tokens where user_id = p_user_id;
+  if v_tokens is null or array_length(v_tokens, 1) = 0 then
+    return;
+  end if;
+
+  perform net.http_post(
+    url := 'https://exp.host/--/api/v2/push/send',
+    headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb,
+    body := (
+      select jsonb_agg(jsonb_build_object('to', t, 'title', p_title, 'body', p_body, 'data', p_data))
+      from unnest(v_tokens) as t
+    )
+  );
+end;
+$$;
+
 -- Skips when the same person already has an unread notification of the
 -- same kind about the same thing. Without this, unliking and re-liking (or
 -- toggling a follow) would pile up duplicates.
@@ -1254,6 +1320,10 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_actor_name text;
+  v_project_title text;
+  v_body text;
 begin
   if p_user_id is null or p_actor_id is null or p_user_id = p_actor_id then
     return;
@@ -1272,6 +1342,22 @@ begin
 
   insert into public.notifications (user_id, actor_id, type, project_id)
   values (p_user_id, p_actor_id, p_type, p_project_id);
+
+  select display_name into v_actor_name from public.profiles where id = p_actor_id;
+  v_actor_name := coalesce(nullif(v_actor_name, ''), 'Someone');
+
+  if p_project_id is not null then
+    select title into v_project_title from public.projects where id = p_project_id;
+  end if;
+
+  v_body := case p_type
+    when 'follow' then v_actor_name || ' followed you.'
+    when 'like' then v_actor_name || ' liked ' || coalesce(v_project_title, 'your project') || '.'
+    when 'comment' then v_actor_name || ' commented on ' || coalesce(v_project_title, 'your project') || '.'
+    else v_actor_name || ' did something.'
+  end;
+
+  perform public.send_push(p_user_id, 'Showcase', v_body, jsonb_build_object('type', p_type, 'projectId', p_project_id));
 end;
 $$;
 

@@ -22,7 +22,8 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "intentFilters": [
         {
@@ -51,7 +52,13 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#c03a17"
+        }
+      ]
     ]
   }
 }

@@ -82,11 +82,12 @@ export function SavedScreen({ navigation }: any) {
           body="Tap the bookmark on an entry to keep it here."
         />
       }
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <ProjectCard
           project={item}
           onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
           onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
+          index={index}
         />
       )}
     />

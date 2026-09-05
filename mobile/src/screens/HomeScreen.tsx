@@ -232,7 +232,7 @@ export function HomeScreen({ navigation }: any) {
               }
             />
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             // A blank from padRow: holds a column open so the last real card
             // keeps the width of every other one.
             if (!item) return <View style={{ flex: 1 }} />;
@@ -245,6 +245,7 @@ export function HomeScreen({ navigation }: any) {
                 commentCount={commentCounts.get(item.id) || 0}
                 onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
                 onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
+                index={index}
               />
             );
             return columns > 1 ? <View style={{ flex: 1 }}>{card}</View> : card;

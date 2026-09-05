@@ -413,13 +413,14 @@ export function ProfileScreen({ route, navigation }: any) {
           />
         </View>
       }
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <View style={{ paddingHorizontal: space.lg }}>
           <ProjectCard
             project={item}
             author={profile ? { displayName: profile.displayName, avatarUrl: profile.avatarUrl, equippedBorder: profile.equippedBorder } : undefined}
             level={level.level}
             onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+            index={index}
           />
         </View>
       )}

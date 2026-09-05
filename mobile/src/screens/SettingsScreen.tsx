@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   Body,
@@ -22,11 +22,17 @@ import {
 } from '../data/auth';
 import { updateProfile } from '../data/profiles';
 import { collectEarnings } from '../data/reputation';
+import { clearSeenIds } from '../lib/feedRank';
+import { disablePush, enablePush, getPushPermissionStatus, pushAvailable } from '../lib/push';
+import { useMotion } from '../theme/MotionProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
+import appConfig from '../../app.json';
+
+const WEBSITE_URL = 'https://psekiewicz.github.io';
 
 export function SettingsScreen({ navigation }: any) {
-  const { colors, preference, setPreference } = useTheme();
+  const { colors, preference: themePreference, setPreference: setThemePreference } = useTheme();
   const { user, profile, refreshProfile } = useAuth();
 
   const [displayName, setDisplayName] = useState('');
@@ -40,6 +46,15 @@ export function SettingsScreen({ navigation }: any) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const [resettingHistory, setResettingHistory] = useState(false);
+  const [pushStatus, setPushStatus] = useState<string>('unknown');
+  const [togglingPush, setTogglingPush] = useState(false);
+
+  useEffect(() => {
+    getPushPermissionStatus()
+      .then(setPushStatus)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -54,7 +69,9 @@ export function SettingsScreen({ navigation }: any) {
         <Heading>Settings</Heading>
         <Body muted>Sign in to manage your account.</Body>
         <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
-        <ThemeSection preference={preference} setPreference={setPreference} />
+        <ThemeSection preference={themePreference} setPreference={setThemePreference} />
+        <MotionSection />
+        <AboutSection />
       </View>
     );
   }
@@ -117,6 +134,20 @@ export function SettingsScreen({ navigation }: any) {
     }
   };
 
+  const resetHistory = async () => {
+    setError('');
+    setNotice('');
+    setResettingHistory(true);
+    try {
+      await clearSeenIds();
+      setNotice('Scrolls history cleared - already-seen entries can resurface again.');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setResettingHistory(false);
+    }
+  };
+
   const confirmDelete = () => {
     Alert.alert(
       'Delete your account?',
@@ -164,7 +195,49 @@ export function SettingsScreen({ navigation }: any) {
         </View>
       </View>
 
-      <ThemeSection preference={preference} setPreference={setPreference} />
+      <ThemeSection preference={themePreference} setPreference={setThemePreference} />
+
+      <MotionSection />
+
+      <Card>
+        <Eyebrow>Notifications</Eyebrow>
+        <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
+          {pushStatus === 'granted'
+            ? "You'll get a push when someone likes, comments on, or follows you."
+            : 'Get a push when someone likes, comments on, or follows you.'}
+        </Text>
+        {pushAvailable() ? (
+          <Button
+            label={pushStatus === 'granted' ? 'Turn off notifications' : 'Enable notifications'}
+            variant="secondary"
+            loading={togglingPush}
+            onPress={async () => {
+              setError('');
+              setNotice('');
+              setTogglingPush(true);
+              try {
+                if (pushStatus === 'granted') {
+                  await disablePush(user.id);
+                  setPushStatus('undetermined');
+                  setNotice('Notifications turned off for this device.');
+                } else {
+                  await enablePush(user.id);
+                  setPushStatus('granted');
+                  setNotice('Notifications enabled.');
+                }
+              } catch (e: any) {
+                setError(e.message);
+              } finally {
+                setTogglingPush(false);
+              }
+            }}
+          />
+        ) : (
+          <Text style={[typography.small, { color: colors.textFaint }]}>
+            Not available in this build - see mobile/README.md.
+          </Text>
+        )}
+      </Card>
 
       <Card>
         <Eyebrow>Earnings</Eyebrow>
@@ -199,6 +272,22 @@ export function SettingsScreen({ navigation }: any) {
           />
         </View>
       </View>
+
+      <Card>
+        <Eyebrow>Scrolls</Eyebrow>
+        <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
+          Scrolls remembers what you've already swiped past for a few days, so it doesn't repeat
+          itself. Clearing that lets everything come back up sooner.
+        </Text>
+        <Button
+          label="Reset Scrolls history"
+          variant="secondary"
+          onPress={resetHistory}
+          loading={resettingHistory}
+        />
+      </Card>
+
+      <AboutSection />
 
       <View
         style={{
@@ -240,6 +329,53 @@ function ThemeSection({ preference, setPreference }: any) {
       <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
         With no explicit choice, the app follows your phone's setting.
       </Text>
+    </View>
+  );
+}
+
+function MotionSection() {
+  const { colors } = useTheme();
+  const { preference, setPreference } = useMotion();
+  return (
+    <View>
+      <Eyebrow>Animations</Eyebrow>
+      <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
+        {(
+          [
+            { id: 'system', label: 'System' },
+            { id: 'on', label: 'On' },
+            { id: 'off', label: 'Off' },
+          ] as const
+        ).map((option) => (
+          <Chip
+            key={option.id}
+            label={option.label}
+            active={preference === option.id}
+            onPress={() => setPreference(option.id)}
+          />
+        ))}
+      </View>
+      <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
+        "System" follows your phone's reduce-motion accessibility setting.
+      </Text>
+    </View>
+  );
+}
+
+function AboutSection() {
+  const { colors } = useTheme();
+  return (
+    <View>
+      <Eyebrow>About</Eyebrow>
+      <View style={{ marginTop: space.md, gap: space.xs }}>
+        <Body>Showcase v{appConfig.expo.version}</Body>
+        <Text
+          style={[typography.small, { color: colors.primary }]}
+          onPress={() => Linking.openURL(WEBSITE_URL)}
+        >
+          {WEBSITE_URL.replace('https://', '')}
+        </Text>
+      </View>
     </View>
   );
 }

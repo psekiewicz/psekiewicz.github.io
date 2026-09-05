@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
   ActivityIndicator,
+  Animated,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
 } from 'react-native';
 
 import { borderStyle, nameStyle } from '../lib/cosmetics';
+import { usePressScale } from '../lib/motion';
 import { initials, timeAgo, typeMeta } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
@@ -53,6 +55,7 @@ export function Eyebrow({ children, style }: any) {
 
 export function Card({ children, style, onPress }: any) {
   const { colors } = useTheme();
+  const { scale, onPressIn, onPressOut } = usePressScale(0.97);
   const body = (
     <View
       style={[
@@ -71,8 +74,8 @@ export function Card({ children, style, onPress }: any) {
   );
   if (!onPress) return body;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-      {body}
+    <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      <Animated.View style={{ transform: [{ scale }] }}>{body}</Animated.View>
     </Pressable>
   );
 }
@@ -106,6 +109,7 @@ export function Button({
   style,
 }: ButtonProps) {
   const { colors } = useTheme();
+  const { scale, onPressIn, onPressOut } = usePressScale();
 
   const palette = {
     primary: { bg: colors.primary, fg: '#fff', border: colors.primary },
@@ -119,57 +123,72 @@ export function Button({
   return (
     <Pressable
       onPress={inactive ? undefined : onPress}
+      onPressIn={inactive ? undefined : onPressIn}
+      onPressOut={inactive ? undefined : onPressOut}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactive }}
       style={({ pressed }) => [
         {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: space.sm,
-          backgroundColor: palette.bg,
-          borderColor: palette.border,
-          borderWidth: StyleSheet.hairlineWidth * 2,
-          borderRadius: radius.sm,
-          paddingVertical: small ? space.sm : space.md,
-          paddingHorizontal: small ? space.md : space.lg,
           opacity: inactive ? 0.45 : pressed ? 0.75 : 1,
         },
-        style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={palette.fg} />
-      ) : (
-        <>
-          {icon ? <Feather name={icon} size={small ? 13 : 15} color={palette.fg} /> : null}
-          <Text
-            style={{
-              color: palette.fg,
-              fontSize: small ? 12 : 14,
-              fontWeight: '700',
-              letterSpacing: 0.3,
-            }}
-          >
-            {label}
-          </Text>
-        </>
-      )}
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: space.sm,
+            backgroundColor: palette.bg,
+            borderColor: palette.border,
+            borderWidth: StyleSheet.hairlineWidth * 2,
+            borderRadius: radius.sm,
+            paddingVertical: small ? space.sm : space.md,
+            paddingHorizontal: small ? space.md : space.lg,
+            transform: [{ scale }],
+          },
+          style,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={palette.fg} />
+        ) : (
+          <>
+            {icon ? <Feather name={icon} size={small ? 13 : 15} color={palette.fg} /> : null}
+            <Text
+              style={{
+                color: palette.fg,
+                fontSize: small ? 12 : 14,
+                fontWeight: '700',
+                letterSpacing: 0.3,
+              }}
+            >
+              {label}
+            </Text>
+          </>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
 
 export function IconButton({ icon, onPress, color, size = 20, label }: any) {
   const { colors } = useTheme();
+  const { scale, onPressIn, onPressOut } = usePressScale(0.85);
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={10}
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: space.xs })}
     >
-      <Feather name={icon} size={size} color={color || colors.textMuted} />
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Feather name={icon} size={size} color={color || colors.textMuted} />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -221,32 +240,34 @@ export function Field({
 
 export function Chip({ label, active, onPress, icon }: any) {
   const { colors } = useTheme();
+  const { scale, onPressIn, onPressOut } = usePressScale();
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        paddingVertical: 6,
-        paddingHorizontal: space.md,
-        borderRadius: radius.sm,
-        borderWidth: StyleSheet.hairlineWidth * 2,
-        borderColor: active ? colors.primary : colors.border,
-        backgroundColor: active ? colors.primarySoft : 'transparent',
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      {icon ? <Feather name={icon} size={12} color={active ? colors.primary : colors.textMuted} /> : null}
-      <Text
+    <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      <Animated.View
         style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: active ? colors.primary : colors.textMuted,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5,
+          paddingVertical: 6,
+          paddingHorizontal: space.md,
+          borderRadius: radius.sm,
+          borderWidth: StyleSheet.hairlineWidth * 2,
+          borderColor: active ? colors.primary : colors.border,
+          backgroundColor: active ? colors.primarySoft : 'transparent',
+          transform: [{ scale }],
         }}
       >
-        {label}
-      </Text>
+        {icon ? <Feather name={icon} size={12} color={active ? colors.primary : colors.textMuted} /> : null}
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: '700',
+            color: active ? colors.primary : colors.textMuted,
+          }}
+        >
+          {label}
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 }

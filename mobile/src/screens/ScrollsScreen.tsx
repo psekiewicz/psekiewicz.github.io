@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   FlatList,
   Linking,
@@ -28,6 +29,7 @@ import { logProjectView } from '../data/views';
 import { loadSeenIds, markSeen, rankFeed } from '../lib/feedRank';
 import { resolveMedia } from '../lib/media';
 import { formatCount } from '../lib/utils';
+import { useMotion } from '../theme/MotionProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
 
@@ -318,9 +320,54 @@ function ScrollCard({
   const media = resolveMedia(project.mediaUrl, project.type);
   const poster = project.scrollImageUrl || project.imageUrl;
 
+  // Double-tap-to-like on the media itself - the classic feed gesture,
+  // parallel to the web build's scrolls.html. Only ever likes, never
+  // unlikes, same as every feed that does this; the deliberate tap on the
+  // heart rail (below) still does both.
+  const lastTapAt = useRef(0);
+  const burst = useRef(new Animated.Value(0)).current;
+  const { enabled: motionEnabled } = useMotion();
+
+  const playBurst = () => {
+    if (!motionEnabled) return;
+    burst.setValue(0);
+    Animated.sequence([
+      Animated.spring(burst, { toValue: 1, useNativeDriver: true, speed: 8, bounciness: 10 }),
+      Animated.timing(burst, { toValue: 0, duration: 220, delay: 250, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    const isDoubleTap = now - lastTapAt.current < 300;
+    lastTapAt.current = now;
+    if (!isDoubleTap) return;
+    playBurst();
+    if (!liked) onLike();
+  };
+
   return (
     <View style={{ height, width: '100%', backgroundColor: '#000' }}>
-      <ScrollMedia media={media} poster={poster} active={active} height={height} />
+      <Pressable onPress={handleDoubleTap} style={StyleSheet.absoluteFill}>
+        <ScrollMedia media={media} poster={poster} active={active} height={height} />
+      </Pressable>
+
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: burst,
+          transform: [{ scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.15] }) }],
+        }}
+      >
+        <Feather name="heart" size={96} color="#fff" style={{ opacity: 0.95 }} />
+      </Animated.View>
 
       {/* Legibility scrim: the text rail sits over arbitrary user media, so it
           needs its own contrast rather than hoping the image is dark. */}
@@ -417,13 +464,34 @@ function ScrollCard({
 }
 
 function Rail({ icon, value, color, onPress, filled }: any) {
+  const { enabled } = useMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    // Skipped on mount - only an actual like/save toggle should pop, not
+    // the initial render of an already-liked card while scrolling past it.
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    if (!enabled) return;
+    scale.setValue(1);
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.35, useNativeDriver: true, speed: 40, bounciness: 10 }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
+    ]).start();
+  }, [filled, enabled, scale]);
+
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       style={({ pressed }) => ({ alignItems: 'center', gap: 3, opacity: pressed ? 0.6 : 1 })}
     >
-      <Feather name={icon} size={26} color={color} style={filled ? { opacity: 1 } : undefined} />
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Feather name={icon} size={26} color={color} style={filled ? { opacity: 1 } : undefined} />
+      </Animated.View>
       {value ? <Text style={{ color, fontSize: 11, fontWeight: '700' }}>{value}</Text> : null}
     </Pressable>
   );

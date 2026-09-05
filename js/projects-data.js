@@ -63,6 +63,14 @@ export async function getPublishedProjects({ limit = FEED_PAGE_SIZE, before } = 
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Row count only - `head: true` means Postgres never sends the rows
+// themselves, just the count PostgREST computes for pagination headers.
+export async function getPublishedProjectCount() {
+  const { count, error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true }).eq('published', true);
+  if (error) throw new Error(error.message);
+  return count || 0;
+}
+
 export async function getPublishedProjectsByUser(uid) {
   const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid).eq('published', true);
   if (error) throw new Error(error.message);
