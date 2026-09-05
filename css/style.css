@@ -934,6 +934,98 @@ img {
   margin-top: 8px;
 }
 
+/* The floating terminal (js/terminal-widget.js) - the same term-window
+   look as the hero's, just reachable from anywhere. Sits above the
+   mobile tab bar the same way .create-sheet does. */
+.terminal-trigger {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 140;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.terminal-trigger:hover {
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 720px) {
+  body.has-bottom-nav .terminal-trigger {
+    bottom: calc(66px + 16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.terminal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 30, 0.5);
+  z-index: 150;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.terminal-modal-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease;
+}
+
+.terminal-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 160;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.terminal-modal.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.terminal-modal .term-window-bar {
+  flex: none;
+}
+
+.terminal-modal .modal-close {
+  margin-left: auto;
+}
+
+.terminal-modal .term-output {
+  flex: 1;
+  padding-top: 16px;
+  max-height: none;
+}
+
 .hero h1 {
   font-size: clamp(2.1rem, 4.5vw, 3.4rem);
   margin-bottom: 18px;
@@ -1018,6 +1110,142 @@ img {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 22px;
+}
+
+/* The homepage's "Recently published" spotlight (index.html) - one
+   project at a time, larger, switching itself on a timer or by hand.
+   Every slide is stacked with inset:0 over the active one, which is the
+   only one actually in flow (position:relative) - that's what lets the
+   viewport's height track whichever slide is showing without a fixed,
+   guessed-at height. */
+.spotlight {
+  position: relative;
+}
+
+.spotlight-viewport {
+  position: relative;
+}
+
+.spotlight-slide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.spotlight-slide.is-active {
+  position: relative;
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.spotlight-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-muted-soft);
+  background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(125, 118, 105, 0.14) 6px 7px);
+  overflow: hidden;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  text-decoration: none;
+}
+
+.spotlight-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spotlight-info h3 {
+  font-size: 1.5rem;
+  margin: 10px 0 8px;
+}
+
+.spotlight-info p {
+  color: var(--color-text-muted);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+
+.spotlight-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.spotlight-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.spotlight-arrow:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.08);
+}
+
+.spotlight-arrow-next {
+  transform: rotate(180deg);
+}
+
+.spotlight-arrow-next:hover {
+  transform: rotate(180deg) scale(1.08);
+}
+
+.spotlight-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotlight-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.spotlight-dot.is-active {
+  background: var(--color-primary);
+  transform: scale(1.35);
+}
+
+@media (max-width: 720px) {
+  .spotlight-slide {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .spotlight-media {
+    aspect-ratio: 16 / 9;
+  }
 }
 
 @keyframes fade-in-up {
@@ -2296,6 +2524,63 @@ body.has-bottom-nav .scroll-card {
 
 .scroll-rail-count {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Like feedback (scrolls.html): a quick pop on the rail heart for any
+   like/unlike, and a bigger classic double-tap burst over the card - the
+   deliberate tap and the double-tap gesture get replies sized to match. */
+@keyframes scroll-rail-pop {
+  35% {
+    transform: scale(1.35);
+  }
+}
+
+.scroll-rail-icon.is-popping {
+  animation: scroll-rail-pop 0.35s ease;
+}
+
+.scroll-like-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.35));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scroll-like-burst.is-active {
+  animation: scroll-heart-burst 0.7s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes scroll-heart-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  55% {
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* The one-shot entrance flourish a card's caption gets the moment it
+   becomes the active one (see the mediaObserver callback) - content stays
+   fully visible the rest of the time, so there's nothing to hide on a
+   client too slow to run this. Reuses .card's own fade-in-up keyframe
+   rather than redefining the same fade+rise. */
+.scroll-content.is-entering {
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .scroll-card:not(.has-image) .scroll-rail-count {

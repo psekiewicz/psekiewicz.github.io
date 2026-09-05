@@ -133,7 +133,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>© <span id="year"></span> Showcase - made by AI</span>
+      <span>© <span id="year"></span> Showcase</span>
       <a href="projects.html">Browse projects</a>
     </div>
   </footer>
@@ -142,6 +142,7 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module" src="/js/cookie-consent.js"></script>
+  <script type="module" src="/js/terminal-widget.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { getPublishedProjects } from '/js/projects-data.js';
@@ -150,6 +151,7 @@
     import { onAuthChange, getCurrentUser } from '/js/auth.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
     import { initHeroTerminal } from '/js/hero-terminal.js';
+    import { icon } from '/js/icons.js';
 
     // Signed-in visitors already have an account full of projects to look
     // at - the marketing pitch below is for people who don't yet. Kicked
@@ -187,39 +189,104 @@
       }
     });
 
-    function projectCard(project, profiles, levels = new Map()) {
+    function spotlightSlideHtml(project, profiles, levels, index) {
       const thumb = project.imageUrl
         ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
         : escapeHtml(project.title.slice(0, 2).toUpperCase());
-      const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = profiles.get(project.uid);
       return `
-        <article class="card">
-          <div class="card-thumb">${thumb}</div>
-          <div class="card-body">
-            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
-            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
+        <div class="spotlight-slide${index === 0 ? ' is-active' : ''}" data-index="${index}" aria-hidden="${index === 0 ? 'false' : 'true'}">
+          <a class="spotlight-media" href="project.html?id=${encodeURIComponent(project.id)}" tabindex="${index === 0 ? '0' : '-1'}">${thumb}</a>
+          <div class="spotlight-info">
+            <div class="tag-list">${typeBadgeHtml(project.type)}</div>
+            <h3><a href="project.html?id=${encodeURIComponent(project.id)}" tabindex="${index === 0 ? '0' : '-1'}">${escapeHtml(project.title)}</a></h3>
+            <p>${escapeHtml(project.summary || project.description.slice(0, 160))}</p>
             <div class="card-meta">
               <span class="card-author">
                 ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
-                <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+                <a href="profile.html?user=${encodeURIComponent(project.uid)}" tabindex="${index === 0 ? '0' : '-1'}">${escapeHtml(project.authorName)}</a>
                 ${levels.get(project.uid) ? levelChipHtml(levels.get(project.uid).level, 'sm') : ''}
               </span>
               <span>${timeAgo(project.createdAt)}</span>
             </div>
           </div>
-        </article>
+        </div>
       `;
+    }
+
+    // A rotating spotlight rather than a static grid - "recently published"
+    // used to mean three cards side by side forever; this shows one at a
+    // time, larger, and lets the projects themselves do the switching
+    // (autoplay, arrows, or dots), pausing the moment a visitor touches it.
+    let spotlightIndex = 0;
+    let spotlightTimer = null;
+
+    function goToSlide(container, index) {
+      const slides = [...container.querySelectorAll('.spotlight-slide')];
+      const dots = [...container.querySelectorAll('.spotlight-dot')];
+      spotlightIndex = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        const active = i === spotlightIndex;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', String(!active));
+        slide.querySelectorAll('a').forEach((a) => a.tabIndex = active ? 0 : -1);
+      });
+      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === spotlightIndex));
+    }
+
+    function startSpotlightAutoplay(container) {
+      clearInterval(spotlightTimer);
+      spotlightTimer = setInterval(() => goToSlide(container, spotlightIndex + 1), 4500);
+    }
+
+    function renderSpotlight(projects, profiles, levels = new Map()) {
+      const container = document.getElementById('latest-projects');
+      container.className = 'spotlight';
+      container.innerHTML = `
+        <div class="spotlight-viewport">
+          ${projects.map((p, i) => spotlightSlideHtml(p, profiles, levels, i)).join('')}
+        </div>
+        ${
+          projects.length > 1
+            ? `
+          <div class="spotlight-controls">
+            <button class="spotlight-arrow" type="button" data-dir="-1" aria-label="Previous project">${icon('arrow-left', { size: 18 })}</button>
+            <div class="spotlight-dots">
+              ${projects.map((_, i) => `<button class="spotlight-dot${i === 0 ? ' is-active' : ''}" type="button" data-index="${i}" aria-label="Go to project ${i + 1}"></button>`).join('')}
+            </div>
+            <button class="spotlight-arrow spotlight-arrow-next" type="button" data-dir="1" aria-label="Next project">${icon('arrow-left', { size: 18 })}</button>
+          </div>
+        `
+            : ''
+        }
+      `;
+
+      if (projects.length <= 1) return;
+
+      container.querySelectorAll('.spotlight-arrow').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          goToSlide(container, spotlightIndex + Number(btn.dataset.dir));
+          startSpotlightAutoplay(container);
+        });
+      });
+      container.querySelectorAll('.spotlight-dot').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          goToSlide(container, Number(btn.dataset.index));
+          startSpotlightAutoplay(container);
+        });
+      });
+      container.addEventListener('mouseenter', () => clearInterval(spotlightTimer));
+      container.addEventListener('mouseleave', () => startSpotlightAutoplay(container));
+      startSpotlightAutoplay(container);
     }
 
     (async () => {
       const container = document.getElementById('latest-projects');
       try {
-        // Three cards are shown, so three are asked for. This used to pull
-        // the whole archive down to slice the front off it.
-        const projects = await getPublishedProjects({ limit: 3 });
-        const latest = projects.slice(0, 3);
+        // Five to switch between rather than three side by side - this used
+        // to pull the whole archive down just to slice the front off it.
+        const projects = await getPublishedProjects({ limit: 5 });
+        const latest = projects.slice(0, 5);
         if (latest.length === 0) {
           container.outerHTML = `
             <div class="empty-state">
@@ -231,12 +298,12 @@
           return;
         }
         const profiles = await getProfilesByIds(latest.map((p) => p.uid));
-        container.innerHTML = latest.map((p) => projectCard(p, profiles)).join('');
+        renderSpotlight(latest, profiles);
 
-        // Painted in after the cards are already up - levels cost a few
+        // Painted in after the spotlight is already up - levels cost a few
         // extra queries and aren't worth delaying the homepage for.
         const levels = await getLevelsForUsers(latest.map((p) => p.uid)).catch(() => new Map());
-        container.innerHTML = latest.map((p) => projectCard(p, profiles, levels)).join('');
+        renderSpotlight(latest, profiles, levels);
       } catch (err) {
         container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
       }

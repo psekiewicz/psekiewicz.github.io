@@ -77,6 +77,7 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module" src="/js/cookie-consent.js"></script>
+  <script type="module" src="/js/terminal-widget.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
@@ -108,6 +109,7 @@
     let currentUserIsAdmin = false;
     const projectsById = new Map();
     const likeState = new Map(); // projectId -> { liked, count }
+    const lastTapAt = new WeakMap(); // card element -> timestamp, for double-tap-to-like
     const commentCounts = new Map(); // projectId -> count
     // Unlike the other pages, the feed can't paint levels in afterwards:
     // re-rendering the container would reset the scroll position mid-swipe
@@ -223,10 +225,19 @@
                 syncMuteButton(card, !soundOn);
                 playIframeWhenReady(iframe);
               }
+              // A one-shot entrance flourish for whichever card just became
+              // the active one - content stays fully visible the rest of the
+              // time, this only plays on the transition into view.
+              if (!card.classList.contains('is-active-card')) {
+                card.classList.add('is-active-card');
+                const content = card.querySelector('.scroll-content');
+                if (content) replay(content, 'is-entering');
+              }
             } else {
               if (video) video.pause();
               if (audio) audio.pause();
               if (iframe) controlEmbeddedVideo(iframe, 'pause');
+              card.classList.remove('is-active-card');
             }
           });
         },
@@ -389,6 +400,33 @@
       }
     }
 
+    // Restarting a CSS animation by re-adding its class only works if the
+    // browser sees the class actually leave first - reading offsetWidth in
+    // between forces that reflow, otherwise a rapid repeat (double-tapping
+    // twice in a row) would silently no-op the second time.
+    function replay(el, className) {
+      el.classList.remove(className);
+      void el.offsetWidth;
+      el.classList.add(className);
+    }
+
+    function popLikeIcon(projectId) {
+      root.querySelectorAll(`[data-action="like"][data-project-id="${CSS.escape(projectId)}"] .scroll-rail-icon`).forEach(
+        (el) => replay(el, 'is-popping'),
+      );
+    }
+
+    function showLikeBurst(card) {
+      let burst = card.querySelector('.scroll-like-burst');
+      if (!burst) {
+        burst = document.createElement('div');
+        burst.className = 'scroll-like-burst';
+        burst.innerHTML = icon('heart', { size: 84 });
+        card.appendChild(burst);
+      }
+      replay(burst, 'is-active');
+    }
+
     async function toggleLike(projectId) {
       if (!currentUser) {
         window.location.href = 'login.html?next=' + encodeURIComponent('/scrolls');
@@ -407,6 +445,7 @@
           state.count += 1;
         }
         updateLikeUI(projectId);
+        popLikeIcon(projectId);
       } catch (err) {
         alert(err.message);
       }
@@ -570,7 +609,26 @@
           controlEmbeddedVideo(iframe, soundOn ? 'unmute' : 'mute');
           syncMuteButton(card, !soundOn);
         }
+        return;
       }
+
+      // Nothing above matched, so the tap landed on the card's own media/
+      // background - the classic double-tap-to-like gesture. A deliberate
+      // tap on the heart rail button (handled above, and returned from
+      // already) can also unlike; a double-tap here only ever likes, same
+      // as every feed that does this.
+      const card = e.target.closest('.scroll-card');
+      if (!card) return;
+      const projectId = card.dataset.cardProjectId;
+      const now = Date.now();
+      const last = lastTapAt.get(card) || 0;
+      lastTapAt.set(card, now);
+      if (now - last > 350) return;
+      lastTapAt.delete(card);
+
+      showLikeBurst(card);
+      const state = likeState.get(projectId);
+      if (state && !state.liked) toggleLike(projectId);
     });
 
     let loaded = false;

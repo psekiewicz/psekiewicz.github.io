@@ -33,10 +33,15 @@ function wipeCookies() {
   return cookies.filter(Boolean).length;
 }
 
-export function initHeroTerminal() {
-  const form = document.getElementById('term-form');
-  const input = document.getElementById('term-input');
-  const output = document.getElementById('term-output');
+// Element params default to the homepage hero's ids, so the existing
+// `initHeroTerminal()` call there is unchanged; js/terminal-widget.js
+// passes its own modal's elements to run the identical command set
+// anywhere else on the site.
+export function initHeroTerminal({
+  form = document.getElementById('term-form'),
+  input = document.getElementById('term-input'),
+  output = document.getElementById('term-output'),
+} = {}) {
   if (!form || !input || !output) return;
 
   function print(html) {
