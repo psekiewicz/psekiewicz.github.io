@@ -72,6 +72,13 @@ export function markSeen(projectId: string) {
   }
 }
 
+// Settings' "Reset Scrolls history" - lets already-seen entries surface
+// again immediately instead of waiting out the TTL above.
+export async function clearSeenIds() {
+  seenCache = {};
+  await AsyncStorage.removeItem(SEEN_KEY).catch(() => {});
+}
+
 type RankContext = {
   likeCounts: Map<string, number>;
   commentCounts: Map<string, number>;

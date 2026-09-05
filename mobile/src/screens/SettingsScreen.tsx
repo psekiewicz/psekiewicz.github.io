@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   Body,
@@ -22,8 +22,12 @@ import {
 } from '../data/auth';
 import { updateProfile } from '../data/profiles';
 import { collectEarnings } from '../data/reputation';
+import { clearSeenIds } from '../lib/feedRank';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
+import appConfig from '../../app.json';
+
+const WEBSITE_URL = 'https://psekiewicz.github.io';
 
 export function SettingsScreen({ navigation }: any) {
   const { colors, preference, setPreference } = useTheme();
@@ -40,6 +44,7 @@ export function SettingsScreen({ navigation }: any) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const [resettingHistory, setResettingHistory] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -55,6 +60,7 @@ export function SettingsScreen({ navigation }: any) {
         <Body muted>Sign in to manage your account.</Body>
         <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
         <ThemeSection preference={preference} setPreference={setPreference} />
+        <AboutSection />
       </View>
     );
   }
@@ -114,6 +120,20 @@ export function SettingsScreen({ navigation }: any) {
       setError(e.message);
     } finally {
       setCollecting(false);
+    }
+  };
+
+  const resetHistory = async () => {
+    setError('');
+    setNotice('');
+    setResettingHistory(true);
+    try {
+      await clearSeenIds();
+      setNotice('Scrolls history cleared - already-seen entries can resurface again.');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setResettingHistory(false);
     }
   };
 
@@ -200,6 +220,22 @@ export function SettingsScreen({ navigation }: any) {
         </View>
       </View>
 
+      <Card>
+        <Eyebrow>Scrolls</Eyebrow>
+        <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
+          Scrolls remembers what you've already swiped past for a few days, so it doesn't repeat
+          itself. Clearing that lets everything come back up sooner.
+        </Text>
+        <Button
+          label="Reset Scrolls history"
+          variant="secondary"
+          onPress={resetHistory}
+          loading={resettingHistory}
+        />
+      </Card>
+
+      <AboutSection />
+
       <View
         style={{
           paddingTop: space.lg,
@@ -240,6 +276,24 @@ function ThemeSection({ preference, setPreference }: any) {
       <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
         With no explicit choice, the app follows your phone's setting.
       </Text>
+    </View>
+  );
+}
+
+function AboutSection() {
+  const { colors } = useTheme();
+  return (
+    <View>
+      <Eyebrow>About</Eyebrow>
+      <View style={{ marginTop: space.md, gap: space.xs }}>
+        <Body>Showcase v{appConfig.expo.version}</Body>
+        <Text
+          style={[typography.small, { color: colors.primary }]}
+          onPress={() => Linking.openURL(WEBSITE_URL)}
+        >
+          {WEBSITE_URL.replace('https://', '')}
+        </Text>
+      </View>
     </View>
   );
 }
