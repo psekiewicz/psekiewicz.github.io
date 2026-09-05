@@ -1272,15 +1272,26 @@ create policy "Users can remove their own push token"
 
 -- pg_net is Supabase's own extension for firing HTTP requests from
 -- Postgres (the same mechanism behind Database Webhooks), pre-installed
--- on every project - this is what lets a push go out with no server to
--- host and no Edge Function to deploy.
-create extension if not exists pg_net with schema extensions;
+-- on every real Supabase project - this is what lets a push go out with
+-- no server to host and no Edge Function to deploy. Wrapped so this file
+-- still runs everywhere else it's expected to (a plain local Postgres,
+-- for instance, testing the RLS policies above) - push notifications
+-- just don't go out there.
+do $$
+begin
+  execute 'create extension if not exists pg_net with schema extensions';
+exception when others then
+  raise notice 'pg_net not available - push notifications are disabled (see send_push() below)';
+end
+$$;
 
 -- One HTTP call to Expo's push relay per notified user, covering every
--- device they've registered. net.http_post is fire-and-forget - it
--- queues the request on a background worker and returns immediately -
--- so a slow or failed delivery here can never block or fail the insert
--- that triggered it.
+-- device they've registered. net.http_post is normally fire-and-forget -
+-- it queues the request on a background worker and returns immediately -
+-- but the whole call is still wrapped, because the notification this is
+-- attached to (a like, a comment, a follow) is the real action and must
+-- never fail just because pg_net is missing, misconfigured, or Expo's
+-- relay is down.
 create or replace function public.send_push(p_user_id uuid, p_title text, p_body text, p_data jsonb default '{}'::jsonb)
 returns void
 language plpgsql
@@ -1295,14 +1306,18 @@ begin
     return;
   end if;
 
-  perform net.http_post(
-    url := 'https://exp.host/--/api/v2/push/send',
-    headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb,
-    body := (
-      select jsonb_agg(jsonb_build_object('to', t, 'title', p_title, 'body', p_body, 'data', p_data))
-      from unnest(v_tokens) as t
-    )
-  );
+  begin
+    perform net.http_post(
+      url := 'https://exp.host/--/api/v2/push/send',
+      headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb,
+      body := (
+        select jsonb_agg(jsonb_build_object('to', t, 'title', p_title, 'body', p_body, 'data', p_data))
+        from unnest(v_tokens) as t
+      )
+    );
+  exception when others then
+    null;
+  end;
 end;
 $$;
 
