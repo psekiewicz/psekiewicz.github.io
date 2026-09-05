@@ -4031,20 +4031,46 @@ body.sheet-open .bottom-nav {
   font-family: 'Oxygene 1', var(--font);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  /* This face is drawn on a coarse pixel grid rather than smooth
+     outlines, and collides into an illegible blur below a surprisingly
+     large size - legible at 40px, still not at 32px, verified by eye
+     since this isn't the kind of thing a contrast/size formula predicts.
+     max() lets it keep scaling up in a larger context (a profile header)
+     while never rendering smaller than the size it's actually legible
+     at, even though that means it now dominates whatever line it's on. */
+  font-size: max(1em, 40px);
+  line-height: 1.1;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .shop-name-sparkle {
   position: relative;
 }
 
+/* Was a single ✦, easy to miss entirely at this size and a thin result
+   for the second-most-expensive name effect - three, twinkling out of
+   step with each other, read as "sparkling" instead of "one static
+   asterisk". */
+.shop-name-sparkle::before,
 .shop-name-sparkle::after {
   content: '✦';
   position: absolute;
+  color: #f4e04d;
+  animation: shop-sparkle-twinkle 1.6s ease-in-out infinite;
+}
+
+.shop-name-sparkle::after {
   top: -0.3em;
   right: -0.9em;
   font-size: 0.6em;
-  color: #f4e04d;
-  animation: shop-sparkle-twinkle 1.6s ease-in-out infinite;
+}
+
+.shop-name-sparkle::before {
+  bottom: -0.2em;
+  left: -0.7em;
+  font-size: 0.4em;
+  animation-delay: 0.5s;
 }
 
 @keyframes shop-sparkle-twinkle {
@@ -4448,19 +4474,22 @@ body.sheet-open .bottom-nav {
   border-radius: 50%;
 }
 
+/* Was a neutral --color-border-strong ring - the same grey every avatar
+   already has by default, so at 190pts (more than Emerald or Violet,
+   both a full colour) the only thing actually for sale was a single 3px
+   dot easy to miss entirely between animation frames. A colour of its
+   own on the ring itself, and a bigger dot trailing a fading tail, both
+   read as "for sale" even in a still screenshot. */
 .shop-border-orbit {
-  box-shadow: 0 0 0 2px var(--color-border-strong);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.55);
 }
 
-/* A single dot going round. The dot is drawn at the top of a box the
-   size of the avatar and the whole box spins, which is far cheaper than
-   animating a path and stays centred at any avatar size. */
 .shop-border-orbit::after {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -8px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 0, var(--color-primary) 0 3px, transparent 4px);
+  background: radial-gradient(circle at 50% 0, #818cf8 0 4px, rgba(129, 140, 248, 0.55) 4px 9px, transparent 10px);
   animation: shop-orbit-spin 3.2s linear infinite;
   pointer-events: none;
 }
@@ -4523,15 +4552,21 @@ body.sheet-open .bottom-nav {
   animation: shop-border-glitch-shift 1.6s steps(2, end) infinite;
 }
 
+/* The base ring here used to be the exact same 2px var(--color-text) as
+   Ink Ring - the cheapest border in the shop - with only a 3px colour
+   split on top, which is subtle enough to read as no border at all next
+   to a same-hued avatar. Thinned the ring so it stops competing with the
+   colours, and widened the split so the red/cyan offset is the effect
+   you're actually paying for. */
 @keyframes shop-border-glitch-shift {
   0% {
-    box-shadow: -3px 0 0 0 #ff003c, 3px 0 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+    box-shadow: -5px 0 0 0 #ff003c, 5px 0 0 0 #00e5ff, 0 0 0 1px var(--color-text);
   }
   50% {
-    box-shadow: 3px 0 0 0 #ff003c, -3px 0 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+    box-shadow: 5px 0 0 0 #ff003c, -5px 0 0 0 #00e5ff, 0 0 0 1px var(--color-text);
   }
   100% {
-    box-shadow: -2px 2px 0 0 #ff003c, 2px -2px 0 0 #00e5ff, 0 0 0 2px var(--color-text);
+    box-shadow: -3px 4px 0 0 #ff003c, 3px -4px 0 0 #00e5ff, 0 0 0 1px var(--color-text);
   }
 }
 
