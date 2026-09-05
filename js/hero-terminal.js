@@ -159,12 +159,15 @@ export function initHeroTerminal({
       const theme =
         document.documentElement.getAttribute('data-theme') ||
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const sp = (n) => '&nbsp;'.repeat(n);
+      const o = (s) => `<span style="color:var(--color-brand-orange)">${s}</span>`;
+      const b = (s) => `<span style="color:var(--color-brand-blue)">${s}</span>`;
       const logo = [
-        '<span style="color:var(--color-accent)">&nbsp;&nbsp;████</span>',
-        '<span style="color:var(--color-accent)">&nbsp;&nbsp;████</span>',
-        '<span style="color:var(--color-primary)">████</span><span style="color:var(--color-accent)">██</span>',
-        '<span style="color:var(--color-primary)">████</span>',
-        '<span style="color:var(--color-primary)">████</span>',
+        `${o('██')}${sp(6)}${b('██')}${sp(4)}`,
+        `${sp(2)}${o('██')}${sp(6)}${b('██')}${sp(2)}`,
+        `${sp(4)}${o('██')}${sp(6)}${b('██')}`,
+        `${sp(2)}${o('██')}${sp(6)}${b('██')}${sp(2)}`,
+        `${o('██')}${sp(6)}${b('██')}${sp(4)}`,
       ].join('<br>');
       const info = [
         `${escapeHtml(who)}@showcase`,

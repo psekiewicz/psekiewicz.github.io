@@ -95,6 +95,12 @@
   --color-primary-soft: #f6e6dd;
   --color-accent: #16645c;
 
+  /* The brand mark's own colours - fixed across both themes on purpose.
+     A logo that reheus with light/dark mode stops being a stable mark;
+     these two only ever appear inside .brand-mark. */
+  --color-brand-orange: #f97316;
+  --color-brand-blue: #0ea5e9;
+
   --color-danger: #b3261e;
   --color-danger-soft: #f8e3e0;
   --color-success: #1f6b3a;
