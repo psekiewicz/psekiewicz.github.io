@@ -122,6 +122,22 @@ python3 -m http.server 8080
 
 (Auth/data calls will fail locally too until `js/supabase-config.js` has your real project's values.)
 
+## Tests
+
+Two independent suites, both via Node's built-in test runner:
+
+```bash
+npm test          # unit tests over the pure-logic JS modules - no setup needed
+npm run test:rls  # integration tests over schema.sql's RLS policies - needs a local Postgres
+npm run test:all  # both
+```
+
+`npm test` covers `js/levels.js`, `js/utils.js`, `js/icons.js`, `js/feed-rank.js` and `js/media.js` - things like the XP curve, HTML/URL escaping, and the Scrolls feed's anti-bunching logic. It has no dependencies and needs nothing running.
+
+`npm run test:rls` (in `tests/integration/`) exercises the actual Row Level Security policies in `schema.sql` - draft privacy, "only the owner can edit/delete", "only as yourself", comment/like/follow rules, and the points-integrity RPCs (`log_project_view`, `claim_achievement`, `purchase_item`) - against a real local Postgres, since none of that can be verified from JS alone. It needs `TEST_DATABASE_URL` (defaults to `postgres://postgres:postgres@127.0.0.1:5432/postgres`) pointing at an empty Postgres instance; it creates its own scratch database (`showcase_rls_test`) there each run and never touches a real Supabase project. If it can't connect, every test is skipped with an explanation instead of failing. `tests/integration/sql/stub-supabase.sql` stands in for the pieces of a real Supabase project that `schema.sql` assumes exist (the `auth` schema, `auth.uid()`, and the `anon`/`authenticated`/`service_role` roles).
+
+CI runs both, against a `postgres:16` service container (see `.github/workflows/tests.yml`).
+
 ## Project structure
 
 ```
