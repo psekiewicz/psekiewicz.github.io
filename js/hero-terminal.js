@@ -4,10 +4,26 @@
 // site state (theme, auth, the projects table) rather than just printing
 // canned text.
 import { escapeHtml } from './utils.js';
-import { getCurrentUser, displayNameOf } from './auth.js';
+import { getCurrentUser, displayNameOf, logoutUser } from './auth.js';
 import { getPublishedProjectCount } from './projects-data.js';
 
 const MAX_LINES = 60;
+
+// The site keeps you signed in and remembers your theme via localStorage,
+// not cookies (see js/cookie-consent.js) - there's nothing server-side
+// here to set one. This clears whatever document.cookie actually has
+// anyway, for whatever a browser extension or the hosting layer left
+// behind, rather than assuming there's nothing to do.
+function wipeCookies() {
+  const cookies = document.cookie ? document.cookie.split(';') : [];
+  for (const cookie of cookies) {
+    const name = cookie.split('=')[0].trim();
+    if (!name) continue;
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
+  }
+  return cookies.filter(Boolean).length;
+}
 
 export function initHeroTerminal() {
   const form = document.getElementById('term-form');
@@ -105,8 +121,21 @@ export function initHeroTerminal() {
       output.innerHTML = '';
       output.hidden = true;
     },
-    sudo() {
-      print("nice try — this isn't that kind of terminal.");
+    async sudo(args) {
+      if (args.join(' ') !== 'rm -rf /') {
+        print("nice try — this isn't that kind of terminal.");
+        return;
+      }
+      print("rm: cannot delete '/': not that kind of terminal.");
+      print('rm: deleting your session instead.');
+      try {
+        await logoutUser();
+      } catch {
+        // Already signed out, or the network's gone - either way there's
+        // nothing left to sign out of.
+      }
+      const count = wipeCookies();
+      print(count > 0 ? `${count} cookie${count === 1 ? '' : 's'} deleted. logged out.` : 'no cookies found. logged out.');
     },
     date() {
       print(new Date().toString());
