@@ -2,11 +2,13 @@ import { Feather } from '@expo/vector-icons';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Loading } from '../components/ui';
+import { useMotion } from '../theme/MotionProvider';
+
+import { SplashReveal } from '../components/SplashReveal';
 import { useAuth } from '../context/AuthContext';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -58,7 +60,7 @@ function Tabs() {
           elevation: 0,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ focused, color, size }) => {
           const map: Record<string, any> = {
             Home: 'home',
             Scrolls: 'play-circle',
@@ -66,7 +68,7 @@ function Tabs() {
             Dashboard: 'bar-chart-2',
             Profile: 'user',
           };
-          return <Feather name={map[route.name] || 'circle'} size={size - 2} color={color} />;
+          return <TabIcon name={map[route.name] || 'circle'} size={size - 2} color={color} focused={focused} />;
         },
       })}
     >
@@ -79,6 +81,28 @@ function Tabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+function TabIcon({ name, size, color, focused }: { name: any; size: number; color: string; focused: boolean }) {
+  const { enabled } = useMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!enabled || !focused) return;
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 40, bounciness: 14 }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
+    ]).start();
+    // Only the moment a tab *becomes* focused should bounce, not every
+    // re-render while it stays focused.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focused]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale: focused ? scale : 1 }] }}>
+      <Feather name={name} size={size} color={color} />
+    </Animated.View>
   );
 }
 
@@ -112,13 +136,11 @@ export function RootNavigator() {
   };
 
   // Held until the persisted session has been read off disk, so a cold start
-  // never flashes the signed-out UI at someone who is signed in.
+  // never flashes the signed-out UI at someone who is signed in. The brand
+  // reveal plays across this real wait rather than a delay added just to
+  // show it.
   if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}>
-        <Loading />
-      </View>
-    );
+    return <SplashReveal />;
   }
 
   return (

@@ -108,14 +108,60 @@ commit the resulting `package.json` **and** `package-lock.json` together.
 src/
   data/        one module per table - direct ports of the site's js/*-data.js
   lib/         shared logic: levels, feed ranking, achievements, shop catalog,
-               cosmetics, media resolution
+               cosmetics, media resolution, motion.ts (shared animations),
+               push.ts (push token registration)
   screens/     one per screen
-  components/  ui.tsx (the design system), ProjectCard, CommentsSheet
-  theme/       the site's CSS custom properties, transcribed
+  components/  ui.tsx (the design system), ProjectCard, CommentsSheet,
+               SplashReveal (the startup animation)
+  theme/       the site's CSS custom properties, transcribed, plus
+               MotionProvider (Settings' animations on/off/system toggle)
   context/     AuthContext - session, profile, and the cold-start gate
 plugins/       Expo config plugins - build-time edits to the generated
                android/ project, which is regenerated and never committed
 ```
+
+## Push notifications
+
+A like, comment or follow pushes to every device you've enabled notifications
+on (Settings → Notifications), even if the app isn't open. The whole path is
+in [`../schema.sql`](../schema.sql): `public.push_tokens` holds one row per
+registered device, and `add_notification()` - the same function the site's
+in-app bell already calls - now also calls `send_push()`, which POSTs to
+Expo's push relay via `pg_net` (Supabase's own extension for this, enabled
+automatically by the script). No Edge Function, no server - the same "paste
+schema.sql into the SQL Editor" step that sets up everything else also sets
+up push.
+
+That covers the *server* side unconditionally. Actually **receiving** a push
+needs two things from Expo's tooling that a plain `npx expo start` doesn't
+set up on its own:
+
+1. **An EAS project id** - `Notifications.getExpoPushTokenAsync()` needs one
+   to know which project a token belongs to. Run `eas init` once (needs a
+   free Expo account); it writes `extra.eas.projectId` into `app.json` - commit
+   that. Without it, Settings' "Enable notifications" button fails with an
+   explanatory error rather than silently doing nothing.
+2. **Android credentials** - Expo's push relay hands Android deliveries off
+   to Firebase Cloud Messaging, which needs its own credentials per project
+   (Expo no longer provides shared ones). Create a Firebase project, then run
+   `eas credentials` and follow the Android → Push Notifications prompts to
+   upload its service account key. iOS is simpler: EAS can generate and
+   manage APNs credentials for you the first time you build.
+
+Until both are done, everything still works except the push itself - the
+in-app bell, `public.notifications`, all of it - `send_push()` just has
+nothing to reach.
+
+## Animations
+
+Everything interactive - buttons, cards, chips, list rows, the tab bar, the
+startup screen - is animated via `lib/motion.ts` and `MotionProvider`, which
+also reads the OS's reduce-motion accessibility setting by default. Settings
+→ Animations overrides that per-device (On/Off/System). One thing stays
+static regardless: the animated shop cosmetics in Scrolls (see below) - a
+one-shot UI animation and a continuous per-frame CSS-style keyframe running
+on every visible avatar in a scrolling feed are different costs, and that
+tradeoff hasn't changed.
 
 The `data/` modules are deliberately near-identical to their web counterparts,
 down to the comments, so a change to one has an obvious counterpart in the

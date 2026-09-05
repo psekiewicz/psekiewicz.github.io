@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Project } from '../data/projects';
+import { useEntrance, usePressScale } from '../lib/motion';
 import { formatCount, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
@@ -17,6 +18,10 @@ type Props = {
   commentCount?: number;
   onPress: () => void;
   onAuthorPress?: () => void;
+  // Position within the list it's rendered in, so entrance animations can
+  // stagger one card after the next instead of every card popping in at
+  // once. Omit it outside a list (e.g. a single featured card).
+  index?: number;
 };
 
 export function ProjectCard({
@@ -27,12 +32,18 @@ export function ProjectCard({
   commentCount,
   onPress,
   onAuthorPress,
+  index = 0,
 }: Props) {
   const { colors } = useTheme();
+  const { scale, onPressIn, onPressOut } = usePressScale(0.97);
+  const entrance = useEntrance(index);
 
   return (
+    <Animated.View style={{ opacity: entrance.opacity, transform: [...entrance.transform, { scale }] }}>
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       style={({ pressed }) => ({
         backgroundColor: colors.surface,
         borderColor: colors.border,
@@ -135,6 +146,7 @@ export function ProjectCard({
         </Text>
       </View>
     </Pressable>
+    </Animated.View>
   );
 }
 
