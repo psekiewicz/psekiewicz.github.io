@@ -301,6 +301,7 @@ img {
 
 /* ---------- Buttons ---------- */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -312,14 +313,15 @@ img {
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease,
-    box-shadow 0.15s ease;
+  overflow: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
   text-decoration: none;
   line-height: 1;
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
 }
 
 .btn-primary {
@@ -332,7 +334,8 @@ img {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
   text-decoration: none;
-  transform: translateY(-1px);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 /* The secondary button is a hairline box, not a second filled shape -
@@ -348,7 +351,8 @@ img {
   background: var(--color-muted-soft);
   color: var(--color-text);
   text-decoration: none;
-  transform: translateY(-1px);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
@@ -360,6 +364,7 @@ img {
   background: var(--color-primary-soft);
   color: var(--color-primary);
   text-decoration: none;
+  transform: translateY(-2px);
 }
 
 .btn-danger {
@@ -371,6 +376,8 @@ img {
   background: var(--color-danger);
   color: #fff;
   text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-sm {
@@ -421,16 +428,26 @@ img {
   text-decoration: none;
 }
 
-/* Two flat, sharp-cornered tiles in the app's own primary/accent pair -
-   the same shape language as every project card in the feed, just two of
-   them stacked like a small pile of the things this app shows off. No
-   gradient: that's the one thing the old single-letter mark got right,
-   and worth keeping. */
+/* A double chevron in the brand's own fixed orange/blue pair - sharp,
+   angular, the same shape language as the mono face. On hover the two
+   halves push apart and snap back, like the mark is mid-stride. */
 .brand-mark {
   width: 26px;
   height: 26px;
   display: block;
   flex-shrink: 0;
+}
+
+.brand-mark polygon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand:hover .brand-mark polygon:first-child {
+  transform: translateX(-2px);
+}
+
+.brand:hover .brand-mark polygon:last-child {
+  transform: translateX(2px);
 }
 
 .nav-links {
@@ -454,11 +471,34 @@ img {
   text-decoration: none;
 }
 
+/* A rule that grows in from the centre under the label on hover - a
+   little more motion than a colour swap, without claiming the
+   underneath-the-label spot the active state already owns. */
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  background: var(--color-text-faint);
+  transform: scaleX(0);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link:hover::before {
+  transform: scaleX(1);
+}
+
 /* The current page is marked with a rule under the label rather than by
    recolouring it - colour is reserved for things you can act on. */
 .nav-link.active {
   color: var(--color-text);
   font-weight: 600;
+}
+
+.nav-link.active::before {
+  content: none;
 }
 
 .nav-link.active::after {
@@ -469,6 +509,16 @@ img {
   bottom: 2px;
   height: 2px;
   background: var(--color-primary);
+  animation: nav-active-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes nav-active-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .nav-right {
@@ -1093,6 +1143,11 @@ img {
 .feature-card {
   padding: 20px 0 0;
   border-top: 1px solid var(--color-border-strong);
+  transition: border-color 0.2s ease;
+}
+
+.feature-card:hover {
+  border-top-color: var(--color-primary);
 }
 
 .feature-card h3 {
@@ -1109,6 +1164,11 @@ img {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 12px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.feature-card:hover .feature-icon {
+  transform: translateY(-3px) rotate(-6deg);
 }
 
 /* ---------- Project grid & cards ---------- */
@@ -1272,15 +1332,21 @@ img {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease,
+    box-shadow 0.25s ease;
   animation: fade-in-up 0.35s ease both;
 }
 
-/* Hover firms up the edge instead of casting a shadow. The lift stays -
-   it's what makes the grid feel alive under a cursor. */
+/* The lift is what makes the grid feel alive under a cursor - now with
+   real depth behind it instead of just a firmer edge. */
 .card:hover {
   border-color: var(--color-border-strong);
-  transform: translateY(-2px);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card:hover .card-thumb img {
+  transform: scale(1.04);
 }
 
 /* The empty thumbnail is a hatched placeholder rather than a pastel
@@ -1306,6 +1372,7 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-body {
@@ -1601,6 +1668,11 @@ img {
   border-top: 1px solid var(--color-border-strong);
   border-radius: 0;
   padding: 14px 0 0;
+  transition: border-color 0.2s ease;
+}
+
+.stat-card:hover {
+  border-top-color: var(--color-primary);
 }
 
 .stat-card .num {
@@ -1608,6 +1680,13 @@ img {
   font-weight: 500;
   letter-spacing: -0.05em;
   line-height: 1.1;
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.stat-card:hover .num {
+  transform: scale(1.12);
+  color: var(--color-primary);
 }
 
 .stat-card .label {
@@ -2127,6 +2206,7 @@ tbody tr {
   background: none;
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .empty-state h3 {
@@ -5063,4 +5143,177 @@ body.sheet-open .bottom-nav {
 
 .btn.is-saved .icon {
   fill: currentColor;
+}
+
+/* ---------- Site-wide motion (js/animations.js) ----------
+   Everything below is orchestrated by one shared script loaded on every
+   page: scroll reveal for static section furniture, a scroll-progress
+   bar, and a click ripple on every button. Nothing here touches content
+   that's rendered later by a page's own fetch - a class added by an
+   IntersectionObserver at load time would never reach a card that
+   doesn't exist yet, so that content keeps animating in via the plain
+   CSS animations above (.card, .empty-state, .alert) instead, which play
+   the moment the element is painted regardless of when that is. */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .scroll-progress,
+  .btn-ripple,
+  .hero-inner > * {
+    animation: none !important;
+  }
+
+  .card,
+  .empty-state,
+  .alert.is-visible {
+    animation: none !important;
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* A row of features or stats reveals left-to-right rather than all at
+   once - the delay is pure CSS (nth-child), so any page that reuses
+   these class names gets the cascade for free. */
+.feature-card.reveal:nth-child(1),
+.stat-card.reveal:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.feature-card.reveal:nth-child(2),
+.stat-card.reveal:nth-child(2) {
+  transition-delay: 90ms;
+}
+
+.feature-card.reveal:nth-child(3),
+.stat-card.reveal:nth-child(3) {
+  transition-delay: 180ms;
+}
+
+.feature-card.reveal:nth-child(4),
+.stat-card.reveal:nth-child(4) {
+  transition-delay: 270ms;
+}
+
+/* Scroll-progress bar - injected by js/animations.js, its width tracks
+   how far down the page you are. Not an auto-playing animation (it only
+   ever moves with the reader's own scroll input), so it's exempt from
+   the reduced-motion rule above. */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--color-brand-orange), var(--color-brand-blue));
+  z-index: 100;
+  transition: width 0.1s linear;
+}
+
+/* A click ripple on every .btn - .btn already has overflow:hidden and
+   position:relative for exactly this. */
+.btn-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: scale(0);
+  animation: btn-ripple-out 0.6s ease-out;
+  pointer-events: none;
+}
+
+.btn-secondary .btn-ripple,
+.btn-ghost .btn-ripple {
+  background: rgba(25, 23, 19, 0.12);
+}
+
+@keyframes btn-ripple-out {
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* The whole page settles in on load rather than snapping into place. */
+body {
+  animation: page-fade-in 0.4s ease both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The homepage hero introduces itself one beat at a time: eyebrow, then
+   the headline, then the terminal window, then the buttons. Pure CSS,
+   keyed off child order, so it needs nothing from index.html itself. */
+.hero-inner > * {
+  animation: hero-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-inner > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.hero-inner > *:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.hero-inner > *:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.hero-inner > *:nth-child(4) {
+  animation-delay: 0.48s;
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(36px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* A slow, quiet pulse on the one button the homepage most wants clicked -
+   scoped narrowly so it doesn't turn into a rule that nags on every
+   primary button site-wide. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-actions .btn-primary {
+    animation: hero-cta-glow 2.6s ease-in-out infinite;
+  }
+
+  .hero-actions .btn-primary:hover {
+    animation: none;
+  }
+}
+
+@keyframes hero-cta-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  }
 }
