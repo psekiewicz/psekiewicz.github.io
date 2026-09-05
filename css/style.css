@@ -899,6 +899,41 @@ img {
   color: var(--color-text-faint);
 }
 
+/* The `doom` command's raycaster (js/hero-doom.js) - mounted inside
+   .term-output, so it inherits the same scrollback frame rather than
+   popping open a separate window. */
+.doom-wrap {
+  margin-top: 10px;
+}
+
+.doom-canvas {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.doom-canvas:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.doom-hint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+}
+
+.doom-pad {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 .hero h1 {
   font-size: clamp(2.1rem, 4.5vw, 3.4rem);
   margin-bottom: 18px;

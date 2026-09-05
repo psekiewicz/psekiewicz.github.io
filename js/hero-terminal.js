@@ -8,6 +8,14 @@ import { getCurrentUser, displayNameOf, logoutUser } from './auth.js';
 import { getPublishedProjectCount } from './projects-data.js';
 
 const MAX_LINES = 60;
+const PAGE_LOAD_TIME = Date.now();
+
+function formatUptime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+}
 
 // The site keeps you signed in and remembers your theme via localStorage,
 // not cookies (see js/cookie-consent.js) - there's nothing server-side
@@ -139,6 +147,48 @@ export function initHeroTerminal() {
     },
     date() {
       print(new Date().toString());
+    },
+    async neofetch() {
+      const user = await getCurrentUser();
+      const who = user ? displayNameOf(user) : 'guest';
+      const theme =
+        document.documentElement.getAttribute('data-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const logo = [
+        '<span style="color:var(--color-accent)">&nbsp;&nbsp;████</span>',
+        '<span style="color:var(--color-accent)">&nbsp;&nbsp;████</span>',
+        '<span style="color:var(--color-primary)">████</span><span style="color:var(--color-accent)">██</span>',
+        '<span style="color:var(--color-primary)">████</span>',
+        '<span style="color:var(--color-primary)">████</span>',
+      ].join('<br>');
+      const info = [
+        `${escapeHtml(who)}@showcase`,
+        '------------------',
+        'OS: ShowcaseOS (GitHub Pages)',
+        'Host: psekiewicz.github.io',
+        'Kernel: postgres+rls 16.13',
+        `Uptime: ${formatUptime(Date.now() - PAGE_LOAD_TIME)}`,
+        'Shell: /bin/vibes',
+        `Theme: ${theme}`,
+        `Resolution: ${window.innerWidth}x${window.innerHeight}`,
+        'Packages: 0 (no build step)',
+      ].join('<br>');
+      print(`${logo}<br><br>${info}`);
+    },
+    fastfetch(args) {
+      return handlers.neofetch(args);
+    },
+    async doom() {
+      print('it runs on everything. loading…');
+      const { runDoom } = await import('./hero-doom.js');
+      input.disabled = true;
+      runDoom(output, {
+        onQuit: () => {
+          input.disabled = false;
+          input.focus();
+          print('thanks for playing.');
+        },
+      });
     },
   };
 
