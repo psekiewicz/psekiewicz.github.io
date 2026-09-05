@@ -842,6 +842,63 @@ img {
   font-weight: 700;
 }
 
+/* The scrollback + input line for the terminal's actual commands (see
+   js/hero-terminal.js). .term-output stays hidden and empty until the
+   first command runs, so a visitor who never touches it sees exactly
+   the same inert window as before - this only ever adds a second line
+   below the tagline. */
+.term-output {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0 18px 16px;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+.term-output p {
+  margin: 6px 0 0;
+  overflow-wrap: break-word;
+}
+
+.term-out-echo {
+  color: var(--color-text);
+}
+
+.term-out-echo::before {
+  content: '$ ';
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.term-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.term-prompt {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.term-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 2px 0;
+  font: inherit;
+  color: var(--color-text);
+}
+
+.term-input::placeholder {
+  color: var(--color-text-faint);
+}
+
 .hero h1 {
   font-size: clamp(2.1rem, 4.5vw, 3.4rem);
   margin-bottom: 18px;

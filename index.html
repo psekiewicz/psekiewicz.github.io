@@ -62,6 +62,20 @@
             <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
           </div>
           <p class="term-window-body">Showcase is place to find people that work hard, but nobody notices them.</p>
+          <div class="term-output" id="term-output" hidden></div>
+          <form class="term-input-row" id="term-form">
+            <span class="term-prompt" aria-hidden="true">$</span>
+            <input
+              class="term-input"
+              id="term-input"
+              type="text"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="type 'help'"
+              aria-label="Terminal command input"
+            />
+          </form>
         </div>
         <div class="hero-actions" id="hero-actions">
           <a class="btn btn-primary" href="register.html">Create free account</a>
@@ -133,8 +147,19 @@
     import { getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
-    import { onAuthChange } from '/js/auth.js';
+    import { onAuthChange, getCurrentUser } from '/js/auth.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { initHeroTerminal } from '/js/hero-terminal.js';
+
+    // Signed-in visitors already have an account full of projects to look
+    // at - the marketing pitch below is for people who don't yet. Kicked
+    // off first so the redirect doesn't wait behind anything else on the
+    // page.
+    getCurrentUser().then((user) => {
+      if (user) window.location.replace('/projects');
+    });
+
+    initHeroTerminal();
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
