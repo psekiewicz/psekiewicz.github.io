@@ -11,14 +11,14 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f2efe9"
+      "backgroundColor": "#0ea5e9"
     },
     "android": {
       "package": "io.github.psekiewicz.showcase",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f2efe9"
+        "backgroundColor": "#0ea5e9"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -56,7 +56,7 @@
       [
         "expo-notifications",
         {
-          "color": "#c03a17"
+          "color": "#f97316"
         }
       ]
     ]
