@@ -962,18 +962,31 @@ img {
   margin-top: 10px;
 }
 
-.doom-canvas {
+/* The game itself, as text - one character per column of the raycast,
+   redrawn every tick. white-space:pre is load-bearing: it's what keeps
+   each line's fixed character grid from wrapping or collapsing runs of
+   spaces the way normal text would. */
+.doom-ascii {
   display: block;
   width: 100%;
-  max-width: 360px;
-  height: auto;
+  max-width: 340px;
+  margin: 0;
+  padding: 8px;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
+  color: var(--color-text);
   cursor: pointer;
+  font-family: var(--font);
+  font-size: 7px;
+  line-height: 1.15;
+  letter-spacing: 0;
+  white-space: pre;
+  user-select: none;
 }
 
-.doom-canvas:focus-visible {
+.doom-ascii:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
