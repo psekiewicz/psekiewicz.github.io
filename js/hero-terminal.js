@@ -66,13 +66,13 @@ export function initHeroTerminal({
     help() {
       print(
         [
-          'help — this list',
-          'about — what this place is',
-          'stats — how many projects are published',
-          "whoami — who you are (or aren't) signed in as",
-          'projects / scrolls / shop / register — go there',
-          'theme [dark|light|toggle] — switch the site theme',
-          'clear — clear this output',
+          'help - this list',
+          'about - what this place is',
+          'stats - how many projects are published',
+          "whoami - who you are (or aren't) signed in as",
+          'projects / scrolls / shop / register - go there',
+          'theme [dark|light|toggle] - switch the site theme',
+          'clear - clear this output',
         ].join('<br>'),
       );
     },
@@ -92,7 +92,7 @@ export function initHeroTerminal({
     },
     async whoami() {
       const user = await getCurrentUser();
-      print(user ? `you're ${escapeHtml(displayNameOf(user))}. hi.` : "you're nobody yet — try <code>register</code>.");
+      print(user ? `you're ${escapeHtml(displayNameOf(user))}. hi.` : "you're nobody yet - try <code>register</code>.");
     },
     projects() {
       print('taking you to /projects…');
@@ -136,7 +136,7 @@ export function initHeroTerminal({
     },
     async sudo(args) {
       if (args.join(' ') !== 'rm -rf /') {
-        print("nice try — this isn't that kind of terminal.");
+        print("nice try - this isn't that kind of terminal.");
         return;
       }
       print("rm: cannot delete '/': not that kind of terminal.");
@@ -214,7 +214,7 @@ export function initHeroTerminal({
     if (handler) {
       await handler(args);
     } else {
-      print(`command not found: ${escapeHtml(cmd)} — try <code>help</code>`);
+      print(`command not found: ${escapeHtml(cmd)} - try <code>help</code>`);
     }
     output.scrollTop = output.scrollHeight;
   });
