@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandMark } from '../components/BrandMark';
 import { ProjectCard } from '../components/ProjectCard';
 import { Chip, EmptyState, ErrorNote, Eyebrow, IconButton, Loading, Title } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -121,7 +122,10 @@ export function HomeScreen({ navigation }: any) {
         }}
       >
         <View style={{ flex: 1 }}>
-          <Eyebrow>Showcase</Eyebrow>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <BrandMark size={13} />
+            <Eyebrow>Showcase</Eyebrow>
+          </View>
           <Title style={{ fontSize: 22 }}>Discover</Title>
         </View>
 

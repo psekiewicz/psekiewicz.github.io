@@ -53,6 +53,15 @@ export const darkColors: typeof lightColors = {
   scrim: 'rgba(0, 0, 0, 0.55)',
 };
 
+// The brand mark's own colours. Deliberately outside lightColors/darkColors:
+// the site defines them once on :root and never overrides them per theme, on
+// the grounds that a logo which re-hues with light/dark mode stops being a
+// stable mark. Only the double chevron uses them.
+export const brand = {
+  orange: '#f97316',
+  blue: '#0ea5e9',
+};
+
 export const radius = { sm: 3, md: 5, lg: 8 };
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

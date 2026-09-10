@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BrandMark } from '../components/BrandMark';
 import {
   Body,
   Button,
@@ -63,7 +64,10 @@ export function LoginScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={{ padding: space.xl, paddingTop: space.xxl }}>
-        <Eyebrow>Showcase</Eyebrow>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <BrandMark size={13} />
+          <Eyebrow>Showcase</Eyebrow>
+        </View>
         <Title style={{ marginTop: space.xs, marginBottom: space.sm }}>Sign in</Title>
         <Body muted style={{ marginBottom: space.xl }}>
           Publish work, follow people, and keep your shelf.
