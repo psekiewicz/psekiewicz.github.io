@@ -219,7 +219,7 @@ export function ProfileScreen({ route, navigation }: any) {
           />
           <HeaderButton
             size={38}
-            icon="sun"
+            icon="settings"
             label="Settings"
             onPress={() => navigation.navigate('Settings')}
           />
@@ -434,53 +434,27 @@ export function ProfileScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            {/* Achievements */}
+            {/* Achievements, three to a row. */}
             {achievements.length > 0 ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                {achievements.map((a) => {
-                  const canClaim = isSelf && a.unlocked && !claimed.has(a.id);
-                  const tone = !a.unlocked
-                    ? { bg: colors.mutedSoft, fg: colors.textMuted }
-                    : canClaim
-                      ? { bg: colors.primarySoft, fg: colors.primaryDeep }
-                      : { bg: colors.accentSoft, fg: colors.accentDeep };
-                  return (
-                    <Pressable
-                      key={a.id}
-                      disabled={!canClaim}
-                      onPress={() => claim(a.id)}
-                      accessibilityLabel={`${a.label}. ${a.description}`}
-                      style={({ pressed }) => ({
-                        // Three to a row, with the two 10px gaps taken out.
-                        width: '31%',
-                        flexGrow: 1,
-                        backgroundColor: tone.bg,
-                        borderRadius: 20,
-                        padding: 14,
-                        gap: 6,
-                        alignItems: 'center',
-                        opacity: !a.unlocked ? 0.5 : pressed ? 0.8 : 1,
-                      })}
-                    >
-                      <Icon
-                        name={a.unlocked ? achievementIcon(a.icon) : 'lock'}
-                        size={22}
-                        color={tone.fg}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '700',
-                          letterSpacing: 1,
-                          color: tone.fg,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {canClaim ? `+${a.reward} XP` : a.label.toUpperCase()}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View style={{ gap: 10 }}>
+                {chunk(achievements, 3).map((row, rowIndex) => (
+                  <View key={rowIndex} style={{ flexDirection: 'row', gap: 10 }}>
+                    {row.map((a, colIndex) =>
+                      a ? (
+                        <AchievementTile
+                          key={a.id}
+                          achievement={a}
+                          claimable={isSelf && a.unlocked && !claimed.has(a.id)}
+                          onClaim={() => claim(a.id)}
+                        />
+                      ) : (
+                        // Holds the column open so a short last row keeps the
+                        // same tile width as every full row.
+                        <View key={`pad-${colIndex}`} style={{ flex: 1 }} />
+                      )
+                    )}
+                  </View>
+                ))}
               </View>
             ) : null}
 
@@ -534,6 +508,71 @@ export function ProfileScreen({ route, navigation }: any) {
       )}
     />
   );
+}
+
+function AchievementTile({
+  achievement,
+  claimable,
+  onClaim,
+}: {
+  achievement: { id: string; label: string; description: string; icon: string; reward: number; unlocked: boolean };
+  claimable: boolean;
+  onClaim: () => void;
+}) {
+  const { colors } = useTheme();
+  const tone = !achievement.unlocked
+    ? { bg: colors.mutedSoft, fg: colors.textMuted }
+    : claimable
+      ? { bg: colors.primarySoft, fg: colors.primaryDeep }
+      : { bg: colors.accentSoft, fg: colors.accentDeep };
+
+  return (
+    <Pressable
+      disabled={!claimable}
+      onPress={onClaim}
+      accessibilityLabel={`${achievement.label}. ${achievement.description}`}
+      style={({ pressed }) => ({
+        flex: 1,
+        backgroundColor: tone.bg,
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 14,
+        gap: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: !achievement.unlocked ? 0.5 : pressed ? 0.8 : 1,
+      })}
+    >
+      <Icon
+        name={achievement.unlocked ? achievementIcon(achievement.icon) : 'lock'}
+        size={22}
+        color={tone.fg}
+      />
+      <Text
+        numberOfLines={2}
+        style={{
+          fontSize: 10,
+          fontWeight: '700',
+          letterSpacing: 0.8,
+          color: tone.fg,
+          textAlign: 'center',
+        }}
+      >
+        {claimable ? `+${achievement.reward} XP` : achievement.label.toUpperCase()}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Split into rows of `size`, padding the last one with nulls. */
+function chunk<T>(items: T[], size: number): (T | null)[][] {
+  const rows: (T | null)[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    const row: (T | null)[] = items.slice(i, i + size);
+    while (row.length < size) row.push(null);
+    rows.push(row);
+  }
+  return rows;
 }
 
 // The achievement set is labelled with Feather names, from when the app drew

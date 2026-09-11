@@ -18,6 +18,7 @@ export type IconName =
   | 'external'
   | 'bookmark'
   | 'sun'
+  | 'settings'
   | 'home'
   | 'scrolls'
   | 'plus'
@@ -97,6 +98,16 @@ export function Icon({ name, size = 21, color = '#201e1d', fill = 'none', stroke
             {...s}
             d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"
           />
+        </>
+      )}
+      {/* Lucide's "settings-2" - two sliders. The gear variant collapses into
+          a blob at this stroke weight and size. */}
+      {name === 'settings' && (
+        <>
+          <Path {...s} d="M20 7h-9" />
+          <Path {...s} d="M14 17H5" />
+          <Circle {...s} cx="17" cy="17" r="3" />
+          <Circle {...s} cx="7" cy="7" r="3" />
         </>
       )}
       {name === 'home' && (
