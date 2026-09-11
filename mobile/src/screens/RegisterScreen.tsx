@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BrandMark } from '../components/BrandMark';
 import { Body, Button, ErrorNote, Eyebrow, Field, SuccessNote, Title } from '../components/ui';
 import { registerUser } from '../data/auth';
 import { useTheme } from '../theme/ThemeProvider';
@@ -50,7 +51,10 @@ export function RegisterScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={{ padding: space.xl, paddingTop: space.xxl }}>
-        <Eyebrow>Showcase</Eyebrow>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <BrandMark size={13} />
+          <Eyebrow>Showcase</Eyebrow>
+        </View>
         <Title style={{ marginTop: space.xs, marginBottom: space.sm }}>Create account</Title>
         <Body muted style={{ marginBottom: space.xl }}>
           Free, and takes about a minute.

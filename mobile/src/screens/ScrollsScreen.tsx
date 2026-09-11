@@ -1,4 +1,3 @@
-import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -30,13 +29,18 @@ import { loadSeenIds, markSeen, rankFeed } from '../lib/feedRank';
 import { resolveMedia } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useMotion } from '../theme/MotionProvider';
+import { Icon } from '../components/icons';
 import { useTheme } from '../theme/ThemeProvider';
-import { space } from '../theme/tokens';
+import { gutter, radius, space } from '../theme/tokens';
 
 // Scrolls is full-bleed dark in both themes - a feed of media reads better on
-// black, and the web build makes the same call.
-const INK = '#ffffff';
-const SUBTLE = 'rgba(255,255,255,0.75)';
+// black, and the artboard draws it that way too. Bloom's dark is a warm
+// near-black with cream ink rather than white on pure black.
+const INK = '#fdf7ea';
+const SUBTLE = 'rgba(253,247,234,0.75)';
+const NIGHT = '#241f18';
+/** The translucent cream every control on this screen sits in. */
+const GLASS = 'rgba(253,247,234,0.16)';
 
 export function ScrollsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -52,12 +56,15 @@ export function ScrollsScreen({ navigation }: any) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
+  // The artboard's two feed tabs. "Following" narrows to the accounts you
+  // follow, which the feed already fetches for ranking.
+  const [tab, setTab] = useState<'foryou' | 'following'>('foryou');
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
-  // The card height is the window minus the tab bar, so one card fills exactly
-  // one screen and paging snaps cleanly.
-  const [cardHeight, setCardHeight] = useState(
-    Dimensions.get('window').height - 58 - insets.bottom
-  );
+  // Bloom's tab bar floats over the feed rather than taking layout height, so a
+  // card is the full window and paging still snaps cleanly. onLayout corrects
+  // this straight away; the seed only avoids a first-frame jump.
+  const [cardHeight, setCardHeight] = useState(Dimensions.get('window').height);
 
   // Paging state lives in refs: the loader reads it while it runs, and a
   // re-render in the middle of a fetch must not hand it stale values.
@@ -82,6 +89,7 @@ export function ScrollsScreen({ navigation }: any) {
           followingRef.current = await getFollowingIds(user?.id ?? null).catch(
             () => new Set<string>()
           );
+          setFollowingIds(followingRef.current);
           seenRef.current = await loadSeenIds();
         }
 
@@ -218,7 +226,7 @@ export function ScrollsScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: NIGHT, justifyContent: 'center' }}>
         <Loading />
       </View>
     );
@@ -236,13 +244,15 @@ export function ScrollsScreen({ navigation }: any) {
     );
   }
 
+  const visible = tab === 'following' ? feed.filter((p) => followingIds.has(p.uid)) : feed;
+
   return (
     <View
-      style={{ flex: 1, backgroundColor: '#000' }}
+      style={{ flex: 1, backgroundColor: NIGHT }}
       onLayout={(e) => setCardHeight(e.nativeEvent.layout.height)}
     >
       <FlatList
-        data={feed}
+        data={visible}
         keyExtractor={(item) => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
@@ -286,6 +296,56 @@ export function ScrollsScreen({ navigation }: any) {
           />
         )}
       />
+
+      {/* Feed tabs, floating over the media. */}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          top: insets.top + 12,
+          left: 0,
+          right: 0,
+          flexDirection: 'row',
+          justifyContent: 'center',
+          gap: 22,
+        }}
+      >
+        {([
+          ['following', 'Following'],
+          ['foryou', 'For you'],
+        ] as const).map(([key, label]) => {
+          const on = tab === key;
+          return (
+            <Pressable key={key} onPress={() => setTab(key)} hitSlop={8}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: on ? INK : 'rgba(253,247,234,0.55)',
+                  borderBottomWidth: on ? 2.5 : 0,
+                  borderBottomColor: INK,
+                  paddingBottom: 4,
+                }}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {tab === 'following' && visible.length === 0 ? (
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', left: gutter, right: gutter, top: '45%' }}
+        >
+          <Text style={{ color: SUBTLE, fontSize: 13, textAlign: 'center', lineHeight: 21 }}>
+            {user
+              ? 'Nothing from the accounts you follow yet.'
+              : 'Sign in and follow people to fill this feed.'}
+          </Text>
+        </View>
+      ) : null}
 
       <CommentsSheet
         projectId={commentsFor}
@@ -347,7 +407,7 @@ function ScrollCard({
   };
 
   return (
-    <View style={{ height, width: '100%', backgroundColor: '#000' }}>
+    <View style={{ height, width: '100%', backgroundColor: NIGHT }}>
       <Pressable onPress={handleDoubleTap} style={StyleSheet.absoluteFill}>
         <ScrollMedia media={media} poster={poster} active={active} height={height} />
       </Pressable>
@@ -366,13 +426,13 @@ function ScrollCard({
           transform: [{ scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.15] }) }],
         }}
       >
-        <Feather name="heart" size={96} color="#fff" style={{ opacity: 0.95 }} />
+        <Icon name="heart" size={96} color={INK} fill="#c67139" strokeWidth={1.4} />
       </Animated.View>
 
       {/* Legibility scrim: the text rail sits over arbitrary user media, so it
           needs its own contrast rather than hoping the image is dark. */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.55)', 'transparent', 'rgba(0,0,0,0.85)']}
+        colors={['rgba(36,31,24,0.55)', 'transparent', 'rgba(36,31,24,0.88)']}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
@@ -384,14 +444,15 @@ function ScrollCard({
           left: 0,
           right: 0,
           bottom: 0,
-          padding: space.lg,
-          paddingBottom: space.lg + insetBottom,
+          paddingHorizontal: gutter,
+          // Clears the floating tab bar the artboard sits this rail above.
+          paddingBottom: 100 + insetBottom,
           flexDirection: 'row',
           alignItems: 'flex-end',
-          gap: space.lg,
+          gap: 14,
         }}
       >
-        <View style={{ flex: 1, gap: space.sm }}>
+        <View style={{ flex: 1, gap: 10 }}>
           <Pressable
             onPress={onAuthor}
             style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
@@ -399,16 +460,19 @@ function ScrollCard({
             <Avatar
               url={author?.avatarUrl}
               name={author?.displayName || project.authorName}
-              size={32}
+              size={34}
               ring={author?.equippedBorder}
             />
-            <Text style={{ color: INK, fontWeight: '700', fontSize: 14 }}>
+            <Text style={{ color: INK, fontWeight: '700', fontSize: 13 }}>
               {author?.displayName || project.authorName}
             </Text>
           </Pressable>
 
           <Pressable onPress={onOpen}>
-            <Text style={{ color: INK, fontSize: 16, fontWeight: '700' }} numberOfLines={2}>
+            <Text
+              style={{ color: INK, fontSize: 18, fontWeight: '700', lineHeight: 24 }}
+              numberOfLines={2}
+            >
               {project.title}
             </Text>
             {project.summary ? (
@@ -424,46 +488,36 @@ function ScrollCard({
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
+                gap: 7,
                 alignSelf: 'flex-start',
-                marginTop: 4,
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                borderRadius: 3,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.5)',
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                borderRadius: radius.pill,
+                backgroundColor: GLASS,
               }}
             >
-              <Feather name="external-link" size={12} color={INK} />
+              <Icon name="external" size={13} color={INK} />
               <Text style={{ color: INK, fontSize: 11, fontWeight: '700' }}>{media.label}</Text>
             </Pressable>
           ) : null}
         </View>
 
-        <View style={{ alignItems: 'center', gap: space.lg }}>
+        <View style={{ alignItems: 'center', gap: 16 }}>
           <Rail
             icon="heart"
             filled={liked}
             value={formatCount(likeCount)}
-            color={liked ? '#ff3b5c' : INK}
             onPress={onLike}
           />
-          <Rail icon="message-circle" value={formatCount(commentCount)} color={INK} onPress={onComments} />
-          <Rail
-            icon="bookmark"
-            filled={saved}
-            value=""
-            color={saved ? '#ffd166' : INK}
-            onPress={onSave}
-          />
-          <Rail icon="eye" value={formatCount(project.viewsCount || 0)} color={INK} />
+          <Rail icon="comment" value={formatCount(commentCount)} onPress={onComments} />
+          <Rail icon="bookmark" filled={saved} value="" onPress={onSave} />
         </View>
       </View>
     </View>
   );
 }
 
-function Rail({ icon, value, color, onPress, filled }: any) {
+function Rail({ icon, value, onPress, filled }: any) {
   const { enabled } = useMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const mounted = useRef(false);
@@ -487,12 +541,28 @@ function Rail({ icon, value, color, onPress, filled }: any) {
     <Pressable
       onPress={onPress}
       hitSlop={8}
-      style={({ pressed }) => ({ alignItems: 'center', gap: 3, opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ alignItems: 'center', gap: 4, opacity: pressed ? 0.6 : 1 })}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Feather name={icon} size={26} color={color} style={filled ? { opacity: 1 } : undefined} />
+      <Animated.View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: radius.pill,
+          backgroundColor: GLASS,
+          alignItems: 'center',
+          justifyContent: 'center',
+          transform: [{ scale }],
+        }}
+      >
+        <Icon
+          name={icon}
+          size={23}
+          color={INK}
+          fill={filled ? '#c67139' : 'none'}
+          strokeWidth={filled ? 1.6 : 2.4}
+        />
       </Animated.View>
-      {value ? <Text style={{ color, fontSize: 11, fontWeight: '700' }}>{value}</Text> : null}
+      {value ? <Text style={{ color: INK, fontSize: 11, fontWeight: '700' }}>{value}</Text> : null}
     </Pressable>
   );
 }
@@ -539,5 +609,14 @@ function ScrollMedia({ media, poster, active, height }: any) {
   // Audio and provider entries have no picture of their own - the poster is
   // whatever the author set, and failing that a plain field so the text rail
   // still has something to sit on.
-  return <View style={{ width: '100%', height, backgroundColor: '#14120f' }} />;
+  // Nothing playable: Bloom's own warm wash rather than a flat dark panel.
+  return (
+    <LinearGradient
+      colors={['#c67139', '#5c4327', NIGHT]}
+      locations={[0, 0.45, 1]}
+      start={{ x: 0.85, y: 0 }}
+      end={{ x: 0.15, y: 1 }}
+      style={{ width: '100%', height }}
+    />
+  );
 }

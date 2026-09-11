@@ -2,63 +2,94 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { useMotion } from '../theme/MotionProvider';
+import { brand } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeProvider';
-import { typography } from '../theme/tokens';
+import { CHEVRON_BACK, CHEVRON_FRONT, Chevron } from './BrandMark';
 
-const SQUARE = 40;
-const OFFSET = 18;
-const MARK_SIZE = SQUARE + OFFSET;
+const MARK = 116;
 
-// The brand mark's own reveal, shown while AuthContext reads the
-// persisted session off disk (RootNavigator's `loading` gate) - real
-// startup work already being done, not an artificial delay added just to
-// have something to animate. Same two-square mark as the navbar, in
-// whichever theme's colours are active, so it's recognisably this app
-// rather than a generic splash screen.
+// Bloom's splash, shown while AuthContext reads the persisted session off disk
+// (RootNavigator's `loading` gate) - real startup work already being done, not
+// a delay added to have something to animate.
+//
+// A terracotta field, a ring breathing out behind the mark, the two chevrons
+// flying in from opposite sides a beat apart, and the wordmark settling out of
+// wide tracking. Lowercase, as the artboard sets it.
 export function SplashReveal() {
   const { colors } = useTheme();
   const { enabled } = useMotion();
 
-  const accentAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const primaryAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const textAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const frontAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const backAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const wordAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const ring = useRef(new Animated.Value(0)).current;
+  // letterSpacing can't be driven natively, so the wordmark's tracking runs on
+  // its own value rather than being mixed into wordAnim.
+  const track = useRef(new Animated.Value(enabled ? 0 : 1)).current;
 
   useEffect(() => {
     if (!enabled) return;
-    Animated.sequence([
-      Animated.spring(accentAnim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 12 }),
-      Animated.spring(primaryAnim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 12 }),
-      Animated.timing(textAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
-    ]).start();
-  }, [accentAnim, primaryAnim, textAnim, enabled]);
 
-  const squareStyle = (anim: Animated.Value) => ({
+    Animated.parallel([
+      Animated.timing(frontAnim, { toValue: 1, duration: 580, useNativeDriver: true }),
+      Animated.timing(backAnim, { toValue: 1, duration: 580, delay: 150, useNativeDriver: true }),
+      Animated.timing(wordAnim, { toValue: 1, duration: 540, delay: 400, useNativeDriver: true }),
+      Animated.timing(track, { toValue: 1, duration: 540, delay: 400, useNativeDriver: false }),
+    ]).start();
+
+    const pulse = Animated.loop(
+      Animated.timing(ring, { toValue: 1, duration: 1600, delay: 200, useNativeDriver: true }),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [frontAnim, backAnim, wordAnim, track, ring, enabled]);
+
+  const flyIn = (anim: Animated.Value, from: number) => ({
     opacity: anim,
-    transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }],
+    transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [from, 0] }) }],
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.mark}>
+    <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <View style={{ width: MARK, height: MARK, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View
-          style={[styles.square, { backgroundColor: colors.accent, top: 0, left: OFFSET }, squareStyle(accentAnim)]}
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: -14,
+            right: -14,
+            top: -14,
+            bottom: -14,
+            borderRadius: 999,
+            backgroundColor: 'rgba(253,247,234,0.18)',
+            opacity: ring.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0.35, 0] }),
+            transform: [
+              { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.2, 2.6] }) },
+            ],
+          }}
         />
-        <Animated.View
-          style={[styles.square, { backgroundColor: colors.primary, top: OFFSET, left: 0 }, squareStyle(primaryAnim)]}
-        />
+        <Animated.View style={[StyleSheet.absoluteFill, flyIn(frontAnim, -34)]}>
+          <Chevron size={MARK} points={CHEVRON_FRONT} color={brand.splashFront} />
+        </Animated.View>
+        <Animated.View style={[StyleSheet.absoluteFill, flyIn(backAnim, 34)]}>
+          <Chevron size={MARK} points={CHEVRON_BACK} color={brand.splashBack} />
+        </Animated.View>
       </View>
+
       <Animated.Text
-        style={[
-          typography.h2,
-          {
-            color: colors.text,
-            marginTop: 22,
-            opacity: textAnim,
-            transform: [{ translateY: textAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-          },
-        ]}
+        style={{
+          marginTop: 24,
+          fontSize: 19,
+          fontWeight: '700',
+          color: brand.splashFront,
+          opacity: wordAnim,
+          letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
+          transform: [
+            { translateY: wordAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+          ],
+        }}
       >
-        Showcase
+        showcase
       </Animated.Text>
     </View>
   );
@@ -69,15 +100,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mark: {
-    width: MARK_SIZE,
-    height: MARK_SIZE,
-  },
-  square: {
-    position: 'absolute',
-    width: SQUARE,
-    height: SQUARE,
-    borderRadius: 9,
   },
 });
