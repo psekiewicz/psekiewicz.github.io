@@ -1,25 +1,21 @@
-import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, ImageBackground, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ProjectCard } from '../components/ProjectCard';
+import { HeaderButton, SectionRule, StatBlock } from '../components/bloom';
+import { Icon, IconName } from '../components/icons';
+import { placeholderFor } from '../components/ProjectCard';
 import {
   Avatar,
   Body,
   Button,
-  Card,
   DisplayName,
   EmptyState,
   ErrorNote,
-  Eyebrow,
   Heading,
-  IconButton,
-  LevelChip,
   Loading,
-  ProgressBar,
-  Stat,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../data/admin';
@@ -42,7 +38,7 @@ import { bgGradient } from '../lib/cosmetics';
 import { levelFromXp } from '../lib/levels';
 import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, space, typography } from '../theme/tokens';
+import { gutter, radius, space, typography } from '../theme/tokens';
 
 export function ProfileScreen({ route, navigation }: any) {
   const { colors } = useTheme();
@@ -182,67 +178,79 @@ export function ProfileScreen({ route, navigation }: any) {
   const gradient = bgGradient(profile?.equippedBg || 'none');
   const achievements = stats ? computeAchievements(stats, unlocked) : [];
   const unlockedList = achievements.filter((a) => a.unlocked);
+  const claimable = isSelf ? unlockedList.filter((a) => !claimed.has(a.id)) : [];
+  const claimableXp = claimable.reduce((sum, a) => sum + a.reward, 0);
+  const points = myProfile?.points ?? profile?.points ?? 0;
+  const joined = profile?.createdAt ? new Date(profile.createdAt).getFullYear() : null;
 
-  // Shared between the LinearGradient and ImageBackground header wrappers
-  // below - which one wears the equipped background is the only thing that
-  // differs, per bg-blocks being a real image rather than a gradient.
-  const headerBody = (
+  // Bloom's header is a band whose bottom corners round off into the page, with
+  // the avatar hanging below it. The equipped background cosmetic still wears
+  // it - which wrapper is used is the only thing that differs, per bg-blocks
+  // being a real image rather than a gradient.
+  const headerContent = (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <Avatar
-          url={profile?.avatarUrl}
-          name={profile?.displayName}
-          size={64}
-          ring={profile?.equippedBorder}
-        />
-        <View style={{ flex: 1 }} />
-        {isSelf ? (
-          <View style={{ flexDirection: 'row' }}>
-            <IconButton
-              icon="bookmark"
-              label="Saved"
-              color={gradient ? '#fff' : colors.textMuted}
-              onPress={() => navigation.navigate('Saved')}
-            />
-            <IconButton
-              icon="shopping-bag"
-              label="Shop"
-              color={gradient ? '#fff' : colors.textMuted}
-              onPress={() => navigation.navigate('Shop')}
-            />
-            <IconButton
-              icon="settings"
-              label="Settings"
-              color={gradient ? '#fff' : colors.textMuted}
-              onPress={() => navigation.navigate('Settings')}
-            />
-          </View>
-        ) : null}
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <DisplayName
-          name={profile?.displayName || 'Unknown'}
-          effect={profile?.equippedNameEffect}
-          style={{ fontSize: 20, color: gradient ? '#fff' : colors.text }}
-        />
-        <LevelChip level={level.level} />
-      </View>
-
-      {profile?.bio ? (
-        <Text style={[typography.body, { color: gradient ? 'rgba(255,255,255,0.9)' : colors.textMuted }]}>
-          {profile.bio}
-        </Text>
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -70,
+          right: -40,
+          width: 170,
+          height: 170,
+          borderRadius: radius.pill,
+          backgroundColor: 'rgba(122,138,94,0.34)',
+        }}
+      />
+      {isSelf ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: insets.top + 8,
+            right: 20,
+            flexDirection: 'row',
+            gap: 10,
+          }}
+        >
+          <HeaderButton
+            size={38}
+            icon="bookmark"
+            label="Saved"
+            onPress={() => navigation.navigate('Saved')}
+          />
+          <HeaderButton
+            size={38}
+            icon="sun"
+            label="Settings"
+            onPress={() => navigation.navigate('Settings')}
+          />
+        </View>
       ) : null}
+      <Text
+        style={[
+          typography.eyebrow,
+          { position: 'absolute', right: gutter, bottom: 16, color: 'rgba(253,247,234,0.85)' },
+        ]}
+      >
+        {projects.length} {projects.length === 1 ? 'entry' : 'entries'}
+      </Text>
     </>
   );
+
+  const headerStyle = {
+    height: 158 + (route.params?.userId ? 0 : insets.top),
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
+    overflow: 'hidden' as const,
+  };
 
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
       data={projects}
+      numColumns={2}
+      columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingBottom: space.xxl, gap: space.lg }}
+      contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -254,140 +262,225 @@ export function ProfileScreen({ route, navigation }: any) {
         />
       }
       ListHeaderComponent={
-        <View style={{ gap: space.lg }}>
-          {/* Header, wearing the equipped background cosmetic. */}
-          <View style={{ paddingTop: route.params?.userId ? 0 : insets.top }}>
-            {gradient?.image ? (
-              <ImageBackground
-                source={{ uri: gradient.image }}
-                resizeMode="cover"
-                style={{ paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.md }}
-              >
-                {headerBody}
-              </ImageBackground>
-            ) : (
-              <LinearGradient
-                colors={
-                  gradient
-                    ? (gradient.colors as any)
-                    : [colors.mutedSoft, colors.bg]
-                }
-                start={gradient?.start || { x: 0, y: 0 }}
-                end={gradient?.end || { x: 1, y: 1 }}
-                style={{ paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.md }}
-              >
-                {headerBody}
-              </LinearGradient>
-            )}
-          </View>
+        <View>
+          {gradient?.image ? (
+            <ImageBackground source={{ uri: gradient.image }} resizeMode="cover" style={headerStyle}>
+              {headerContent}
+            </ImageBackground>
+          ) : (
+            <LinearGradient
+              colors={gradient ? (gradient.colors as any) : ['#d98a4f', colors.primary, '#8f4a1e']}
+              start={gradient?.start || { x: 0.1, y: 0 }}
+              end={gradient?.end || { x: 0.9, y: 1 }}
+              style={headerStyle}
+            >
+              {headerContent}
+            </LinearGradient>
+          )}
 
-          <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
+          {/* The avatar overlaps the band above it. */}
+          <View style={{ paddingHorizontal: gutter, marginTop: -44, gap: 16 }}>
+            <View style={{ width: 92, height: 92 }}>
+              <View style={{ borderWidth: 5, borderColor: colors.bg, borderRadius: radius.pill }}>
+                <Avatar
+                  url={profile?.avatarUrl}
+                  name={profile?.displayName}
+                  size={82}
+                  ring={profile?.equippedBorder}
+                />
+              </View>
+              <View
+                style={{
+                  position: 'absolute',
+                  right: -6,
+                  bottom: -2,
+                  paddingHorizontal: 9,
+                  paddingVertical: 4,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.text,
+                  borderWidth: 3,
+                  borderColor: colors.bg,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.bg }}
+                >
+                  LV {level.level}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ gap: 5 }}>
+              <DisplayName
+                name={profile?.displayName || 'Unknown'}
+                effect={profile?.equippedNameEffect}
+                style={[typography.h2, { color: colors.text }]}
+              />
+              {/* The artboard sets a handle here ("@marakell · joined 2023").
+                  Profiles carry no username, so this keeps the half that has a
+                  source rather than inventing one. */}
+              <Text style={{ fontSize: 12, color: colors.textFaint }}>
+                {joined ? `joined ${joined} · ` : ''}
+                {level.xp} XP
+              </Text>
+              {profile?.bio ? (
+                <Text style={[typography.body, { color: colors.textMuted, marginTop: 5 }]}>
+                  {profile.bio}
+                </Text>
+              ) : null}
+            </View>
+
             <ErrorNote message={error} />
 
-            {!isSelf && user ? (
-              <Button
-                label={following ? 'Following' : 'Follow'}
-                variant={following ? 'secondary' : 'primary'}
-                icon={following ? 'check' : 'plus'}
-                onPress={toggleFollow}
-              />
-            ) : null}
+            {/* The dark pill is this screen's one primary action: on your own
+                profile it claims what you are owed (or sends you to the shop
+                once there is nothing left), on somebody else's it follows. */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {isSelf ? (
+                <>
+                  <Pressable
+                    onPress={() =>
+                      claimable.length
+                        ? claimable.forEach((a) => claim(a.id))
+                        : navigation.navigate('Shop')
+                    }
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 9,
+                      backgroundColor: colors.text,
+                      borderRadius: radius.pill,
+                      padding: 14,
+                      opacity: pressed ? 0.85 : 1,
+                    })}
+                  >
+                    <Icon
+                      name="star"
+                      size={15}
+                      color={colors.bg}
+                      fill={claimable.length ? colors.bg : 'none'}
+                    />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.bg }}>
+                      {claimable.length
+                        ? `Claim +${claimableXp} XP`
+                        : `Shop · ${formatCount(points)}`}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => navigation.navigate('Settings')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit profile"
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: radius.pill,
+                      backgroundColor: colors.primarySoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon name="pencil" size={19} color={colors.primaryDeep} />
+                  </Pressable>
+                </>
+              ) : user ? (
+                <Button
+                  label={following ? 'Following' : 'Follow'}
+                  variant={following ? 'secondary' : 'primary'}
+                  icon={following ? 'check' : 'plus'}
+                  style={{ flex: 1 }}
+                  onPress={toggleFollow}
+                />
+              ) : null}
+            </View>
 
-            <Card>
-              <View style={{ flexDirection: 'row' }}>
-                <Stat label="Entries" value={projects.length} />
-                <Stat label="Followers" value={formatCount(followers)} />
-                <Stat label="Following" value={formatCount(followingCount)} />
-                <Stat label="Likes" value={formatCount(reputation?.likesReceived ?? 0)} />
-              </View>
-            </Card>
-
-            {/* Level */}
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: space.sm }}>
-                <Eyebrow>Level {level.level}</Eyebrow>
+            {/* Next level */}
+            <View
+              style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 18, gap: 10 }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[typography.label, { letterSpacing: 1.8, color: colors.accent }]}>
+                  Next level
+                </Text>
                 <View style={{ flex: 1 }} />
-                <Text style={[typography.small, { color: colors.textMuted }]}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryDeep }}>
                   {level.xpIntoLevel} / {level.xpForNextLevel} XP
                 </Text>
               </View>
-              <ProgressBar progress={level.progress} />
-              <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
-                XP comes from what other people did with your work - distinct viewers, likes,
-                comments received, followers.
-              </Text>
-            </Card>
-
-            {isSelf ? (
-              <Card>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <Eyebrow>Points</Eyebrow>
-                    <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>
-                      {formatCount(myProfile?.points ?? profile?.points ?? 0)}
-                    </Text>
-                  </View>
-                  <Button
-                    small
-                    label="Shop"
-                    icon="shopping-bag"
-                    variant="secondary"
-                    onPress={() => navigation.navigate('Shop')}
-                  />
-                </View>
-              </Card>
-            ) : null}
+              <View
+                style={{
+                  height: 12,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.border,
+                  overflow: 'hidden',
+                }}
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.accent]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    height: '100%',
+                    width: `${Math.round(Math.max(0, Math.min(1, level.progress)) * 100)}%`,
+                    borderRadius: radius.pill,
+                  }}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 20, marginTop: 4 }}>
+                <StatBlock value={formatCount(followers)} label="Followers" />
+                <StatBlock value={formatCount(followingCount)} label="Following" />
+                <StatBlock value={formatCount(points)} label="Points" />
+              </View>
+            </View>
 
             {/* Achievements */}
             {achievements.length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                <Eyebrow>
-                  Achievements · {unlockedList.length}/{achievements.length}
-                </Eyebrow>
-                <View style={{ gap: space.sm }}>
-                  {achievements.map((a) => {
-                    const claimable = isSelf && a.unlocked && !claimed.has(a.id);
-                    return (
-                      <View
-                        key={a.id}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {achievements.map((a) => {
+                  const canClaim = isSelf && a.unlocked && !claimed.has(a.id);
+                  const tone = !a.unlocked
+                    ? { bg: colors.mutedSoft, fg: colors.textMuted }
+                    : canClaim
+                      ? { bg: colors.primarySoft, fg: colors.primaryDeep }
+                      : { bg: colors.accentSoft, fg: colors.accentDeep };
+                  return (
+                    <Pressable
+                      key={a.id}
+                      disabled={!canClaim}
+                      onPress={() => claim(a.id)}
+                      accessibilityLabel={`${a.label}. ${a.description}`}
+                      style={({ pressed }) => ({
+                        // Three to a row, with the two 10px gaps taken out.
+                        width: '31%',
+                        flexGrow: 1,
+                        backgroundColor: tone.bg,
+                        borderRadius: 20,
+                        padding: 14,
+                        gap: 6,
+                        alignItems: 'center',
+                        opacity: !a.unlocked ? 0.5 : pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Icon
+                        name={a.unlocked ? achievementIcon(a.icon) : 'lock'}
+                        size={22}
+                        color={tone.fg}
+                      />
+                      <Text
                         style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: space.md,
-                          padding: space.md,
-                          borderRadius: radius.sm,
-                          borderWidth: StyleSheet.hairlineWidth * 2,
-                          borderColor: a.unlocked ? colors.borderStrong : colors.border,
-                          backgroundColor: a.unlocked ? colors.surface : 'transparent',
-                          opacity: a.unlocked ? 1 : 0.45,
+                          fontSize: 10,
+                          fontWeight: '700',
+                          letterSpacing: 1,
+                          color: tone.fg,
+                          textAlign: 'center',
                         }}
                       >
-                        <Feather
-                          name={a.icon as any}
-                          size={18}
-                          color={a.unlocked ? colors.primary : colors.textFaint}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontWeight: '700', fontSize: 13, color: colors.text }}>
-                            {a.label}
-                          </Text>
-                          <Text style={[typography.small, { color: colors.textFaint }]}>
-                            {a.description}
-                          </Text>
-                        </View>
-                        {claimable ? (
-                          <Button
-                            small
-                            label={`+${a.reward}`}
-                            onPress={() => claim(a.id)}
-                          />
-                        ) : a.unlocked && isSelf ? (
-                          <Feather name="check" size={16} color={colors.success} />
-                        ) : null}
-                      </View>
-                    );
-                  })}
-                </View>
+                        {canClaim ? `+${a.reward} XP` : a.label.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             ) : null}
 
@@ -400,30 +493,61 @@ export function ProfileScreen({ route, navigation }: any) {
               />
             ) : null}
 
-            <Eyebrow style={{ marginTop: space.sm }}>Published</Eyebrow>
+            <SectionRule label="Published" trailing={projects.length} />
           </View>
         </View>
       }
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: space.lg }}>
+        <View style={{ paddingHorizontal: gutter }}>
           <EmptyState
             icon="package"
             title="Nothing published"
-            body={isSelf ? 'Your published entries show up here.' : 'This account has no public entries yet.'}
+            body={
+              isSelf
+                ? 'Your published entries show up here.'
+                : 'This account has no public entries yet.'
+            }
           />
         </View>
       }
-      renderItem={({ item, index }) => (
-        <View style={{ paddingHorizontal: space.lg }}>
-          <ProjectCard
-            project={item}
-            author={profile ? { displayName: profile.displayName, avatarUrl: profile.avatarUrl, equippedBorder: profile.equippedBorder } : undefined}
-            level={level.level}
-            onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-            index={index}
-          />
-        </View>
+      renderItem={({ item }) => (
+        <Pressable
+          onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+          style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' }}
+        >
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={150}
+            />
+          ) : (
+            <LinearGradient
+              colors={placeholderFor(item.type) as any}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          )}
+        </Pressable>
       )}
     />
   );
+}
+
+// The achievement set is labelled with Feather names, from when the app drew
+// its icons from that font. Bloom's tiles come from the artboard's Lucide set,
+// whose own vocabulary here is star / person / lock, so anything without a
+// direct counterpart lands on the star.
+function achievementIcon(name: string): IconName {
+  const map: Record<string, IconName> = {
+    heart: 'heart',
+    'message-circle': 'comment',
+    users: 'user',
+    'shopping-bag': 'bookmark',
+    grid: 'image',
+    eye: 'search',
+  };
+  return map[name] || 'star';
 }
