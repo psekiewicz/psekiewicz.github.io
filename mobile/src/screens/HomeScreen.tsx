@@ -1,11 +1,9 @@
-import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, RefreshControl, View } from 'react-native';
 
-import { BrandMark } from '../components/BrandMark';
+import { AccentHeader, FilterChip, HeaderButton, SearchPill } from '../components/bloom';
 import { ProjectCard } from '../components/ProjectCard';
-import { Chip, EmptyState, ErrorNote, Eyebrow, IconButton, Loading, Title } from '../components/ui';
+import { EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
 import { getLikeCounts } from '../data/likes';
@@ -16,11 +14,10 @@ import { useCardColumns, padRow } from '../lib/layout';
 import { getLevelsForUsers } from '../lib/levels';
 import { PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, space } from '../theme/tokens';
+import { gutter, radius, space } from '../theme/tokens';
 
 export function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   // One column on a phone, more as the screen gets wider - the same rule the
   // site's project grid follows.
   const columns = useCardColumns();
@@ -111,96 +108,54 @@ export function HomeScreen({ navigation }: any) {
     });
   }, [projects, query, typeFilter]);
 
+  // "FRIDAY · 41 NEW" - the artboard's own header line: today, then how many
+  // entries are currently in view.
+  const eyebrow = `${new Date()
+    .toLocaleDateString(undefined, { weekday: 'long' })
+    .toUpperCase()} · ${filtered.length} NEW`;
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      <View
-        style={{
-          paddingHorizontal: space.lg,
-          paddingBottom: space.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <BrandMark size={13} />
-            <Eyebrow>Showcase</Eyebrow>
-          </View>
-          <Title style={{ fontSize: 22 }}>Discover</Title>
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <IconButton
-            icon="award"
-            label="Leaderboard"
-            onPress={() => navigation.navigate('Leaderboard')}
-          />
-          <View>
-            <IconButton
-              icon="bell"
-              label="Notifications"
-              onPress={() =>
-                user ? navigation.navigate('Notifications') : navigation.navigate('Login')
-              }
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <AccentHeader
+        eyebrow={eyebrow}
+        title="Discover"
+        actions={
+          <>
+            <HeaderButton
+              icon="refresh"
+              label="Refresh"
+              onPress={() => {
+                setRefreshing(true);
+                load();
+              }}
             />
-            {unread > 0 ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  minWidth: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: colors.primary,
-                }}
+            <View>
+              <HeaderButton
+                icon="bell"
+                label="Notifications"
+                onPress={() =>
+                  user ? navigation.navigate('Notifications') : navigation.navigate('Login')
+                }
               />
-            ) : null}
-          </View>
-        </View>
-      </View>
-
-      <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: space.sm,
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderWidth: StyleSheet.hairlineWidth * 2,
-            borderRadius: radius.sm,
-            paddingHorizontal: space.md,
-          }}
-        >
-          <Feather name="search" size={15} color={colors.textFaint} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search titles, tags, people"
-            placeholderTextColor={colors.textFaint}
-            style={{ flex: 1, color: colors.text, paddingVertical: space.md, fontSize: 14 }}
-          />
-          {query ? (
-            <IconButton icon="x" size={15} label="Clear search" onPress={() => setQuery('')} />
-          ) : null}
-        </View>
-
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={[{ value: null, label: 'All' }, ...PROJECT_TYPE_OPTIONS]}
-          keyExtractor={(item) => item.value || 'all'}
-          contentContainerStyle={{ gap: space.sm, paddingVertical: space.xs }}
-          renderItem={({ item }) => (
-            <Chip
-              label={item.label}
-              active={typeFilter === item.value}
-              onPress={() => setTypeFilter(item.value)}
-            />
-          )}
-        />
-      </View>
+              {unread > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    width: 9,
+                    height: 9,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.bg,
+                  }}
+                />
+              ) : null}
+            </View>
+          </>
+        }
+      >
+        <SearchPill value={query} onChangeText={setQuery} />
+      </AccentHeader>
 
       {loading ? (
         <Loading label="Loading entries" />
@@ -213,7 +168,14 @@ export function HomeScreen({ navigation }: any) {
           {...(columns > 1 ? { columnWrapperStyle: { gap: space.lg } } : null)}
           data={padRow(filtered, columns)}
           keyExtractor={(item, index) => item?.id ?? `blank-${index}`}
-          contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}
+          // 116 of bottom padding is what clears Bloom's floating tab bar and
+          // the add button overhanging it.
+          contentContainerStyle={{
+            paddingHorizontal: gutter,
+            paddingTop: 18,
+            gap: 16,
+            paddingBottom: 116,
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -224,7 +186,21 @@ export function HomeScreen({ navigation }: any) {
               tintColor={colors.primary}
             />
           }
-          ListHeaderComponent={error ? <ErrorNote message={error} /> : null}
+          ListHeaderComponent={
+            <View style={{ gap: 16 }}>
+              {error ? <ErrorNote message={error} /> : null}
+              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+                {[{ value: null, label: 'Everything' }, ...PROJECT_TYPE_OPTIONS].map((item) => (
+                  <FilterChip
+                    key={item.value || 'all'}
+                    label={item.label}
+                    active={typeFilter === item.value}
+                    onPress={() => setTypeFilter(item.value)}
+                  />
+                ))}
+              </View>
+            </View>
+          }
           ListEmptyComponent={
             <EmptyState
               icon="search"

@@ -1,84 +1,95 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, ImageStyle, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
 import { useMotion } from '../theme/MotionProvider';
+import { brand } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeProvider';
-import { typography } from '../theme/tokens';
-import { MARK_ASPECT, chevronLayout, chevronStep, chevrons } from './BrandMark';
+import { CHEVRON_BACK, CHEVRON_FRONT, Chevron } from './BrandMark';
 
-const MARK_HEIGHT = 56;
+const MARK = 116;
 
-// How far the two chevrons start apart, as a fraction of mark height. The
-// navbar spreads them by 2px on hover at a 20px mark height, so the same 0.1
-// keeps the gesture identical at this size.
-const SPREAD = 0.1;
-
-// The brand mark's own reveal, shown while AuthContext reads the persisted
-// session off disk (RootNavigator's `loading` gate) - real startup work
-// already being done, not an artificial delay added just to have something to
-// animate. Same double chevron as the site's navbar, and it assembles the way
-// the navbar mark moves on hover: the two chevrons drift together from either
-// side rather than simply fading up.
+// Bloom's splash, shown while AuthContext reads the persisted session off disk
+// (RootNavigator's `loading` gate) - real startup work already being done, not
+// a delay added to have something to animate.
+//
+// A terracotta field, a ring breathing out behind the mark, the two chevrons
+// flying in from opposite sides a beat apart, and the wordmark settling out of
+// wide tracking. Lowercase, as the artboard sets it.
 export function SplashReveal() {
   const { colors } = useTheme();
   const { enabled } = useMotion();
 
-  const orangeAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const blueAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const textAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const frontAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const backAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const wordAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+  const ring = useRef(new Animated.Value(0)).current;
+  // letterSpacing can't be driven natively, so the wordmark's tracking runs on
+  // its own value rather than being mixed into wordAnim.
+  const track = useRef(new Animated.Value(enabled ? 0 : 1)).current;
 
   useEffect(() => {
     if (!enabled) return;
-    Animated.sequence([
-      Animated.spring(orangeAnim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 12 }),
-      Animated.spring(blueAnim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 12 }),
-      Animated.timing(textAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
-    ]).start();
-  }, [orangeAnim, blueAnim, textAnim, enabled]);
 
-  // Each chevron fades and scales up while sliding in from its own side, so
-  // they close on the mark's centre instead of arriving already in place.
-  // Annotated so the transform entries are contextually typed - an unannotated
-  // array literal of two differently-shaped objects widens to a union carrying
-  // `?: undefined` siblings, which RN's transform type rejects.
-  const chevronStyle = (
-    anim: Animated.Value,
-    from: number,
-  ): Animated.WithAnimatedObject<ImageStyle> => ({
+    Animated.parallel([
+      Animated.timing(frontAnim, { toValue: 1, duration: 580, useNativeDriver: true }),
+      Animated.timing(backAnim, { toValue: 1, duration: 580, delay: 150, useNativeDriver: true }),
+      Animated.timing(wordAnim, { toValue: 1, duration: 540, delay: 400, useNativeDriver: true }),
+      Animated.timing(track, { toValue: 1, duration: 540, delay: 400, useNativeDriver: false }),
+    ]).start();
+
+    const pulse = Animated.loop(
+      Animated.timing(ring, { toValue: 1, duration: 1600, delay: 200, useNativeDriver: true }),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [frontAnim, backAnim, wordAnim, track, ring, enabled]);
+
+  const flyIn = (anim: Animated.Value, from: number) => ({
     opacity: anim,
-    transform: [
-      { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) },
-      { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [from, 0] }) },
-    ],
+    transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [from, 0] }) }],
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={{ width: MARK_HEIGHT * MARK_ASPECT, height: MARK_HEIGHT }}>
-        <Animated.Image
-          source={chevrons.orange}
-          style={[chevronLayout(MARK_HEIGHT, 0), chevronStyle(orangeAnim, -MARK_HEIGHT * SPREAD)]}
+    <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <View style={{ width: MARK, height: MARK, alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: -14,
+            right: -14,
+            top: -14,
+            bottom: -14,
+            borderRadius: 999,
+            backgroundColor: 'rgba(253,247,234,0.18)',
+            opacity: ring.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0.35, 0] }),
+            transform: [
+              { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.2, 2.6] }) },
+            ],
+          }}
         />
-        <Animated.Image
-          source={chevrons.blue}
-          style={[
-            chevronLayout(MARK_HEIGHT, chevronStep(MARK_HEIGHT)),
-            chevronStyle(blueAnim, MARK_HEIGHT * SPREAD),
-          ]}
-        />
+        <Animated.View style={[StyleSheet.absoluteFill, flyIn(frontAnim, -34)]}>
+          <Chevron size={MARK} points={CHEVRON_FRONT} color={brand.splashFront} />
+        </Animated.View>
+        <Animated.View style={[StyleSheet.absoluteFill, flyIn(backAnim, 34)]}>
+          <Chevron size={MARK} points={CHEVRON_BACK} color={brand.splashBack} />
+        </Animated.View>
       </View>
+
       <Animated.Text
-        style={[
-          typography.h2,
-          {
-            color: colors.text,
-            marginTop: 22,
-            opacity: textAnim,
-            transform: [{ translateY: textAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-          },
-        ]}
+        style={{
+          marginTop: 24,
+          fontSize: 19,
+          fontWeight: '700',
+          color: brand.splashFront,
+          opacity: wordAnim,
+          letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
+          transform: [
+            { translateY: wordAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+          ],
+        }}
       >
-        Showcase
+        showcase
       </Animated.Text>
     </View>
   );

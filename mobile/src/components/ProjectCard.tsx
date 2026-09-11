@@ -1,14 +1,15 @@
-import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import type { Project } from '../data/projects';
 import { useEntrance, usePressScale } from '../lib/motion';
-import { formatCount, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, space, typography } from '../theme/tokens';
-import { Avatar, LevelChip, TypeBadge } from './ui';
+import { radius, typography } from '../theme/tokens';
+import { CountPill, TonePill } from './bloom';
+import { Icon } from './icons';
+import { Avatar, LevelChip } from './ui';
 
 type Props = {
   project: Partial<Project> & { id: string; title: string };
@@ -24,6 +25,21 @@ type Props = {
   index?: number;
 };
 
+// The gradients the artboard stands in for artwork with, kept per entry type so
+// an entry with no image still lands somewhere in the palette rather than on a
+// flat grey.
+const PLACEHOLDERS: Record<string, string[]> = {
+  music: ['#d8c9a4', '#b9a887', '#8f8468'],
+  video: ['#c9d0b3', '#6f7a55'],
+  image: ['#e2d0ae', '#c67139'],
+  app: ['#e4e7d5', '#a6b287'],
+  other: ['#b9a887', '#4a4034'],
+};
+
+export function placeholderFor(type?: string) {
+  return PLACEHOLDERS[type || 'other'] || PLACEHOLDERS.other;
+}
+
 export function ProjectCard({
   project,
   author,
@@ -38,124 +54,104 @@ export function ProjectCard({
   const { scale, onPressIn, onPressOut } = usePressScale(0.97);
   const entrance = useEntrance(index);
 
+  const type = project.type || 'other';
+  const isPlayable = type === 'music' || type === 'video';
+
   return (
     <Animated.View style={{ opacity: entrance.opacity, transform: [...entrance.transform, { scale }] }}>
-    <Pressable
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      style={({ pressed }) => ({
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderWidth: StyleSheet.hairlineWidth * 2,
-        borderRadius: radius.md,
-        overflow: 'hidden',
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      {project.imageUrl ? (
-        <Image
-          source={{ uri: project.imageUrl }}
-          style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.mutedSoft }}
-          contentFit="cover"
-          transition={150}
-        />
-      ) : null}
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={({ pressed }) => ({
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          overflow: 'hidden',
+          opacity: pressed ? 0.9 : 1,
+        })}
+      >
+        <View style={{ height: 172 }}>
+          {project.imageUrl ? (
+            <Image
+              source={{ uri: project.imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={150}
+            />
+          ) : (
+            <LinearGradient
+              colors={placeholderFor(type) as any}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          )}
 
-      <View style={{ padding: space.lg, gap: space.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <TypeBadge type={project.type || 'other'} />
+          <View style={{ position: 'absolute', top: 14, left: 14 }}>
+            <TonePill label={type.toUpperCase()} tone="dark" />
+          </View>
+
           {!project.published ? (
-            <Text style={[typography.eyebrow, { color: colors.primary }]}>Draft</Text>
+            <View style={{ position: 'absolute', top: 14, right: 14 }}>
+              <TonePill label="DRAFT" tone="primary" />
+            </View>
+          ) : null}
+
+          {isPlayable ? (
+            <View
+              style={{
+                position: 'absolute',
+                right: 14,
+                bottom: 14,
+                width: 46,
+                height: 46,
+                borderRadius: radius.pill,
+                backgroundColor: colors.bg,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="play" size={20} color={colors.primaryDeep} />
+            </View>
           ) : null}
         </View>
 
-        <Text style={[typography.h3, { color: colors.text }]} numberOfLines={2}>
-          {project.title}
-        </Text>
-
-        {project.summary ? (
-          <Text style={[typography.body, { color: colors.textMuted }]} numberOfLines={2}>
-            {project.summary}
+        <View style={{ paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, gap: 9 }}>
+          <Text style={[typography.cardTitle, { color: colors.text }]} numberOfLines={2}>
+            {project.title}
           </Text>
-        ) : null}
 
-        {project.tags && project.tags.length > 0 ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
-            {project.tags.slice(0, 4).map((tag) => (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+            <Pressable
+              onPress={onAuthorPress}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 9, flexShrink: 1 }}
+            >
+              <Avatar
+                url={author?.avatarUrl}
+                name={author?.displayName || project.authorName}
+                size={24}
+                ring={author?.equippedBorder}
+              />
               <Text
-                key={tag}
-                style={{
-                  fontSize: 10,
-                  color: colors.textFaint,
-                  borderColor: colors.border,
-                  borderWidth: StyleSheet.hairlineWidth * 2,
-                  borderRadius: radius.sm,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                }}
+                style={{ fontSize: 12, fontWeight: '700', color: colors.text, flexShrink: 1 }}
+                numberOfLines={1}
               >
-                {tag}
+                {author?.displayName || project.authorName}
               </Text>
-            ))}
-          </View>
-        ) : null}
+              {level ? <LevelChip level={level} small /> : null}
+            </Pressable>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: space.sm,
-            marginTop: space.xs,
-            paddingTop: space.sm,
-            borderTopWidth: StyleSheet.hairlineWidth * 2,
-            borderTopColor: colors.border,
-          }}
-        >
-          <Pressable
-            onPress={onAuthorPress}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}
-          >
-            <Avatar
-              url={author?.avatarUrl}
-              name={author?.displayName || project.authorName}
-              size={22}
-              ring={author?.equippedBorder}
-            />
-            <Text style={[typography.small, { color: colors.textMuted, flexShrink: 1 }]} numberOfLines={1}>
-              {author?.displayName || project.authorName}
-            </Text>
-            {level ? <LevelChip level={level} small /> : null}
-          </Pressable>
+            <View style={{ flex: 1 }} />
 
-          <View style={{ flex: 1 }} />
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
             {typeof likeCount === 'number' ? (
-              <Metric icon="heart" value={likeCount} />
+              <CountPill icon="heart" count={likeCount} tone="primary" />
             ) : null}
             {typeof commentCount === 'number' ? (
-              <Metric icon="message-circle" value={commentCount} />
+              <CountPill icon="comment" count={commentCount} tone="accent" />
             ) : null}
-            <Metric icon="eye" value={project.viewsCount || 0} />
           </View>
         </View>
-
-        <Text style={[typography.small, { color: colors.textFaint, fontSize: 10 }]}>
-          {project.createdAt ? timeAgo(project.createdAt) : ''}
-        </Text>
-      </View>
-    </Pressable>
+      </Pressable>
     </Animated.View>
-  );
-}
-
-function Metric({ icon, value }: { icon: any; value: number }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-      <Feather name={icon} size={12} color={colors.textFaint} />
-      <Text style={{ fontSize: 11, color: colors.textFaint }}>{formatCount(value)}</Text>
-    </View>
   );
 }

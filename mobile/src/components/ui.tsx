@@ -48,7 +48,7 @@ export function Body({ children, muted, style, numberOfLines }: any) {
 // The small-caps micro-labels that do the work headings used to.
 export function Eyebrow({ children, style }: any) {
   const { colors } = useTheme();
-  return <Text style={[typography.eyebrow, { color: colors.textFaint }, style]}>{children}</Text>;
+  return <Text style={[typography.eyebrow, { color: colors.accent }, style]}>{children}</Text>;
 }
 
 // ---------------------------------------------------------------- surfaces
@@ -61,10 +61,8 @@ export function Card({ children, style, onPress }: any) {
       style={[
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderWidth: StyleSheet.hairlineWidth * 2,
           borderRadius: radius.md,
-          padding: space.lg,
+          padding: 18,
         },
         style,
       ]}
@@ -112,7 +110,7 @@ export function Button({
   const { scale, onPressIn, onPressOut } = usePressScale();
 
   const palette = {
-    primary: { bg: colors.primary, fg: '#fff', border: colors.primary },
+    primary: { bg: colors.primary, fg: colors.onAccent, border: colors.primary },
     secondary: { bg: 'transparent', fg: colors.text, border: colors.borderStrong },
     ghost: { bg: 'transparent', fg: colors.textMuted, border: 'transparent' },
     danger: { bg: 'transparent', fg: colors.danger, border: colors.danger },
@@ -142,10 +140,10 @@ export function Button({
             gap: space.sm,
             backgroundColor: palette.bg,
             borderColor: palette.border,
-            borderWidth: StyleSheet.hairlineWidth * 2,
-            borderRadius: radius.sm,
-            paddingVertical: small ? space.sm : space.md,
-            paddingHorizontal: small ? space.md : space.lg,
+            borderWidth: 1.5,
+            borderRadius: radius.pill,
+            paddingVertical: small ? 10 : 14,
+            paddingHorizontal: small ? space.lg : space.xl,
             transform: [{ scale }],
           },
           style,
@@ -224,10 +222,10 @@ export function Field({
           color: colors.text,
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          borderWidth: StyleSheet.hairlineWidth * 2,
+          borderWidth: 1.5,
           borderRadius: radius.sm,
-          paddingHorizontal: space.md,
-          paddingVertical: space.md,
+          paddingHorizontal: space.lg,
+          paddingVertical: 14,
           fontSize: 14,
           minHeight: multiline ? 110 : undefined,
           textAlignVertical: multiline ? 'top' : 'center',
@@ -248,11 +246,11 @@ export function Chip({ label, active, onPress, icon }: any) {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 5,
-          paddingVertical: 6,
-          paddingHorizontal: space.md,
-          borderRadius: radius.sm,
-          borderWidth: StyleSheet.hairlineWidth * 2,
-          borderColor: active ? colors.primary : colors.border,
+          paddingVertical: 9,
+          paddingHorizontal: 15,
+          borderRadius: radius.pill,
+          borderWidth: active ? 0 : 1.5,
+          borderColor: active ? 'transparent' : colors.border,
           backgroundColor: active ? colors.primarySoft : 'transparent',
           transform: [{ scale }],
         }}
@@ -365,16 +363,21 @@ export function LevelChip({ level, small }: any) {
   return (
     <View
       style={{
-        paddingHorizontal: small ? 5 : 7,
-        paddingVertical: small ? 1 : 2,
-        borderRadius: radius.sm,
-        borderWidth: StyleSheet.hairlineWidth * 2,
-        borderColor: colors.borderStrong,
-        backgroundColor: colors.mutedSoft,
+        paddingHorizontal: small ? 7 : 9,
+        paddingVertical: small ? 2 : 4,
+        borderRadius: radius.pill,
+        backgroundColor: colors.text,
       }}
     >
-      <Text style={{ fontSize: small ? 9 : 11, fontWeight: '700', color: colors.textMuted }}>
-        Lv {level}
+      <Text
+        style={{
+          fontSize: small ? 9 : 10,
+          fontWeight: '700',
+          letterSpacing: 0.8,
+          color: colors.bg,
+        }}
+      >
+        LV {level}
       </Text>
     </View>
   );
@@ -427,9 +430,9 @@ export function ErrorNote({ message }: { message: string }) {
       style={{
         backgroundColor: colors.dangerSoft,
         borderColor: colors.danger,
-        borderWidth: StyleSheet.hairlineWidth * 2,
-        borderRadius: radius.sm,
-        padding: space.md,
+        borderWidth: 1.5,
+        borderRadius: radius.md,
+        padding: space.lg,
         marginBottom: space.lg,
       }}
     >
@@ -446,9 +449,9 @@ export function SuccessNote({ message }: { message: string }) {
       style={{
         backgroundColor: colors.successSoft,
         borderColor: colors.success,
-        borderWidth: StyleSheet.hairlineWidth * 2,
-        borderRadius: radius.sm,
-        padding: space.md,
+        borderWidth: 1.5,
+        borderRadius: radius.md,
+        padding: space.lg,
         marginBottom: space.lg,
       }}
     >

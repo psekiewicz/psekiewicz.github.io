@@ -1,14 +1,10 @@
-import { Feather } from '@expo/vector-icons';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { useMotion } from '../theme/MotionProvider';
+import React from 'react';
 
 import { SplashReveal } from '../components/SplashReveal';
+import { BloomTabBar } from './BloomTabBar';
 import { useAuth } from '../context/AuthContext';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -32,45 +28,16 @@ const Stack = createNativeStackNavigator();
 // The same five tabs the web build's bottom bar carries on narrow screens:
 // Home / Scrolls / Add / Dashboard / Profile.
 function Tabs() {
-  const { colors } = useTheme();
-  // The app draws edge to edge, so the bottom of the window sits *behind* the
-  // system navigation bar. React Navigation normally pads the tab bar clear of
-  // it on its own - but only while it owns the height, and setting height and
-  // paddingBottom below takes that over. Without adding the inset back, the
-  // whole bar renders underneath the system one: invisible, untappable, and
-  // with it every screen except this one.
-  const insets = useSafeAreaInsets();
-
   return (
     <Tab.Navigator
       // React Navigation 7 types `id` as required even though it's optional at
       // runtime; passing undefined is the documented way to say "no id".
       id={undefined}
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textFaint,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: StyleSheet.hairlineWidth * 2,
-          height: 58 + insets.bottom,
-          paddingBottom: 6 + insets.bottom,
-          paddingTop: 6,
-          elevation: 0,
-        },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
-        tabBarIcon: ({ focused, color, size }) => {
-          const map: Record<string, any> = {
-            Home: 'home',
-            Scrolls: 'play-circle',
-            Add: 'plus-square',
-            Dashboard: 'bar-chart-2',
-            Profile: 'user',
-          };
-          return <TabIcon name={map[route.name] || 'circle'} size={size - 2} color={color} focused={focused} />;
-        },
-      })}
+      // Bloom draws its own floating pill instead of styling the stock bar: the
+      // add button overhangs the bar's top edge and is not a tab at all, which
+      // no combination of tabBarStyle/tabBarIcon can express.
+      tabBar={(props) => <BloomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Scrolls" component={ScrollsScreen} />
@@ -81,28 +48,6 @@ function Tabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
-  );
-}
-
-function TabIcon({ name, size, color, focused }: { name: any; size: number; color: string; focused: boolean }) {
-  const { enabled } = useMotion();
-  const scale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (!enabled || !focused) return;
-    Animated.sequence([
-      Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 40, bounciness: 14 }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
-    ]).start();
-    // Only the moment a tab *becomes* focused should bounce, not every
-    // re-render while it stays focused.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focused]);
-
-  return (
-    <Animated.View style={{ transform: [{ scale: focused ? scale : 1 }] }}>
-      <Feather name={name} size={size} color={color} />
-    </Animated.View>
   );
 }
 
