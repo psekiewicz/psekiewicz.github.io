@@ -1,33 +1,23 @@
-import { Feather } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import {
-  Body,
-  Button,
-  Card,
-  EmptyState,
-  ErrorNote,
-  Eyebrow,
-  Heading,
-  Loading,
-  Stat,
-  Title,
-  TypeBadge,
-} from '../components/ui';
+import { AccentHeader, SectionRule, StatBlock, TonePill } from '../components/bloom';
+import { placeholderFor } from '../components/ProjectCard';
+import { ProgressRing } from '../components/ProgressRing';
+import { Body, Button, Card, EmptyState, ErrorNote, Heading, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getMyProjects, Project, togglePublish } from '../data/projects';
 import { getReputation, Reputation } from '../data/reputation';
 import { getRecentViewTimestamps } from '../data/views';
 import { levelFromXp } from '../lib/levels';
 import { formatCount, timeAgo } from '../lib/utils';
+import { useMotion } from '../theme/MotionProvider';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, space, typography } from '../theme/tokens';
+import { gutter, radius, space, typography } from '../theme/tokens';
 
 export function DashboardScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -103,14 +93,42 @@ export function DashboardScreen({ navigation }: any) {
 
   const level = reputation ? levelFromXp(reputation.xp) : null;
 
+  const views = reputation?.totalViews ?? 0;
+  const entries = reputation?.publishedProjects ?? 0;
+  // The ring reads as "how much of your work is live", which is the one
+  // proportion on this screen that actually has a denominator.
+  const liveShare = projects.length ? entries / projects.length : 0;
+
   return (
-    <FlatList
-      style={{ flex: 1, backgroundColor: colors.bg }}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <AccentHeader tone="accent" eyebrow="Last 14 days" title="Your work">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+          <ProgressRing progress={liveShare} value={formatCount(views)} label="Views" />
+          <View style={{ flex: 1, gap: 10 }}>
+            <StatBlock
+              tone="onAccent"
+              size={22}
+              value={formatCount(reputation?.likesReceived ?? 0)}
+              label="Likes"
+            />
+            <StatBlock
+              tone="onAccent"
+              size={22}
+              value={formatCount(reputation?.followers ?? 0)}
+              label="Followers"
+            />
+            <StatBlock tone="onAccent" size={22} value={entries} label="Entries" />
+          </View>
+        </View>
+      </AccentHeader>
+
+      <FlatList
+      style={{ flex: 1 }}
       contentContainerStyle={{
-        padding: space.lg,
-        paddingTop: insets.top + space.md,
-        gap: space.md,
-        paddingBottom: space.xxl,
+        paddingHorizontal: gutter,
+        paddingTop: 20,
+        gap: 12,
+        paddingBottom: 116,
       }}
       data={projects}
       keyExtractor={(item) => item.id}
@@ -125,38 +143,16 @@ export function DashboardScreen({ navigation }: any) {
         />
       }
       ListHeaderComponent={
-        <View style={{ gap: space.lg, marginBottom: space.sm }}>
-          <View>
-            <Eyebrow>Dashboard</Eyebrow>
-            <Title style={{ fontSize: 22 }}>Your work</Title>
-          </View>
-
+        <View style={{ gap: 18, marginBottom: 6 }}>
           <ErrorNote message={error} />
 
-          <Card>
-            <View style={{ flexDirection: 'row' }}>
-              <Stat label="Entries" value={reputation?.publishedProjects ?? 0} />
-              <Stat label="Views" value={formatCount(reputation?.totalViews ?? 0)} />
-              <Stat label="Likes" value={formatCount(reputation?.likesReceived ?? 0)} />
-              <Stat label="Followers" value={formatCount(reputation?.followers ?? 0)} />
-            </View>
-            {level ? (
-              <View
-                style={{
-                  marginTop: space.lg,
-                  paddingTop: space.md,
-                  borderTopWidth: StyleSheet.hairlineWidth * 2,
-                  borderTopColor: colors.border,
-                }}
-              >
-                <Text style={[typography.small, { color: colors.textMuted }]}>
-                  Level {level.level} · {level.xp} XP · {level.xpToNextLevel} to next
-                </Text>
-              </View>
-            ) : null}
-          </Card>
-
           <ViewsChart series={viewSeries} />
+
+          {level ? (
+            <Text style={[typography.small, { color: colors.textMuted }]}>
+              Level {level.level} · {level.xp} XP · {level.xpToNextLevel} to next
+            </Text>
+          ) : null}
 
           <Button
             label="New entry"
@@ -164,9 +160,7 @@ export function DashboardScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Editor', { projectId: undefined })}
           />
 
-          <Eyebrow style={{ marginTop: space.sm }}>
-            {projects.length} {projects.length === 1 ? 'entry' : 'entries'}
-          </Eyebrow>
+          <SectionRule label="Entries" trailing={projects.length} />
         </View>
       }
       ListEmptyComponent={
@@ -177,33 +171,38 @@ export function DashboardScreen({ navigation }: any) {
         />
       }
       renderItem={({ item }) => (
-        <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-            <TypeBadge type={item.type} />
-            <View style={{ flex: 1 }} />
-            <Text
-              style={[
-                typography.eyebrow,
-                { color: item.published ? colors.success : colors.textFaint },
-              ]}
-            >
-              {item.published ? 'Live' : 'Draft'}
-            </Text>
-          </View>
-
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: radius.md,
+            padding: 14,
+            gap: 12,
+          }}
+        >
           <Pressable
             onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-            style={{ marginTop: space.sm }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}
           >
-            <Text style={[typography.h3, { color: colors.text }]} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <Text style={[typography.small, { color: colors.textFaint, marginTop: 2 }]}>
-              {timeAgo(item.createdAt)} · {formatCount(item.viewsCount)} views
-            </Text>
+            <LinearGradient
+              colors={placeholderFor(item.type) as any}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={{ width: 50, height: 50, borderRadius: 16 }}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[typography.rowTitle, { color: colors.text }]} numberOfLines={2}>
+                {item.title}
+              </Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                {item.published
+                  ? `${formatCount(item.viewsCount)} views · ${timeAgo(item.createdAt)}`
+                  : 'Not published'}
+              </Text>
+            </View>
+            <TonePill label={item.published ? 'LIVE' : 'DRAFT'} tone={item.published ? 'accent' : 'primary'} />
           </Pressable>
 
-          <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
+          <View style={{ flexDirection: 'row', gap: space.sm }}>
             <Button
               small
               label="Edit"
@@ -221,9 +220,10 @@ export function DashboardScreen({ navigation }: any) {
               onPress={() => flipPublish(item)}
             />
           </View>
-        </Card>
+        </View>
       )}
     />
+    </View>
   );
 }
 
@@ -239,42 +239,62 @@ function bucketByDay(timestamps: string[], days: number) {
 }
 
 // A plain bar chart drawn with views. A charting library for fourteen numbers
-// would be more code than the chart.
+// would be more code than the chart. Bloom ramps the bars from the pale sand
+// steps up to the accent across the window, so the recent end reads hottest.
 function ViewsChart({ series }: { series: number[] }) {
   const { colors } = useTheme();
+  const { enabled } = useMotion();
   const max = Math.max(1, ...series);
   const total = series.reduce((a, b) => a + b, 0);
+  const grow = useRef(new Animated.Value(enabled ? 0 : 1)).current;
+
+  useEffect(() => {
+    if (!enabled) return;
+    Animated.timing(grow, { toValue: 1, duration: 700, useNativeDriver: true }).start();
+  }, [grow, enabled]);
+
+  const barColor = (i: number) => {
+    const at = i / Math.max(1, series.length - 1);
+    if (at < 0.25) return colors.border;
+    if (at < 0.5) return colors.sand;
+    return colors.primary;
+  };
 
   return (
-    <Card>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: space.md }}>
-        <Eyebrow>Views · last 14 days</Eyebrow>
+    <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 18, gap: 14 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={[typography.label, { letterSpacing: 1.8, color: colors.accent }]}>
+          Daily views
+        </Text>
         <View style={{ flex: 1 }} />
-        <Text style={[typography.small, { color: colors.textMuted }]}>{total} total</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryDeep }}>
+          {total} total
+        </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 60 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 70 }}>
         {series.map((value, i) => (
-          <View
+          <Animated.View
             key={i}
             style={{
               flex: 1,
-              height: `${Math.max(3, (value / max) * 100)}%`,
-              backgroundColor: value > 0 ? colors.primary : colors.mutedSoft,
-              borderRadius: radius.sm,
+              height: `${Math.max(8, (value / max) * 100)}%`,
+              backgroundColor: barColor(i),
+              borderRadius: 6,
+              // RN scales about the centre by default; the artboard grows each
+              // bar out of the axis.
+              transformOrigin: 'bottom',
+              transform: [{ scaleY: grow }],
             }}
           />
         ))}
       </View>
 
       {total === 0 ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.md }}>
-          <Feather name="info" size={12} color={colors.textFaint} />
-          <Text style={[typography.small, { color: colors.textFaint }]}>
-            No views logged in this window yet.
-          </Text>
-        </View>
+        <Text style={[typography.small, { color: colors.textFaint }]}>
+          No views logged in this window yet.
+        </Text>
       ) : null}
-    </Card>
+    </View>
   );
 }
