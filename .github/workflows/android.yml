@@ -73,6 +73,26 @@ jobs:
 
       # Also applies plugins/withReleaseSigning.js, which is what gives the
       # generated project a release signing config to point at below.
+      # Android refuses to install a build whose versionCode is not higher than
+      # the installed one, and it has to be an integer that only ever goes up.
+      # The run number is exactly that, so it is stamped in here rather than
+      # being a number somebody has to remember to bump - which is why every
+      # build up to now shipped as versionCode 1 and could only be installed
+      # over its predecessor by uninstalling first. `expo.version` stays the
+      # human-facing semver and is still bumped by hand in app.json.
+      - name: Stamp the build number
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            app.expo.android.versionCode = Number(process.env.RUN_NUMBER);
+            fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          '
+          node -e 'const a=require("./app.json").expo; console.log("Building "+a.version+" (versionCode "+a.android.versionCode+")")'
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --no-install
 

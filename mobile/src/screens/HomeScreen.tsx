@@ -184,6 +184,11 @@ export function HomeScreen({ navigation }: any) {
                 load();
               }}
               tintColor={colors.primary}
+              // tintColor is iOS-only. Android draws a spinner on its own disc, and
+              // that disc is white unless it is told otherwise - which is what was
+              // flashing a white circle down the top of every dark-mode list.
+              colors={[colors.primary]}
+              progressBackgroundColor={colors.surface}
             />
           }
           ListHeaderComponent={

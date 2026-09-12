@@ -5,6 +5,7 @@ import { FlatList, ImageBackground, Pressable, RefreshControl, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HeaderButton, SectionRule, StatBlock } from '../components/bloom';
+import { CosmeticBackground } from '../components/CosmeticBackground';
 import { Icon, IconName } from '../components/icons';
 import { placeholderFor } from '../components/ProjectCard';
 import {
@@ -259,19 +260,25 @@ export function ProfileScreen({ route, navigation }: any) {
             load();
           }}
           tintColor={colors.primary}
+          // tintColor is iOS-only; Android's spinner disc is white without these.
+          colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
         />
       }
       ListHeaderComponent={
         <View>
-          {gradient?.image ? (
-            <ImageBackground source={{ uri: gradient.image }} resizeMode="cover" style={headerStyle}>
+          {/* The equipped background, drawn by CosmeticBackground so a
+              patterned one is the real tiled pattern rather than a flattened
+              gradient. `none` falls through to Bloom's own terracotta band. */}
+          {profile?.equippedBg && profile.equippedBg !== 'none' ? (
+            <CosmeticBackground itemId={profile.equippedBg} style={headerStyle}>
               {headerContent}
-            </ImageBackground>
+            </CosmeticBackground>
           ) : (
             <LinearGradient
-              colors={gradient ? (gradient.colors as any) : ['#d98a4f', colors.primary, '#8f4a1e']}
-              start={gradient?.start || { x: 0.1, y: 0 }}
-              end={gradient?.end || { x: 0.9, y: 1 }}
+              colors={['#d98a4f', colors.primary, '#8f4a1e']}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
               style={headerStyle}
             >
               {headerContent}

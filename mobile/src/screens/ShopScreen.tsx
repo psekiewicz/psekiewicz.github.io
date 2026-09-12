@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getProfile } from '../data/profiles';
 import { equipItem, getOwnedItemIds, purchaseBundle, purchaseItem } from '../data/shop';
+import { CosmeticBackground, hasPattern } from '../components/CosmeticBackground';
 import { previewColors } from '../lib/cosmetics';
 import {
   bundleMissingListPrice,
@@ -186,15 +187,25 @@ export function ShopScreen({ navigation }: any) {
                   marginTop: space.md,
                 }}
               >
-                {bundle.items.map((id) => (
-                  <LinearGradient
-                    key={id}
-                    colors={previewColors(id) as any}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ width: 26, height: 26, borderRadius: radius.sm }}
-                  />
-                ))}
+                {bundle.items.map((id) =>
+                  // A patterned background previews as the pattern; everything
+                  // else (borders, name effects) stays its colour swatch.
+                  hasPattern(id) ? (
+                    <CosmeticBackground
+                      key={id}
+                      itemId={id}
+                      style={{ width: 26, height: 26, borderRadius: radius.sm }}
+                    />
+                  ) : (
+                    <LinearGradient
+                      key={id}
+                      colors={previewColors(id) as any}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ width: 26, height: 26, borderRadius: radius.sm }}
+                    />
+                  )
+                )}
                 <View style={{ flex: 1 }} />
                 {complete ? (
                   <Text style={[typography.small, { color: colors.success, fontWeight: '700' }]}>
@@ -272,14 +283,23 @@ export function ShopScreen({ navigation }: any) {
                 overflow: 'hidden',
               }}
             >
-              <LinearGradient
-                colors={previewColors(item.id) as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
-              >
-                {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
-              </LinearGradient>
+              {hasPattern(item.id) ? (
+                <CosmeticBackground
+                  itemId={item.id}
+                  style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
+                </CosmeticBackground>
+              ) : (
+                <LinearGradient
+                  colors={previewColors(item.id) as any}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
+                </LinearGradient>
+              )}
               <View style={{ padding: space.sm, gap: 2 }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: colors.text }} numberOfLines={1}>
                   {item.label}

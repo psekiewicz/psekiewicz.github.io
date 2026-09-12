@@ -261,7 +261,7 @@ export function EditorScreen({ route, navigation }: any) {
           value={mediaUrl}
           onChangeText={setMediaUrl}
           placeholder="https://…"
-          hint="A direct .mp4/.mp3/.jpg plays in the app. YouTube, Vimeo, Spotify and SoundCloud links open in their own app."
+          hint="A direct .mp4/.mp3/.jpg plays in the app, and so do YouTube, Vimeo, Spotify and SoundCloud links."
         />
         {/* The other half of not having to type a URL on a phone: sharing to
             the app covers apps with a share sheet, this covers everything you

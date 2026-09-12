@@ -30,7 +30,7 @@ import { resolveMedia } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useMotion } from '../theme/MotionProvider';
 import { Icon } from '../components/icons';
-import { YouTubeEmbed } from '../components/YouTubeEmbed';
+import { ProviderEmbed } from '../components/ProviderEmbed';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space } from '../theme/tokens';
 
@@ -594,16 +594,28 @@ function ScrollMedia({ media, poster, active, height }: any) {
     );
   }
 
-  // YouTube plays in-process rather than handing off. Mounted only while the
-  // card is the active one, so scrolling the feed tears the player down instead
-  // of leaving a stack of them alive - the same reason the native player above
-  // is limited by windowSize.
-  if (media?.kind === 'provider' && media.provider === 'youtube' && media.id) {
-    if (active) {
-      return <YouTubeEmbed videoId={media.id} height={height} autoplay />;
-    }
-    // Inactive: the poster if the author set one, otherwise fall through to the
-    // wash, so the feed doesn't churn players while you scroll past.
+  // The video providers play in-process rather than handing off. Mounted only
+  // while the card is the active one, so scrolling tears the player down
+  // instead of leaving a stack of them alive - the same reason the native
+  // player above is limited by windowSize. Inactive cards fall through to the
+  // poster or the wash, so the feed doesn't churn players as you scroll past.
+  //
+  // Spotify and SoundCloud are deliberately not here: they are audio, and a
+  // silent 150px strip in a full-bleed video feed is worse than the wash with
+  // a link on it. They play on the entry's own screen instead.
+  if (active && media?.kind === 'provider' && media.embedUrl && !media.compact) {
+    return (
+      <ProviderEmbed
+        embedUrl={media.embedUrl}
+        allowedHosts={media.embedHosts || []}
+        height={height}
+        autoplayParams={media.embedAutoplay}
+        // A tap on the video's title or channel inside the player. The feed has
+        // nowhere to put a provider's own site, so it leaves the same way the
+        // entry screen does rather than being a tap that does nothing.
+        onNavigateOut={(url) => Linking.openURL(url)}
+      />
+    );
   }
 
   const imageUri = media?.kind === 'image' ? media.url : poster;

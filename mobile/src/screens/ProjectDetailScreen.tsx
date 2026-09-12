@@ -4,7 +4,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
-import { YouTubeEmbed } from '../components/YouTubeEmbed';
+import { ProviderEmbed } from '../components/ProviderEmbed';
 import { CommentsSheet } from '../components/CommentsSheet';
 import {
   Avatar,
@@ -379,16 +379,19 @@ function MediaBlock({ media, colors }: any) {
 
   if (media.kind === 'audio') return <DetailVideo url={media.url} audio />;
 
-  // YouTube plays here rather than launching the official app. The link out is
-  // kept underneath it - the embed hides comments, the channel and anything
+  // Every provider plays here rather than launching its official app. The link
+  // out is kept underneath - the embeds hide comments, the channel and anything
   // needing a signed-in account, so there are still reasons to leave.
-  if (media.kind === 'provider' && media.provider === 'youtube' && media.id) {
+  if (media.kind === 'provider' && media.embedUrl) {
     return (
       <View style={{ gap: space.md }}>
         <View style={{ borderRadius: radius.md, overflow: 'hidden' }}>
-          <YouTubeEmbed
-            videoId={media.id}
-            height={210}
+          <ProviderEmbed
+            embedUrl={media.embedUrl}
+            allowedHosts={media.embedHosts || []}
+            // Spotify and SoundCloud render an audio strip, not a video
+            // surface, and stretching it to 16:9 leaves a band of dead space.
+            height={media.compact ? 166 : 210}
             onNavigateOut={(url) => Linking.openURL(url)}
           />
         </View>

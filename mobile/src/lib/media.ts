@@ -8,13 +8,18 @@ import { safeUrl } from './utils';
 //             (expo-video / expo-image). This is the native path.
 //   provider- YouTube, Vimeo, Spotify and SoundCloud do not expose a playable
 //             stream URL; the only way to play them in-process is the embed,
-//             which means a WebView. YouTube now gets one (components/
-//             YouTubeEmbed) and plays without leaving the app, the same as the
-//             web build's iframe. `id` below is what that player needs.
-//             The rest still hand the canonical link to Android, which opens
-//             the official app if it's installed and the browser otherwise.
-//             Every provider keeps its `url` either way, so "open in the real
-//             app" stays available next to the embed.
+//             which means a WebView. All four now carry one (rendered by
+//             components/ProviderEmbed), the same iframes the web build uses,
+//             so none of them has to leave the app. Every provider keeps its
+//             `url` too, so "open in the real app" stays available beside the
+//             player - the embeds hide comments, the channel and anything
+//             wanting a signed-in account.
+//
+// `embedHosts` is the allowlist the WebView is held to: the player may load
+// and navigate within those and nowhere else, so a tap on a title or a
+// "listen on" badge leaves through the OS rather than turning the embed into
+// a general-purpose browser. `compact` marks the audio-shaped players, which
+// get a short fixed frame instead of a video surface.
 //
 // The allowlist is kept for the same reason the web build keeps one: the id is
 // extracted and the URL rebuilt from a template here, so a user-supplied link
@@ -24,7 +29,19 @@ export type Media =
   | { kind: 'video'; url: string }
   | { kind: 'audio'; url: string }
   | { kind: 'image'; url: string }
-  | { kind: 'provider'; provider: string; label: string; url: string; id?: string }
+  | {
+      kind: 'provider';
+      provider: string;
+      label: string;
+      url: string;
+      id?: string;
+      embedUrl?: string;
+      embedHosts?: string[];
+      /** Extra query params that make this provider's embed autoplay muted. */
+      embedAutoplay?: string;
+      /** Audio-shaped: a short frame rather than a 16:9 surface. */
+      compact?: boolean;
+    }
   | { kind: 'link'; url: string }
   | null;
 
@@ -72,6 +89,15 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
       label: 'Open in YouTube',
       url: `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`,
       id: ytId,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${ytId}?playsinline=1&rel=0&modestbranding=1`,
+      embedHosts: [
+        'www.youtube-nocookie.com',
+        'youtube-nocookie.com',
+        'www.youtube.com',
+        'youtube.com',
+        'm.youtube.com',
+      ],
+      embedAutoplay: 'autoplay=1&mute=1',
     };
   }
 
@@ -83,6 +109,10 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
         provider: 'vimeo',
         label: 'Open in Vimeo',
         url: `https://vimeo.com/${id}`,
+        id,
+        embedUrl: `https://player.vimeo.com/video/${id}?playsinline=1`,
+        embedHosts: ['player.vimeo.com', 'vimeo.com', 'www.vimeo.com'],
+        embedAutoplay: 'autoplay=1&muted=1',
       };
     }
   }
@@ -95,12 +125,24 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
         provider: 'spotify',
         label: 'Open in Spotify',
         url: `https://open.spotify.com/${match[1]}/${match[2]}`,
+        id: match[2],
+        embedUrl: `https://open.spotify.com/embed/${match[1]}/${match[2]}`,
+        embedHosts: ['open.spotify.com', 'spotify.com'],
+        compact: true,
       };
     }
   }
 
   if (host === 'soundcloud.com' || host === 'm.soundcloud.com') {
-    return { kind: 'provider', provider: 'soundcloud', label: 'Open in SoundCloud', url };
+    return {
+      kind: 'provider',
+      provider: 'soundcloud',
+      label: 'Open in SoundCloud',
+      url,
+      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23c67139`,
+      embedHosts: ['w.soundcloud.com', 'soundcloud.com', 'm.soundcloud.com'],
+      compact: true,
+    };
   }
 
   // Then by file extension, which is the native-playback path.
