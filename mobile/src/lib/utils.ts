@@ -60,10 +60,20 @@ export function formatCount(n: number) {
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
-export function parseTags(raw: string): string[] {
-  return raw
-    .split(',')
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean)
-    .slice(0, 10);
+/**
+ * The shape tags are stored in: lower-case, trimmed, no blanks, no
+ * duplicates, at most ten.
+ *
+ * Applied where tags are saved rather than only where they are typed. The
+ * editor's tag field enforces the same rules as you add them, but an entry
+ * loaded for editing arrives with whatever it was stored with, and that should
+ * not be able to come back out un-normalised.
+ */
+export function normalizeTags(tags: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of tags) {
+    const tag = raw.trim().toLowerCase();
+    if (tag && !out.includes(tag) && out.length < 10) out.push(tag);
+  }
+  return out;
 }
