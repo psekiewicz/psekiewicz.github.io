@@ -67,6 +67,9 @@ export function SavedScreen({ navigation }: any) {
             load();
           }}
           tintColor={colors.primary}
+          // tintColor is iOS-only; Android's spinner disc is white without these.
+          colors={[colors.primary]}
+          progressBackgroundColor={colors.surface}
         />
       }
       ListHeaderComponent={

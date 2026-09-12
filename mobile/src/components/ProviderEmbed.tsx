@@ -60,7 +60,11 @@ export function ProviderEmbed({
     <View style={{ width: '100%', height, backgroundColor: '#000' }}>
       <WebView
         source={{ uri }}
-        style={{ flex: 1, backgroundColor: '#000' }}
+        // Hidden rather than merely covered until the player paints: Android's
+        // WebView draws its own white page first, and a white rectangle
+        // appearing for a beat in the middle of a dark screen is the most
+        // visible thing on it. The black wrapper below shows through instead.
+        style={{ flex: 1, backgroundColor: '#000', opacity: loading ? 0 : 1 }}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={!autoplayParams}
         allowsFullscreenVideo
