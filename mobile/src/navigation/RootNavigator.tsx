@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { SplashReveal } from '../components/SplashReveal';
 import { BloomTabBar } from './BloomTabBar';
@@ -67,6 +67,7 @@ const linking = {
 export function RootNavigator() {
   const { colors, dark } = useTheme();
   const { loading } = useAuth();
+  const [revealed, setRevealed] = useState(false);
 
   const navTheme = {
     ...(dark ? DarkTheme : DefaultTheme),
@@ -80,12 +81,15 @@ export function RootNavigator() {
     },
   };
 
-  // Held until the persisted session has been read off disk, so a cold start
-  // never flashes the signed-out UI at someone who is signed in. The brand
-  // reveal plays across this real wait rather than a delay added just to
-  // show it.
-  if (loading) {
-    return <SplashReveal />;
+  // Two conditions, not one. `loading` is the real work - the persisted session
+  // being read off disk - and holding for it is what stops a cold start
+  // flashing the signed-out UI at someone who is signed in. `revealed` is the
+  // splash animation having actually finished: that read takes a fraction of
+  // the time the reveal does, so waiting on it alone meant the splash was cut
+  // off mid-flight, at a different frame every launch. Whichever takes longer
+  // now decides, and SplashReveal bounds its own half so this can never hang.
+  if (loading || !revealed) {
+    return <SplashReveal onDone={() => setRevealed(true)} />;
   }
 
   return (
