@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { CommentsSheet } from '../components/CommentsSheet';
@@ -34,6 +35,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
 export function ProjectDetailScreen({ route, navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { projectId } = route.params;
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -297,13 +299,22 @@ export function ProjectDetailScreen({ route, navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* Action bar */}
+      {/* Action bar.
+
+          The bottom inset is load-bearing, not padding taste. The app is
+          edge-to-edge (app.json's android.edgeToEdgeEnabled), so this bar sits
+          at the very bottom of the display rather than above the system's
+          area - which put like, comment, save and share underneath a phone's
+          navigation buttons and out of reach. Adding the inset gives that area
+          back its space on every device that reserves one, and adds nothing
+          where the inset is zero. */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-around',
-          paddingVertical: space.md,
+          paddingTop: space.md,
+          paddingBottom: space.md + insets.bottom,
           backgroundColor: colors.surface,
           borderTopWidth: StyleSheet.hairlineWidth * 2,
           borderTopColor: colors.border,
