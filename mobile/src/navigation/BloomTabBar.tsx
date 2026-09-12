@@ -8,8 +8,10 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
 
 // Bloom's navigation: a floating cream pill holding four tabs, with a
-// terracotta add button punched through its middle. The button is not a tab, so
-// the `Add` route keeps its slot in the navigator but never renders an icon.
+// terracotta add button punched through its middle. The button is not a tab at
+// all - it pushes the editor onto the stack above these tabs, so adding an
+// entry is a screen you finish and come back from rather than a place you
+// switch to and have to leave.
 //
 // The artboard puts a four-tile "What are you adding?" sheet between the button
 // and the editor. That is gone: every tile opened the same editor, and the
@@ -65,9 +67,7 @@ export function BloomTabBar({ state, navigation }: any) {
   };
 
   // Home, Scrolls, [add button], Dashboard, Profile.
-  const tabs = state.routes
-    .map((route: any, index: number) => ({ route, index }))
-    .filter(({ route }: any) => route.name !== 'Add');
+  const tabs = state.routes.map((route: any, index: number) => ({ route, index }));
   const left = tabs.slice(0, 2);
   const right = tabs.slice(2);
 
@@ -101,7 +101,11 @@ export function BloomTabBar({ state, navigation }: any) {
 
         <View style={{ width: 86, alignItems: 'center' }}>
           <Pressable
-            onPress={() => navigation.navigate('Add')}
+            // The stack, not the tabs: adding is a screen you come back from,
+            // not a place in the bar. getParent() is the stack navigator this
+            // tab navigator sits in - the same one the dashboard pushes the
+            // editor from, so both routes land on exactly the same screen.
+            onPress={() => navigation.getParent()?.navigate('Editor')}
             onPressIn={onPressIn}
             onPressOut={onPressOut}
             accessibilityRole="button"
