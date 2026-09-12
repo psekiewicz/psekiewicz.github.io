@@ -610,6 +610,10 @@ function ScrollMedia({ media, poster, active, height }: any) {
         allowedHosts={media.embedHosts || []}
         height={height}
         autoplayParams={media.embedAutoplay}
+        // A tap on the video's title or channel inside the player. The feed has
+        // nowhere to put a provider's own site, so it leaves the same way the
+        // entry screen does rather than being a tap that does nothing.
+        onNavigateOut={(url) => Linking.openURL(url)}
       />
     );
   }
