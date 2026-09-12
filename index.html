@@ -33,7 +33,7 @@
     <div class="container">
       <a class="brand" href="/index.html">
         <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
-        Showcase<span class="term-cursor" aria-hidden="true"></span>
+        Showcase
       </a>
       <div class="nav-links">
         <a class="nav-link" href="index.html">Home</a>
@@ -56,27 +56,8 @@
     <section class="hero">
       <div class="container hero-inner">
         <span class="eyebrow">Music · Video · Images · Apps</span>
-        <h1>Find something worth your time... or not.<span class="term-cursor" aria-hidden="true"></span></h1>
-        <div class="term-window">
-          <div class="term-window-bar">
-            <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
-          </div>
-          <p class="term-window-body">Showcase is place to find people that work hard, but nobody notices them.</p>
-          <div class="term-output" id="term-output" hidden></div>
-          <form class="term-input-row" id="term-form">
-            <span class="term-prompt" aria-hidden="true">$</span>
-            <input
-              class="term-input"
-              id="term-input"
-              type="text"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              placeholder="type 'help'"
-              aria-label="Terminal command input"
-            />
-          </form>
-        </div>
+        <h1>Find something worth your time... or not.</h1>
+        <p class="lead">Showcase is place to find people that work hard, but nobody notices them.</p>
         <div class="hero-actions" id="hero-actions">
           <a class="btn btn-primary" href="register.html">Create free account</a>
           <a class="btn btn-secondary" href="projects.html">Browse projects</a>
@@ -142,7 +123,6 @@
   <script type="module" src="/js/nav.js"></script>
   <script type="module" src="/js/bottom-nav.js"></script>
   <script type="module" src="/js/cookie-consent.js"></script>
-  <script type="module" src="/js/terminal-widget.js"></script>
   <script type="module" src="/js/pwa.js"></script>
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
@@ -151,7 +131,6 @@
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { onAuthChange, getCurrentUser } from '/js/auth.js';
     import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
-    import { initHeroTerminal } from '/js/hero-terminal.js';
     import { icon } from '/js/icons.js';
 
     // Signed-in visitors already have an account full of projects to look
@@ -161,8 +140,6 @@
     getCurrentUser().then((user) => {
       if (user) window.location.replace('/projects');
     });
-
-    initHeroTerminal();
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
