@@ -30,6 +30,7 @@ import { resolveMedia } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useMotion } from '../theme/MotionProvider';
 import { Icon } from '../components/icons';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space } from '../theme/tokens';
 
@@ -591,6 +592,18 @@ function ScrollMedia({ media, poster, active, height }: any) {
         nativeControls={false}
       />
     );
+  }
+
+  // YouTube plays in-process rather than handing off. Mounted only while the
+  // card is the active one, so scrolling the feed tears the player down instead
+  // of leaving a stack of them alive - the same reason the native player above
+  // is limited by windowSize.
+  if (media?.kind === 'provider' && media.provider === 'youtube' && media.id) {
+    if (active) {
+      return <YouTubeEmbed videoId={media.id} height={height} autoplay />;
+    }
+    // Inactive: the poster if the author set one, otherwise fall through to the
+    // wash, so the feed doesn't churn players while you scroll past.
   }
 
   const imageUri = media?.kind === 'image' ? media.url : poster;
