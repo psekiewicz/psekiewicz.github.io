@@ -41,10 +41,12 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Scrolls" component={ScrollsScreen} />
-      {/* The Add tab carries no params, so it is always a blank new entry.
-          Editing goes to the `Editor` stack screen instead. Keeping the tab
-          param-less is what lets the editor tell the two apart. */}
-      <Tab.Screen name="Add" component={EditorScreen} />
+      {/* No Add tab. The add button pushes the `Editor` stack screen, which is
+          the same screen editing and the share sheet already opened - one add
+          screen rather than two that looked different, and the tab was the
+          worse one: always mounted, so it needed code to blank itself between
+          visits, and overlapped by the floating bar that kept swallowing its
+          publish button. */}
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -110,7 +112,7 @@ export function RootNavigator() {
           component={ProjectDetailScreen}
           options={{ title: '' }}
         />
-        <Stack.Screen name="Editor" component={EditorScreen} options={{ title: 'Entry' }} />
+        <Stack.Screen name="Editor" component={EditorScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Shop" component={ShopScreen} options={{ title: 'Shop' }} />

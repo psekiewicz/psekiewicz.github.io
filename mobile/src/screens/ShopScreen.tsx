@@ -194,7 +194,10 @@ export function ShopScreen({ navigation }: any) {
                     <CosmeticBackground
                       key={id}
                       itemId={id}
-                      style={{ width: 26, height: 26, borderRadius: radius.sm }}
+                      preview
+                      // Bigger than the plain colour swatches beside it: a
+                      // pattern needs room to repeat before it reads as one.
+                      style={{ width: 32, height: 32, borderRadius: radius.sm }}
                     />
                   ) : (
                     <LinearGradient
@@ -286,6 +289,7 @@ export function ShopScreen({ navigation }: any) {
               {hasPattern(item.id) ? (
                 <CosmeticBackground
                   itemId={item.id}
+                  preview
                   style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
                 >
                   {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}

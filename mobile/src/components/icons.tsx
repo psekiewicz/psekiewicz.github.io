@@ -22,6 +22,8 @@ export type IconName =
   | 'home'
   | 'scrolls'
   | 'plus'
+  | 'back'
+  | 'chevron-down'
   | 'chart'
   | 'user'
   | 'star'
@@ -50,6 +52,17 @@ export function Icon({ name, size = 21, color = '#201e1d', fill = 'none', stroke
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Lucide arrow-left, for the header's own back control. The stack's
+          native header is off on the screens that draw a Bloom header, so the
+          way back has to live in that header. */}
+      {name === 'back' && (
+        <>
+          <Path {...s} d="M19 12H5" />
+          <Path {...s} d="m12 19-7-7 7-7" />
+        </>
+      )}
+      {/* Lucide chevron-down, rotated by the caller when a section is open. */}
+      {name === 'chevron-down' && <Path {...s} d="m6 9 6 6 6-6" />}
       {name === 'refresh' && (
         <>
           <Path {...s} d="M21 12a9 9 0 1 1-3-6.7" />

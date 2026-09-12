@@ -1,16 +1,18 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AccentHeader, HeaderButton, SectionRule, TonePill } from '../components/bloom';
+import { Icon } from '../components/icons';
 import {
-  Body,
   Button,
   Chip,
   ErrorNote,
   Eyebrow,
   Field,
   Heading,
+  Body,
   Loading,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -23,11 +25,24 @@ import {
 } from '../data/projects';
 import { parseTags, PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
-import { space, typography } from '../theme/tokens';
+import { gutter, radius, space, typography } from '../theme/tokens';
 
-// Create and edit are the same form - the web build splits them across
-// dashboard.html's create sheet and its edit mode, but on a phone one screen
-// that knows whether it has an id is simpler and behaves identically.
+// Create and edit are the same form, and there is now exactly one of it. It
+// used to be reachable two ways that looked different - as the `Add` tab, with
+// no header and the floating tab bar sitting over its buttons, and as a pushed
+// stack screen with a real header - and the tab was the worse of the two: it
+// stayed mounted between visits so it needed code to blank itself, and it was
+// the one whose publish button kept ending up underneath the tab bar. The add
+// button now pushes this screen like everything else does, so the tab is gone
+// and so is the branching that served it.
+//
+// The form itself is no longer eight identical boxes in a column. What an entry
+// actually needs is a title and something to show; everything else is optional
+// and most of it is a URL somebody will paste once. So the required part comes
+// first, the rest is grouped behind rules, and the three fields almost nobody
+// fills are folded away until asked for. Publish and Save draft sit in a bar
+// pinned to the bottom, above the system inset, which is both where the primary
+// action belongs and the reason it can no longer be scrolled out of reach.
 export function EditorScreen({ route, navigation }: any) {
   const projectId = route.params?.projectId;
   // Present when Android's share sheet opened this screen; see
@@ -37,9 +52,6 @@ export function EditorScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
-  // The tab route carries no params and no header; the stack route is pushed
-  // from a card. Only the former sits inside Bloom's tab navigator.
-  const onAddTab = route.name === 'Add';
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -52,42 +64,16 @@ export function EditorScreen({ route, navigation }: any) {
   const [tags, setTags] = useState('');
   const [projectType, setProjectType] = useState('other');
   const [published, setPublished] = useState(false);
+  // Scrolls image, live URL and repository URL. Open automatically when editing
+  // an entry that already has one, so nothing is ever hidden from its owner.
+  const [showMore, setShowMore] = useState(false);
 
   const [loading, setLoading] = useState(!!projectId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const resetForm = () => {
-    setTitle('');
-    setSummary('');
-    setDescription('');
-    setImageUrl('');
-    setMediaUrl('');
-    setScrollImageUrl('');
-    setRepoUrl('');
-    setLiveUrl('');
-    setTags('');
-    setProjectType('other');
-    setPublished(false);
-    setError('');
-  };
-
-  // As a tab, this screen stays mounted after you publish something, so
-  // returning to it would otherwise show the entry you just posted still
-  // sitting in the fields. Only the param-less (Add tab) case resets - the
-  // pushed Editor screen always carries a projectId and must keep its values.
-  // A screen opened from the share sheet has no projectId either, so blanking
-  // on "no projectId" alone would throw away the link that brought you here.
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (!projectId && !sharedMediaUrl && !sharedTitle) resetForm();
-    });
-    return unsubscribe;
-  }, [navigation, projectId, sharedMediaUrl, sharedTitle]);
-
   useEffect(() => {
     if (!projectId) {
-      resetForm();
       setLoading(false);
       return;
     }
@@ -109,14 +95,14 @@ export function EditorScreen({ route, navigation }: any) {
         setTags(p.tags.join(', '));
         setProjectType(p.type);
         setPublished(p.published);
+        if (p.scrollImageUrl || p.repoUrl || p.liveUrl) setShowMore(true);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [projectId]);
 
-  // Declared after the reset above so it runs after it in the same commit -
-  // otherwise the blanking a new entry needs would wipe the shared link out
-  // again the moment it arrived.
+  // A share arriving from another app. No reset to fight with any more - this
+  // screen is pushed, so it mounts empty every time.
   useEffect(() => {
     if (projectId) return;
     if (sharedMediaUrl) setMediaUrl(sharedMediaUrl);
@@ -195,131 +181,218 @@ export function EditorScreen({ route, navigation }: any) {
     );
   }
 
-  if (loading) return <Loading />;
+  const header = (
+    <AccentHeader
+      eyebrow={projectId ? 'Edit entry' : 'New entry'}
+      title={projectId ? title || 'Untitled' : 'Add something'}
+      actions={
+        <HeaderButton
+          icon="back"
+          label="Go back"
+          // Android's share sheet can make this the first screen in the stack,
+          // and there is nothing behind it to go back to.
+          onPress={() =>
+            navigation.canGoBack()
+              ? navigation.goBack()
+              : navigation.navigate('Tabs', { screen: 'Home' })
+          }
+        />
+      }
+    />
+  );
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {header}
+        <Loading />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* This screen is reached two ways and they need different insets. As the
-          `Add` tab it has no header and Bloom's floating tab bar sits over it,
-          so it owns both edges itself: the status bar at the top, and at the
-          bottom the bar, whose top edge is ~88px up (more once a gesture-nav
-          inset pushes it down) - which is what was cropping the publish button.
-          Pushed from a card as the `Editor` stack screen it has a real header
-          and no tab bar, so the plain padding is right there and these insets
-          would only leave holes. */}
-      <ScrollView
-        contentContainerStyle={{
-          padding: space.lg,
-          paddingTop: onAddTab ? insets.top + space.lg : space.lg,
-          paddingBottom: onAddTab ? 116 : space.xxl * 2,
-        }}
-      >
-        <Eyebrow>{projectId ? 'Edit entry' : 'New entry'}</Eyebrow>
-        <Heading style={{ marginTop: space.xs, marginBottom: space.lg }}>
-          {projectId ? title || 'Untitled' : 'Add something'}
-        </Heading>
+      {header}
 
+      <ScrollView
+        contentContainerStyle={{ padding: gutter, paddingBottom: space.xl }}
+        keyboardShouldPersistTaps="handled"
+      >
         <ErrorNote message={error} />
 
-        <Field label="Title" value={title} onChangeText={setTitle} placeholder="What is it called?" autoCapitalize="sentences" />
-        <Field
-          label="Summary"
-          value={summary}
-          onChangeText={setSummary}
-          placeholder="One line people see on the card"
-          autoCapitalize="sentences"
-        />
+        <View style={{ gap: space.lg }}>
+          <SectionRule label="THE BASICS" />
 
-        <View style={{ marginBottom: space.lg, gap: space.sm }}>
-          <Eyebrow>Type</Eyebrow>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-            {PROJECT_TYPE_OPTIONS.map((option) => (
-              <Chip
-                key={option.value}
-                label={option.label}
-                active={projectType === option.value}
-                onPress={() => setProjectType(option.value)}
-              />
-            ))}
+          <View>
+            <Field
+              label="Title"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="What is it called?"
+              autoCapitalize="sentences"
+            />
+            <Field
+              label="Summary"
+              value={summary}
+              onChangeText={setSummary}
+              placeholder="One line people see on the card"
+              autoCapitalize="sentences"
+            />
+
+            <View style={{ gap: space.sm }}>
+              <Eyebrow>Type</Eyebrow>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                {PROJECT_TYPE_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    label={option.label}
+                    active={projectType === option.value}
+                    onPress={() => setProjectType(option.value)}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
-        </View>
 
-        <Field
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          placeholder="The longer story"
-          multiline
-          autoCapitalize="sentences"
-        />
+          <SectionRule label="WHAT TO SHOW" />
 
-        <Field
-          label="Media URL"
-          value={mediaUrl}
-          onChangeText={setMediaUrl}
-          placeholder="https://…"
-          hint="A direct .mp4/.mp3/.jpg plays in the app, and so do YouTube, Vimeo, Spotify and SoundCloud links."
-        />
-        {/* The other half of not having to type a URL on a phone: sharing to
-            the app covers apps with a share sheet, this covers everything you
-            have merely copied. */}
-        <Button
-          label="Paste from clipboard"
-          icon="clipboard"
-          variant="ghost"
-          small
-          onPress={() => pasteInto(setMediaUrl)}
-          style={{ alignSelf: 'flex-start', marginTop: -space.sm, marginBottom: space.md }}
-        />
-        <Field
-          label="Cover image URL"
-          value={imageUrl}
-          onChangeText={setImageUrl}
-          placeholder="https://…"
-          hint="Shown on cards and at the top of the entry."
-        />
-        <Field
-          label="Scrolls image URL"
-          value={scrollImageUrl}
-          onChangeText={setScrollImageUrl}
-          placeholder="https://… (optional)"
-          hint="A tall image for the full-screen feed. Falls back to the cover."
-        />
-        <Field label="Live URL" value={liveUrl} onChangeText={setLiveUrl} placeholder="https://…" />
-        <Field label="Repository URL" value={repoUrl} onChangeText={setRepoUrl} placeholder="https://…" />
-        <Field
-          label="Tags"
-          value={tags}
-          onChangeText={setTags}
-          placeholder="comma, separated, tags"
-          hint="Up to 10."
-        />
+          <View>
+            <Field
+              label="Media URL"
+              value={mediaUrl}
+              onChangeText={setMediaUrl}
+              placeholder="https://…"
+              hint="A direct .mp4/.mp3/.jpg plays in the app, and so do YouTube, Vimeo, Spotify and SoundCloud links."
+            />
+            {/* The other half of not having to type a URL on a phone: sharing
+                to the app covers apps with a share sheet, this covers
+                everything you have merely copied. */}
+            <Button
+              label="Paste from clipboard"
+              icon="clipboard"
+              variant="ghost"
+              small
+              onPress={() => pasteInto(setMediaUrl)}
+              style={{ alignSelf: 'flex-start', marginTop: -space.sm, marginBottom: space.md }}
+            />
+            <Field
+              label="Cover image URL"
+              value={imageUrl}
+              onChangeText={setImageUrl}
+              placeholder="https://…"
+              hint="Shown on cards and at the top of the entry."
+            />
+            <Field
+              label="Description"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="The longer story"
+              multiline
+              autoCapitalize="sentences"
+            />
+          </View>
 
-        <View style={{ gap: space.sm, marginTop: space.md }}>
-          <Button
-            label={published ? 'Save changes' : 'Publish'}
-            icon="check"
-            onPress={() => save(true)}
-            loading={busy}
+          <SectionRule label="TAGS" />
+
+          <Field
+            value={tags}
+            onChangeText={setTags}
+            placeholder="comma, separated, tags"
+            hint="Up to 10."
           />
-          <Button
-            label="Save as draft"
-            variant="secondary"
-            onPress={() => save(false)}
-            disabled={busy}
-          />
+
+          {/* Three fields most entries never use. Folded rather than dropped:
+              an entry that has them still opens with them showing. */}
+          <Pressable
+            onPress={() => setShowMore((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showMore }}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space.sm,
+              paddingVertical: space.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[typography.label, { color: colors.accent }]}>MORE DETAILS</Text>
+            <View style={{ flex: 1, height: 1.5, borderRadius: radius.pill, backgroundColor: colors.border }} />
+            <View style={{ transform: [{ rotate: showMore ? '180deg' : '0deg' }] }}>
+              <Icon name="chevron-down" size={16} color={colors.accent} />
+            </View>
+          </Pressable>
+
+          {showMore ? (
+            <View>
+              <Field
+                label="Scrolls image URL"
+                value={scrollImageUrl}
+                onChangeText={setScrollImageUrl}
+                placeholder="https://… (optional)"
+                hint="A tall image for the full-screen feed. Falls back to the cover."
+              />
+              <Field
+                label="Live URL"
+                value={liveUrl}
+                onChangeText={setLiveUrl}
+                placeholder="https://…"
+              />
+              <Field
+                label="Repository URL"
+                value={repoUrl}
+                onChangeText={setRepoUrl}
+                placeholder="https://…"
+              />
+            </View>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+            <TonePill label={published ? 'PUBLISHED' : 'DRAFT'} tone={published ? 'accent' : 'neutral'} />
+            <Text style={[typography.small, { color: colors.textFaint, flex: 1 }]}>
+              Drafts are visible only to you - enforced by the database, not just hidden here.
+            </Text>
+          </View>
+
+          {/* Away from Publish on purpose. */}
           {projectId ? (
             <Button label="Delete entry" variant="danger" icon="trash-2" onPress={confirmDelete} />
           ) : null}
         </View>
-
-        <Text style={[typography.small, { color: colors.textFaint, marginTop: space.lg }]}>
-          Drafts are visible only to you - enforced by the database, not just hidden here.
-        </Text>
       </ScrollView>
+
+      {/* The primary action, pinned. Sitting in the scroll it could be pushed
+          off the bottom by the form above it, which is exactly what used to
+          happen; and the inset keeps it clear of the system's own area. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: space.sm,
+          paddingHorizontal: gutter,
+          paddingTop: space.md,
+          paddingBottom: space.md + insets.bottom,
+          backgroundColor: colors.surface,
+          borderTopWidth: 1.5,
+          borderTopColor: colors.border,
+        }}
+      >
+        <Button
+          label="Save as draft"
+          variant="secondary"
+          onPress={() => save(false)}
+          disabled={busy}
+          style={{ flex: 1 }}
+        />
+        <Button
+          label={published ? 'Save changes' : 'Publish'}
+          icon="check"
+          onPress={() => save(true)}
+          loading={busy}
+          style={{ flex: 1 }}
+        />
+      </View>
     </KeyboardAvoidingView>
   );
 }

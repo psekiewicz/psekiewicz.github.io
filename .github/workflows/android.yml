@@ -7,6 +7,14 @@ name: Build Android app
 #
 # The APK is the one you sideload onto a phone to try it. The AAB is the format
 # Google Play requires for an upload. Both land in the run's Artifacts section.
+#
+# Only a push to main builds them, though. A pull request stops after prebuild:
+# every version was being built twice, once on the PR and again on the merge
+# commit, and the PR's pair of binaries was never the pair anybody installed -
+# the download link only ever points at a release, and releases only come from
+# main. What the PR build was actually worth is the part before Gradle, where a
+# bad app.json or a missing asset makes `expo prebuild` fail; that still runs on
+# every PR and costs a minute instead of fifteen.
 
 on:
   push:
@@ -46,16 +54,21 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
+      # The toolchain, needed only by the Gradle steps below - so like them it
+      # sits out a pull request, where the run stops at prebuild.
       - uses: actions/setup-java@v4
+        if: github.event_name != 'pull_request'
         with:
           distribution: temurin
           java-version: 17
 
       - uses: android-actions/setup-android@v3
+        if: github.event_name != 'pull_request'
 
       # Caches ~/.gradle across runs. A cold Android build spends a long time
       # just fetching AGP and the React Native artifacts.
       - uses: gradle/actions/setup-gradle@v4
+        if: github.event_name != 'pull_request'
 
       # `npm ci` rather than `npm install`: it installs exactly what the
       # committed lockfile pins, so a build that passed once keeps passing
@@ -103,6 +116,7 @@ jobs:
       # To ship: create a keystore once, add the four secrets below, and this
       # step uses yours instead.
       - name: Set up signing key
+        if: github.event_name != 'pull_request'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -142,15 +156,20 @@ jobs:
             echo "SHOWCASE_KEY_PASSWORD=$key_password"
           } >> android/gradle.properties
 
+      # Everything from here is the release build, so it is main-only. See the
+      # note at the top of the file.
       - name: Build APK
+        if: github.event_name != 'pull_request'
         run: ./gradlew assembleRelease --no-daemon
         working-directory: mobile/android
 
       - name: Build AAB
+        if: github.event_name != 'pull_request'
         run: ./gradlew bundleRelease --no-daemon
         working-directory: mobile/android
 
       - name: Confirm the artifacts are not debug-signed
+        if: github.event_name != 'pull_request'
         # A release build that silently fell back to the debug key is worse
         # than a failed build, because it looks like a shippable APK. The
         # signing config falls back to the debug key by design when the Gradle
@@ -189,6 +208,7 @@ jobs:
         working-directory: mobile/android
 
       - name: Upload APK
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: showcase-apk
@@ -196,6 +216,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload AAB
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: showcase-aab
@@ -208,9 +229,6 @@ jobs:
       # /releases/latest/download/<name> URL, which is what download/index.html
       # links to. It also keeps the APK out of the repository — a 75 MB binary
       # per version, committed, is history nobody can prune later.
-      #
-      # Pull requests are excluded: a proposed change should not become the
-      # thing people download.
       - name: Publish a release
         if: github.event_name != 'pull_request'
         env:

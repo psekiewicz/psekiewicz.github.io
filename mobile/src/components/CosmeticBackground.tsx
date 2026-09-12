@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import React from 'react';
-import { View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import Svg, {
   Circle,
   Defs,
   Ellipse,
+  G,
   Path,
   Pattern,
   RadialGradient,
@@ -21,34 +22,46 @@ import { bgGradient } from '../lib/cosmetics';
 // css/style.css builds most of these from a tiled background-image: a grid, a
 // halftone screen, paw prints, confetti, stars. The app used to flatten every
 // one of them into a two- or three-stop linear gradient, which meant Grid had
-// no grid and Paws had no paws - they read as generic colour washes, and
-// several were not even the right colour (Halftone is vermilion on the web and
-// was grey here). Now that react-native-svg is in the app, the patterned ones
-// are drawn as real repeating tiles at the same sizes and colours the
-// stylesheet uses, so a cosmetic looks like the thing that was bought.
+// no grid and Paws had no paws - they read as generic colour washes. They are
+// now drawn as real repeating tiles at the sizes and colours the stylesheet
+// uses, so a cosmetic looks like the thing that was bought.
 //
-// What still does not carry over is motion. Starfield twinkles, Static
-// shivers, Lava drifts and Snow falls on the web; here they are a still frame
-// of the same art, because a looping animation behind every avatar in a
-// scrolling list is what costs a feed its frame rate. That was already true of
-// the old flat version and is unchanged.
+// Two things about how that is done are load-bearing.
+//
+// Nothing is sized in percentages. An `<Svg width="100%">` holding a
+// `<Rect width="100%">` is the obvious way to fill a box and the one most
+// likely to come out empty: the percentages have to resolve against a parent
+// whose size react-native-svg may not know at the time it lays the SVG out, and
+// a pattern fill over a zero-width rect is just the base colour - which looks
+// exactly like the flat version this replaced. So the box is measured with
+// onLayout and every number below is a real pixel.
+//
+// And the tiling is scaled for previews. These tiles are big - Confetti's is
+// 160px, Snow's 90 - because that is what they are on a 400px-wide profile
+// header. Drawn into the shop's 26px swatch, a 160px tile shows one corner of
+// itself, which for most of them is empty space. `preview` scales the tile down
+// until a couple of repeats fit, so the swatch shows the pattern rather than a
+// magnified blank patch of it. Full-size surfaces never scale, so they stay
+// identical to the web.
+//
+// What still does not carry over is motion. Starfield twinkles, Static shivers,
+// Lava drifts and Snow falls on the web; here they are a still frame of the
+// same art, because a looping animation behind every avatar in a scrolling list
+// is what costs a feed its frame rate.
 
 type Tile = {
   base: string;
-  /** Tile size in px, matching the stylesheet's background-size. */
+  /** Tile size in px, matching the stylesheet's background-size. 0 = no tiling. */
   w: number;
   h: number;
   /** Motif drawn once per tile. */
   motif: React.ReactNode;
-  /** Drawn beneath the tiling, matching the stylesheet layer order. */
-  wash?: React.ReactNode;
   /**
-   * Set for the wash-only cosmetics whose shapes are proportional to the
-   * surface. Percentage geometry on an Svg with no viewBox resolves against
-   * whatever size it lands at, which made Lava's three blobs merge into one;
-   * a fixed 0-100 box makes the coordinates mean the same thing everywhere.
+   * Drawn beneath the tiling, matching the stylesheet's layer order. It gets
+   * its own SVG with a `0 0 100 100` viewBox stretched over the box, so these
+   * shapes are written in percent-of-the-surface and need no measurement.
    */
-  viewBox?: string;
+  wash?: React.ReactNode;
 };
 
 const dot = (cx: number, cy: number, r: number, fill: string, key: string) => (
@@ -165,12 +178,14 @@ const TILES: Record<string, Tile> = {
     wash: (
       <>
         <Defs>
+          {/* Gradient geometry is in objectBoundingBox units, so these
+              percentages are of the shape, not of any viewport. */}
           <RadialGradient id="termGlow" cx="50%" cy="120%" r="90%">
             <Stop offset="0" stopColor="#4ade80" stopOpacity="0.35" />
             <Stop offset="0.7" stopColor="#4ade80" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#termGlow)" />
+        <Rect x="0" y="0" width="100" height="100" fill="url(#termGlow)" />
       </>
     ),
   },
@@ -197,13 +212,13 @@ const TILES: Record<string, Tile> = {
             <Stop offset="1" stopColor="#1a0b2e" />
           </SvgGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#vapSun)" />
+        <Rect x="0" y="0" width="100" height="100" fill="url(#vapSun)" />
       </>
     ),
   },
   'bg-topo': {
     base: '#1c1a16',
-    w: 0, // drawn as rings across the whole surface, not tiled
+    w: 0, // contour rings across the whole surface, not tiled
     h: 0,
     motif: null,
     wash: (
@@ -211,12 +226,12 @@ const TILES: Record<string, Tile> = {
         {Array.from({ length: 14 }, (_, i) => (
           <Circle
             key={`t${i}`}
-            cx="30%"
-            cy="40%"
-            r={String(i * 22 + 2)}
+            cx="30"
+            cy="40"
+            r={i * 6 + 1}
             fill="none"
             stroke="rgba(240,160,60,0.35)"
-            strokeWidth="2"
+            strokeWidth="0.6"
           />
         ))}
       </>
@@ -248,9 +263,19 @@ const TILES: Record<string, Tile> = {
         <Ellipse cx="52" cy="88" rx="22.5" ry="27.5" fill="url(#lavaC)" />
       </>
     ),
-    viewBox: '0 0 100 100',
   },
 };
+
+/** Roughly how many times a tile should repeat across a preview's short edge. */
+const PREVIEW_REPEATS = 2.2;
+/** Below this the motifs themselves stop being visible, so shrink no further. */
+const MIN_PREVIEW_SCALE = 0.34;
+
+function previewScale(tile: Tile, w: number, h: number) {
+  if (!tile.w || !tile.h) return 1;
+  const fit = Math.min(w, h) / (Math.max(tile.w, tile.h) * PREVIEW_REPEATS);
+  return Math.max(MIN_PREVIEW_SCALE, Math.min(1, fit));
+}
 
 export function hasPattern(itemId: string) {
   return !!TILES[itemId];
@@ -263,45 +288,67 @@ export function hasPattern(itemId: string) {
 export function CosmeticBackground({
   itemId,
   style,
+  preview,
   children,
 }: {
   itemId: string;
   style?: ViewStyle;
+  /** Scale the tiling down to suit a swatch. See the note at the top. */
+  preview?: boolean;
   children?: React.ReactNode;
 }) {
+  const [box, setBox] = React.useState({ w: 0, h: 0 });
   const tile = TILES[itemId];
 
   if (tile) {
     const id = `p-${itemId}`;
+    const k = preview ? previewScale(tile, box.w, box.h) : 1;
+
     return (
-      <View style={[{ overflow: 'hidden', backgroundColor: tile.base }, style]}>
-        <Svg
-          width="100%"
-          height="100%"
-          style={{ position: 'absolute' }}
-          {...(tile.viewBox
-            ? { viewBox: tile.viewBox, preserveAspectRatio: 'none' as const }
-            : null)}
-        >
-          {tile.wash}
-          {tile.w > 0 ? (
-            <>
-              <Defs>
-                <Pattern
-                  id={id}
-                  patternUnits="userSpaceOnUse"
-                  x="0"
-                  y="0"
-                  width={tile.w}
-                  height={tile.h}
-                >
-                  {tile.motif}
-                </Pattern>
-              </Defs>
-              <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
-            </>
-          ) : null}
-        </Svg>
+      <View
+        style={[{ overflow: 'hidden', backgroundColor: tile.base }, style]}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          // Only on a real change: onLayout fires on every re-layout and this
+          // sets state.
+          setBox((prev) =>
+            Math.abs(prev.w - width) < 0.5 && Math.abs(prev.h - height) < 0.5
+              ? prev
+              : { w: width, h: height }
+          );
+        }}
+      >
+        {/* The wash, in its own stretched 0-100 box so its shapes can be
+            written as percentages of the surface without measuring it. */}
+        {tile.wash ? (
+          <Svg
+            style={StyleSheet.absoluteFill}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            {tile.wash}
+          </Svg>
+        ) : null}
+
+        {/* The tiling, in real pixels, once the box has been measured. */}
+        {tile.w > 0 && box.w > 0 && box.h > 0 ? (
+          <Svg style={StyleSheet.absoluteFill} width={box.w} height={box.h}>
+            <Defs>
+              <Pattern
+                id={id}
+                patternUnits="userSpaceOnUse"
+                x="0"
+                y="0"
+                width={tile.w * k}
+                height={tile.h * k}
+              >
+                <G scale={k}>{tile.motif}</G>
+              </Pattern>
+            </Defs>
+            <Rect x="0" y="0" width={box.w} height={box.h} fill={`url(#${id})`} />
+          </Svg>
+        ) : null}
+
         {children}
       </View>
     );
