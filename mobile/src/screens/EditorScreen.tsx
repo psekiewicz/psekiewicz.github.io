@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Body,
@@ -34,7 +35,11 @@ export function EditorScreen({ route, navigation }: any) {
   const sharedMediaUrl = route.params?.mediaUrl;
   const sharedTitle = route.params?.title;
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
+  // The tab route carries no params and no header; the stack route is pushed
+  // from a card. Only the former sits inside Bloom's tab navigator.
+  const onAddTab = route.name === 'Add';
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -197,7 +202,21 @@ export function EditorScreen({ route, navigation }: any) {
       style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl * 2 }}>
+      {/* This screen is reached two ways and they need different insets. As the
+          `Add` tab it has no header and Bloom's floating tab bar sits over it,
+          so it owns both edges itself: the status bar at the top, and at the
+          bottom the bar, whose top edge is ~88px up (more once a gesture-nav
+          inset pushes it down) - which is what was cropping the publish button.
+          Pushed from a card as the `Editor` stack screen it has a real header
+          and no tab bar, so the plain padding is right there and these insets
+          would only leave holes. */}
+      <ScrollView
+        contentContainerStyle={{
+          padding: space.lg,
+          paddingTop: onAddTab ? insets.top + space.lg : space.lg,
+          paddingBottom: onAddTab ? 116 : space.xxl * 2,
+        }}
+      >
         <Eyebrow>{projectId ? 'Edit entry' : 'New entry'}</Eyebrow>
         <Heading style={{ marginTop: space.xs, marginBottom: space.lg }}>
           {projectId ? title || 'Untitled' : 'Add something'}

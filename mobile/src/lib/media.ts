@@ -7,11 +7,14 @@ import { safeUrl } from './utils';
 //   direct  - an .mp4/.mp3/.jpg URL plays or renders in a real Android player
 //             (expo-video / expo-image). This is the native path.
 //   provider- YouTube, Vimeo, Spotify and SoundCloud do not expose a playable
-//             stream URL; the only in-app way to play them is the embed, which
-//             means a WebView. Rather than smuggle one in, the app resolves the
-//             canonical link and hands it to Android, which opens the official
-//             app if it's installed and the browser otherwise. That's the same
-//             thing tapping a link in any native app does.
+//             stream URL; the only way to play them in-process is the embed,
+//             which means a WebView. YouTube now gets one (components/
+//             YouTubeEmbed) and plays without leaving the app, the same as the
+//             web build's iframe. `id` below is what that player needs.
+//             The rest still hand the canonical link to Android, which opens
+//             the official app if it's installed and the browser otherwise.
+//             Every provider keeps its `url` either way, so "open in the real
+//             app" stays available next to the embed.
 //
 // The allowlist is kept for the same reason the web build keeps one: the id is
 // extracted and the URL rebuilt from a template here, so a user-supplied link
@@ -21,7 +24,7 @@ export type Media =
   | { kind: 'video'; url: string }
   | { kind: 'audio'; url: string }
   | { kind: 'image'; url: string }
-  | { kind: 'provider'; provider: string; label: string; url: string }
+  | { kind: 'provider'; provider: string; label: string; url: string; id?: string }
   | { kind: 'link'; url: string }
   | null;
 
@@ -68,6 +71,7 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
       provider: 'youtube',
       label: 'Open in YouTube',
       url: `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`,
+      id: ytId,
     };
   }
 
