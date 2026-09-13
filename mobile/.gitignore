@@ -13,3 +13,6 @@ ios/
 !debug.keystore
 .env
 .env.local
+
+# Firebase config for push - written by CI from the GOOGLE_SERVICES_JSON secret.
+google-services.json

@@ -133,24 +133,33 @@ schema.sql into the SQL Editor" step that sets up everything else also sets
 up push.
 
 That covers the *server* side unconditionally. Actually **receiving** a push
-needs two things from Expo's tooling that a plain `npx expo start` doesn't
-set up on its own:
+needs three pieces of setup, all done in a browser - no Expo CLI, no local SDK:
 
-1. **An EAS project id** - `Notifications.getExpoPushTokenAsync()` needs one
-   to know which project a token belongs to. Run `eas init` once (needs a
-   free Expo account); it writes `extra.eas.projectId` into `app.json` - commit
-   that. Without it, Settings' "Enable notifications" button fails with an
-   explanatory error rather than silently doing nothing.
-2. **Android credentials** - Expo's push relay hands Android deliveries off
-   to Firebase Cloud Messaging, which needs its own credentials per project
-   (Expo no longer provides shared ones). Create a Firebase project, then run
-   `eas credentials` and follow the Android → Push Notifications prompts to
-   upload its service account key. iOS is simpler: EAS can generate and
-   manage APNs credentials for you the first time you build.
+1. **An Expo project id.** `Notifications.getExpoPushTokenAsync()` needs one
+   to know which project a token belongs to. Create a project named `showcase`
+   at [expo.dev](https://expo.dev) (free account) and put its id in
+   `app.json` as `expo.extra.eas.projectId`. It isn't a secret - commit it.
+   Without it, Settings' "Enable notifications" fails with an explanatory
+   error rather than silently doing nothing.
+2. **Firebase, for the app.** Expo's relay hands Android deliveries to
+   Firebase Cloud Messaging, and the app can't get a token until Firebase is
+   initialised from `google-services.json`. In the
+   [Firebase console](https://console.firebase.google.com) create a project,
+   add an Android app with package `io.github.psekiewicz.showcase`, download
+   `google-services.json`, and paste its contents into a repository secret
+   named **`GOOGLE_SERVICES_JSON`**. CI writes the file before prebuild and
+   [`app.config.js`](app.config.js) wires it in; it's in `.gitignore`, and a
+   build without the secret is exactly the build you had before.
+3. **Firebase, for Expo.** In Firebase, *Project settings → Service accounts
+   → Generate new private key*. On expo.dev, open the project's
+   *Credentials → Android → io.github.psekiewicz.showcase* and upload that
+   JSON as the **FCM V1 service account key**. This one *is* a secret: it
+   goes to Expo only, never into the repository or a GitHub secret.
 
-Until both are done, everything still works except the push itself - the
+Until all three are done, everything still works except the push itself - the
 in-app bell, `public.notifications`, all of it - `send_push()` just has
-nothing to reach.
+nothing to reach. Push also needs a real phone: `lib/push.ts` refuses on an
+emulator.
 
 ## Animations
 
