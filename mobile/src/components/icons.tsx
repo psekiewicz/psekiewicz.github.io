@@ -27,6 +27,7 @@ export type IconName =
   | 'chart'
   | 'user'
   | 'star'
+  | 'trophy'
   | 'pencil'
   | 'lock'
   | 'music'
@@ -155,6 +156,17 @@ export function Icon({ name, size = 21, color = '#201e1d', fill = 'none', stroke
           fill={fill}
           d="M12 3.5l2.5 5.4 5.9.7-4.4 4.1 1.2 5.8L12 16.7l-5.2 2.8 1.2-5.8-4.4-4.1 5.9-.7L12 3.5Z"
         />
+      )}
+      {/* Lucide trophy - the Home header's way to the leaderboard. */}
+      {name === 'trophy' && (
+        <>
+          <Path {...s} d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+          <Path {...s} d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+          <Path {...s} d="M4 22h16" />
+          <Path {...s} d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+          <Path {...s} d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+          <Path {...s} d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </>
       )}
       {name === 'pencil' && (
         <>

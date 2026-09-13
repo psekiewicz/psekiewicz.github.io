@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { displayNameOf } from '../data/auth';
 import { addComment, Comment, deleteComment, getComments } from '../data/comments';
+import { getProfilesByIds, Profile } from '../data/profiles';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 import { timeAgo } from '../lib/utils';
@@ -38,8 +40,12 @@ export function CommentsSheet({ projectId, visible, onClose, onCountChange, owne
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
+  const navigation = useNavigation<any>();
 
   const [comments, setComments] = useState<Comment[]>([]);
+  // A comment row only stores the author's name, so avatars come from their
+  // profiles - fetched in one batch, the same way the feeds get card authors.
+  const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -48,10 +54,24 @@ export function CommentsSheet({ projectId, visible, onClose, onCountChange, owne
     if (!visible || !projectId) return;
     setLoading(true);
     getComments(projectId)
-      .then(setComments)
+      .then(async (rows) => {
+        setComments(rows);
+        setAuthors(
+          await getProfilesByIds(rows.map((c) => c.userId)).catch(() => new Map<string, Profile>())
+        );
+      })
       .catch(() => setComments([]))
       .finally(() => setLoading(false));
   }, [visible, projectId]);
+
+  const avatarOf = (comment: Comment) =>
+    authors.get(comment.userId)?.avatarUrl ||
+    (comment.userId === user?.id ? profile?.avatarUrl : undefined);
+
+  const signIn = () => {
+    onClose();
+    navigation.navigate('Login');
+  };
 
   const submit = async () => {
     if (!user || !projectId || !body.trim()) return;
@@ -126,7 +146,7 @@ export function CommentsSheet({ projectId, visible, onClose, onCountChange, owne
             }
             renderItem={({ item }) => (
               <View style={{ flexDirection: 'row', gap: space.md }}>
-                <Avatar name={item.authorName} size={28} />
+                <Avatar url={avatarOf(item)} name={item.authorName} size={28} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                     <Text style={{ color: colors.text, fontWeight: '700', fontSize: 12 }}>
@@ -190,9 +210,12 @@ export function CommentsSheet({ projectId, visible, onClose, onCountChange, owne
               </Pressable>
             </>
           ) : (
-            <Text style={[typography.small, { color: colors.textMuted, textAlign: 'center', flex: 1 }]}>
-              Sign in to join the conversation.
-            </Text>
+            <Pressable onPress={signIn} hitSlop={8} style={{ flex: 1 }} accessibilityRole="link">
+              <Text style={[typography.small, { color: colors.textMuted, textAlign: 'center' }]}>
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sign in</Text> to join
+                the conversation.
+              </Text>
+            </Pressable>
           )}
         </View>
       </KeyboardAvoidingView>

@@ -37,6 +37,7 @@ import {
 } from '../lib/achievements';
 import { bgGradient } from '../lib/cosmetics';
 import { levelFromXp } from '../lib/levels';
+import { coverFor } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
@@ -496,9 +497,9 @@ export function ProfileScreen({ route, navigation }: any) {
           onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
           style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' }}
         >
-          {item.imageUrl ? (
+          {coverFor(item) ? (
             <Image
-              source={{ uri: item.imageUrl }}
+              source={{ uri: coverFor(item) }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               transition={150}
@@ -532,6 +533,7 @@ function AchievementTile({
     : claimable
       ? { bg: colors.primarySoft, fg: colors.primaryDeep }
       : { bg: colors.accentSoft, fg: colors.accentDeep };
+  const label = claimable ? `+${achievement.reward} XP` : achievement.label.toUpperCase();
 
   return (
     <Pressable
@@ -555,8 +557,13 @@ function AchievementTile({
         size={22}
         color={tone.fg}
       />
+      {/* One line per word at most, shrinking to fit: Android breaks a word
+          wider than the tile mid-word, which split CONVERSATIONALIST into
+          "CONVERSATIONA / LIST" on a phone-width grid. */}
       <Text
-        numberOfLines={2}
+        numberOfLines={Math.min(label.split(' ').length, 2)}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
         style={{
           fontSize: 10,
           fontWeight: '700',
@@ -565,7 +572,7 @@ function AchievementTile({
           textAlign: 'center',
         }}
       >
-        {claimable ? `+${achievement.reward} XP` : achievement.label.toUpperCase()}
+        {label}
       </Text>
     </Pressable>
   );

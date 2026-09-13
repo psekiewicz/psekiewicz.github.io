@@ -4,6 +4,7 @@ import React from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 
 import type { Project } from '../data/projects';
+import { coverFor } from '../lib/media';
 import { useEntrance, usePressScale } from '../lib/motion';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, typography } from '../theme/tokens';
@@ -56,6 +57,7 @@ export function ProjectCard({
 
   const type = project.type || 'other';
   const isPlayable = type === 'music' || type === 'video';
+  const cover = coverFor(project);
 
   return (
     <Animated.View style={{ opacity: entrance.opacity, transform: [...entrance.transform, { scale }] }}>
@@ -71,9 +73,9 @@ export function ProjectCard({
         })}
       >
         <View style={{ height: 172 }}>
-          {project.imageUrl ? (
+          {cover ? (
             <Image
-              source={{ uri: project.imageUrl }}
+              source={{ uri: cover }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               transition={150}

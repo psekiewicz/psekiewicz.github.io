@@ -158,3 +158,23 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
 
   return { kind: 'link', url };
 }
+
+/** YouTube publishes a still at a predictable path; nothing else here does. */
+export function posterFor(url: string) {
+  const media = resolveMedia(url);
+  if (!media) return null;
+  if (media.kind === 'image') return media.url;
+  if (media.kind === 'provider' && media.provider === 'youtube' && media.id) {
+    return `https://i.ytimg.com/vi/${media.id}/hqdefault.jpg`;
+  }
+  return null;
+}
+
+/**
+ * The picture a feed card or grid tile shows for an entry: its own cover image,
+ * else a still from its media. Without the fallback a YouTube entry with no
+ * cover sat on a flat gradient in the feed while its own page showed the video.
+ */
+export function coverFor(project: { imageUrl?: string; mediaUrl?: string }) {
+  return project.imageUrl || (project.mediaUrl ? posterFor(project.mediaUrl) : null) || '';
+}

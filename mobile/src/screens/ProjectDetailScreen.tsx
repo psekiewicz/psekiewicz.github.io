@@ -248,11 +248,11 @@ export function ProjectDetailScreen({ route, navigation }: any) {
           {project.tags.length > 0 ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
               {project.tags.map((tag) => (
-                <Text
+                // The border lives on a View, as on every other pill: drawn on
+                // the Text itself, Android sat the glyphs at the top of the box.
+                <View
                   key={tag}
                   style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
                     borderColor: colors.border,
                     borderWidth: StyleSheet.hairlineWidth * 2,
                     borderRadius: radius.sm,
@@ -260,8 +260,8 @@ export function ProjectDetailScreen({ route, navigation }: any) {
                     paddingVertical: 3,
                   }}
                 >
-                  {tag}
-                </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>{tag}</Text>
+                </View>
               ))}
             </View>
           ) : null}
