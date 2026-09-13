@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { EditorScreen } from '../screens/EditorScreen';
+import { FollowListScreen } from '../screens/FollowListScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -57,11 +58,20 @@ function Tabs() {
 // rewritten from Android's ACTION_SEND by plugins/withShareIntent.js. Declaring
 // it as a deep link means React Navigation does the routing and the query
 // string lands as route params, with no separate listener to keep in step.
+//
+// The site's own entry links open here too: app.json claims
+// https://psekiewicz.github.io/project* with autoVerify, and the site serves
+// .well-known/assetlinks.json naming this app's signing key, so Android hands
+// those links straight to the app. `?id=` arrives as the `id` param.
+// initialRouteName puts the tabs underneath whatever a link opens, so back
+// goes to Home instead of closing the app.
 const linking = {
-  prefixes: ['showcase://'],
+  prefixes: ['showcase://', 'https://psekiewicz.github.io'],
   config: {
+    initialRouteName: 'Tabs' as const,
     screens: {
       Editor: 'share',
+      ProjectDetail: { path: 'project.html', alias: ['project'] },
     },
   },
 };
@@ -114,6 +124,7 @@ export function RootNavigator() {
         />
         <Stack.Screen name="Editor" component={EditorScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Profile' }} />
+        <Stack.Screen name="FollowList" component={FollowListScreen} options={{ title: '' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Shop" component={ShopScreen} options={{ title: 'Shop' }} />
         <Stack.Screen
