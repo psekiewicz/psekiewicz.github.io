@@ -233,7 +233,7 @@ export function CountPill({
   );
 }
 
-/** "PUBLISHED ———— 6": a label, a hairline that eats the slack, and a count. */
+/** "PUBLISHED ---- 6": a label, a hairline that eats the slack, and a count. */
 export function SectionRule({ label, trailing }: { label: string; trailing?: string | number }) {
   const { colors } = useTheme();
   return (
