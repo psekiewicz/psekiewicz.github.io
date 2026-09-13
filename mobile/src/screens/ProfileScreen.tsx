@@ -8,6 +8,7 @@ import { HeaderButton, SectionRule, StatBlock } from '../components/bloom';
 import { CosmeticBackground } from '../components/CosmeticBackground';
 import { Icon, IconName } from '../components/icons';
 import { placeholderFor } from '../components/ProjectCard';
+import { StatsCardSheet } from '../components/StatsCardSheet';
 import {
   Avatar,
   Body,
@@ -31,6 +32,7 @@ import {
 } from '../data/shop';
 import {
   computeAchievements,
+  getTopAchievement,
   getUserStats,
   unrecordedAchievementIds,
   UserStats,
@@ -62,6 +64,7 @@ export function ProfileScreen({ route, navigation }: any) {
   const [unlocked, setUnlocked] = useState<Set<string>>(new Set());
   const [claimed, setClaimed] = useState<Set<string>>(new Set());
   const [admin, setAdmin] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -182,7 +185,10 @@ export function ProfileScreen({ route, navigation }: any) {
   const unlockedList = achievements.filter((a) => a.unlocked);
   const claimable = isSelf ? unlockedList.filter((a) => !claimed.has(a.id)) : [];
   const claimableXp = claimable.reduce((sum, a) => sum + a.reward, 0);
-  const points = myProfile?.points ?? profile?.points ?? 0;
+  // Your own count comes from the auth context, which refreshes after a claim
+  // or a purchase; anyone else's is on their profile row. Preferring the
+  // context unconditionally showed your points on every profile you visited.
+  const points = (isSelf ? myProfile?.points ?? profile?.points : profile?.points) ?? 0;
   const joined = profile?.createdAt ? new Date(profile.createdAt).getFullYear() : null;
 
   // Bloom's header is a band whose bottom corners round off into the page, with
@@ -246,275 +252,313 @@ export function ProfileScreen({ route, navigation }: any) {
   };
 
   return (
-    <FlatList
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      data={projects}
-      numColumns={2}
-      columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            load();
-          }}
-          tintColor={colors.primary}
-          // tintColor is iOS-only; Android's spinner disc is white without these.
-          colors={[colors.primary]}
-          progressBackgroundColor={colors.surface}
+    <>
+      {isSelf && stats ? (
+        <StatsCardSheet
+          visible={showCard}
+          onClose={() => setShowCard(false)}
+          profile={profile}
+          level={level}
+          stats={stats}
+          topAchievement={getTopAchievement(stats, unlocked)}
         />
-      }
-      ListHeaderComponent={
-        <View>
-          {/* The equipped background, drawn by CosmeticBackground so a
-              patterned one is the real tiled pattern rather than a flattened
-              gradient. `none` falls through to Bloom's own terracotta band. */}
-          {profile?.equippedBg && profile.equippedBg !== 'none' ? (
-            <CosmeticBackground itemId={profile.equippedBg} style={headerStyle}>
-              {headerContent}
-            </CosmeticBackground>
-          ) : (
-            <LinearGradient
-              colors={['#d98a4f', colors.primary, '#8f4a1e']}
-              start={{ x: 0.1, y: 0 }}
-              end={{ x: 0.9, y: 1 }}
-              style={headerStyle}
-            >
-              {headerContent}
-            </LinearGradient>
-          )}
-
-          {/* The avatar overlaps the band above it. */}
-          <View style={{ paddingHorizontal: gutter, marginTop: -44, gap: 16 }}>
-            <View style={{ width: 92, height: 92 }}>
-              <View style={{ borderWidth: 5, borderColor: colors.bg, borderRadius: radius.pill }}>
-                <Avatar
-                  url={profile?.avatarUrl}
-                  name={profile?.displayName}
-                  size={82}
-                  ring={profile?.equippedBorder}
-                />
-              </View>
-              <View
-                style={{
-                  position: 'absolute',
-                  right: -6,
-                  bottom: -2,
-                  paddingHorizontal: 9,
-                  paddingVertical: 4,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.text,
-                  borderWidth: 3,
-                  borderColor: colors.bg,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.bg }}
-                >
-                  LV {level.level}
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ gap: 5 }}>
-              <DisplayName
-                name={profile?.displayName || 'Unknown'}
-                effect={profile?.equippedNameEffect}
-                style={[typography.h2, { color: colors.text }]}
-              />
-              {/* The artboard sets a handle here ("@marakell · joined 2023").
-                  Profiles carry no username, so this keeps the half that has a
-                  source rather than inventing one. */}
-              <Text style={{ fontSize: 12, color: colors.textFaint }}>
-                {joined ? `joined ${joined} · ` : ''}
-                {level.xp} XP
-              </Text>
-              {profile?.bio ? (
-                <Text style={[typography.body, { color: colors.textMuted, marginTop: 5 }]}>
-                  {profile.bio}
-                </Text>
-              ) : null}
-            </View>
-
-            <ErrorNote message={error} />
-
-            {/* The dark pill is this screen's one primary action: on your own
-                profile it claims what you are owed (or sends you to the shop
-                once there is nothing left), on somebody else's it follows. */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {isSelf ? (
-                <>
-                  <Pressable
-                    onPress={() =>
-                      claimable.length
-                        ? claimable.forEach((a) => claim(a.id))
-                        : navigation.navigate('Shop')
-                    }
-                    style={({ pressed }) => ({
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 9,
-                      backgroundColor: colors.text,
-                      borderRadius: radius.pill,
-                      padding: 14,
-                      opacity: pressed ? 0.85 : 1,
-                    })}
-                  >
-                    <Icon
-                      name="star"
-                      size={15}
-                      color={colors.bg}
-                      fill={claimable.length ? colors.bg : 'none'}
-                    />
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.bg }}>
-                      {claimable.length
-                        ? `Claim +${claimableXp} XP`
-                        : `Shop · ${formatCount(points)}`}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => navigation.navigate('Settings')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Edit profile"
-                    style={{
-                      width: 50,
-                      height: 50,
-                      borderRadius: radius.pill,
-                      backgroundColor: colors.primarySoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="pencil" size={19} color={colors.primaryDeep} />
-                  </Pressable>
-                </>
-              ) : user ? (
-                <Button
-                  label={following ? 'Following' : 'Follow'}
-                  variant={following ? 'secondary' : 'primary'}
-                  icon={following ? 'check' : 'plus'}
-                  style={{ flex: 1 }}
-                  onPress={toggleFollow}
-                />
-              ) : null}
-            </View>
-
-            {/* Next level */}
-            <View
-              style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 18, gap: 10 }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={[typography.label, { letterSpacing: 1.8, color: colors.accent }]}>
-                  Next level
-                </Text>
-                <View style={{ flex: 1 }} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryDeep }}>
-                  {level.xpIntoLevel} / {level.xpForNextLevel} XP
-                </Text>
-              </View>
-              <View
-                style={{
-                  height: 12,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.border,
-                  overflow: 'hidden',
-                }}
-              >
-                <LinearGradient
-                  colors={[colors.primary, colors.accent]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    height: '100%',
-                    width: `${Math.round(Math.max(0, Math.min(1, level.progress)) * 100)}%`,
-                    borderRadius: radius.pill,
-                  }}
-                />
-              </View>
-              <View style={{ flexDirection: 'row', gap: 20, marginTop: 4 }}>
-                <StatBlock value={formatCount(followers)} label="Followers" />
-                <StatBlock value={formatCount(followingCount)} label="Following" />
-                <StatBlock value={formatCount(points)} label="Points" />
-              </View>
-            </View>
-
-            {/* Achievements, three to a row. */}
-            {achievements.length > 0 ? (
-              <View style={{ gap: 10 }}>
-                {chunk(achievements, 3).map((row, rowIndex) => (
-                  <View key={rowIndex} style={{ flexDirection: 'row', gap: 10 }}>
-                    {row.map((a, colIndex) =>
-                      a ? (
-                        <AchievementTile
-                          key={a.id}
-                          achievement={a}
-                          claimable={isSelf && a.unlocked && !claimed.has(a.id)}
-                          onClaim={() => claim(a.id)}
-                        />
-                      ) : (
-                        // Holds the column open so a short last row keeps the
-                        // same tile width as every full row.
-                        <View key={`pad-${colIndex}`} style={{ flex: 1 }} />
-                      )
-                    )}
-                  </View>
-                ))}
-              </View>
-            ) : null}
-
-            {isSelf && admin ? (
-              <Button
-                label="Admin panel"
-                icon="shield"
-                variant="secondary"
-                onPress={() => navigation.navigate('Admin')}
-              />
-            ) : null}
-
-            <SectionRule label="Published" trailing={projects.length} />
-          </View>
-        </View>
-      }
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: gutter }}>
-          <EmptyState
-            icon="package"
-            title="Nothing published"
-            body={
-              isSelf
-                ? 'Your published entries show up here.'
-                : 'This account has no public entries yet.'
-            }
+      ) : null}
+      <FlatList
+        style={{ flex: 1, backgroundColor: colors.bg }}
+        data={projects}
+        numColumns={2}
+        columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              load();
+            }}
+            tintColor={colors.primary}
+            // tintColor is iOS-only; Android's spinner disc is white without these.
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
           />
-        </View>
-      }
-      renderItem={({ item }) => (
-        <Pressable
-          onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-          style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' }}
-        >
-          {coverFor(item) ? (
-            <Image
-              source={{ uri: coverFor(item) }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              transition={150}
+        }
+        ListHeaderComponent={
+          <View>
+            {/* The equipped background, drawn by CosmeticBackground so a
+                patterned one is the real tiled pattern rather than a flattened
+                gradient. `none` falls through to Bloom's own terracotta band. */}
+            {profile?.equippedBg && profile.equippedBg !== 'none' ? (
+              <CosmeticBackground itemId={profile.equippedBg} style={headerStyle}>
+                {headerContent}
+              </CosmeticBackground>
+            ) : (
+              <LinearGradient
+                colors={['#d98a4f', colors.primary, '#8f4a1e']}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={headerStyle}
+              >
+                {headerContent}
+              </LinearGradient>
+            )}
+
+            {/* The avatar overlaps the band above it. */}
+            <View style={{ paddingHorizontal: gutter, marginTop: -44, gap: 16 }}>
+              <View style={{ width: 92, height: 92 }}>
+                <View style={{ borderWidth: 5, borderColor: colors.bg, borderRadius: radius.pill }}>
+                  <Avatar
+                    url={profile?.avatarUrl}
+                    name={profile?.displayName}
+                    size={82}
+                    ring={profile?.equippedBorder}
+                  />
+                </View>
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -6,
+                    bottom: -2,
+                    paddingHorizontal: 9,
+                    paddingVertical: 4,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.text,
+                    borderWidth: 3,
+                    borderColor: colors.bg,
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.bg }}
+                  >
+                    LV {level.level}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ gap: 5 }}>
+                <DisplayName
+                  name={profile?.displayName || 'Unknown'}
+                  effect={profile?.equippedNameEffect}
+                  style={[typography.h2, { color: colors.text }]}
+                />
+                {/* The artboard sets a handle here ("@marakell · joined 2023").
+                    Profiles carry no username, so this keeps the half that has a
+                    source rather than inventing one. */}
+                <Text style={{ fontSize: 12, color: colors.textFaint }}>
+                  {joined ? `joined ${joined} · ` : ''}
+                  {level.xp} XP
+                </Text>
+                {profile?.bio ? (
+                  <Text style={[typography.body, { color: colors.textMuted, marginTop: 5 }]}>
+                    {profile.bio}
+                  </Text>
+                ) : null}
+              </View>
+
+              <ErrorNote message={error} />
+
+              {/* The dark pill is this screen's one primary action: on your own
+                  profile it claims what you are owed (or sends you to the shop
+                  once there is nothing left), on somebody else's it follows. */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {isSelf ? (
+                  <>
+                    <Pressable
+                      onPress={() =>
+                        claimable.length
+                          ? claimable.forEach((a) => claim(a.id))
+                          : navigation.navigate('Shop')
+                      }
+                      style={({ pressed }) => ({
+                        flex: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 9,
+                        backgroundColor: colors.text,
+                        borderRadius: radius.pill,
+                        padding: 14,
+                        opacity: pressed ? 0.85 : 1,
+                      })}
+                    >
+                      <Icon
+                        name="star"
+                        size={15}
+                        color={colors.bg}
+                        fill={claimable.length ? colors.bg : 'none'}
+                      />
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.bg }}>
+                        {claimable.length
+                          ? `Claim +${claimableXp} XP`
+                          : `Shop · ${formatCount(points)}`}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => navigation.navigate('Settings')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit profile"
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: radius.pill,
+                        backgroundColor: colors.primarySoft,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon name="pencil" size={19} color={colors.primaryDeep} />
+                    </Pressable>
+                  </>
+                ) : user ? (
+                  <Button
+                    label={following ? 'Following' : 'Follow'}
+                    variant={following ? 'secondary' : 'primary'}
+                    icon={following ? 'check' : 'plus'}
+                    style={{ flex: 1 }}
+                    onPress={toggleFollow}
+                  />
+                ) : null}
+              </View>
+
+              {isSelf && stats ? (
+                <Button
+                  label="Share stats card"
+                  icon="share-2"
+                  variant="secondary"
+                  small
+                  onPress={() => setShowCard(true)}
+                />
+              ) : null}
+
+              {/* Next level */}
+              <View
+                style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 18, gap: 10 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[typography.label, { letterSpacing: 1.8, color: colors.accent }]}>
+                    Next level
+                  </Text>
+                  <View style={{ flex: 1 }} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryDeep }}>
+                    {level.xpIntoLevel} / {level.xpForNextLevel} XP
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    height: 12,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.border,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <LinearGradient
+                    colors={[colors.primary, colors.accent]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      height: '100%',
+                      width: `${Math.round(Math.max(0, Math.min(1, level.progress)) * 100)}%`,
+                      borderRadius: radius.pill,
+                    }}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 20, marginTop: 4 }}>
+                  {/* Tappable, as the site's counts are: each opens the list of
+                      people behind the number. */}
+                  <Pressable
+                    onPress={() => navigation.navigate('FollowList', { userId: targetId, mode: 'followers' })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${followers} followers`}
+                    hitSlop={8}
+                  >
+                    <StatBlock value={formatCount(followers)} label="Followers" />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => navigation.navigate('FollowList', { userId: targetId, mode: 'following' })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${followingCount} following`}
+                    hitSlop={8}
+                  >
+                    <StatBlock value={formatCount(followingCount)} label="Following" />
+                  </Pressable>
+                  <StatBlock value={formatCount(points)} label="Points" />
+                </View>
+              </View>
+
+              {/* Achievements, three to a row. */}
+              {achievements.length > 0 ? (
+                <View style={{ gap: 10 }}>
+                  {chunk(achievements, 3).map((row, rowIndex) => (
+                    <View key={rowIndex} style={{ flexDirection: 'row', gap: 10 }}>
+                      {row.map((a, colIndex) =>
+                        a ? (
+                          <AchievementTile
+                            key={a.id}
+                            achievement={a}
+                            claimable={isSelf && a.unlocked && !claimed.has(a.id)}
+                            onClaim={() => claim(a.id)}
+                          />
+                        ) : (
+                          // Holds the column open so a short last row keeps the
+                          // same tile width as every full row.
+                          <View key={`pad-${colIndex}`} style={{ flex: 1 }} />
+                        )
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              {isSelf && admin ? (
+                <Button
+                  label="Admin panel"
+                  icon="shield"
+                  variant="secondary"
+                  onPress={() => navigation.navigate('Admin')}
+                />
+              ) : null}
+
+              <SectionRule label="Published" trailing={projects.length} />
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={{ paddingHorizontal: gutter }}>
+            <EmptyState
+              icon="package"
+              title="Nothing published"
+              body={
+                isSelf
+                  ? 'Your published entries show up here.'
+                  : 'This account has no public entries yet.'
+              }
             />
-          ) : (
-            <LinearGradient
-              colors={placeholderFor(item.type) as any}
-              start={{ x: 0.15, y: 0 }}
-              end={{ x: 0.85, y: 1 }}
-              style={{ width: '100%', height: '100%' }}
-            />
-          )}
-        </Pressable>
-      )}
-    />
+          </View>
+        }
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+            style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' }}
+          >
+            {coverFor(item) ? (
+              <Image
+                source={{ uri: coverFor(item) }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+                transition={150}
+              />
+            ) : (
+              <LinearGradient
+                colors={placeholderFor(item.type) as any}
+                start={{ x: 0.15, y: 0 }}
+                end={{ x: 0.85, y: 1 }}
+                style={{ width: '100%', height: '100%' }}
+              />
+            )}
+          </Pressable>
+        )}
+      />
+    </>
   );
 }
 
