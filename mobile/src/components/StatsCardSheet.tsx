@@ -12,6 +12,7 @@ import type { LevelInfo } from '../lib/levels';
 import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
+import { ON_ACCENT } from './bloom';
 import { CosmeticBackground } from './CosmeticBackground';
 import { Avatar, Button, DisplayName, ErrorNote } from './ui';
 
@@ -191,7 +192,15 @@ export function StatsCardSheet({ visible, onClose, profile, level, stats, topAch
         <View style={{ marginTop: space.lg, gap: space.sm }}>
           <ErrorNote message={error} />
           <Button label="Share" icon="share-2" onPress={share} loading={busy} />
-          <Button label="Close" variant="secondary" onPress={onClose} />
+          {/* Not a secondary Button: that one is outlined with dark text for a
+              light page, and all but vanished on this dimmed backdrop. */}
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ alignItems: 'center', padding: space.md, opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text style={{ color: ON_ACCENT, fontSize: 14, fontWeight: '700' }}>Close</Text>
+          </Pressable>
         </View>
       </View>
     </Modal>
