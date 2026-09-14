@@ -106,22 +106,6 @@ jobs:
         env:
           RUN_NUMBER: ${{ github.run_number }}
 
-      # Firebase config for push. Not committed: app.config.js wires it in only
-      # when this file exists, so without the secret the build is unchanged and
-      # push just stays unavailable.
-      - name: Add Firebase config for push notifications
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          set -euo pipefail
-          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
-            node -e 'JSON.parse(require("fs").readFileSync("google-services.json","utf8"))'
-            echo "Using google-services.json from repository secrets."
-          else
-            echo "No GOOGLE_SERVICES_JSON secret - building without push."
-          fi
-
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --no-install
 

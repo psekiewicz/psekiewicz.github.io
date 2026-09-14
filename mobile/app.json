@@ -75,7 +75,8 @@
         {
           "color": "#f97316"
         }
-      ]
+      ],
+      "expo-background-task"
     ],
     "extra": {
       "eas": {

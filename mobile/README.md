@@ -120,46 +120,25 @@ plugins/       Expo config plugins - build-time edits to the generated
                android/ project, which is regenerated and never committed
 ```
 
-## Push notifications
+## Notifications
 
-A like, comment or follow pushes to every device you've enabled notifications
-on (Settings → Notifications), even if the app isn't open. The whole path is
-in [`../schema.sql`](../schema.sql): `public.push_tokens` holds one row per
-registered device, and `add_notification()` - the same function the site's
-in-app bell already calls - now also calls `send_push()`, which POSTs to
-Expo's push relay via `pg_net` (Supabase's own extension for this, enabled
-automatically by the script). No Edge Function, no server - the same "paste
-schema.sql into the SQL Editor" step that sets up everything else also sets
-up push.
+A like, comment or follow shows up as a phone notification (Settings →
+Notifications → Enable), even when the app is closed - but it can arrive late,
+and that is deliberate.
 
-That covers the *server* side unconditionally. Actually **receiving** a push
-needs three pieces of setup, all done in a browser - no Expo CLI, no local SDK:
+Instant push on Android only travels through Firebase Cloud Messaging, which
+this project doesn't use. So the phone asks instead of being told:
+[`src/lib/notify.ts`](src/lib/notify.ts) registers an `expo-background-task`
+that Android runs roughly every 15 minutes (its minimum - idle and battery saver
+stretch it further). Each run reads the signed-in account's unread rows from
+`public.notifications`, the same table the site's bell uses, and shows the ones
+it hasn't shown before as local notifications; tapping one opens the entry or
+the person through the app's normal deep links. The same check also runs
+whenever you return to the app.
 
-1. **An Expo project id.** `Notifications.getExpoPushTokenAsync()` needs one
-   to know which project a token belongs to. Create a project named `showcase`
-   at [expo.dev](https://expo.dev) (free account) and put its id in
-   `app.json` as `expo.extra.eas.projectId`. It isn't a secret - commit it.
-   Without it, Settings' "Enable notifications" fails with an explanatory
-   error rather than silently doing nothing.
-2. **Firebase, for the app.** Expo's relay hands Android deliveries to
-   Firebase Cloud Messaging, and the app can't get a token until Firebase is
-   initialised from `google-services.json`. In the
-   [Firebase console](https://console.firebase.google.com) create a project,
-   add an Android app with package `io.github.psekiewicz.showcase`, download
-   `google-services.json`, and paste its contents into a repository secret
-   named **`GOOGLE_SERVICES_JSON`**. CI writes the file before prebuild and
-   [`app.config.js`](app.config.js) wires it in; it's in `.gitignore`, and a
-   build without the secret is exactly the build you had before.
-3. **Firebase, for Expo.** In Firebase, *Project settings → Service accounts
-   → Generate new private key*. On expo.dev, open the project's
-   *Credentials → Android → io.github.psekiewicz.showcase* and upload that
-   JSON as the **FCM V1 service account key**. This one *is* a secret: it
-   goes to Expo only, never into the repository or a GitHub secret.
-
-Until all three are done, everything still works except the push itself - the
-in-app bell, `public.notifications`, all of it - `send_push()` just has
-nothing to reach. Push also needs a real phone: `lib/push.ts` refuses on an
-emulator.
+Nothing is needed on the server and no account anywhere. `send_push()` in
+[`../schema.sql`](../schema.sql) is left over from an Expo push setup that was
+never switched on: with no rows in `push_tokens` it does nothing.
 
 ## Animations
 

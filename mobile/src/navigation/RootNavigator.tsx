@@ -1,7 +1,9 @@
 import { DarkTheme, DefaultTheme, LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 import React, { useState } from 'react';
+import { Linking } from 'react-native';
 
 import { SplashReveal } from '../components/SplashReveal';
 import { BloomTabBar } from './BloomTabBar';
@@ -65,6 +67,14 @@ function Tabs() {
 // those links straight to the app. `?id=` arrives as the `id` param.
 // initialRouteName puts the tabs underneath whatever a link opens, so back
 // goes to Home instead of closing the app.
+//
+// Tapping a notification from lib/notify.ts goes through here as well: each one
+// carries a showcase:// URL, read below both at cold start and while running.
+const notificationUrl = (response: Notifications.NotificationResponse | null) => {
+  const url = response?.notification.request.content.data?.url;
+  return typeof url === 'string' ? url : null;
+};
+
 const linking: LinkingOptions<Record<string, object | undefined>> = {
   prefixes: ['showcase://', 'https://psekiewicz.github.io'],
   config: {
@@ -72,7 +82,23 @@ const linking: LinkingOptions<Record<string, object | undefined>> = {
     screens: {
       Editor: 'share',
       ProjectDetail: { path: 'project.html', alias: ['project'] },
+      UserProfile: 'user',
     },
+  },
+  async getInitialURL() {
+    const url = await Linking.getInitialURL();
+    return url ?? notificationUrl(await Notifications.getLastNotificationResponseAsync());
+  },
+  subscribe(listener) {
+    const links = Linking.addEventListener('url', ({ url }) => listener(url));
+    const taps = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = notificationUrl(response);
+      if (url) listener(url);
+    });
+    return () => {
+      links.remove();
+      taps.remove();
+    };
   },
 };
 
