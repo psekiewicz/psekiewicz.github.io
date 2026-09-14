@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
@@ -65,10 +65,10 @@ function Tabs() {
 // those links straight to the app. `?id=` arrives as the `id` param.
 // initialRouteName puts the tabs underneath whatever a link opens, so back
 // goes to Home instead of closing the app.
-const linking = {
+const linking: LinkingOptions<Record<string, object | undefined>> = {
   prefixes: ['showcase://', 'https://psekiewicz.github.io'],
   config: {
-    initialRouteName: 'Tabs' as const,
+    initialRouteName: 'Tabs',
     screens: {
       Editor: 'share',
       ProjectDetail: { path: 'project.html', alias: ['project'] },
