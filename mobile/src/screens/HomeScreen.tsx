@@ -12,7 +12,7 @@ import { getProfilesByIds, Profile } from '../data/profiles';
 import { DISCOVER_POOL, getPublishedProjects, Project } from '../data/projects';
 import { useCardColumns, padRow } from '../lib/layout';
 import { getLevelsForUsers } from '../lib/levels';
-import { PROJECT_TYPE_OPTIONS } from '../lib/utils';
+import { PROJECT_TYPE_OPTIONS, typeMeta } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space } from '../theme/tokens';
 
@@ -129,6 +129,13 @@ export function HomeScreen({ navigation }: any) {
                 load();
               }}
             />
+            {/* The site links the leaderboard from its top nav; the app had the
+                screen registered but nothing that opened it. */}
+            <HeaderButton
+              icon="trophy"
+              label="Leaderboard"
+              onPress={() => navigation.navigate('Leaderboard')}
+            />
             <View>
               <HeaderButton
                 icon="bell"
@@ -211,9 +218,11 @@ export function HomeScreen({ navigation }: any) {
               icon="search"
               title="Nothing here yet"
               body={
-                query || typeFilter
+                query
                   ? 'No entries match that search.'
-                  : 'Nothing has been published yet.'
+                  : typeFilter
+                    ? `No ${typeMeta(typeFilter).label} entries yet.`
+                    : 'Nothing has been published yet.'
               }
             />
           }

@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -5,7 +6,7 @@ import { BrandMark } from '../components/BrandMark';
 import { Body, Button, ErrorNote, Eyebrow, Field, SuccessNote, Title } from '../components/ui';
 import { registerUser } from '../data/auth';
 import { useTheme } from '../theme/ThemeProvider';
-import { space, typography } from '../theme/tokens';
+import { radius, space, typography } from '../theme/tokens';
 
 export function RegisterScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -13,6 +14,7 @@ export function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -24,6 +26,11 @@ export function RegisterScreen({ navigation }: any) {
     if (!email.trim()) return setError('Enter your email address.');
     if (password.length < 6) return setError('Password must be at least 6 characters long.');
     if (password !== confirm) return setError('The two passwords do not match.');
+    // Same gate and wording as register.html. Without it the APK was a way to
+    // sign up that skipped the site's age confirmation.
+    if (!ageConfirmed) {
+      return setError('You must confirm that you are at least 13 years old to create an account.');
+    }
 
     setBusy(true);
     try {
@@ -91,6 +98,31 @@ export function RegisterScreen({ navigation }: any) {
           placeholder="Type it again"
           secureTextEntry
         />
+
+        <Pressable
+          onPress={() => setAgeConfirmed((v) => !v)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: ageConfirmed }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.xl }}
+        >
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: radius.sm / 2,
+              borderWidth: 1.5,
+              borderColor: ageConfirmed ? colors.primary : colors.border,
+              backgroundColor: ageConfirmed ? colors.primary : colors.surface,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {ageConfirmed ? <Feather name="check" size={16} color={colors.bg} /> : null}
+          </View>
+          <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
+            I confirm that I am at least 13 years old.
+          </Text>
+        </Pressable>
 
         <Button label="Create account" onPress={submit} loading={busy} />
 

@@ -120,37 +120,25 @@ plugins/       Expo config plugins - build-time edits to the generated
                android/ project, which is regenerated and never committed
 ```
 
-## Push notifications
+## Notifications
 
-A like, comment or follow pushes to every device you've enabled notifications
-on (Settings → Notifications), even if the app isn't open. The whole path is
-in [`../schema.sql`](../schema.sql): `public.push_tokens` holds one row per
-registered device, and `add_notification()` - the same function the site's
-in-app bell already calls - now also calls `send_push()`, which POSTs to
-Expo's push relay via `pg_net` (Supabase's own extension for this, enabled
-automatically by the script). No Edge Function, no server - the same "paste
-schema.sql into the SQL Editor" step that sets up everything else also sets
-up push.
+A like, comment or follow shows up as a phone notification (Settings →
+Notifications → Enable), even when the app is closed - but it can arrive late,
+and that is deliberate.
 
-That covers the *server* side unconditionally. Actually **receiving** a push
-needs two things from Expo's tooling that a plain `npx expo start` doesn't
-set up on its own:
+Instant push on Android only travels through Firebase Cloud Messaging, which
+this project doesn't use. So the phone asks instead of being told:
+[`src/lib/notify.ts`](src/lib/notify.ts) registers an `expo-background-task`
+that Android runs roughly every 15 minutes (its minimum - idle and battery saver
+stretch it further). Each run reads the signed-in account's unread rows from
+`public.notifications`, the same table the site's bell uses, and shows the ones
+it hasn't shown before as local notifications; tapping one opens the entry or
+the person through the app's normal deep links. The same check also runs
+whenever you return to the app.
 
-1. **An EAS project id** - `Notifications.getExpoPushTokenAsync()` needs one
-   to know which project a token belongs to. Run `eas init` once (needs a
-   free Expo account); it writes `extra.eas.projectId` into `app.json` - commit
-   that. Without it, Settings' "Enable notifications" button fails with an
-   explanatory error rather than silently doing nothing.
-2. **Android credentials** - Expo's push relay hands Android deliveries off
-   to Firebase Cloud Messaging, which needs its own credentials per project
-   (Expo no longer provides shared ones). Create a Firebase project, then run
-   `eas credentials` and follow the Android → Push Notifications prompts to
-   upload its service account key. iOS is simpler: EAS can generate and
-   manage APNs credentials for you the first time you build.
-
-Until both are done, everything still works except the push itself - the
-in-app bell, `public.notifications`, all of it - `send_push()` just has
-nothing to reach.
+Nothing is needed on the server and no account anywhere. `send_push()` in
+[`../schema.sql`](../schema.sql) is left over from an Expo push setup that was
+never switched on: with no rows in `push_tokens` it does nothing.
 
 ## Animations
 

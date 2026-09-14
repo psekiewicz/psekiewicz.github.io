@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { CommentsSheet } from '../components/CommentsSheet';
+import { ReportSheet } from '../components/ReportSheet';
 import {
   Avatar,
   Body,
@@ -36,7 +37,8 @@ import { radius, space, typography } from '../theme/tokens';
 
 export function ProjectDetailScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { projectId } = route.params;
+  // `id` when opened from a site link (project.html?id=...), `projectId` in-app.
+  const projectId = route.params.projectId ?? route.params.id;
   const { colors } = useTheme();
   const { user } = useAuth();
 
@@ -49,6 +51,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const [savedState, setSavedState] = useState(false);
   const [following, setFollowing] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -248,11 +251,11 @@ export function ProjectDetailScreen({ route, navigation }: any) {
           {project.tags.length > 0 ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
               {project.tags.map((tag) => (
-                <Text
+                // The border lives on a View, as on every other pill: drawn on
+                // the Text itself, Android sat the glyphs at the top of the box.
+                <View
                   key={tag}
                   style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
                     borderColor: colors.border,
                     borderWidth: StyleSheet.hairlineWidth * 2,
                     borderRadius: radius.sm,
@@ -260,8 +263,8 @@ export function ProjectDetailScreen({ route, navigation }: any) {
                     paddingVertical: 3,
                   }}
                 >
-                  {tag}
-                </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>{tag}</Text>
+                </View>
               ))}
             </View>
           ) : null}
@@ -295,7 +298,26 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               style={{ marginTop: space.md }}
               onPress={() => navigation.navigate('Editor', { projectId: project.id })}
             />
-          ) : null}
+          ) : (
+            // Quiet on purpose, as on the site: a way to flag an entry, not a
+            // call to action. RLS refuses a report on your own entry anyway.
+            <Pressable
+              onPress={() => (user ? setShowReport(true) : navigation.navigate('Login'))}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'center',
+                gap: 6,
+                marginTop: space.lg,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Feather name="flag" size={13} color={colors.textFaint} />
+              <Text style={{ fontSize: 12, color: colors.textFaint }}>Report this entry</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 
@@ -349,6 +371,8 @@ export function ProjectDetailScreen({ route, navigation }: any) {
         onClose={() => setShowComments(false)}
         onCountChange={(_id, delta) => setCommentCount((c) => Math.max(0, c + delta))}
       />
+
+      <ReportSheet projectId={projectId} visible={showReport} onClose={() => setShowReport(false)} />
     </>
   );
 }

@@ -23,7 +23,7 @@ import {
 import { updateProfile } from '../data/profiles';
 import { collectEarnings } from '../data/reputation';
 import { clearSeenIds } from '../lib/feedRank';
-import { disablePush, enablePush, getPushPermissionStatus, pushAvailable } from '../lib/push';
+import { disableNotifications, enableNotifications, notificationsEnabled } from '../lib/notify';
 import { useMotion } from '../theme/MotionProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
@@ -47,12 +47,12 @@ export function SettingsScreen({ navigation }: any) {
   const [savingPassword, setSavingPassword] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [resettingHistory, setResettingHistory] = useState(false);
-  const [pushStatus, setPushStatus] = useState<string>('unknown');
+  const [notifyOn, setNotifyOn] = useState(false);
   const [togglingPush, setTogglingPush] = useState(false);
 
   useEffect(() => {
-    getPushPermissionStatus()
-      .then(setPushStatus)
+    notificationsEnabled()
+      .then(setNotifyOn)
       .catch(() => {});
   }, []);
 
@@ -202,41 +202,35 @@ export function SettingsScreen({ navigation }: any) {
       <Card>
         <Eyebrow>Notifications</Eyebrow>
         <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
-          {pushStatus === 'granted'
-            ? "You'll get a push when someone likes, comments on, or follows you."
-            : 'Get a push when someone likes, comments on, or follows you.'}
+          {notifyOn
+            ? 'On. The app checks for new likes, comments and follows about every 15 minutes, even when it is closed.'
+            : 'Get a notification when someone likes, comments on, or follows you. The app checks about every 15 minutes, so they can arrive a little late.'}
         </Text>
-        {pushAvailable() ? (
-          <Button
-            label={pushStatus === 'granted' ? 'Turn off notifications' : 'Enable notifications'}
-            variant="secondary"
-            loading={togglingPush}
-            onPress={async () => {
-              setError('');
-              setNotice('');
-              setTogglingPush(true);
-              try {
-                if (pushStatus === 'granted') {
-                  await disablePush(user.id);
-                  setPushStatus('undetermined');
-                  setNotice('Notifications turned off for this device.');
-                } else {
-                  await enablePush(user.id);
-                  setPushStatus('granted');
-                  setNotice('Notifications enabled.');
-                }
-              } catch (e: any) {
-                setError(e.message);
-              } finally {
-                setTogglingPush(false);
+        <Button
+          label={notifyOn ? 'Turn off notifications' : 'Enable notifications'}
+          variant="secondary"
+          loading={togglingPush}
+          onPress={async () => {
+            setError('');
+            setNotice('');
+            setTogglingPush(true);
+            try {
+              if (notifyOn) {
+                await disableNotifications();
+                setNotifyOn(false);
+                setNotice('Notifications turned off for this device.');
+              } else {
+                await enableNotifications();
+                setNotifyOn(true);
+                setNotice('Notifications enabled.');
               }
-            }}
-          />
-        ) : (
-          <Text style={[typography.small, { color: colors.textFaint }]}>
-            Not available in this build - see mobile/README.md.
-          </Text>
-        )}
+            } catch (e: any) {
+              setError(e.message);
+            } finally {
+              setTogglingPush(false);
+            }
+          }}
+        />
       </Card>
 
       <Card>

@@ -103,7 +103,6 @@ export function SearchPill({
   onChangeText?: (v: string) => void;
   placeholder?: string;
 }) {
-  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -116,7 +115,9 @@ export function SearchPill({
         paddingVertical: 12,
       }}
     >
-      <Icon name="search" size={16} color={colors.primaryDeep} />
+      {/* The pill is cream in both themes, so its icon can't follow the theme
+          either: dark mode's primaryDeep is a pale peach made for dark ground. */}
+      <Icon name="search" size={16} color="#8f4a1e" />
       <TextInput
         value={value}
         onChangeText={onChangeText}

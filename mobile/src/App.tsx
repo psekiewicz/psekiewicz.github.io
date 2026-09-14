@@ -3,6 +3,10 @@ import * as SystemUI from 'expo-system-ui';
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// Imported for its side effects: the background notification check has to be
+// defined before anything renders, because Android may start the app just to
+// run it (see lib/notify.ts).
+import './lib/notify';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { RootNavigator } from './navigation/RootNavigator';

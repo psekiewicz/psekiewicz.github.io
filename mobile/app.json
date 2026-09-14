@@ -28,6 +28,21 @@
       ],
       "intentFilters": [
         {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "psekiewicz.github.io",
+              "pathPrefix": "/project"
+            }
+          ]
+        },
+        {
           "action": "SEND",
           "category": [
             "DEFAULT"
@@ -60,7 +75,13 @@
         {
           "color": "#f97316"
         }
-      ]
-    ]
+      ],
+      "expo-background-task"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d9a156ef-b378-4a52-a8e2-3291298ed977"
+      }
+    }
   }
 }

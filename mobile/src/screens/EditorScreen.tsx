@@ -24,7 +24,7 @@ import {
   getProjectById,
   updateProject,
 } from '../data/projects';
-import { resolveMedia } from '../lib/media';
+import { posterFor, resolveMedia } from '../lib/media';
 import { normalizeTags, PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { Colors, gutter, radius, space, typography } from '../theme/tokens';
@@ -91,17 +91,6 @@ function PlainInput({
       }}
     />
   );
-}
-
-/** YouTube publishes a still at a predictable path; nothing else here does. */
-function posterFor(url: string) {
-  const media = resolveMedia(url);
-  if (!media) return null;
-  if (media.kind === 'image') return media.url;
-  if (media.kind === 'provider' && media.provider === 'youtube' && media.id) {
-    return `https://i.ytimg.com/vi/${media.id}/hqdefault.jpg`;
-  }
-  return null;
 }
 
 /** What the pasted URL turned out to be, in words and an icon. */
@@ -475,16 +464,6 @@ export function EditorScreen({ route, navigation }: any) {
     ]);
   };
 
-  if (!user) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, padding: space.xl, justifyContent: 'center', gap: space.lg }}>
-        <Heading>Sign in to publish</Heading>
-        <Body muted>You need an account to add an entry.</Body>
-        <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
-      </View>
-    );
-  }
-
   const header = (
     <AccentHeader
       eyebrow={projectId ? (published ? 'Editing · published' : 'Editing · draft') : 'New entry'}
@@ -504,6 +483,26 @@ export function EditorScreen({ route, navigation }: any) {
       }
     />
   );
+
+  // Signed out, this screen still gets the header: the stack's own header is
+  // off here, so without it the only way out was Android's back gesture.
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {header}
+        <View style={{ flex: 1, padding: space.xl, justifyContent: 'center', gap: space.lg }}>
+          <Heading>Sign in to publish</Heading>
+          <Body muted>You need an account to add an entry.</Body>
+          <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
+          <Button
+            label="Create account"
+            variant="secondary"
+            onPress={() => navigation.navigate('Register')}
+          />
+        </View>
+      </View>
+    );
+  }
 
   if (loading) {
     return (

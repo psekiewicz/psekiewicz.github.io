@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 
 import { getProfile, Profile } from '../data/profiles';
 import { supabase } from '../lib/supabase';
-import { syncPushTokenIfAlreadyEnabled } from '../lib/push';
 
 type AuthValue = {
   user: User | null;
@@ -53,9 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // shouldn't sign anyone out - the rest of the app handles a null
         // profile by falling back to auth metadata.
       });
-    // Re-registers this device's push token if notifications were already
-    // granted last session - never prompts, so a cold start stays quiet.
-    syncPushTokenIfAlreadyEnabled(userId);
     return () => {
       cancelled = true;
     };

@@ -229,8 +229,12 @@ jobs:
       # /releases/latest/download/<name> URL, which is what download/index.html
       # links to. It also keeps the APK out of the repository — a 75 MB binary
       # per version, committed, is history nobody can prune later.
+      #
+      # Main only. A manual run on any other branch still builds and uploads the
+      # APK above for testing, but must not publish: the release is marked
+      # latest, so the download page would start serving an unmerged build.
       - name: Publish a release
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
