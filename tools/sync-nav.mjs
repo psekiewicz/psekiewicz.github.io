@@ -59,8 +59,10 @@ ${LINKS.map(
 ).join('\n')}
       </div>
       <div class="nav-right">
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
         <div class="nav-actions" id="nav-actions"></div>
+        <div class="nav-tools" id="nav-tools">
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+        </div>
       </div>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>

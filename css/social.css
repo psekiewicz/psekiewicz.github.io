@@ -133,6 +133,58 @@ textarea:focus {
   color: var(--color-on-accent);
 }
 
+/* ---------- Small navigation controls ----------
+   The bell, the theme toggle and log out are the same round icon button, and
+   the account link is just your avatar - no name, level or border pill. */
+.nav-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-tools .theme-toggle,
+.nav-tools .notif-bell,
+.nav-icon-btn {
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.nav-tools .theme-toggle:hover,
+.nav-tools .notif-bell:hover,
+.nav-icon-btn:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.nav-tools .notif-wrap {
+  margin: 0;
+}
+
+.nav-logout-btn:hover {
+  color: var(--color-danger);
+}
+
+.user-chip {
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+}
+
+.user-chip:hover {
+  opacity: 0.85;
+}
+
 /* ---------- Top bar (tablet) ---------- */
 .navbar .brand-name {
   font-weight: 800;
@@ -243,20 +295,20 @@ textarea:focus {
     background: var(--color-primary-soft);
   }
 
-  /* Account controls sit at the foot of the sidebar, as on every desktop
-     social app: post button, then who you are. */
+  /* The foot of the sidebar: the post button and your avatar, then one row
+     of small controls - notifications, theme, log out. */
   .nav-right {
     margin-top: auto;
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 12px;
     padding-top: 16px;
   }
 
   .nav-actions {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
 
   /* style.css hides this button below 860px for the old top bar. */
@@ -268,43 +320,21 @@ textarea:focus {
   }
 
   .user-chip {
-    border: none;
-    background: transparent;
-    padding: 8px 10px;
-    border-radius: var(--radius-pill);
-    font-size: 0.92rem;
-    font-weight: 700;
-  }
-
-  .user-chip:hover {
-    background: var(--color-surface-alt);
-    opacity: 1;
+    align-self: flex-start;
+    margin-left: 6px;
   }
 
   .user-chip .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 0.85rem;
+    width: 42px;
+    height: 42px;
+    font-size: 0.9rem;
   }
 
-  .nav-logout-btn {
-    justify-content: flex-start;
-    padding-left: 16px;
-  }
-
-  /* The bell and the theme toggle share a row above the post button. */
-  .theme-toggle,
-  .notif-wrap {
-    margin: 0;
-  }
-
-  .notif-wrap,
-  .theme-toggle {
-    align-self: flex-start;
-  }
-
-  .nav-right > .notif-wrap {
-    order: 2;
+  .nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 4px;
   }
 
   .notif-panel {
@@ -322,24 +352,12 @@ textarea:focus {
   /* Icon rail up to 1399px: the same sidebar with the words taken out. */
   .brand-name,
   .nav-link > span,
-  .nav-new-btn > span,
-  .nav-logout-btn > span,
-  .user-chip > span:not(.avatar):not(.level-chip):not(.name-badge),
-  .user-chip .level-chip,
-  .user-chip .name-badge {
+  .nav-new-btn > span {
     display: none;
   }
 
-  /* Log out stays reachable in the rail as an icon. */
-  .nav-logout-btn {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   .brand,
-  .nav-link,
-  .user-chip {
+  .nav-link {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
@@ -349,9 +367,15 @@ textarea:focus {
     padding: 14px 0;
   }
 
-  .notif-wrap,
-  .theme-toggle {
+  .user-chip {
     align-self: center;
+    margin-left: 0;
+  }
+
+  /* Three 38px buttons don't fit across a 60px rail, so they stack. */
+  .nav-tools {
+    flex-direction: column;
+    padding-left: 0;
   }
 
   .site-footer {
@@ -364,22 +388,14 @@ textarea:focus {
     --sidebar-w: 264px;
   }
 
-  .user-chip > span:not(.avatar),
-  .user-chip .level-chip,
-  .user-chip .name-badge {
-    display: revert;
-  }
-
   .nav-link > span,
   .nav-new-btn > span,
-  .nav-logout-btn > span,
   .brand-name {
     display: inline;
   }
 
   .brand,
-  .nav-link,
-  .user-chip {
+  .nav-link {
     justify-content: flex-start;
   }
 
@@ -392,28 +408,27 @@ textarea:focus {
     padding-right: 20px;
   }
 
-  .user-chip {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
   .nav-new-btn {
     padding: 14px 18px;
   }
 
-  .nav-logout-btn {
-    justify-content: flex-start;
-    padding-left: 16px;
+  .user-chip {
+    align-self: flex-start;
+    margin-left: 6px;
   }
 
-  .notif-wrap,
-  .theme-toggle {
-    align-self: flex-start;
+  .nav-tools {
+    flex-direction: row;
+    padding-left: 4px;
   }
 }
 
 /* ---------- Mobile top bar ---------- */
 @media (max-width: 720px) {
+  .nav-right {
+    gap: 2px;
+  }
+
   .navbar .container {
     height: 56px;
   }
