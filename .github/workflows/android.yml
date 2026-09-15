@@ -62,8 +62,15 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # The action's default package list is "tools platform-tools". Google has
+      # removed the legacy "tools" package from its repository, so the default
+      # makes sdkmanager exit 1 ("Failed to find package 'tools'") and every
+      # build stopped here. Gradle fetches the platforms and build-tools it
+      # needs on its own; platform-tools is the only one worth preinstalling.
       - uses: android-actions/setup-android@v3
         if: github.event_name != 'pull_request'
+        with:
+          packages: platform-tools
 
       # Caches ~/.gradle across runs. A cold Android build spends a long time
       # just fetching AGP and the React Native artifacts.
