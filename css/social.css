@@ -164,19 +164,13 @@ textarea:focus {
   height: 18px;
 }
 
-@media (min-width: 721px) and (max-width: 1023px) {
-  /* Six links with icons don't fit next to the account controls; the icons
-     carry the meaning and the label stays as the tooltip-sized text below. */
-  .nav-link > span {
-    display: none;
-  }
-  .nav-link {
-    padding: 10px;
-  }
-}
-
-/* ---------- Sidebar (desktop) ---------- */
-@media (min-width: 1024px) {
+/* ---------- Sidebar (tablet and desktop) ----------
+   Everything wider than a phone gets the sidebar: an icon rail up to 1399px,
+   full labels above. A top bar in between - portrait tablets especially -
+   had to fit the brand, six links and every account control on one row, and
+   once signed in they ran into each other. The rail also leaves a landscape
+   tablet more room for the feed than a 264px sidebar did. */
+@media (min-width: 721px) {
   :root {
     --sidebar-w: 84px;
   }
@@ -265,7 +259,9 @@ textarea:focus {
     gap: 8px;
   }
 
+  /* style.css hides this button below 860px for the old top bar. */
   .nav-new-btn {
+    display: inline-flex;
     padding: 14px 18px;
     font-size: 1rem;
     box-shadow: var(--shadow-md);
@@ -297,7 +293,8 @@ textarea:focus {
   }
 
   /* The bell and the theme toggle share a row above the post button. */
-  .theme-toggle {
+  .theme-toggle,
+  .notif-wrap {
     margin: 0;
   }
 
@@ -322,16 +319,22 @@ textarea:focus {
     display: none;
   }
 
-  /* Icon rail between 1024 and 1279px: the same sidebar with the words
-     taken out. */
+  /* Icon rail up to 1399px: the same sidebar with the words taken out. */
   .brand-name,
   .nav-link > span,
   .nav-new-btn > span,
+  .nav-logout-btn > span,
   .user-chip > span:not(.avatar):not(.level-chip):not(.name-badge),
   .user-chip .level-chip,
-  .user-chip .name-badge,
-  .nav-logout-btn {
+  .user-chip .name-badge {
     display: none;
+  }
+
+  /* Log out stays reachable in the rail as an icon. */
+  .nav-logout-btn {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .brand,
@@ -356,23 +359,20 @@ textarea:focus {
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1400px) {
   :root {
     --sidebar-w: 264px;
   }
 
-  .brand-name,
-  .nav-link > span,
-  .nav-new-btn > span,
   .user-chip > span:not(.avatar),
   .user-chip .level-chip,
-  .user-chip .name-badge,
-  .nav-logout-btn {
+  .user-chip .name-badge {
     display: revert;
   }
 
   .nav-link > span,
   .nav-new-btn > span,
+  .nav-logout-btn > span,
   .brand-name {
     display: inline;
   }
@@ -402,7 +402,8 @@ textarea:focus {
   }
 
   .nav-logout-btn {
-    display: inline-flex;
+    justify-content: flex-start;
+    padding-left: 16px;
   }
 
   .notif-wrap,
@@ -463,6 +464,15 @@ textarea:focus {
   padding-top: 20px;
 }
 
+/* A little tighter until there's room to spare (landscape tablets, small
+   laptops), so both columns fit without the page feeling oversized. */
+@media (max-width: 1399px) {
+  .feed-shell {
+    grid-template-columns: minmax(0, 600px) 300px;
+    gap: 24px;
+  }
+}
+
 @media (max-width: 1100px) {
   .feed-shell {
     grid-template-columns: minmax(0, 620px);
@@ -488,12 +498,6 @@ textarea:focus {
   padding: 16px 4px 0;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
-}
-
-@media (max-width: 1023px) {
-  .feed-head {
-    top: 60px;
-  }
 }
 
 @media (max-width: 720px) {
@@ -1351,12 +1355,6 @@ textarea:focus {
   font-size: 1.15rem;
 }
 
-@media (max-width: 1023px) {
-  .post-page-bar {
-    top: 60px;
-  }
-}
-
 @media (max-width: 720px) {
   .post-page {
     padding: 0 10px;
@@ -1705,25 +1703,10 @@ textarea:focus {
   .scroll-card,
   body.has-bottom-nav .scrolls-container,
   body.has-bottom-nav .scroll-card {
-    height: calc(100vh - 60px);
-  }
-}
-
-@media (min-width: 1024px) {
-  .scrolls-container,
-  .scroll-card,
-  body.has-bottom-nav .scrolls-container,
-  body.has-bottom-nav .scroll-card {
     height: 100vh;
   }
 
   .auth-shell {
     min-height: 100vh;
-  }
-}
-
-@media (min-width: 721px) and (max-width: 1023px) {
-  .navbar .container {
-    height: 60px;
   }
 }

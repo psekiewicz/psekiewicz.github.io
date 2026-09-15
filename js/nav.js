@@ -108,7 +108,7 @@ async function renderNavActions(container, user) {
       ${avatarHtml(avatarUrl, name, borderClass)}
       <span class="${nameEffectClass}">${escapeHtml(name)}</span>
     </a>
-    <button class="btn btn-ghost btn-sm nav-logout-btn" id="nav-logout-btn" type="button">Log out</button>
+    <button class="btn btn-ghost btn-sm nav-logout-btn" id="nav-logout-btn" type="button" aria-label="Log out" title="Log out">${icon('log-out', { size: 18 })}<span>Log out</span></button>
   `;
 
   container.querySelector('#nav-new-project').addEventListener('click', openCreateSheet);
