@@ -70,10 +70,9 @@ async function renderNavActions(container, user) {
 
   if (!user) {
     unmountNotifications();
-    document.getElementById('nav-logout-btn')?.remove();
     container.innerHTML = `
-      <a class="btn btn-ghost btn-sm" href="/login.html">Log in</a>
-      <a class="btn btn-primary btn-sm" href="/register.html">Get started</a>
+      <a class="btn btn-primary nav-login-btn" href="/login.html" title="Log in" aria-label="Log in">${icon('user', { size: 18 })}<span>Log in</span></a>
+      <a class="btn btn-secondary nav-signup-btn" href="/register.html">Create account</a>
     `;
     return;
   }
@@ -94,39 +93,28 @@ async function renderNavActions(container, user) {
   }
 
   // The + tab is the fastest thing about the phone app: publishing never
-  // means navigating anywhere first. .nav-actions is hidden at exactly the
-  // width the tab bar appears, so this button is its desktop counterpart
-  // rather than a second copy of it.
+  // means navigating anywhere first. On phones the post button is hidden in
+  // favour of that tab; the avatar and its menu show everywhere.
+  const profileHref = `/profile.html?user=${encodeURIComponent(user.id)}`;
   container.innerHTML = `
     <button class="btn btn-primary nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New post" title="New post (press N)">
       ${icon('plus', { size: 18 })}<span>New post</span>
     </button>
-    <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}" aria-label="Your profile" title="${escapeHtml(name)}">
-      ${avatarHtml(avatarUrl, name, borderClass)}
-    </a>
+    <div class="account-menu">
+      <button class="user-chip" id="account-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-pop" aria-label="Account menu" title="${escapeHtml(name)}">
+        ${avatarHtml(avatarUrl, name, borderClass)}
+      </button>
+      <div class="account-pop" id="account-pop" role="menu" hidden>
+        <div class="account-pop-head">${avatarHtml(avatarUrl, name, 'avatar-sm')}<span>${escapeHtml(name)}</span></div>
+        <a class="account-pop-item" role="menuitem" href="${profileHref}">${icon('user', { size: 18 })} Your profile</a>
+        <a class="account-pop-item" role="menuitem" href="/settings.html">${icon('settings', { size: 18 })} Settings</a>
+        <button class="account-pop-item" role="menuitem" type="button" id="nav-logout-btn">${icon('log-out', { size: 18 })} Log out</button>
+      </div>
+    </div>
   `;
 
   container.querySelector('#nav-new-project').addEventListener('click', openCreateSheet);
-
-  // One small icon button, kept with the bell and the theme toggle so it is in
-  // the same place on every screen size - the sidebar's foot or the phone's
-  // top bar - instead of a different log out button per layout.
-  const tools = document.getElementById('nav-tools') || document.querySelector('.nav-right');
-  if (tools && !document.getElementById('nav-logout-btn')) {
-    const logout = document.createElement('button');
-    logout.type = 'button';
-    logout.id = 'nav-logout-btn';
-    logout.className = 'nav-icon-btn nav-logout-btn';
-    logout.setAttribute('aria-label', 'Log out');
-    logout.title = 'Log out';
-    logout.innerHTML = icon('log-out', { size: 18 });
-    logout.addEventListener('click', async () => {
-      logout.disabled = true;
-      await logoutUser();
-      window.location.href = '/index.html';
-    });
-    tools.appendChild(logout);
-  }
+  bindAccountMenu(container);
 
   Promise.all([getUserStats(user.id), getAchievementRecords(user.id).catch(() => EMPTY_ACHIEVEMENT_RECORDS)])
     .then(([stats, records]) => {
@@ -149,4 +137,51 @@ async function renderNavActions(container, user) {
     if (pageId(window.location.pathname) === 'admin') link.classList.add('active');
     navLinks.appendChild(link);
   }
+}
+
+// Log out lives in the avatar's menu - one place on every screen size, rather
+// than a separate button in each layout.
+function bindAccountMenu(container) {
+  const btn = container.querySelector('#account-btn');
+  const pop = container.querySelector('#account-pop');
+  if (!btn || !pop) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setAccountMenuOpen(pop.hidden);
+  });
+
+  const logout = pop.querySelector('#nav-logout-btn');
+  logout.addEventListener('click', async () => {
+    logout.disabled = true;
+    await logoutUser();
+    window.location.href = '/index.html';
+  });
+
+  // Page-wide listeners are added once, however often the navbar re-renders,
+  // and look the menu up when they fire so they never hold on to stale nodes.
+  if (accountMenuListening) return;
+  accountMenuListening = true;
+  document.addEventListener('click', (e) => {
+    const current = document.getElementById('account-pop');
+    if (current && !current.hidden && !current.contains(e.target)) setAccountMenuOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    const current = document.getElementById('account-pop');
+    if (e.key === 'Escape' && current && !current.hidden) {
+      setAccountMenuOpen(false);
+      document.getElementById('account-btn')?.focus();
+    }
+  });
+}
+
+let accountMenuListening = false;
+
+function setAccountMenuOpen(open) {
+  const btn = document.getElementById('account-btn');
+  const pop = document.getElementById('account-pop');
+  if (!btn || !pop) return;
+  pop.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  if (open) pop.querySelector('.account-pop-item')?.focus();
 }
