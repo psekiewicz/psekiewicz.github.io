@@ -19,10 +19,11 @@
   <meta name="twitter:description" content="Showcase user, nothing weird." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/social.css" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#14120f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fdf7ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1b1917" media="(prefers-color-scheme: dark)" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -32,15 +33,16 @@
   <nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
-        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
-        Showcase
+        <svg class="brand-mark" width="28" height="28" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
+        <span class="brand-name">Showcase</span>
       </a>
       <div class="nav-links">
-        <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="/scrolls">Scrolls</a>
-        <a class="nav-link" href="/shop">Shop</a>
-        <a class="nav-link" href="leaderboard.html">Leaderboard</a>
+        <a class="nav-link" href="/index.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span>Home</span></a>
+        <a class="nav-link" href="/projects.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Explore</span></a>
+        <a class="nav-link" href="/scrolls"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span>Scrolls</span></a>
+        <a class="nav-link" href="/leaderboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/></svg><span>Leaderboard</span></a>
+        <a class="nav-link" href="/shop"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg><span>Shop</span></a>
+        <a class="nav-link" href="/dashboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -53,11 +55,9 @@
   </nav>
 
   <main>
-    <section class="section">
-      <div class="container" id="profile-root">
-        <p>Loading profile…</p>
-      </div>
-    </section>
+    <div id="profile-root">
+      <div class="profile-page"><div class="post-skeleton" aria-hidden="true"></div></div>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -112,6 +112,7 @@
     } from '/js/follows-data.js';
     import { escapeHtml, initials, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
+    import { tileHtml } from '/js/post-card.js';
     import {
       getUserStats,
       computeAchievements,
@@ -212,30 +213,6 @@
       }
     }
 
-    function projectCard(project, isOwnProfile) {
-      const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
-        : escapeHtml(project.title.slice(0, 2).toUpperCase());
-      const tags = project.tags.slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
-      const editLink = isOwnProfile
-        ? `<a class="card-edit-btn" href="dashboard.html?edit=${encodeURIComponent(project.id)}" aria-label="Edit project">${icon('pencil', { size: 14 })} Edit</a>`
-        : '';
-      return `
-        <article class="card">
-          <div class="card-thumb">${thumb}</div>
-          <div class="card-body">
-            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
-            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
-            <div class="card-meta">
-              <span>${timeAgo(project.createdAt)}</span>
-              ${editLink}
-            </div>
-          </div>
-        </article>
-      `;
-    }
-
     async function render() {
       if (!profileUserId) {
         root.innerHTML = `<div class="empty-state"><h3>No profile specified</h3><p>Follow a link from a project card to view a profile.</p><a class="btn btn-primary" href="projects.html">Browse projects</a></div>`;
@@ -307,8 +284,8 @@
 
       const projectsGrid =
         projects.length === 0
-          ? `<div class="empty-state"><h3>No published projects yet</h3></div>`
-          : `<div class="project-grid">${projects.map((p) => projectCard(p, isOwnProfile)).join('')}</div>`;
+          ? `<div class="feed-empty"><h3>No posts yet</h3><p>${isOwnProfile ? 'Share something and it shows up here.' : 'Nothing published so far.'}</p></div>`
+          : `<div class="tile-grid">${projects.map((p) => tileHtml(p, { author: profile })).join('')}</div>`;
 
       const nameBadge = topAchievement
         ? `<span class="name-badge" title="${escapeHtml(topAchievement.label)} - ${escapeHtml(topAchievement.description)}">${icon(topAchievement.icon, { size: 17 })}</span>`
@@ -317,17 +294,19 @@
       const nameEffectClass = effectClass(profile.equippedNameEffect);
       const borderEffectClass = effectClass(profile.equippedBorder);
       const bgEffectClass = effectClass(profile.equippedBg);
-      const headerClass = `profile-header${bgEffectClass ? ` has-profile-bg ${bgEffectClass}` : ''}`;
+      // The equipped background is the cover band now, like a banner on any
+      // other profile, rather than a tint behind all of the text.
+      const coverClass = `profile-cover${bgEffectClass ? ` ${bgEffectClass}` : ''}`;
 
       const pointsRow = isOwnProfile
-        ? `<a class="points-chip" href="/shop" style="text-decoration:none; margin-top:10px;">${icon('award', { size: 16 })} ${profile.points} pts - Shop</a>`
+        ? `<a class="points-chip" href="/shop">${icon('award', { size: 16 })} ${profile.points} pts - Shop</a>`
         : '';
 
       // A shareable "wrapped"-style image of your own stats - own profile
       // only, same reasoning as reachRow above: it's a card worth posting,
       // not a stat line worth exposing about someone else.
       const shareCardRow = isOwnProfile && stats
-        ? `<button class="btn btn-secondary btn-sm" id="share-stats-btn" type="button" style="margin-top:10px;">${icon('share', { size: 14 })} Share stats card</button>`
+        ? `<button class="btn btn-secondary" id="share-stats-btn" type="button" title="Share stats card" aria-label="Share stats card">${icon('share', { size: 16 })}</button>`
         : '';
 
       // Derived from the same stats the achievements grid uses, so the
@@ -369,10 +348,7 @@
       const unlockedCount = achievements.filter((a) => a.unlocked).length;
       const achievementsSection = stats
         ? `
-          <div class="section-head">
-            <h2>Achievements</h2>
-            <p>${unlockedCount} of ${achievements.length} unlocked</p>
-          </div>
+          <p class="hint">${unlockedCount} of ${achievements.length} unlocked</p>
           <div class="achievements-grid">
             ${achievements
               .map((a) => {
@@ -396,25 +372,28 @@
         : '';
 
       root.innerHTML = `
-        <div class="${headerClass}">
-          <div class="profile-avatar ${borderEffectClass}">${avatar}</div>
-          <div class="profile-info">
-            <div class="profile-name-row">
-              <h1 style="margin:0;"><span class="${nameEffectClass}">${escapeHtml(profile.displayName)}</span>${nameBadge}</h1>
-              ${levelChip}
-              ${actionButton}
+        <div class="profile-page">
+          <div class="${coverClass}"></div>
+          <div class="profile-card">
+            <div class="profile-top">
+              <div class="profile-avatar ${borderEffectClass}">${avatar}</div>
+              <div class="profile-actions">${shareCardRow}${actionButton}</div>
             </div>
-            ${profile.bio ? `<p style="margin-top:8px;">${escapeHtml(profile.bio)}</p>` : ''}
+            <div class="profile-name-row">
+              <h1><span class="${nameEffectClass}">${escapeHtml(profile.displayName)}</span>${nameBadge}</h1>
+              ${levelChip}
+            </div>
+            ${profile.bio ? `<p class="profile-bio">${escapeHtml(profile.bio)}</p>` : ''}
             <div class="profile-stats">
               <div class="profile-stat">
                 <span class="num">${projects.length}</span>
-                <span class="label">Projects</span>
+                <span class="label">Posts</span>
               </div>
-              <button class="profile-stat" id="followers-stat" type="button" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;">
+              <button class="profile-stat" id="followers-stat" type="button">
                 <span class="num">${followerCount}</span>
                 <span class="label">Followers</span>
               </button>
-              <button class="profile-stat" id="following-stat" type="button" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;">
+              <button class="profile-stat" id="following-stat" type="button">
                 <span class="num">${followingCount}</span>
                 <span class="label">Following</span>
               </button>
@@ -422,15 +401,23 @@
             ${levelProgress}
             ${reachRow}
             ${pointsRow}
-            ${shareCardRow}
           </div>
+
+          <div class="feed-tabs profile-tabs" role="tablist" aria-label="Profile sections">
+            <button class="feed-tab" type="button" role="tab" aria-selected="true" data-tab="posts">Posts</button>
+            ${stats ? `<button class="feed-tab" type="button" role="tab" aria-selected="false" data-tab="achievements">Achievements · ${unlockedCount}</button>` : ''}
+          </div>
+          <div class="profile-panel" data-panel="posts">${projectsGrid}</div>
+          <div class="profile-panel" data-panel="achievements" hidden>${achievementsSection}</div>
         </div>
-        ${achievementsSection}
-        <div class="section-head">
-          <h2>Published projects</h2>
-        </div>
-        ${projectsGrid}
       `;
+
+      root.querySelectorAll('.profile-tabs [data-tab]').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          root.querySelectorAll('.profile-tabs [data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+          root.querySelectorAll('.profile-panel').forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
+        });
+      });
 
       document.getElementById('followers-stat').addEventListener('click', () => {
         openPeopleModal('Followers', () => getFollowers(profileUserId));

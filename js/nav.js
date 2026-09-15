@@ -101,15 +101,14 @@ async function renderNavActions(container, user) {
   // width the tab bar appears, so this button is its desktop counterpart
   // rather than a second copy of it.
   container.innerHTML = `
-    <button class="btn btn-primary btn-sm nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New project" title="New project (press N)">
-      ${icon('plus', { size: 15 })}<span>New project</span>
+    <button class="btn btn-primary nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New post" title="New post (press N)">
+      ${icon('plus', { size: 18 })}<span>New post</span>
     </button>
-    <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
     <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}">
       ${avatarHtml(avatarUrl, name, borderClass)}
       <span class="${nameEffectClass}">${escapeHtml(name)}</span>
     </a>
-    <button class="btn btn-secondary btn-sm" id="nav-logout-btn" type="button">Log out</button>
+    <button class="btn btn-ghost btn-sm nav-logout-btn" id="nav-logout-btn" type="button">Log out</button>
   `;
 
   container.querySelector('#nav-new-project').addEventListener('click', openCreateSheet);
@@ -191,8 +190,8 @@ async function renderNavActions(container, user) {
   if (admin && navLinks && !navLinks.querySelector('[data-admin-link]')) {
     const link = document.createElement('a');
     link.className = 'nav-link';
-    link.href = 'admin.html';
-    link.textContent = 'Admin';
+    link.href = '/admin.html';
+    link.innerHTML = `${icon('shield', { size: 22 })}<span>Admin</span>`;
     link.setAttribute('data-admin-link', '');
     if (pageId(window.location.pathname) === 'admin') link.classList.add('active');
     // Before the logout item, which is always meant to sit last.

@@ -1,0 +1,1729 @@
+/* ==========================================================================
+   Social shell
+   --------------------------------------------------------------------------
+   Loaded after style.css on every page. style.css holds the design tokens
+   and every page-specific component; this file is what turns the site from
+   a stack of pages under a top bar into a social app: a left sidebar on
+   desktop, a centred feed with a right-hand rail, posts instead of project
+   tiles, and the rounder, softer controls of the Android app.
+   ========================================================================== */
+
+/* ---------- Base ---------- */
+body {
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.eyebrow,
+.label-caps {
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Controls ---------- */
+.btn {
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 11px 20px;
+}
+
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+}
+
+.btn-primary {
+  color: var(--color-on-accent);
+}
+
+/* Social apps don't make their buttons jump - a tint and a firmer shadow
+   say "pressable" without the page moving under the cursor. */
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-ghost:hover,
+.btn-danger:hover {
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-strong);
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  color: var(--color-primary-deep);
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='search'],
+input[type='url'],
+input[type='number'],
+select,
+textarea {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.field label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.card,
+.form-panel,
+.auth-card {
+  border-radius: var(--radius-lg);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.tag {
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  padding: 3px 10px;
+  font-size: 0.75rem;
+}
+
+.type-badge {
+  border-radius: var(--radius-pill);
+}
+
+.avatar {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--color-on-accent);
+}
+
+/* ---------- Top bar (tablet) ---------- */
+.navbar .brand-name {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.12rem;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-pill);
+}
+
+/* The underline rules belong to the old top bar; the sidebar marks the
+   current page with a filled pill instead. */
+.nav-link::before,
+.nav-link.active::after {
+  content: none;
+}
+
+.nav-link.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.nav-link .icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 721px) and (max-width: 1023px) {
+  /* Six links with icons don't fit next to the account controls; the icons
+     carry the meaning and the label stays as the tooltip-sized text below. */
+  .nav-link > span {
+    display: none;
+  }
+  .nav-link {
+    padding: 10px;
+  }
+}
+
+/* ---------- Sidebar (desktop) ---------- */
+@media (min-width: 1024px) {
+  :root {
+    --sidebar-w: 84px;
+  }
+
+  body {
+    padding-left: var(--sidebar-w);
+  }
+
+  .navbar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--sidebar-w);
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg);
+    backdrop-filter: none;
+    z-index: 80;
+  }
+
+  .navbar .container {
+    height: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 18px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .brand {
+    padding: 10px 14px 18px;
+    justify-content: flex-start;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .nav-link {
+    gap: 16px;
+    padding: 12px 16px;
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .nav-link .icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .nav-link:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+  }
+
+  .nav-link.active {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-deep);
+    font-weight: 800;
+  }
+
+  .nav-link.active:hover {
+    background: var(--color-primary-soft);
+  }
+
+  /* Account controls sit at the foot of the sidebar, as on every desktop
+     social app: post button, then who you are. */
+  .nav-right {
+    margin-top: auto;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+    padding-top: 16px;
+  }
+
+  .nav-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .nav-new-btn {
+    padding: 14px 18px;
+    font-size: 1rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .user-chip {
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  .user-chip:hover {
+    background: var(--color-surface-alt);
+    opacity: 1;
+  }
+
+  .user-chip .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .nav-logout-btn {
+    justify-content: flex-start;
+    padding-left: 16px;
+  }
+
+  /* The bell and the theme toggle share a row above the post button. */
+  .theme-toggle {
+    margin: 0;
+  }
+
+  .notif-wrap,
+  .theme-toggle {
+    align-self: flex-start;
+  }
+
+  .nav-right > .notif-wrap {
+    order: 2;
+  }
+
+  .notif-panel {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    left: calc(var(--sidebar-w) + 12px);
+    right: auto;
+  }
+
+  .nav-toggle {
+    display: none;
+  }
+
+  /* Icon rail between 1024 and 1279px: the same sidebar with the words
+     taken out. */
+  .brand-name,
+  .nav-link > span,
+  .nav-new-btn > span,
+  .user-chip > span:not(.avatar):not(.level-chip):not(.name-badge),
+  .user-chip .level-chip,
+  .user-chip .name-badge,
+  .nav-logout-btn {
+    display: none;
+  }
+
+  .brand,
+  .nav-link,
+  .user-chip {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .nav-new-btn {
+    padding: 14px 0;
+  }
+
+  .notif-wrap,
+  .theme-toggle {
+    align-self: center;
+  }
+
+  .site-footer {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --sidebar-w: 264px;
+  }
+
+  .brand-name,
+  .nav-link > span,
+  .nav-new-btn > span,
+  .user-chip > span:not(.avatar),
+  .user-chip .level-chip,
+  .user-chip .name-badge,
+  .nav-logout-btn {
+    display: revert;
+  }
+
+  .nav-link > span,
+  .nav-new-btn > span,
+  .brand-name {
+    display: inline;
+  }
+
+  .brand,
+  .nav-link,
+  .user-chip {
+    justify-content: flex-start;
+  }
+
+  .brand {
+    padding-left: 14px;
+  }
+
+  .nav-link {
+    padding-left: 16px;
+    padding-right: 20px;
+  }
+
+  .user-chip {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nav-new-btn {
+    padding: 14px 18px;
+  }
+
+  .nav-logout-btn {
+    display: inline-flex;
+  }
+
+  .notif-wrap,
+  .theme-toggle {
+    align-self: flex-start;
+  }
+}
+
+/* ---------- Mobile top bar ---------- */
+@media (max-width: 720px) {
+  .navbar .container {
+    height: 56px;
+  }
+
+  .nav-link {
+    padding: 12px 14px;
+    font-size: 0.98rem;
+  }
+
+  .nav-link .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-nav {
+    background: var(--navbar-bg);
+    backdrop-filter: blur(10px);
+  }
+
+  .bottom-nav-add .bottom-nav-icon {
+    border-radius: var(--radius-pill);
+    color: var(--color-on-accent);
+  }
+}
+
+/* ---------- Feed layout ---------- */
+.feed-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 620px) 320px;
+  justify-content: center;
+  gap: 32px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px 48px;
+}
+
+.feed-main {
+  min-width: 0;
+}
+
+.feed-rail {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 20px;
+}
+
+@media (max-width: 1100px) {
+  .feed-shell {
+    grid-template-columns: minmax(0, 620px);
+  }
+  .feed-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .feed-shell {
+    padding: 0 0 24px;
+  }
+}
+
+/* Title bar with tabs that sticks to the top of the feed column. */
+.feed-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-bg);
+  backdrop-filter: blur(10px);
+  padding: 16px 4px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+@media (max-width: 1023px) {
+  .feed-head {
+    top: 60px;
+  }
+}
+
+@media (max-width: 720px) {
+  .feed-head {
+    top: 56px;
+    padding: 12px 16px 0;
+  }
+}
+
+.feed-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.feed-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.feed-tab {
+  position: relative;
+  flex: 1;
+  padding: 12px 8px 14px;
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.feed-tab:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.feed-tab[aria-selected='true'] {
+  color: var(--color-text);
+}
+
+.feed-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 56px;
+  height: 4px;
+  margin-left: -28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 720px) {
+  .feed-list {
+    gap: 10px;
+    padding: 0 10px;
+  }
+}
+
+/* "What are you sharing?" - the composer prompt at the top of a signed-in feed. */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.composer-prompt {
+  flex: 1;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-faint);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.composer-prompt:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.composer .avatar {
+  width: 42px;
+  height: 42px;
+}
+
+/* Signed-out visitors see the feed with a short welcome above it, instead
+   of a marketing page standing between them and any content. */
+.welcome-card {
+  position: relative;
+  overflow: hidden;
+  padding: 26px 24px 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #d98a4f, var(--color-primary) 48%, #8f4a1e);
+  color: var(--color-on-accent);
+}
+
+.welcome-card::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -50px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(122, 138, 94, 0.38);
+  pointer-events: none;
+}
+
+.welcome-card h2 {
+  position: relative;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  margin-bottom: 8px;
+  color: inherit;
+}
+
+.welcome-card p {
+  position: relative;
+  color: rgba(253, 247, 234, 0.9);
+  max-width: 44ch;
+  margin-bottom: 18px;
+}
+
+.welcome-actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Fixed colours: the card is terracotta in both themes, so its buttons can't
+   take their text colour from the theme. */
+.welcome-card .btn-primary {
+  background: #fdf7ea;
+  border-color: #fdf7ea;
+  color: #8f4a1e;
+}
+
+.welcome-card .btn-primary:hover {
+  background: #fff;
+  border-color: #fff;
+}
+
+.welcome-card .btn-secondary {
+  background: transparent;
+  border-color: rgba(253, 247, 234, 0.6);
+  color: var(--color-on-accent);
+}
+
+.welcome-card .btn-secondary:hover {
+  background: rgba(253, 247, 234, 0.14);
+  border-color: var(--color-on-accent);
+  color: var(--color-on-accent);
+}
+
+/* ---------- Post ---------- */
+.post {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fade-in-up 0.35s ease both;
+}
+
+.post-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px 10px;
+}
+
+.post-head .avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 0.9rem;
+}
+
+.post-byline {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.post-author a {
+  color: var(--color-text);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-meta {
+  color: var(--color-text-faint);
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.post-body {
+  padding: 0 16px 12px;
+}
+
+.post-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.post-title a {
+  color: var(--color-text);
+}
+
+.post-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.post-tags a.tag:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  text-decoration: none;
+}
+
+.post-tags .tag::before {
+  content: '#';
+  opacity: 0.6;
+}
+
+/* Media runs edge to edge inside the card, as on every feed people know. */
+.post-media {
+  position: relative;
+  display: block;
+  margin: 0 12px 4px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-alt);
+  aspect-ratio: 16 / 9;
+}
+
+.post-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.post-media:hover img {
+  transform: scale(1.02);
+}
+
+.post-media-play {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  color: var(--color-primary-deep);
+  box-shadow: var(--shadow-md);
+}
+
+.post-media-kind {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(32, 30, 29, 0.62);
+  color: #fdf7ea;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* The app's per-type gradient, behind the image - what shows when an entry
+   has no picture or its picture fails to load. */
+.post-media[data-type='music'] {
+  background: linear-gradient(135deg, #d8c9a4, #b9a887 55%, #8f8468);
+}
+.post-media[data-type='video'] {
+  background: linear-gradient(135deg, #c9d0b3, #6f7a55);
+}
+.post-media[data-type='image'] {
+  background: linear-gradient(135deg, #e2d0ae, #c67139);
+}
+.post-media[data-type='app'] {
+  background: linear-gradient(135deg, #e4e7d5, #a6b287);
+}
+.post-media[data-type='other'] {
+  background: linear-gradient(135deg, #b9a887, #4a4034);
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px 10px;
+}
+
+.post-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.post-action:hover {
+  text-decoration: none;
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.post-action[data-action='like']:hover,
+.post-action[data-action='like'][aria-pressed='true'] {
+  color: #e0245e;
+  background: rgba(224, 36, 94, 0.08);
+}
+
+.post-action[data-action='like'][aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+.post-action[data-action='save'][aria-pressed='true'] {
+  color: var(--color-accent-deep);
+}
+
+.post-action[data-action='save'][aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+.post-action-spacer {
+  flex: 1;
+}
+
+@keyframes post-like-pop {
+  40% {
+    transform: scale(1.35);
+  }
+}
+
+.post-action.is-popping svg {
+  animation: post-like-pop 0.3s ease;
+}
+
+.feed-more {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 8px;
+}
+
+.feed-empty {
+  text-align: center;
+  padding: 44px 24px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.feed-empty h3 {
+  margin-bottom: 6px;
+}
+
+/* Placeholder posts while the feed loads. */
+.post-skeleton {
+  height: 380px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-alt) 50%, var(--color-surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  border: 1px solid var(--color-border);
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ---------- Right rail ---------- */
+.rail-search {
+  position: relative;
+}
+
+.rail-search input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  border-color: transparent;
+  font-size: 0.95rem;
+}
+
+.rail-search .icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-faint);
+  pointer-events: none;
+}
+
+.rail-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 0 8px;
+}
+
+.rail-card h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  padding: 0 18px;
+  margin-bottom: 8px;
+}
+
+.rail-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 18px;
+  color: var(--color-text);
+}
+
+.rail-row:hover {
+  background: var(--color-surface-alt);
+  text-decoration: none;
+}
+
+.rail-row .avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.rail-row-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.rail-row-title {
+  display: block;
+  color: var(--color-text);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-row-sub {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--color-text-faint);
+}
+
+.rail-more {
+  display: block;
+  padding: 10px 18px 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rail-app {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-deep);
+}
+
+.rail-app strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.rail-app p {
+  color: inherit;
+  opacity: 0.85;
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+}
+
+.rail-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+}
+
+.rail-foot a {
+  color: inherit;
+}
+
+/* ---------- Cookie notice ----------
+   A small card in the corner rather than a bar across the top: with the
+   sidebar fixed to the left edge a full-width strip pushed only the page
+   down and ran underneath the navigation. */
+.cookie-banner {
+  position: fixed;
+  z-index: 140;
+  right: 16px;
+  bottom: 16px;
+  max-width: 380px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: fade-in-up 0.35s ease both;
+}
+
+.cookie-banner-inner {
+  gap: 12px;
+}
+
+.cookie-banner-inner p {
+  flex-basis: 100%;
+}
+
+@media (max-width: 720px) {
+  .cookie-banner {
+    left: 10px;
+    right: 10px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+  }
+}
+
+/* ---------- Explore ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.explore-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px 20px 56px;
+}
+
+.explore-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.explore-search input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  padding-top: 14px;
+  padding-bottom: 14px;
+  font-size: 1rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.chip[aria-pressed='true'],
+.chip-active {
+  background: var(--color-primary-soft);
+  border-color: transparent;
+  color: var(--color-primary-deep);
+}
+
+.explore-section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 8px 0 12px;
+}
+
+.people-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.person-card {
+  flex: 0 0 auto;
+  width: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.person-card:hover {
+  text-decoration: none;
+  border-color: var(--color-border-strong);
+}
+
+.person-card .avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 1.1rem;
+}
+
+.person-name {
+  font-weight: 700;
+  font-size: 0.86rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  color: #fdf7ea;
+  animation: fade-in-up 0.35s ease both;
+}
+
+.tile:hover {
+  text-decoration: none;
+}
+
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tile:hover img {
+  transform: scale(1.04);
+}
+
+.tile[data-type='music'] {
+  background: linear-gradient(135deg, #d8c9a4, #b9a887 55%, #8f8468);
+}
+.tile[data-type='video'] {
+  background: linear-gradient(135deg, #c9d0b3, #6f7a55);
+}
+.tile[data-type='image'] {
+  background: linear-gradient(135deg, #e2d0ae, #c67139);
+}
+.tile[data-type='app'] {
+  background: linear-gradient(135deg, #e4e7d5, #a6b287);
+}
+.tile[data-type='other'] {
+  background: linear-gradient(135deg, #b9a887, #4a4034);
+}
+
+.tile-play {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(253, 247, 234, 0.92);
+  color: #8f4a1e;
+}
+
+.tile-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 44px 14px 12px;
+  background: linear-gradient(to top, rgba(20, 16, 12, 0.82), rgba(20, 16, 12, 0));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tile-title {
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tile-meta .avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6rem;
+}
+
+.tile-author {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-skeleton {
+  background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-alt) 50%, var(--color-surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@media (max-width: 720px) {
+  .explore-shell {
+    padding: 12px 10px 32px;
+  }
+  .tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .tile-info {
+    padding: 36px 10px 10px;
+  }
+  .tile-counts {
+    display: none;
+  }
+}
+
+/* A list is drawn once with what's fast and again when counts and levels
+   arrive; only the first paint should animate, or every card blinks twice. */
+.is-settled > .post,
+.is-settled > .tile {
+  animation: none;
+}
+
+/* ---------- Post page ---------- */
+.post-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.post-page-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  background: var(--color-bg);
+  font-size: 1.15rem;
+}
+
+@media (max-width: 1023px) {
+  .post-page-bar {
+    top: 60px;
+  }
+}
+
+@media (max-width: 720px) {
+  .post-page {
+    padding: 0 10px;
+  }
+  .post-page-bar {
+    top: 56px;
+  }
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--color-text);
+}
+
+.icon-btn:hover {
+  background: var(--color-surface-alt);
+  text-decoration: none;
+}
+
+.post-detail {
+  animation: none;
+}
+
+.post-detail .post-head {
+  padding-top: 18px;
+}
+
+.post-detail .post-head .btn {
+  margin-left: auto;
+}
+
+.post-detail-title {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin: 4px 0 10px;
+}
+
+.post-detail .detail-body {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.post-detail .detail-body:empty {
+  display: none;
+}
+
+.post-detail-media {
+  padding: 4px 12px 0;
+}
+
+.post-detail-media:empty {
+  display: none;
+}
+
+.post-detail-media .media-frame,
+.post-detail-media .detail-thumb {
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+.post-detail .detail-links {
+  padding: 0 16px;
+  margin-top: 14px;
+}
+
+.post-detail .post-actions {
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 8px 10px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.post-actions .like-btn {
+  border: none;
+  background: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+
+.post-actions .like-btn.is-liked {
+  color: #e0245e;
+  background: rgba(224, 36, 94, 0.08);
+}
+
+.post-actions .like-btn.is-liked svg {
+  fill: currentColor;
+}
+
+.post-actions .post-action[disabled] {
+  opacity: 0.6;
+}
+
+@media (max-width: 520px) {
+  .post-detail .post-actions .post-action > span:not(#like-count):not(#save-label) {
+    display: none;
+  }
+}
+
+.post-comments {
+  padding-top: 18px;
+  padding-bottom: 56px;
+}
+
+.post-comments .comment-form {
+  flex-direction: row;
+  align-items: flex-end;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 18px;
+}
+
+.post-comments .comment-form textarea {
+  min-height: 46px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+}
+
+.post-comments .comments-list {
+  gap: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.post-comments .comments-list > .hint {
+  padding: 20px;
+  margin: 0;
+}
+
+.post-comments .comment {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.post-comments .comment:last-child {
+  border-bottom: none;
+  padding-bottom: 14px;
+}
+
+.post-comments .comment-body {
+  margin: 6px 0 0 36px;
+  color: var(--color-text);
+}
+
+/* ---------- Profile ---------- */
+.profile-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px 56px;
+}
+
+.profile-cover {
+  height: 200px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Only when nothing is equipped - a shop background class supplies its own. */
+.profile-cover:not([class*='shop-bg-']) {
+  background: linear-gradient(135deg, #d98a4f, var(--color-primary) 50%, #8f4a1e);
+}
+
+.profile-cover::after {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -40px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: rgba(122, 138, 94, 0.3);
+}
+
+.profile-cover[class*='shop-bg-']::after {
+  content: none;
+}
+
+.profile-card {
+  position: relative;
+  padding: 0 24px 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.profile-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -62px;
+  margin-bottom: 12px;
+}
+
+.profile-page .profile-avatar {
+  width: 124px;
+  height: 124px;
+  font-size: 2.3rem;
+  border: 5px solid var(--color-surface);
+  box-sizing: content-box;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--color-on-accent);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.profile-page .profile-name-row h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-bio {
+  margin: 8px 0 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  max-width: 60ch;
+}
+
+.profile-page .profile-stats {
+  gap: 24px;
+  margin: 14px 0 6px;
+}
+
+.profile-page .profile-stat {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.profile-page div.profile-stat {
+  cursor: default;
+}
+
+.profile-page button.profile-stat:hover .label {
+  text-decoration: underline;
+}
+
+.profile-page .profile-stat .num {
+  font-size: 1.05rem;
+}
+
+.profile-page .profile-stat .label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.profile-page .level-progress {
+  max-width: 420px;
+  margin-top: 12px;
+}
+
+.profile-page .points-chip {
+  display: inline-flex;
+  margin-top: 12px;
+  text-decoration: none;
+}
+
+.profile-tabs {
+  margin: 18px 0 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-tabs .feed-tab {
+  flex: 0 0 auto;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.profile-panel > .hint {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 720px) {
+  .profile-page {
+    padding: 0 0 32px;
+  }
+  .profile-cover {
+    height: 130px;
+    border-radius: 0;
+  }
+  .profile-card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0 16px 18px;
+  }
+  .profile-top {
+    margin-top: -46px;
+  }
+  .profile-page .profile-avatar {
+    width: 88px;
+    height: 88px;
+    font-size: 1.6rem;
+    border-width: 4px;
+  }
+  .profile-page .profile-panel {
+    padding: 0 10px;
+  }
+  .profile-tabs {
+    padding: 0 10px;
+  }
+}
+
+/* ---------- Scrolls ---------- */
+/* Full-bleed and dark in both themes, as in the app: media reads better on
+   black, and the cream ground either side of the video looked unfinished. */
+.scrolls-container {
+  background: #241f18;
+}
+
+/* The heights in style.css subtract a 68px top bar and a 66px tab bar at every
+   width. The tab bar only exists on phones, and on desktop the bar is now the
+   sidebar, so the feed was stopping well short of the bottom of the window. */
+@media (min-width: 721px) {
+  .scrolls-container,
+  .scroll-card,
+  body.has-bottom-nav .scrolls-container,
+  body.has-bottom-nav .scroll-card {
+    height: calc(100vh - 60px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .scrolls-container,
+  .scroll-card,
+  body.has-bottom-nav .scrolls-container,
+  body.has-bottom-nav .scroll-card {
+    height: 100vh;
+  }
+
+  .auth-shell {
+    min-height: 100vh;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1023px) {
+  .navbar .container {
+    height: 60px;
+  }
+}

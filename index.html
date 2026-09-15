@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Showcase - Find things</title>
+  <title>Home - Showcase</title>
   <meta name="description" content="A feed of random stuff." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
@@ -19,10 +19,11 @@
   <meta name="twitter:description" content="A feed of random stuff playable in app." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/social.css" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#14120f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fdf7ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1b1917" media="(prefers-color-scheme: dark)" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -32,15 +33,16 @@
   <nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
-        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
-        Showcase
+        <svg class="brand-mark" width="28" height="28" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
+        <span class="brand-name">Showcase</span>
       </a>
       <div class="nav-links">
-        <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="/scrolls">Scrolls</a>
-        <a class="nav-link" href="/shop">Shop</a>
-        <a class="nav-link" href="leaderboard.html">Leaderboard</a>
+        <a class="nav-link" href="/index.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span>Home</span></a>
+        <a class="nav-link" href="/projects.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Explore</span></a>
+        <a class="nav-link" href="/scrolls"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span>Scrolls</span></a>
+        <a class="nav-link" href="/leaderboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/></svg><span>Leaderboard</span></a>
+        <a class="nav-link" href="/shop"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg><span>Shop</span></a>
+        <a class="nav-link" href="/dashboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -53,69 +55,37 @@
   </nav>
 
   <main>
-    <section class="hero">
-      <div class="container hero-inner">
-        <span class="eyebrow">Music · Video · Images · Apps</span>
-        <h1>Find something worth your time... or not.</h1>
-        <p class="lead">Showcase is place to find people that work hard, but nobody notices them.</p>
-        <div class="hero-actions" id="hero-actions">
-          <a class="btn btn-primary" href="register.html">Create free account</a>
-          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-        <div class="section-head">
-          <h2>How it works</h2>
-        </div>
-        <div class="features">
-          <div class="feature-card">
-            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
-            <h3>Play-it-here</h3>
-            <p>A YouTube, Vimeo, Spotify, SoundCloud link, or an audio, video or image file - playable in the feed.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg></div>
-            <h3>Actual working algorithm</h3>
-            <p>Scrolls shows projects just for you</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.3a3 3 0 0 0-2.5-1.2c-1.5 0-2.6.8-2.6 1.9 0 2.6 5.2 1.3 5.2 3.9 0 1.1-1.1 1.9-2.6 1.9a3 3 0 0 1-2.5-1.2"/><path d="M12 6.5v11"/></svg></div>
-            <h3>Feels like game</h3>
-            <p>Publishing earns XP. Views earns you points. For points you get cosmetics. Simple? Simple.</p>
+    <div class="feed-shell">
+      <section class="feed-main" aria-labelledby="feed-title">
+        <div class="feed-head">
+          <h1 class="feed-title" id="feed-title">Home</h1>
+          <div class="feed-tabs" role="tablist" aria-label="Feed">
+            <button class="feed-tab" type="button" role="tab" id="tab-foryou" aria-selected="true">For you</button>
+            <button class="feed-tab" type="button" role="tab" id="tab-following" aria-selected="false">Following</button>
+            <button class="feed-tab" type="button" role="tab" id="tab-latest" aria-selected="false">Latest</button>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="section" style="padding-top:0;">
-      <div class="container text-center">
-        <p class="hint">
-          There's an Android app too - same account, same entries.
-          <a href="/download/">Get it here →</a>
-        </p>
-      </div>
-    </section>
+        <div class="feed-list">
+          <div id="feed-intro"></div>
+          <div class="feed-list" id="feed-list" role="tabpanel" aria-labelledby="tab-foryou">
+            <div class="post-skeleton" aria-hidden="true"></div>
+            <div class="post-skeleton" aria-hidden="true"></div>
+          </div>
+          <div class="feed-more" id="feed-more" hidden>
+            <button class="btn btn-secondary" type="button" id="feed-more-btn">Show more</button>
+          </div>
+        </div>
+      </section>
 
-    <section class="section" style="padding-top:0;">
-      <div class="container">
-        <div class="section-head">
-          <h2>Recently published</h2>
-          <a class="btn btn-ghost btn-sm" href="projects.html">View all →</a>
-        </div>
-        <div id="latest-projects" class="project-grid">
-          <p>Loading projects…</p>
-        </div>
-      </div>
-    </section>
+      <aside class="feed-rail" id="feed-rail" aria-label="Suggestions"></aside>
+    </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>© <span id="year"></span> Showcase</span>
-      <a href="projects.html">Browse projects</a>
+      <a href="/download/">Android app</a>
     </div>
   </footer>
 
@@ -126,164 +96,206 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
-    import { getPublishedProjects } from '/js/projects-data.js';
+    import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
-    import { onAuthChange, getCurrentUser } from '/js/auth.js';
-    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { escapeHtml, avatarHtml } from '/js/utils.js';
+    import { getCurrentUser, displayNameOf } from '/js/auth.js';
+    import { getLevelsForUsers } from '/js/levels.js';
+    import { getLikeCounts, getLikedSet } from '/js/likes-data.js';
+    import { getCommentCounts } from '/js/comments-data.js';
+    import { getSavedSet } from '/js/saves-data.js';
+    import { getFollowingIds } from '/js/follows-data.js';
+    import { rankFeed, getSeenIds } from '/js/feed-rank.js';
+    import { postHtml, bindPostActions } from '/js/post-card.js';
+    import { renderRail } from '/js/feed-rail.js';
     import { icon } from '/js/icons.js';
 
-    // Signed-in visitors already have an account full of projects to look
-    // at - the marketing pitch below is for people who don't yet. Kicked
-    // off first so the redirect doesn't wait behind anything else on the
-    // page.
-    getCurrentUser().then((user) => {
-      if (user) window.location.replace('/projects');
-    });
+    // Home is the feed. It used to be a marketing page that sent signed-in
+    // visitors straight on to /projects - now everyone lands on posts, and
+    // people without an account get a short welcome above them instead of a
+    // pitch standing between them and any content.
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    onAuthChange((user) => {
-      const heroActions = document.getElementById('hero-actions');
-      heroActions.innerHTML = user
-        ? `
-          <button class="btn btn-primary" id="hero-new-project" type="button" aria-haspopup="dialog">Add new project</button>
-          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
-        `
-        : `
-          <a class="btn btn-primary" href="register.html">Create free account</a>
-          <a class="btn btn-secondary" href="projects.html">Browse projects</a>
-        `;
+    const PAGE = 12;
+    const list = document.getElementById('feed-list');
+    const intro = document.getElementById('feed-intro');
+    const more = document.getElementById('feed-more');
+    const tabs = {
+      foryou: document.getElementById('tab-foryou'),
+      following: document.getElementById('tab-following'),
+      latest: document.getElementById('tab-latest'),
+    };
 
-      // Used to be a link to dashboard.html?new=1 - a page load, and a page
-      // you didn't ask for, before you could type a title. The form opens
-      // over the home page instead, the same way the phone's + tab does.
-      const newBtn = document.getElementById('hero-new-project');
-      if (newBtn) {
-        newBtn.addEventListener('click', async () => {
-          const sheet = await import('/js/create-sheet.js');
-          sheet.openSheet();
-        });
+    const state = {
+      user: null,
+      projects: [],
+      profiles: new Map(),
+      levels: new Map(),
+      likeCounts: new Map(),
+      commentCounts: new Map(),
+      liked: new Set(),
+      saved: new Set(),
+      followingIds: new Set(),
+      tab: 'foryou',
+      order: { foryou: null, following: null, latest: null },
+      shown: PAGE,
+    };
+
+    bindPostActions(list, { getUser: () => state.user });
+
+    function introHtml(user) {
+      if (!user) {
+        return `
+          <section class="welcome-card">
+            <h2>See what people are making.</h2>
+            <p>Music, videos, images and apps from people who make things. Follow them, like what you love, and share your own.</p>
+            <div class="welcome-actions">
+              <a class="btn btn-primary" href="/register.html">Create account</a>
+              <a class="btn btn-secondary" href="/login.html">Log in</a>
+            </div>
+          </section>
+        `;
       }
+      const profile = state.profiles.get(user.id);
+      const name = (profile && profile.displayName) || displayNameOf(user);
+      return `
+        <div class="composer">
+          ${avatarHtml(profile ? profile.avatarUrl : '', name)}
+          <button class="composer-prompt" type="button" id="composer-open" aria-haspopup="dialog">What are you sharing, ${escapeHtml(name.split(' ')[0])}?</button>
+          <button class="btn btn-primary" type="button" id="composer-post" aria-haspopup="dialog">${icon('plus', { size: 16 })} Post</button>
+        </div>
+      `;
+    }
+
+    // Each tab's order is worked out once and kept, so switching back to
+    // For you doesn't reshuffle what you were halfway down.
+    function ordered(tab) {
+      if (!state.order[tab]) {
+        if (tab === 'foryou') {
+          state.order[tab] = rankFeed(state.projects, {
+            likeCounts: state.likeCounts,
+            commentCounts: state.commentCounts,
+            followingIds: state.followingIds,
+            seenIds: getSeenIds(),
+          });
+        } else if (tab === 'following') {
+          state.order[tab] = state.projects
+            .filter((p) => state.followingIds.has(p.uid))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } else {
+          state.order[tab] = [...state.projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+      }
+      return state.order[tab];
+    }
+
+    function emptyHtml(tab) {
+      if (tab === 'following') {
+        return state.user
+          ? `<div class="feed-empty"><h3>Nothing from people you follow yet</h3><p>Follow a few people and their posts show up here.</p><a class="btn btn-primary" href="/leaderboard.html">Find people</a></div>`
+          : `<div class="feed-empty"><h3>Follow people to fill this tab</h3><p>Log in to see posts from the people you follow.</p><a class="btn btn-primary" href="/login.html">Log in</a></div>`;
+      }
+      return `<div class="feed-empty"><h3>No posts yet</h3><p>Be the first to share something.</p></div>`;
+    }
+
+    function render() {
+      const items = ordered(state.tab);
+      if (items.length === 0) {
+        list.innerHTML = emptyHtml(state.tab);
+        more.hidden = true;
+        return;
+      }
+      list.innerHTML = items
+        .slice(0, state.shown)
+        .map((p) =>
+          postHtml(p, {
+            author: state.profiles.get(p.uid),
+            level: state.levels.get(p.uid),
+            likeCount: state.likeCounts.get(p.id) || 0,
+            commentCount: state.commentCounts.get(p.id) || 0,
+            liked: state.liked.has(p.id),
+            saved: state.saved.has(p.id),
+          })
+        )
+        .join('');
+      more.hidden = items.length <= state.shown;
+    }
+
+    // Likes and saves change on the page without a reload; read them back off
+    // the posts before a re-render so a tab switch doesn't undo them.
+    function captureInteractions() {
+      list.querySelectorAll('.post').forEach((post) => {
+        const id = post.dataset.projectId;
+        const like = post.querySelector('[data-action="like"]');
+        const save = post.querySelector('[data-action="save"]');
+        if (like) {
+          const on = like.getAttribute('aria-pressed') === 'true';
+          if (on) state.liked.add(id);
+          else state.liked.delete(id);
+          state.likeCounts.set(id, Number(like.querySelector('[data-count]').textContent) || 0);
+        }
+        if (save) {
+          if (save.getAttribute('aria-pressed') === 'true') state.saved.add(id);
+          else state.saved.delete(id);
+        }
+      });
+    }
+
+    function selectTab(tab) {
+      captureInteractions();
+      state.tab = tab;
+      state.shown = PAGE;
+      for (const [key, el] of Object.entries(tabs)) el.setAttribute('aria-selected', String(key === tab));
+      list.setAttribute('aria-labelledby', tabs[tab].id);
+      render();
+    }
+
+    for (const [key, el] of Object.entries(tabs)) el.addEventListener('click', () => selectTab(key));
+    document.getElementById('feed-more-btn').addEventListener('click', () => {
+      captureInteractions();
+      state.shown += PAGE;
+      render();
     });
 
-    function spotlightSlideHtml(project, profiles, levels, index) {
-      const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
-        : escapeHtml(project.title.slice(0, 2).toUpperCase());
-      const authorProfile = profiles.get(project.uid);
-      return `
-        <div class="spotlight-slide${index === 0 ? ' is-active' : ''}" data-index="${index}" aria-hidden="${index === 0 ? 'false' : 'true'}">
-          <a class="spotlight-media" href="project.html?id=${encodeURIComponent(project.id)}" tabindex="${index === 0 ? '0' : '-1'}">${thumb}</a>
-          <div class="spotlight-info">
-            <div class="tag-list">${typeBadgeHtml(project.type)}</div>
-            <h3><a href="project.html?id=${encodeURIComponent(project.id)}" tabindex="${index === 0 ? '0' : '-1'}">${escapeHtml(project.title)}</a></h3>
-            <p>${escapeHtml(project.summary || project.description.slice(0, 160))}</p>
-            <div class="card-meta">
-              <span class="card-author">
-                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
-                <a href="profile.html?user=${encodeURIComponent(project.uid)}" tabindex="${index === 0 ? '0' : '-1'}">${escapeHtml(project.authorName)}</a>
-                ${levels.get(project.uid) ? levelChipHtml(levels.get(project.uid).level, 'sm') : ''}
-              </span>
-              <span>${timeAgo(project.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // A rotating spotlight rather than a static grid - "recently published"
-    // used to mean three cards side by side forever; this shows one at a
-    // time, larger, and lets the projects themselves do the switching
-    // (autoplay, arrows, or dots), pausing the moment a visitor touches it.
-    let spotlightIndex = 0;
-    let spotlightTimer = null;
-
-    function goToSlide(container, index) {
-      const slides = [...container.querySelectorAll('.spotlight-slide')];
-      const dots = [...container.querySelectorAll('.spotlight-dot')];
-      spotlightIndex = (index + slides.length) % slides.length;
-      slides.forEach((slide, i) => {
-        const active = i === spotlightIndex;
-        slide.classList.toggle('is-active', active);
-        slide.setAttribute('aria-hidden', String(!active));
-        slide.querySelectorAll('a').forEach((a) => a.tabIndex = active ? 0 : -1);
-      });
-      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === spotlightIndex));
-    }
-
-    function startSpotlightAutoplay(container) {
-      clearInterval(spotlightTimer);
-      spotlightTimer = setInterval(() => goToSlide(container, spotlightIndex + 1), 4500);
-    }
-
-    function renderSpotlight(projects, profiles, levels = new Map()) {
-      const container = document.getElementById('latest-projects');
-      container.className = 'spotlight';
-      container.innerHTML = `
-        <div class="spotlight-viewport">
-          ${projects.map((p, i) => spotlightSlideHtml(p, profiles, levels, i)).join('')}
-        </div>
-        ${
-          projects.length > 1
-            ? `
-          <div class="spotlight-controls">
-            <button class="spotlight-arrow" type="button" data-dir="-1" aria-label="Previous project">${icon('arrow-left', { size: 18 })}</button>
-            <div class="spotlight-dots">
-              ${projects.map((_, i) => `<button class="spotlight-dot${i === 0 ? ' is-active' : ''}" type="button" data-index="${i}" aria-label="Go to project ${i + 1}"></button>`).join('')}
-            </div>
-            <button class="spotlight-arrow spotlight-arrow-next" type="button" data-dir="1" aria-label="Next project">${icon('arrow-left', { size: 18 })}</button>
-          </div>
-        `
-            : ''
-        }
-      `;
-
-      if (projects.length <= 1) return;
-
-      container.querySelectorAll('.spotlight-arrow').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          goToSlide(container, spotlightIndex + Number(btn.dataset.dir));
-          startSpotlightAutoplay(container);
-        });
-      });
-      container.querySelectorAll('.spotlight-dot').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          goToSlide(container, Number(btn.dataset.index));
-          startSpotlightAutoplay(container);
-        });
-      });
-      container.addEventListener('mouseenter', () => clearInterval(spotlightTimer));
-      container.addEventListener('mouseleave', () => startSpotlightAutoplay(container));
-      startSpotlightAutoplay(container);
-    }
+    intro.addEventListener('click', async (e) => {
+      if (!e.target.closest('#composer-open, #composer-post')) return;
+      const sheet = await import('/js/create-sheet.js');
+      sheet.openSheet();
+    });
 
     (async () => {
-      const container = document.getElementById('latest-projects');
       try {
-        // Five to switch between rather than three side by side - this used
-        // to pull the whole archive down just to slice the front off it.
-        const projects = await getPublishedProjects({ limit: 5 });
-        const latest = projects.slice(0, 5);
-        if (latest.length === 0) {
-          container.outerHTML = `
-            <div class="empty-state">
-              <h3>No projects published yet</h3>
-              <p>Be the first to share something you built.</p>
-              <a class="btn btn-primary" href="register.html">Create free account</a>
-            </div>
-          `;
-          return;
-        }
-        const profiles = await getProfilesByIds(latest.map((p) => p.uid));
-        renderSpotlight(latest, profiles);
+        const [user, projects] = await Promise.all([
+          getCurrentUser().catch(() => null),
+          getPublishedProjects({ limit: DISCOVER_POOL }),
+        ]);
+        state.user = user;
+        state.projects = projects;
+        const ids = projects.map((p) => p.id);
+        const authorIds = projects.map((p) => p.uid).concat(user ? [user.id] : []);
 
-        // Painted in after the spotlight is already up - levels cost a few
-        // extra queries and aren't worth delaying the homepage for.
-        const levels = await getLevelsForUsers(latest.map((p) => p.uid)).catch(() => new Map());
-        renderSpotlight(latest, profiles, levels);
+        const [profiles, likeCounts, commentCounts, liked, saved, followingIds] = await Promise.all([
+          getProfilesByIds(authorIds).catch(() => new Map()),
+          getLikeCounts(ids).catch(() => new Map()),
+          getCommentCounts(ids).catch(() => new Map()),
+          user ? getLikedSet(user.id, ids).catch(() => new Set()) : new Set(),
+          user ? getSavedSet(user.id, ids).catch(() => new Set()) : new Set(),
+          user ? getFollowingIds(user.id).catch(() => new Set()) : new Set(),
+        ]);
+        Object.assign(state, { profiles, likeCounts, commentCounts, liked, saved, followingIds });
+
+        intro.innerHTML = introHtml(user);
+        render();
+        list.classList.add('is-settled');
+        renderRail(document.getElementById('feed-rail'), { user, projects, followingIds: new Set(followingIds) });
+
+        // Levels cost a few extra queries - painted in once the feed is up.
+        state.levels = await getLevelsForUsers(projects.map((p) => p.uid)).catch(() => new Map());
+        captureInteractions();
+        render();
       } catch (err) {
-        container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+        list.innerHTML = `<div class="feed-empty"><h3>Could not load the feed</h3><p>${escapeHtml(err.message)}</p></div>`;
       }
     })();
   </script>
