@@ -134,19 +134,23 @@ textarea:focus {
 }
 
 /* ---------- Small navigation controls ----------
-   The bell, the theme toggle and log out are the same round icon button, and
-   the account link is just your avatar - no name, level or border pill. */
+   Notifications and the theme toggle share one capsule - upright in the
+   sidebar, lying down in the phone's top bar. Both buttons inside it are the
+   same size and weight, so the pair reads as one control. */
 .nav-tools {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
 }
 
 .nav-tools .theme-toggle,
-.nav-tools .notif-bell,
-.nav-icon-btn {
-  width: 38px;
-  height: 38px;
+.nav-tools .notif-bell {
+  width: 36px;
+  height: 36px;
   margin: 0;
   padding: 0;
   display: inline-flex;
@@ -159,30 +163,98 @@ textarea:focus {
   cursor: pointer;
 }
 
+.nav-tools .theme-toggle .icon,
+.nav-tools .notif-bell .icon {
+  width: 19px;
+  height: 19px;
+}
+
 .nav-tools .theme-toggle:hover,
-.nav-tools .notif-bell:hover,
-.nav-icon-btn:hover {
-  background: var(--color-surface-alt);
+.nav-tools .notif-bell:hover {
+  background: var(--color-bg);
   color: var(--color-text);
 }
 
 .nav-tools .notif-wrap {
+  display: flex;
   margin: 0;
 }
 
-.nav-logout-btn:hover {
-  color: var(--color-danger);
+/* The account control is your avatar; tapping it opens a small menu with
+   your profile, settings and log out. */
+.account-menu {
+  position: relative;
+  display: flex;
 }
 
 .user-chip {
+  display: inline-flex;
   padding: 0;
   border: none;
   background: none;
   border-radius: 50%;
+  cursor: pointer;
 }
 
 .user-chip:hover {
   opacity: 0.85;
+}
+
+.account-pop {
+  position: absolute;
+  z-index: 130;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: fade-in-up 0.18s ease both;
+}
+
+.account-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.account-pop-head span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-pop-item:hover {
+  background: var(--color-surface-alt);
+  text-decoration: none;
+}
+
+.account-pop-item .icon {
+  color: var(--color-text-muted);
 }
 
 /* ---------- Top bar (tablet) ---------- */
@@ -295,14 +367,33 @@ textarea:focus {
     background: var(--color-primary-soft);
   }
 
-  /* The foot of the sidebar: the post button and your avatar, then one row
-     of small controls - notifications, theme, log out. */
+  /* The foot of the sidebar, top to bottom: the notifications / theme
+     capsule, the post button, and your avatar last. */
   .nav-right {
     margin-top: auto;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 14px;
     padding-top: 16px;
+  }
+
+  .nav-tools {
+    order: -1;
+  }
+
+  /* The account menu opens beside the sidebar, at its foot. Fixed rather than
+     absolute: the sidebar scrolls on short screens, and a scrolling box clips
+     anything positioned inside it. The bell's panel does the same. */
+  .account-pop {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    right: auto;
+    left: calc(var(--sidebar-w) + 12px);
+  }
+
+  .navbar .container {
+    scrollbar-width: none;
   }
 
   .nav-actions {
@@ -319,7 +410,7 @@ textarea:focus {
     box-shadow: var(--shadow-md);
   }
 
-  .user-chip {
+  .account-menu {
     align-self: flex-start;
     margin-left: 6px;
   }
@@ -328,13 +419,6 @@ textarea:focus {
     width: 42px;
     height: 42px;
     font-size: 0.9rem;
-  }
-
-  .nav-tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding-left: 4px;
   }
 
   .notif-panel {
@@ -349,11 +433,19 @@ textarea:focus {
     display: none;
   }
 
-  /* Icon rail up to 1399px: the same sidebar with the words taken out. */
+  /* Icon rail up to 1399px: the same sidebar with the words taken out.
+     Signed out, that leaves one round Log in button; Create account is on
+     the log in page and in the welcome card. */
   .brand-name,
   .nav-link > span,
-  .nav-new-btn > span {
+  .nav-new-btn > span,
+  .nav-login-btn > span,
+  .nav-signup-btn {
     display: none;
+  }
+
+  .nav-login-btn {
+    padding: 14px 0;
   }
 
   .brand,
@@ -367,15 +459,14 @@ textarea:focus {
     padding: 14px 0;
   }
 
-  .user-chip {
+  .account-menu {
     align-self: center;
     margin-left: 0;
   }
 
-  /* Three 38px buttons don't fit across a 60px rail, so they stack. */
   .nav-tools {
     flex-direction: column;
-    padding-left: 0;
+    align-self: center;
   }
 
   .site-footer {
@@ -390,8 +481,17 @@ textarea:focus {
 
   .nav-link > span,
   .nav-new-btn > span,
+  .nav-login-btn > span,
   .brand-name {
     display: inline;
+  }
+
+  .nav-signup-btn {
+    display: inline-flex;
+  }
+
+  .nav-login-btn {
+    padding: 12px 18px;
   }
 
   .brand,
@@ -412,21 +512,43 @@ textarea:focus {
     padding: 14px 18px;
   }
 
-  .user-chip {
+  .account-menu {
     align-self: flex-start;
     margin-left: 6px;
   }
 
   .nav-tools {
     flex-direction: row;
-    padding-left: 4px;
+    align-self: flex-start;
+    margin-left: 6px;
   }
 }
 
 /* ---------- Mobile top bar ---------- */
 @media (max-width: 720px) {
+  /* Capsule, then your avatar, then the menu button. The post button stays in
+     the tab bar, so only the account menu shows up here. */
   .nav-right {
-    gap: 2px;
+    gap: 8px;
+  }
+
+  .navbar .nav-actions {
+    display: flex;
+    order: 2;
+  }
+
+  .navbar .nav-actions .nav-new-btn,
+  .navbar .nav-actions > .btn {
+    display: none;
+  }
+
+  .user-chip .avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-toggle {
+    margin-left: 4px;
   }
 
   .navbar .container {

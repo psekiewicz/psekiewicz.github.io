@@ -2,7 +2,7 @@
 // (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
 // connection - but never touches Supabase API/auth calls or any other
 // cross-origin request, so account state and project data always stay live.
-const CACHE_VERSION = 'showcase-shell-v30';
+const CACHE_VERSION = 'showcase-shell-v31';
 
 const PRECACHE_URLS = [
   '/',
@@ -96,18 +96,15 @@ self.addEventListener('fetch', (event) => {
   // the network untouched.
   if (url.origin !== self.location.origin) return;
 
-  // Page navigations always go network-first (bypassing the HTTP cache, not
-  // just the Cache Storage): serving a possibly-stale cached shell first is
-  // exactly what made deploys look like they "didn't update" - worse on
-  // Firefox, which caches plain fetch() responses more aggressively than
-  // Chrome does for this kind of request, so a stale copy could keep
-  // re-confirming itself as "fresh" indefinitely.
-  if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
-    return;
-  }
-
-  event.respondWith(staleWhileRevalidate(request));
+  // Everything same-origin goes network-first (bypassing the HTTP cache, not
+  // just the Cache Storage), with the cache only as the offline fallback.
+  //
+  // Stylesheets and scripts used to be stale-while-revalidate. Pages were
+  // already network-first, so right after a deploy a visitor got the new HTML
+  // with the previous CSS and JS - a new navbar drawn with the old styles -
+  // until a second reload. Serving all of them from the network together is
+  // the only way a page and its assets can't come from different deploys.
+  event.respondWith(networkFirst(request));
 });
 
 async function networkFirst(request) {
@@ -119,36 +116,10 @@ async function networkFirst(request) {
   } catch {
     const cached = await cache.match(request);
     if (cached) return cached;
-    const shell = await cache.match('/index.html');
-    if (shell) return shell;
+    if (request.mode === 'navigate') {
+      const shell = await cache.match('/index.html');
+      if (shell) return shell;
+    }
     return new Response('Offline', { status: 503, statusText: 'Offline' });
   }
-}
-
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_VERSION);
-  const cached = await cache.match(request);
-
-  // cache: 'no-store' forces this past the browser's own HTTP cache, not
-  // just the service worker's Cache Storage - without it, this "network"
-  // fetch could itself be satisfied from a stale HTTP cache entry and we'd
-  // just re-confirm the same old bytes into Cache Storage forever.
-  const networkFetch = fetch(request, { cache: 'no-store' })
-    .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    })
-    .catch(() => null);
-
-  // Serve the cached asset instantly if we have it, and let the network
-  // response quietly refresh the cache for next time. Only wait on the
-  // network when there's nothing cached yet.
-  if (cached) {
-    networkFetch;
-    return cached;
-  }
-
-  const networkResponse = await networkFetch;
-  if (networkResponse) return networkResponse;
-  return new Response('Offline', { status: 503, statusText: 'Offline' });
 }
