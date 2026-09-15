@@ -125,11 +125,10 @@
   --shadow-lg: 0 18px 44px rgba(74, 52, 28, 0.16);
 
   --container: 1120px;
-  /* The platform's own UI face - what people's other apps are set in, with
-     nothing to download. JetBrains Mono stays loaded for the shop's
-     name effects and anything that is genuinely code. */
-  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* JetBrains Mono, self-hosted (see the @font-face rules above) - the same
+     face the Android app embeds, so the two read as one product. */
+  --font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: var(--font);
 }
 
 /* Micro-labels: uppercase, tracked out, small. A monospace face is at its
@@ -263,6 +262,8 @@ main {
   flex: 1;
 }
 
+/* A monospace face at display sizes looks gappy at its natural advance, so
+   headings are tracked in. */
 h1,
 h2,
 h3,
@@ -270,11 +271,11 @@ h4 {
   line-height: 1.2;
   margin: 0 0 0.5em;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.03em;
 }
 
 h1 {
-  letter-spacing: -0.025em;
+  letter-spacing: -0.045em;
 }
 
 /* Numbers line up in columns - counts, XP, prices, view totals all sit in

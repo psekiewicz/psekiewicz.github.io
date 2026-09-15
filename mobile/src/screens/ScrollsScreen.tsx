@@ -9,10 +9,10 @@ import {
   Linking,
   Pressable,
   StyleSheet,
-  Text,
   View,
   ViewToken,
 } from 'react-native';
+import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CommentsSheet } from '../components/CommentsSheet';

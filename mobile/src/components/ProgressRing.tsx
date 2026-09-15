@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, View } from 'react-native';
+import { Text } from './Text';
 import Svg, { Circle } from 'react-native-svg';
 
 import { useMotion } from '../theme/MotionProvider';

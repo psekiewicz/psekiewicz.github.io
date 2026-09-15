@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 
 import { Avatar, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';

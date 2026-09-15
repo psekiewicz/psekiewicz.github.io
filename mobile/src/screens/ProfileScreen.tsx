@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, ImageBackground, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, RefreshControl, View } from 'react-native';
+import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HeaderButton, SectionRule, StatBlock } from '../components/bloom';

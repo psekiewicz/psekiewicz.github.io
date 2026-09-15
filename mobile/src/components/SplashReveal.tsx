@@ -4,6 +4,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { useMotion } from '../theme/MotionProvider';
 import { brand } from '../theme/tokens';
 import { CHEVRON_BACK, CHEVRON_FRONT, Chevron } from './BrandMark';
+import { FONT_FAMILY } from './Text';
 
 const MARK = 116;
 
@@ -117,6 +118,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
       <Animated.Text
         style={{
           marginTop: 24,
+          fontFamily: FONT_FAMILY,
           fontSize: 19,
           fontWeight: '700',
           color: brand.splashFront,

@@ -124,12 +124,10 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 // Every screen in the artboard insets its content by 22.
 export const gutter = 22;
 
-// The artboard keeps JetBrains Mono as the type voice (the design system's own
-// Caprasimo/Figtree pairing is not used here), so this stays on the platform
-// monospace face for the same reason as before: no font to bundle, no
-// first-frame cost.
+// JetBrains Mono, embedded by the expo-font plugin (app.json) and applied to
+// every Text and TextInput through components/Text - the same face as the site.
 export const font = {
-  mono: 'monospace',
+  family: 'JetBrains Mono',
 };
 
 export const typography = {
