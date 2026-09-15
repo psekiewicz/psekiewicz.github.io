@@ -76,24 +76,27 @@
      light-themed even when the page itself is dark. */
   color-scheme: light;
 
-  /* Ink on paper, with one signal colour.
-     The palette used to be indigo→cyan on cool grey, which is the default
-     look of every dashboard template on the internet and sat oddly under a
-     monospace face. Warm paper and near-black ink give the type something
-     to be typeset on, and a single vermilion accent means an accent
-     actually marks something instead of decorating everything. */
-  --color-bg: #f2efe9;
-  --color-surface: #fbf9f5;
-  --color-border: #ddd7cb;
-  --color-border-strong: #c3bcac;
-  --color-text: #191713;
-  --color-text-muted: #5d594e;
-  --color-text-faint: #8b867a;
+  /* Bloom, the Android app's design system (mobile/src/theme/tokens.ts), so
+     the site and the app read as one product: warm cream ground, cards a
+     shade deeper than the page, terracotta for anything you act on and sage
+     as the quiet second accent. */
+  --color-bg: #fdf7ea;
+  --color-surface: #fffbf3;
+  --color-surface-alt: #f5ead8;
+  --color-border: #efe0c6;
+  --color-border-strong: #e2d0ae;
+  --color-text: #201e1d;
+  --color-text-muted: #5f5852;
+  --color-text-faint: #8b8177;
 
-  --color-primary: #c03a17;
-  --color-primary-hover: #9c2f12;
-  --color-primary-soft: #f6e6dd;
-  --color-accent: #16645c;
+  --color-primary: #c67139;
+  --color-primary-hover: #b2622d;
+  --color-primary-deep: #8f4a1e;
+  --color-primary-soft: #f3e0cf;
+  --color-accent: #7a8a5e;
+  --color-accent-deep: #4e5a38;
+  --color-accent-soft: #e4e7d5;
+  --color-on-accent: #fdf7ea;
 
   /* The brand mark's own colours - fixed across both themes on purpose.
      A logo that reheus with light/dark mode stops being a stable mark;
@@ -102,29 +105,31 @@
   --color-brand-blue: #0ea5e9;
 
   --color-danger: #b3261e;
-  --color-danger-soft: #f8e3e0;
-  --color-success: #1f6b3a;
-  --color-success-soft: #e3f0e6;
-  --color-muted-soft: #e9e5dc;
-  --navbar-bg: rgba(242, 239, 233, 0.92);
+  --color-danger-soft: #f7ded9;
+  --color-success: #4e5a38;
+  --color-success-soft: #e4e7d5;
+  --color-muted-soft: #f5ead8;
+  --navbar-bg: rgba(253, 247, 234, 0.92);
 
-  /* Squared off. Pill-shaped everything was the other half of the
-     template look; corners this tight read as built rather than styled,
-     and they suit the mono face. Genuinely round things - avatars, dots,
-     progress tracks - set 50%/999px themselves. */
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 8px;
+  /* Rounded, as the app is: tight on inputs and chips, soft on cards, full
+     pills for buttons. Genuinely round things set 50%/999px themselves. */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
 
-  /* Depth is for things that genuinely float (menus, modals, sheets,
-     toasts). Cards state their edges with a border instead - a grid of
-     drop-shadowed rectangles is what made the page look sprayed on. */
-  --shadow-sm: 0 1px 0 rgba(25, 23, 19, 0.05);
-  --shadow-md: 0 2px 10px rgba(25, 23, 19, 0.08);
-  --shadow-lg: 0 14px 34px rgba(25, 23, 19, 0.16);
+  /* Warm, low shadows - cards mostly state their edges with a border and a
+     tint; depth is for menus, sheets and anything hovered. */
+  --shadow-sm: 0 1px 2px rgba(74, 52, 28, 0.06);
+  --shadow-md: 0 6px 18px rgba(74, 52, 28, 0.08);
+  --shadow-lg: 0 18px 44px rgba(74, 52, 28, 0.16);
 
   --container: 1120px;
-  --font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The platform's own UI face - what people's other apps are set in, with
+     nothing to download. JetBrains Mono stays loaded for the shop's
+     name effects and anything that is genuinely code. */
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 /* Micro-labels: uppercase, tracked out, small. A monospace face is at its
@@ -145,58 +150,70 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --color-bg: #14120f;
-    --color-surface: #1c1a16;
-    --color-border: #302c26;
-    --color-border-strong: #48423a;
-    --color-text: #f0ece3;
-    --color-text-muted: #a49e91;
-    --color-text-faint: #78726a;
+    /* The app's dark palette: the same warm hues walked down a neutral ramp,
+       accents a step lighter so they hold up on the dark ground. */
+    --color-bg: #1b1917;
+    --color-surface: #25221f;
+    --color-surface-alt: #2e2b25;
+    --color-border: #3b3730;
+    --color-border-strong: #56503f;
+    --color-text: #f9f4ed;
+    --color-text-muted: #c0b6a5;
+    --color-text-faint: #a19786;
 
-    --color-primary: #ef6b3c;
-    --color-primary-hover: #ff8558;
-    --color-primary-soft: #2e1d14;
-    --color-accent: #4fbfae;
+    --color-primary: #d67f48;
+    --color-primary-hover: #f6a06b;
+    --color-primary-deep: #ffc6a5;
+    --color-primary-soft: #3d2a1c;
+    --color-accent: #8fa073;
+    --color-accent-deep: #ccdbb2;
+    --color-accent-soft: #2f3626;
 
     --color-danger: #e5675c;
-    --color-danger-soft: #35201d;
-    --color-success: #5aa86f;
-    --color-success-soft: #1a2b1f;
-    --color-muted-soft: #262319;
-    --navbar-bg: rgba(20, 18, 15, 0.92);
+    --color-danger-soft: #3a211e;
+    --color-success: #8fa073;
+    --color-success-soft: #2f3626;
+    --color-muted-soft: #2e2b25;
+    --navbar-bg: rgba(27, 25, 23, 0.92);
 
-    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.6);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.55);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg: #14120f;
-  --color-surface: #1c1a16;
-  --color-border: #302c26;
-  --color-border-strong: #48423a;
-  --color-text: #f0ece3;
-  --color-text-muted: #a49e91;
-  --color-text-faint: #78726a;
+  /* The app's dark palette: the same warm hues walked down a neutral ramp,
+     accents a step lighter so they hold up on the dark ground. */
+  --color-bg: #1b1917;
+  --color-surface: #25221f;
+  --color-surface-alt: #2e2b25;
+  --color-border: #3b3730;
+  --color-border-strong: #56503f;
+  --color-text: #f9f4ed;
+  --color-text-muted: #c0b6a5;
+  --color-text-faint: #a19786;
 
-  --color-primary: #ef6b3c;
-  --color-primary-hover: #ff8558;
-  --color-primary-soft: #2e1d14;
-  --color-accent: #4fbfae;
+  --color-primary: #d67f48;
+  --color-primary-hover: #f6a06b;
+  --color-primary-deep: #ffc6a5;
+  --color-primary-soft: #3d2a1c;
+  --color-accent: #8fa073;
+  --color-accent-deep: #ccdbb2;
+  --color-accent-soft: #2f3626;
 
   --color-danger: #e5675c;
-  --color-danger-soft: #35201d;
-  --color-success: #5aa86f;
-  --color-success-soft: #1a2b1f;
-  --color-muted-soft: #262319;
-  --navbar-bg: rgba(20, 18, 15, 0.92);
+  --color-danger-soft: #3a211e;
+  --color-success: #8fa073;
+  --color-success-soft: #2f3626;
+  --color-muted-soft: #2e2b25;
+  --navbar-bg: rgba(27, 25, 23, 0.92);
 
-  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -246,21 +263,18 @@ main {
   flex: 1;
 }
 
-/* Monospace headings need help: at display sizes the fixed advance width
-   makes them look gappy, so they get negative tracking and the weight
-   comes down from 700 to 600 - a mono bold at 3rem reads as shouting. */
 h1,
 h2,
 h3,
 h4 {
-  line-height: 1.15;
+  line-height: 1.2;
   margin: 0 0 0.5em;
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h1 {
-  letter-spacing: -0.05em;
+  letter-spacing: -0.025em;
 }
 
 /* Numbers line up in columns - counts, XP, prices, view totals all sit in
@@ -3863,7 +3877,7 @@ body.sheet-open .bottom-nav {
    without forcing uppercase a name like "Peter" renders as unreadable
    symbols. Digits and spaces are unaffected. */
 .shop-name-oxygene {
-  font-family: 'Oxygene 1', var(--font);
+  font-family: 'Oxygene 1', var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   /* This face is drawn on a coarse pixel grid rather than smooth

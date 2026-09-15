@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Browse Projects - Showcase</title>
+  <title>Explore - Showcase</title>
   <meta name="description" content="Discover what the community has published." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
@@ -19,10 +19,11 @@
   <meta name="twitter:description" content="Discover what the community has published." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/social.css" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#14120f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fdf7ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1b1917" media="(prefers-color-scheme: dark)" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -32,15 +33,16 @@
   <nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
-        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
-        Showcase
+        <svg class="brand-mark" width="28" height="28" viewBox="0 0 26 26" fill="none" aria-hidden="true"><polygon points="3,3 8.5,3 16.5,13 8.5,23 3,23 11,13" fill="var(--color-brand-orange)"/><polygon points="11.5,3 17,3 25,13 17,23 11.5,23 19.5,13" fill="var(--color-brand-blue)"/></svg>
+        <span class="brand-name">Showcase</span>
       </a>
       <div class="nav-links">
-        <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="projects.html">Projects</a>
-        <a class="nav-link" href="/scrolls">Scrolls</a>
-        <a class="nav-link" href="/shop">Shop</a>
-        <a class="nav-link" href="leaderboard.html">Leaderboard</a>
+        <a class="nav-link" href="/index.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span>Home</span></a>
+        <a class="nav-link" href="/projects.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Explore</span></a>
+        <a class="nav-link" href="/scrolls"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span>Scrolls</span></a>
+        <a class="nav-link" href="/leaderboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-3 5 3-1.5-6.8"/></svg><span>Leaderboard</span></a>
+        <a class="nav-link" href="/shop"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg><span>Shop</span></a>
+        <a class="nav-link" href="/dashboard.html"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
       </div>
       <div class="nav-right">
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
@@ -53,44 +55,35 @@
   </nav>
 
   <main>
-    <section class="section">
-      <div class="container">
-        <div class="section-head">
-          <h2>All projects</h2>
-          <p>Discover what the community has published.</p>
-        </div>
-
-        <div class="filter-bar">
-          <input type="search" id="search-input" placeholder="Search by title, summary, or description…" />
-          <select id="type-filter">
-            <option value="">All types</option>
-            <option value="website">Website</option>
-            <option value="mobile_app">Mobile App</option>
-            <option value="game">Game</option>
-            <option value="design">Design</option>
-            <option value="library">Library / Tool</option>
-            <option value="other">Other</option>
-          </select>
-          <select id="people-filter" hidden>
-            <option value="all">Everyone</option>
-            <option value="following">People I follow</option>
-          </select>
-          <select id="tag-filter">
-            <option value="">All tags</option>
-          </select>
-        </div>
-
-        <div id="projects-container" class="project-grid">
-          <p>Loading projects…</p>
-        </div>
+    <div class="explore-shell">
+      <div class="explore-head">
+        <h1 class="feed-title">Explore</h1>
+        <form class="rail-search explore-search" role="search" id="explore-form">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="search" id="search-input" name="q" placeholder="Search posts, tags and people" aria-label="Search posts, tags and people" autocomplete="off" />
+        </form>
+        <div class="chip-row" id="type-chips" role="toolbar" aria-label="Filter by type"></div>
+        <div class="chip-row" id="active-filters" hidden></div>
       </div>
-    </section>
+
+      <section class="explore-people" id="people-results" hidden aria-labelledby="people-title">
+        <h2 class="explore-section-title" id="people-title">People</h2>
+        <div class="people-strip" id="people-list"></div>
+      </section>
+
+      <h2 class="explore-section-title" id="posts-title">Posts</h2>
+      <div id="projects-container" class="tile-grid" aria-labelledby="posts-title">
+        <div class="tile tile-skeleton" aria-hidden="true"></div>
+        <div class="tile tile-skeleton" aria-hidden="true"></div>
+        <div class="tile tile-skeleton" aria-hidden="true"></div>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>© <span id="year"></span> Showcase</span>
-      <a href="index.html">Home</a>
+      <a href="/index.html">Home</a>
     </div>
   </footer>
 
@@ -102,122 +95,166 @@
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
     import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
-    import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
-    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
-    import { getFollowingIds } from '/js/follows-data.js';
-    import { getCurrentUser } from '/js/auth.js';
+    import { getAllProfiles } from '/js/profiles-data.js';
+    import { escapeHtml, avatarHtml, PROJECT_TYPES } from '/js/utils.js';
+    import { getLikeCounts } from '/js/likes-data.js';
+    import { getCommentCounts } from '/js/comments-data.js';
+    import { tileHtml } from '/js/post-card.js';
+    import { icon } from '/js/icons.js';
+    import { effectClass } from '/js/shop-items.js';
+
+    // Explore: one search box over posts, tags and people, type chips, and a
+    // tag filter that any #tag elsewhere on the site links into. The query
+    // and filters live in the URL, so a search can be shared and survives a
+    // reload or the back button.
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    let allProjects = [];
-    let authorProfiles = new Map();
-    let authorLevels = new Map();
-    // Following someone used to change nothing about what you saw. Empty
-    // until the session resolves, which is also why the filter stays hidden
-    // for signed-out visitors - there'd be nothing to filter by.
-    let followingIds = new Set();
     const container = document.getElementById('projects-container');
     const searchInput = document.getElementById('search-input');
-    const tagFilter = document.getElementById('tag-filter');
-    const typeFilter = document.getElementById('type-filter');
-    const peopleFilter = document.getElementById('people-filter');
+    const typeChips = document.getElementById('type-chips');
+    const activeFilters = document.getElementById('active-filters');
+    const peopleResults = document.getElementById('people-results');
+    const peopleList = document.getElementById('people-list');
 
-    function projectCard(project) {
-      const thumb = project.imageUrl
-        ? `<img src="${escapeHtml(safeUrl(project.imageUrl))}" alt="${escapeHtml(project.title)}" loading="lazy" data-fallback="${escapeHtml(project.title.slice(0, 2).toUpperCase())}" onerror="this.parentElement.textContent=this.dataset.fallback" />`
-        : escapeHtml(project.title.slice(0, 2).toUpperCase());
-      const tags = project.tags.slice(0, 4).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
-      const authorProfile = authorProfiles.get(project.uid);
-      const authorLevel = authorLevels.get(project.uid);
-      return `
-        <article class="card">
-          <div class="card-thumb">${thumb}</div>
-          <div class="card-body">
-            <h3><a href="project.html?id=${encodeURIComponent(project.id)}">${escapeHtml(project.title)}</a></h3>
-            <p class="card-summary">${escapeHtml(project.summary || project.description.slice(0, 120))}</p>
-            <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
-            <div class="card-meta">
-              <span class="card-author">
-                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName, 'avatar-sm')}
-                <a href="profile.html?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
-                ${authorLevel ? levelChipHtml(authorLevel.level, 'sm') : ''}
-              </span>
-              <span>${timeAgo(project.createdAt)}</span>
-            </div>
-          </div>
-        </article>
-      `;
+    const params = new URLSearchParams(window.location.search);
+    const state = {
+      q: params.get('q') || '',
+      type: PROJECT_TYPES[params.get('type')] ? params.get('type') : '',
+      tag: params.get('tag') || '',
+      projects: [],
+      profiles: [],
+      profileMap: new Map(),
+      likeCounts: new Map(),
+      commentCounts: new Map(),
+    };
+    searchInput.value = state.q;
+
+    function syncUrl() {
+      const next = new URLSearchParams();
+      if (state.q) next.set('q', state.q);
+      if (state.type) next.set('type', state.type);
+      if (state.tag) next.set('tag', state.tag);
+      const qs = next.toString();
+      history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+    }
+
+    function renderChips() {
+      const options = [{ value: '', label: 'Everything', icon: 'grid' }].concat(
+        Object.entries(PROJECT_TYPES).map(([value, meta]) => ({ value, label: meta.label, icon: meta.icon }))
+      );
+      typeChips.innerHTML = options
+        .map(
+          (o) => `<button class="chip" type="button" data-type="${o.value}" aria-pressed="${state.type === o.value}">${icon(o.icon, { size: 15 })}${escapeHtml(o.label)}</button>`
+        )
+        .join('');
+      activeFilters.hidden = !state.tag;
+      activeFilters.innerHTML = state.tag
+        ? `<button class="chip chip-active" type="button" data-clear-tag>#${escapeHtml(state.tag)} ${icon('x', { size: 14 })}<span class="visually-hidden">Remove tag filter</span></button>`
+        : '';
+    }
+
+    function matches(project, q) {
+      if (!q) return true;
+      return (
+        project.title.toLowerCase().includes(q) ||
+        project.summary.toLowerCase().includes(q) ||
+        project.description.toLowerCase().includes(q) ||
+        project.authorName.toLowerCase().includes(q) ||
+        project.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+
+    function renderPeople() {
+      const q = state.q.trim().toLowerCase();
+      const people = q ? state.profiles.filter((p) => p.displayName.toLowerCase().includes(q)).slice(0, 12) : [];
+      peopleResults.hidden = people.length === 0;
+      peopleList.innerHTML = people
+        .map(
+          (p) => `
+            <a class="person-card" href="/profile.html?user=${encodeURIComponent(p.id)}">
+              ${avatarHtml(p.avatarUrl, p.displayName, effectClass(p.equippedBorder))}
+              <span class="person-name ${effectClass(p.equippedNameEffect)}">${escapeHtml(p.displayName)}</span>
+            </a>
+          `
+        )
+        .join('');
     }
 
     function render() {
-      const q = searchInput.value.trim().toLowerCase();
-      const tag = tagFilter.value;
-      const type = typeFilter.value;
-      const onlyFollowing = peopleFilter.value === 'following';
-      const filtered = allProjects.filter((p) => {
-        if (onlyFollowing && !followingIds.has(p.uid)) return false;
-        const matchesQ =
-          !q ||
-          p.title.toLowerCase().includes(q) ||
-          p.summary.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q);
-        const matchesTag = !tag || p.tags.includes(tag);
-        const matchesType = !type || p.type === type;
-        return matchesQ && matchesTag && matchesType;
-      });
-
+      const q = state.q.trim().toLowerCase();
+      const filtered = state.projects.filter(
+        (p) => matches(p, q) && (!state.type || p.type === state.type) && (!state.tag || p.tags.includes(state.tag))
+      );
+      renderPeople();
       if (filtered.length === 0) {
-        const emptyBody = onlyFollowing
-          ? `<h3>Nothing from people you follow</h3><p>Follow a few more builders - or switch back to Everyone.</p><a class="btn btn-primary" href="leaderboard.html">Find people to follow</a>`
-          : `<h3>No projects match your filters</h3><p>Try a different search term or tag.</p>`;
-        container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">${emptyBody}</div>`;
+        container.innerHTML = `<div class="feed-empty" style="grid-column: 1 / -1;"><h3>No posts match</h3><p>Try another word, or clear the filters.</p></div>`;
         return;
       }
-      container.innerHTML = filtered.map(projectCard).join('');
+      container.innerHTML = filtered
+        .map((p) =>
+          tileHtml(p, {
+            author: state.profileMap.get(p.uid),
+            likeCount: state.likeCounts.get(p.id) || 0,
+            commentCount: state.commentCounts.get(p.id) || 0,
+          })
+        )
+        .join('');
     }
 
-    function populateTags() {
-      const tags = new Set();
-      allProjects.forEach((p) => p.tags.forEach((t) => tags.add(t)));
-      [...tags].sort().forEach((t) => {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        tagFilter.appendChild(opt);
-      });
-    }
+    let searchTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        state.q = searchInput.value;
+        syncUrl();
+        render();
+      }, 120);
+    });
+    document.getElementById('explore-form').addEventListener('submit', (e) => e.preventDefault());
 
-    searchInput.addEventListener('input', render);
-    tagFilter.addEventListener('change', render);
-    typeFilter.addEventListener('change', render);
-    peopleFilter.addEventListener('change', render);
+    typeChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-type]');
+      if (!chip) return;
+      state.type = chip.dataset.type;
+      syncUrl();
+      renderChips();
+      render();
+    });
+    activeFilters.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-clear-tag]')) return;
+      state.tag = '';
+      syncUrl();
+      renderChips();
+      render();
+    });
+
+    renderChips();
 
     (async () => {
       try {
-        // The search, the tag list and the type filter all run over what has
-        // been fetched, so the pool is asked for explicitly. Past this many
-        // entries the gallery stops seeing the older ones; searching
-        // server-side is the honest fix and a larger change than this.
-        allProjects = await getPublishedProjects({ limit: DISCOVER_POOL });
-        authorProfiles = await getProfilesByIds(allProjects.map((p) => p.uid));
-        populateTags();
+        // Search, tags and type filters all run over what has been fetched, so
+        // the pool is asked for explicitly. Past this many entries the oldest
+        // drop out of search; searching server-side is the honest fix.
+        const [projects, profiles] = await Promise.all([
+          getPublishedProjects({ limit: DISCOVER_POOL }),
+          getAllProfiles().catch(() => []),
+        ]);
+        state.projects = projects;
+        state.profiles = profiles;
+        state.profileMap = new Map(profiles.map((p) => [p.id, p]));
         render();
+        container.classList.add('is-settled');
 
-        // Only worth offering once we know who you follow.
-        const user = await getCurrentUser().catch(() => null);
-        if (user) {
-          followingIds = await getFollowingIds(user.id).catch(() => new Set());
-          if (followingIds.size) peopleFilter.hidden = false;
-        }
-
-        // Levels cost a few extra queries, so they're loaded after the grid
-        // is already on screen and painted in on a re-render rather than
-        // holding up the projects themselves.
-        authorLevels = await getLevelsForUsers(allProjects.map((p) => p.uid)).catch(() => new Map());
+        const ids = projects.map((p) => p.id);
+        const [likeCounts, commentCounts] = await Promise.all([
+          getLikeCounts(ids).catch(() => new Map()),
+          getCommentCounts(ids).catch(() => new Map()),
+        ]);
+        Object.assign(state, { likeCounts, commentCounts });
         render();
       } catch (err) {
-        container.innerHTML = `<p>Could not load projects: ${escapeHtml(err.message)}</p>`;
+        container.innerHTML = `<div class="feed-empty" style="grid-column: 1 / -1;"><h3>Could not load posts</h3><p>${escapeHtml(err.message)}</p></div>`;
       }
     })();
   </script>
