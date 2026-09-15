@@ -28,6 +28,7 @@ export type IconName =
   | 'user'
   | 'star'
   | 'trophy'
+  | 'share'
   | 'pencil'
   | 'lock'
   | 'music'
@@ -166,6 +167,15 @@ export function Icon({ name, size = 21, color = '#201e1d', fill = 'none', stroke
           <Path {...s} d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
           <Path {...s} d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
           <Path {...s} d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </>
+      )}
+      {/* Lucide share-2, the post action bar's share. */}
+      {name === 'share' && (
+        <>
+          <Circle {...s} cx="18" cy="5" r="3" />
+          <Circle {...s} cx="6" cy="12" r="3" />
+          <Circle {...s} cx="18" cy="19" r="3" />
+          <Path {...s} d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
         </>
       )}
       {name === 'pencil' && (

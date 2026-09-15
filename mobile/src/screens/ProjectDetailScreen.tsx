@@ -7,20 +7,10 @@ import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProviderEmbed } from '../components/ProviderEmbed';
-import { CommentsSheet } from '../components/CommentsSheet';
+import { CommentsSection } from '../components/CommentsSection';
+import { Icon } from '../components/icons';
 import { ReportSheet } from '../components/ReportSheet';
-import {
-  Avatar,
-  Body,
-  Button,
-  Card,
-  ErrorNote,
-  Eyebrow,
-  Heading,
-  LevelChip,
-  Loading,
-  TypeBadge,
-} from '../components/ui';
+import { Avatar, Button, DisplayName, ErrorNote, LevelChip, Loading, TypeBadge } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
 import { followUser, isFollowing, unfollowUser } from '../data/follows';
@@ -51,7 +41,6 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const [liked, setLiked] = useState(false);
   const [savedState, setSavedState] = useState(false);
   const [following, setFollowing] = useState(false);
-  const [showComments, setShowComments] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -166,112 +155,126 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const media = resolveMedia(project.mediaUrl, project.type);
   const isOwner = user?.id === project.uid;
 
+  // One post, the way the website draws it: who posted it on top, then the
+  // words, the media and the actions, with the conversation directly
+  // underneath rather than in a sheet.
+  const card = {
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+  };
+
   return (
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.bg }}
-        contentContainerStyle={{ paddingBottom: space.xxl }}
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 680,
+          alignSelf: 'center',
+          padding: 10,
+          gap: space.lg,
+          paddingBottom: space.xxl + insets.bottom,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        {project.imageUrl && media?.kind !== 'image' ? (
-          <Image
-            source={{ uri: project.imageUrl }}
-            style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.mutedSoft }}
-            contentFit="cover"
-          />
-        ) : null}
-
-        <View style={{ padding: space.lg, gap: space.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TypeBadge type={project.type} />
-            <View style={{ flex: 1 }} />
-            {!project.published ? (
-              <Text style={[typography.eyebrow, { color: colors.primary }]}>Draft</Text>
+        <View style={[card, { overflow: 'hidden' }]}>
+          {/* Who and when */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, paddingBottom: 10 }}>
+            <Pressable
+              onPress={() => navigation.navigate('UserProfile', { userId: project.uid })}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 11, flex: 1, minWidth: 0 }}
+            >
+              <Avatar
+                url={author?.avatarUrl}
+                name={author?.displayName || project.authorName}
+                size={42}
+                ring={author?.equippedBorder}
+              />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <DisplayName
+                    name={author?.displayName || project.authorName}
+                    effect={author?.equippedNameEffect}
+                    style={{ fontSize: 14, flexShrink: 1 }}
+                  />
+                  {level ? <LevelChip level={level} small /> : null}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 }}>
+                  <Text style={{ fontSize: 12, color: colors.textFaint }}>{timeAgo(project.createdAt)}</Text>
+                  <Feather name="eye" size={11} color={colors.textFaint} />
+                  <Text style={{ fontSize: 12, color: colors.textFaint }}>{formatCount(project.viewsCount)}</Text>
+                </View>
+              </View>
+            </Pressable>
+            {isOwner ? (
+              <Button
+                small
+                label="Edit"
+                icon="edit-2"
+                variant="secondary"
+                onPress={() => navigation.navigate('Editor', { projectId: project.id })}
+              />
+            ) : user ? (
+              <Button
+                small
+                label={following ? 'Following' : 'Follow'}
+                variant={following ? 'secondary' : 'primary'}
+                onPress={toggleFollow}
+              />
             ) : null}
           </View>
 
-          <Heading>{project.title}</Heading>
-
-          {project.summary ? <Body muted>{project.summary}</Body> : null}
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-            <Text style={[typography.small, { color: colors.textFaint }]}>
-              {timeAgo(project.createdAt)}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Feather name="eye" size={12} color={colors.textFaint} />
-              <Text style={[typography.small, { color: colors.textFaint }]}>
-                {formatCount(project.viewsCount)}
-              </Text>
-            </View>
-          </View>
-
-          <MediaBlock media={media} colors={colors} />
-
-          {/* Author */}
-          <Card style={{ marginTop: space.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-              <Pressable
-                onPress={() => navigation.navigate('UserProfile', { userId: project.uid })}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, flex: 1 }}
-              >
-                <Avatar
-                  url={author?.avatarUrl}
-                  name={author?.displayName || project.authorName}
-                  size={40}
-                  ring={author?.equippedBorder}
-                />
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>
-                      {author?.displayName || project.authorName}
-                    </Text>
-                    {level ? <LevelChip level={level} small /> : null}
-                  </View>
-                  <Text style={[typography.small, { color: colors.textFaint }]}>View profile</Text>
-                </View>
-              </Pressable>
-
-              {!isOwner ? (
-                <Button
-                  small
-                  label={following ? 'Following' : 'Follow'}
-                  variant={following ? 'secondary' : 'primary'}
-                  onPress={toggleFollow}
-                />
+          {/* What */}
+          <View style={{ paddingHorizontal: 14, paddingBottom: 12, gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TypeBadge type={project.type} />
+              {!project.published ? (
+                <Text style={[typography.eyebrow, { color: colors.primary }]}>Draft</Text>
               ) : null}
             </View>
-          </Card>
+            <Text style={{ fontSize: 20, fontWeight: '800', lineHeight: 26, color: colors.text }}>{project.title}</Text>
+            {project.summary ? (
+              <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted }}>{project.summary}</Text>
+            ) : null}
+            {project.description ? (
+              <Text style={{ fontSize: 14, lineHeight: 22, color: colors.text }}>{project.description}</Text>
+            ) : null}
+            {project.tags.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                {project.tags.map((tag) => (
+                  <Pressable
+                    key={tag}
+                    onPress={() => navigation.navigate('Explore', { tag })}
+                    accessibilityRole="link"
+                    style={{ paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }}
+                  >
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>#{tag}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
 
-          {project.description ? (
-            <>
-              <Eyebrow style={{ marginTop: space.md }}>About</Eyebrow>
-              <Body>{project.description}</Body>
-            </>
+          {/* Media */}
+          {project.imageUrl && (!media || media.kind === 'link') ? (
+            <View style={{ marginHorizontal: 10, borderRadius: radius.md, overflow: 'hidden' }}>
+              <Image
+                source={{ uri: project.imageUrl }}
+                style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.mutedSoft }}
+                contentFit="cover"
+              />
+            </View>
           ) : null}
-
-          {project.tags.length > 0 ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
-              {project.tags.map((tag) => (
-                // The border lives on a View, as on every other pill: drawn on
-                // the Text itself, Android sat the glyphs at the top of the box.
-                <View
-                  key={tag}
-                  style={{
-                    borderColor: colors.border,
-                    borderWidth: StyleSheet.hairlineWidth * 2,
-                    borderRadius: radius.sm,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                  }}
-                >
-                  <Text style={{ fontSize: 11, color: colors.textMuted }}>{tag}</Text>
-                </View>
-              ))}
+          {media ? (
+            <View style={{ marginHorizontal: 10 }}>
+              <MediaBlock media={media} colors={colors} />
             </View>
           ) : null}
 
           {(project.liveUrl || project.repoUrl) ? (
-            <View style={{ gap: space.sm, marginTop: space.md }}>
+            <View style={{ gap: space.sm, paddingHorizontal: 14, paddingTop: 12 }}>
               {project.liveUrl ? (
                 <Button
                   label="Open live link"
@@ -291,104 +294,90 @@ export function ProjectDetailScreen({ route, navigation }: any) {
             </View>
           ) : null}
 
-          {isOwner ? (
-            <Button
-              label="Edit this entry"
-              icon="edit-2"
-              variant="secondary"
-              style={{ marginTop: space.md }}
-              onPress={() => navigation.navigate('Editor', { projectId: project.id })}
+          {/* Actions */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 2,
+              marginTop: 10,
+              paddingHorizontal: 6,
+              paddingVertical: 6,
+              borderTopWidth: StyleSheet.hairlineWidth * 2,
+              borderTopColor: colors.border,
+            }}
+          >
+            <PostAction
+              icon="heart"
+              label={formatCount(likeCount)}
+              active={liked}
+              activeColor="#e0245e"
+              onPress={toggleLike}
+              accessibilityLabel={liked ? 'Unlike' : 'Like'}
             />
-          ) : (
-            // Quiet on purpose, as on the site: a way to flag an entry, not a
-            // call to action. RLS refuses a report on your own entry anyway.
-            <Pressable
-              onPress={() => (user ? setShowReport(true) : navigation.navigate('Login'))}
-              hitSlop={8}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                alignSelf: 'center',
-                gap: 6,
-                marginTop: space.lg,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Feather name="flag" size={13} color={colors.textFaint} />
-              <Text style={{ fontSize: 12, color: colors.textFaint }}>Report this entry</Text>
-            </Pressable>
-          )}
+            <PostAction icon="comment" label={formatCount(commentCount)} accessibilityLabel="Comments" />
+            <PostAction icon="share" onPress={share} accessibilityLabel="Share" />
+            <View style={{ flex: 1 }} />
+            <PostAction
+              icon="bookmark"
+              active={savedState}
+              activeColor={colors.accentDeep}
+              onPress={toggleSave}
+              accessibilityLabel={savedState ? 'Saved' : 'Save'}
+            />
+            {!isOwner ? (
+              // Quiet on purpose, as on the site: a way to flag an entry, not a
+              // call to action. RLS refuses a report on your own entry anyway.
+              <Pressable
+                onPress={() => (user ? setShowReport(true) : navigation.navigate('Login'))}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Report this entry"
+                style={{ padding: 10 }}
+              >
+                <Feather name="flag" size={16} color={colors.textFaint} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
+
+        <CommentsSection
+          projectId={projectId}
+          ownerId={project.uid}
+          onCountChange={(delta) => setCommentCount((c) => Math.max(0, c + delta))}
+          onSignIn={() => navigation.navigate('Login')}
+          onAuthorPress={(userId) => navigation.navigate('UserProfile', { userId })}
+        />
       </ScrollView>
-
-      {/* Action bar.
-
-          The bottom inset is load-bearing, not padding taste. The app is
-          edge-to-edge (app.json's android.edgeToEdgeEnabled), so this bar sits
-          at the very bottom of the display rather than above the system's
-          area - which put like, comment, save and share underneath a phone's
-          navigation buttons and out of reach. Adding the inset gives that area
-          back its space on every device that reserves one, and adds nothing
-          where the inset is zero. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-around',
-          paddingTop: space.md,
-          paddingBottom: space.md + insets.bottom,
-          backgroundColor: colors.surface,
-          borderTopWidth: StyleSheet.hairlineWidth * 2,
-          borderTopColor: colors.border,
-        }}
-      >
-        <BarAction
-          icon="heart"
-          label={formatCount(likeCount)}
-          active={liked}
-          activeColor="#ff3b5c"
-          onPress={toggleLike}
-        />
-        <BarAction
-          icon="message-circle"
-          label={formatCount(commentCount)}
-          onPress={() => setShowComments(true)}
-        />
-        <BarAction
-          icon="bookmark"
-          label="Save"
-          active={savedState}
-          activeColor={colors.accent}
-          onPress={toggleSave}
-        />
-        <BarAction icon="share-2" label="Share" onPress={share} />
-      </View>
-
-      <CommentsSheet
-        projectId={projectId}
-        ownerId={project.uid}
-        visible={showComments}
-        onClose={() => setShowComments(false)}
-        onCountChange={(_id, delta) => setCommentCount((c) => Math.max(0, c + delta))}
-      />
 
       <ReportSheet projectId={projectId} visible={showReport} onClose={() => setShowReport(false)} />
     </>
   );
 }
 
-function BarAction({ icon, label, onPress, active, activeColor }: any) {
+function PostAction({ icon, label, onPress, active, activeColor, accessibilityLabel }: any) {
   const { colors } = useTheme();
   const color = active ? activeColor || colors.primary : colors.textMuted;
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => ({ alignItems: 'center', gap: 3, opacity: pressed ? 0.6 : 1 })}
+      disabled={!onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: !!active }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: radius.pill,
+        backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
+      })}
     >
-      <Feather name={icon} size={20} color={color} />
-      <Text style={{ fontSize: 10, color, fontWeight: '700' }}>{label}</Text>
+      <Icon name={icon} size={19} color={color} fill={active ? color : 'none'} />
+      {label !== undefined ? <Text style={{ fontSize: 13, color, fontWeight: '700' }}>{label}</Text> : null}
     </Pressable>
   );
 }

@@ -1,14 +1,14 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, ImageBackground, Pressable, RefreshControl, View } from 'react-native';
 import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HeaderButton, SectionRule, StatBlock } from '../components/bloom';
+import { HeaderButton, StatBlock } from '../components/bloom';
+import { FeedTabs } from '../components/FeedTabs';
+import { PostTile } from '../components/PostTile';
 import { CosmeticBackground } from '../components/CosmeticBackground';
 import { Icon, IconName } from '../components/icons';
-import { placeholderFor } from '../components/ProjectCard';
 import { StatsCardSheet } from '../components/StatsCardSheet';
 import {
   Avatar,
@@ -40,7 +40,6 @@ import {
 } from '../lib/achievements';
 import { bgGradient } from '../lib/cosmetics';
 import { levelFromXp } from '../lib/levels';
-import { coverFor } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
@@ -66,6 +65,7 @@ export function ProfileScreen({ route, navigation }: any) {
   const [claimed, setClaimed] = useState<Set<string>>(new Set());
   const [admin, setAdmin] = useState(false);
   const [showCard, setShowCard] = useState(false);
+  const [tab, setTab] = useState<'posts' | 'achievements'>('posts');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -266,7 +266,7 @@ export function ProfileScreen({ route, navigation }: any) {
       ) : null}
       <FlatList
         style={{ flex: 1, backgroundColor: colors.bg }}
-        data={projects}
+        data={tab === 'posts' ? projects : []}
         numColumns={2}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
         keyExtractor={(item) => item.id}
@@ -486,8 +486,29 @@ export function ProfileScreen({ route, navigation }: any) {
                 </View>
               </View>
 
+              {isSelf && admin ? (
+                <Button
+                  label="Admin panel"
+                  icon="shield"
+                  variant="secondary"
+                  onPress={() => navigation.navigate('Admin')}
+                />
+              ) : null}
+
+              {/* Posts / Achievements, as on the website's profile. */}
+              <View style={{ marginHorizontal: -gutter }}>
+                <FeedTabs
+                  tabs={[
+                    { value: 'posts', label: `Posts · ${projects.length}` },
+                    { value: 'achievements', label: `Achievements · ${unlockedList.length}` },
+                  ]}
+                  value={tab}
+                  onChange={(next) => setTab(next as 'posts' | 'achievements')}
+                />
+              </View>
+
               {/* Achievements, three to a row. */}
-              {achievements.length > 0 ? (
+              {tab === 'achievements' && achievements.length > 0 ? (
                 <View style={{ gap: 10 }}>
                   {chunk(achievements, 3).map((row, rowIndex) => (
                     <View key={rowIndex} style={{ flexDirection: 'row', gap: 10 }}>
@@ -510,20 +531,11 @@ export function ProfileScreen({ route, navigation }: any) {
                 </View>
               ) : null}
 
-              {isSelf && admin ? (
-                <Button
-                  label="Admin panel"
-                  icon="shield"
-                  variant="secondary"
-                  onPress={() => navigation.navigate('Admin')}
-                />
-              ) : null}
-
-              <SectionRule label="Published" trailing={projects.length} />
             </View>
           </View>
         }
         ListEmptyComponent={
+          tab === 'achievements' ? null : (
           <View style={{ paddingHorizontal: gutter }}>
             <EmptyState
               icon="package"
@@ -535,28 +547,14 @@ export function ProfileScreen({ route, navigation }: any) {
               }
             />
           </View>
+          )
         }
         renderItem={({ item }) => (
-          <Pressable
+          <PostTile
+            project={item}
+            showAuthor={false}
             onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-            style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' }}
-          >
-            {coverFor(item) ? (
-              <Image
-                source={{ uri: coverFor(item) }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-                transition={150}
-              />
-            ) : (
-              <LinearGradient
-                colors={placeholderFor(item.type) as any}
-                start={{ x: 0.15, y: 0 }}
-                end={{ x: 0.85, y: 1 }}
-                style={{ width: '100%', height: '100%' }}
-              />
-            )}
-          </Pressable>
+          />
         )}
       />
     </>

@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { EditorScreen } from '../screens/EditorScreen';
+import { ExploreScreen } from '../screens/ExploreScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
@@ -148,6 +149,7 @@ export function RootNavigator() {
           options={{ title: '' }}
         />
         <Stack.Screen name="Editor" component={EditorScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Explore" component={ExploreScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="FollowList" component={FollowListScreen} options={{ title: '' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />

@@ -1,75 +1,98 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 
-import { AccentHeader, FilterChip, HeaderButton, SearchPill } from '../components/bloom';
-import { ProjectCard } from '../components/ProjectCard';
-import { EmptyState, ErrorNote, Loading } from '../components/ui';
+import { AccentHeader, HeaderButton } from '../components/bloom';
+import { FeedTabs } from '../components/FeedTabs';
+import { PostCard } from '../components/PostCard';
+import { Button, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
-import { getLikeCounts } from '../data/likes';
+import { getFollowingIds } from '../data/follows';
+import { getLikeCounts, getLikedSet } from '../data/likes';
 import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { DISCOVER_POOL, getPublishedProjects, Project } from '../data/projects';
-import { useCardColumns, padRow } from '../lib/layout';
+import { getSavedSet } from '../data/saves';
+import { loadSeenIds, rankFeed } from '../lib/feedRank';
 import { getLevelsForUsers } from '../lib/levels';
-import { PROJECT_TYPE_OPTIONS, typeMeta } from '../lib/utils';
+import { usePostActions } from '../lib/usePostActions';
 import { useTheme } from '../theme/ThemeProvider';
-import { gutter, radius, space } from '../theme/tokens';
+import { radius, space } from '../theme/tokens';
+
+// Home is the feed, the way the website's is: For you (ranked), Following and
+// Latest, drawn as posts you can like, save and share without opening them.
+// Searching and filtering by type moved to Explore, behind the header's search.
+
+type Tab = 'foryou' | 'following' | 'latest';
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'foryou', label: 'For you' },
+  { value: 'following', label: 'Following' },
+  { value: 'latest', label: 'Latest' },
+];
+
+// Wide enough for a comfortable post on a tablet without stretching the
+// picture into a banner.
+const MAX_POST_WIDTH = 620;
 
 export function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
-  // One column on a phone, more as the screen gets wider - the same rule the
-  // site's project grid follows.
-  const columns = useCardColumns();
   const { user } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
   const [levels, setLevels] = useState<Map<string, any>>(new Map());
-  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
   const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [ranked, setRanked] = useState<Project[]>([]);
   const [unread, setUnread] = useState(0);
+  const [tab, setTab] = useState<Tab>('foryou');
 
-  const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
+  const signIn = useCallback(() => navigation.navigate('Login'), [navigation]);
+  const actions = usePostActions(user?.id ?? null, signIn);
+  const { setLikeCounts, setLiked, setSaved } = actions;
+
   const load = useCallback(async () => {
     setError('');
     try {
-      // Search and the type filter run over what has been fetched, so the
-      // pool is asked for explicitly rather than inheriting the feed's page
-      // size. Past this many entries the search stops seeing the older ones -
-      // the honest fix is to search server-side, which is a bigger change than
-      // this one.
       const rows = await getPublishedProjects({ limit: DISCOVER_POOL });
-      setProjects(rows);
-
       const ids = rows.map((p) => p.id);
       const uids = rows.map((p) => p.uid);
 
-      // Everything a page of cards needs, batched - the same round-trip
-      // discipline the web build uses, for the same reason: one query per card
-      // is what made the gallery the slowest thing on the site.
-      const [profileMap, levelMap, likes, comments] = await Promise.all([
+      // Everything a page of posts needs, batched - one query per post is what
+      // made the gallery the slowest thing on the site.
+      const [profileMap, levelMap, likes, comments, likedSet, savedSet, follows, seen] = await Promise.all([
         getProfilesByIds(uids).catch(() => new Map()),
         getLevelsForUsers(uids).catch(() => new Map()),
         getLikeCounts(ids).catch(() => new Map()),
         getCommentCounts(ids).catch(() => new Map()),
+        getLikedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
+        getSavedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
+        getFollowingIds(user?.id ?? null).catch(() => new Set<string>()),
+        loadSeenIds(),
       ]);
+      setProjects(rows);
       setAuthors(profileMap);
       setLevels(levelMap);
       setLikeCounts(likes);
       setCommentCounts(comments);
+      setLiked(likedSet);
+      setSaved(savedSet);
+      setFollowingIds(follows);
+      // Ranked once per load and kept, so For you doesn't reshuffle under you
+      // every time a like changes a count.
+      setRanked(rankFeed(rows, { likeCounts: likes, commentCounts: comments, followingIds: follows, seenIds: seen }));
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.id, setLikeCounts, setLiked, setSaved]);
 
   useEffect(() => {
     load();
@@ -94,55 +117,49 @@ export function HomeScreen({ navigation }: any) {
     return unsub;
   }, [navigation, user]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return projects.filter((p) => {
-      if (typeFilter && p.type !== typeFilter) return false;
-      if (!q) return true;
-      return (
-        p.title.toLowerCase().includes(q) ||
-        p.summary.toLowerCase().includes(q) ||
-        p.authorName.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
-      );
-    });
-  }, [projects, query, typeFilter]);
+  const items = useMemo(() => {
+    if (tab === 'foryou') return ranked;
+    const newest = [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return tab === 'following' ? newest.filter((p) => followingIds.has(p.uid)) : newest;
+  }, [tab, ranked, projects, followingIds]);
 
-  // "FRIDAY · 41 NEW" - the artboard's own header line: today, then how many
-  // entries are currently in view.
-  const eyebrow = `${new Date()
-    .toLocaleDateString(undefined, { weekday: 'long' })
-    .toUpperCase()} · ${filtered.length} NEW`;
+  const eyebrow = new Date().toLocaleDateString(undefined, { weekday: 'long' }).toUpperCase();
+
+  const empty =
+    tab === 'following' ? (
+      user ? (
+        <EmptyState
+          icon="users"
+          title="Nothing from people you follow yet"
+          body="Follow a few people and their posts show up here."
+          action={<Button label="Find people" onPress={() => navigation.navigate('Leaderboard')} />}
+        />
+      ) : (
+        <EmptyState
+          icon="users"
+          title="Follow people to fill this tab"
+          body="Log in to see posts from the people you follow."
+          action={<Button label="Log in" onPress={signIn} />}
+        />
+      )
+    ) : (
+      <EmptyState icon="inbox" title="No posts yet" body="Be the first to share something." />
+    );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <AccentHeader
         eyebrow={eyebrow}
-        title="Discover"
+        title="Home"
         actions={
           <>
-            <HeaderButton
-              icon="refresh"
-              label="Refresh"
-              onPress={() => {
-                setRefreshing(true);
-                load();
-              }}
-            />
-            {/* The site links the leaderboard from its top nav; the app had the
-                screen registered but nothing that opened it. */}
-            <HeaderButton
-              icon="trophy"
-              label="Leaderboard"
-              onPress={() => navigation.navigate('Leaderboard')}
-            />
+            <HeaderButton icon="search" label="Explore" onPress={() => navigation.navigate('Explore')} />
+            <HeaderButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
             <View>
               <HeaderButton
                 icon="bell"
                 label="Notifications"
-                onPress={() =>
-                  user ? navigation.navigate('Notifications') : navigation.navigate('Login')
-                }
+                onPress={() => (user ? navigation.navigate('Notifications') : signIn())}
               />
               {unread > 0 ? (
                 <View
@@ -160,27 +177,27 @@ export function HomeScreen({ navigation }: any) {
             </View>
           </>
         }
-      >
-        <SearchPill value={query} onChangeText={setQuery} />
-      </AccentHeader>
+      />
+
+      <View style={{ width: '100%', maxWidth: MAX_POST_WIDTH, alignSelf: 'center' }}>
+        <FeedTabs tabs={TABS} value={tab} onChange={(next) => setTab(next as Tab)} />
+      </View>
 
       {loading ? (
-        <Loading label="Loading entries" />
+        <Loading label="Loading posts" />
       ) : (
         <FlatList
-          // React Native refuses to change numColumns on a mounted list, so the
-          // key forces a fresh one when the tablet is rotated.
-          key={`grid-${columns}`}
-          numColumns={columns}
-          {...(columns > 1 ? { columnWrapperStyle: { gap: space.lg } } : null)}
-          data={padRow(filtered, columns)}
-          keyExtractor={(item, index) => item?.id ?? `blank-${index}`}
-          // 116 of bottom padding is what clears Bloom's floating tab bar and
-          // the add button overhanging it.
+          data={items}
+          keyExtractor={(item) => item.id}
+          // 116 of bottom padding clears Bloom's floating tab bar and the add
+          // button overhanging it.
           contentContainerStyle={{
-            paddingHorizontal: gutter,
-            paddingTop: 18,
-            gap: 16,
+            width: '100%',
+            maxWidth: MAX_POST_WIDTH,
+            alignSelf: 'center',
+            paddingHorizontal: 10,
+            paddingTop: 12,
+            gap: 12,
             paddingBottom: 116,
           }}
           refreshControl={
@@ -198,52 +215,25 @@ export function HomeScreen({ navigation }: any) {
               progressBackgroundColor={colors.surface}
             />
           }
-          ListHeaderComponent={
-            <View style={{ gap: 16 }}>
-              {error ? <ErrorNote message={error} /> : null}
-              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-                {[{ value: null, label: 'Everything' }, ...PROJECT_TYPE_OPTIONS].map((item) => (
-                  <FilterChip
-                    key={item.value || 'all'}
-                    label={item.label}
-                    active={typeFilter === item.value}
-                    onPress={() => setTypeFilter(item.value)}
-                  />
-                ))}
-              </View>
-            </View>
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="search"
-              title="Nothing here yet"
-              body={
-                query
-                  ? 'No entries match that search.'
-                  : typeFilter
-                    ? `No ${typeMeta(typeFilter).label} entries yet.`
-                    : 'Nothing has been published yet.'
-              }
+          ListHeaderComponent={error ? <ErrorNote message={error} /> : null}
+          ListEmptyComponent={<View style={{ paddingTop: space.xxl }}>{empty}</View>}
+          renderItem={({ item, index }) => (
+            <PostCard
+              project={item}
+              author={authors.get(item.uid)}
+              level={levels.get(item.uid)?.level}
+              likeCount={actions.likeCounts.get(item.id) || 0}
+              commentCount={commentCounts.get(item.id) || 0}
+              liked={actions.liked.has(item.id)}
+              saved={actions.saved.has(item.id)}
+              onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+              onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
+              onLike={() => actions.toggleLike(item.id)}
+              onSave={() => actions.toggleSave(item.id)}
+              onShare={() => actions.share(item)}
+              index={index}
             />
-          }
-          renderItem={({ item, index }) => {
-            // A blank from padRow: holds a column open so the last real card
-            // keeps the width of every other one.
-            if (!item) return <View style={{ flex: 1 }} />;
-            const card = (
-              <ProjectCard
-                project={item}
-                author={authors.get(item.uid)}
-                level={levels.get(item.uid)?.level}
-                likeCount={likeCounts.get(item.id) || 0}
-                commentCount={commentCounts.get(item.id) || 0}
-                onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-                onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.uid })}
-                index={index}
-              />
-            );
-            return columns > 1 ? <View style={{ flex: 1 }}>{card}</View> : card;
-          }}
+          )}
         />
       )}
     </View>
