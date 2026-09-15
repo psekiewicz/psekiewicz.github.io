@@ -3,11 +3,10 @@ import { getProfile } from './profiles-data.js';
 import { isAdmin } from './admin-data.js';
 import { escapeHtml, avatarHtml, pageId } from './utils.js';
 import { icon } from './icons.js';
-import { getUserStats, getTopAchievement } from './achievements.js';
+import { getUserStats } from './achievements.js';
 import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.js';
 import { effectClass } from './shop-items.js';
-import { levelFromStats, levelChipHtml } from './levels.js';
-import { watchProgress, PROGRESS_EVENT } from './progress-watch.js';
+import { watchProgress } from './progress-watch.js';
 import { mountNotifications, unmountNotifications } from './notifications-ui.js';
 
 // Tracked at module scope so the keyboard shortcut below can tell whether
@@ -71,7 +70,7 @@ async function renderNavActions(container, user) {
 
   if (!user) {
     unmountNotifications();
-    document.querySelectorAll('[data-mobile-logout]').forEach((el) => el.remove());
+    document.getElementById('nav-logout-btn')?.remove();
     container.innerHTML = `
       <a class="btn btn-ghost btn-sm" href="/login.html">Log in</a>
       <a class="btn btn-primary btn-sm" href="/register.html">Get started</a>
@@ -84,13 +83,11 @@ async function renderNavActions(container, user) {
   const name = displayNameOf(user);
   let avatarUrl = '';
   let borderClass = '';
-  let nameEffectClass = '';
   try {
     const profile = await getProfile(user.id);
     if (profile) {
       avatarUrl = profile.avatarUrl;
       borderClass = effectClass(profile.equippedBorder);
-      nameEffectClass = effectClass(profile.equippedNameEffect);
     }
   } catch {
     // keep the initials fallback, no effects
@@ -104,60 +101,35 @@ async function renderNavActions(container, user) {
     <button class="btn btn-primary nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New post" title="New post (press N)">
       ${icon('plus', { size: 18 })}<span>New post</span>
     </button>
-    <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}">
+    <a class="user-chip" href="/profile.html?user=${encodeURIComponent(user.id)}" aria-label="Your profile" title="${escapeHtml(name)}">
       ${avatarHtml(avatarUrl, name, borderClass)}
-      <span class="${nameEffectClass}">${escapeHtml(name)}</span>
     </a>
-    <button class="btn btn-ghost btn-sm nav-logout-btn" id="nav-logout-btn" type="button" aria-label="Log out" title="Log out">${icon('log-out', { size: 18 })}<span>Log out</span></button>
   `;
 
   container.querySelector('#nav-new-project').addEventListener('click', openCreateSheet);
 
-  container.querySelector('#nav-logout-btn').addEventListener('click', async (e) => {
-    e.target.disabled = true;
-    await logoutUser();
-    window.location.href = '/index.html';
-  });
-
-  // Progressive enhancement: the chip is already visible and usable above,
-  // this just quietly adds the level and best-achievement badges afterwards
-  // - no need to block the rest of the navbar on either.
-  // Redrawn on every progress check, not just the first, so the level
-  // reflects what you just did rather than what you had when the page
-  // loaded.
-  function paintChipBadges(stats, records) {
-    const chip = container.querySelector('.user-chip');
-    if (!chip) return;
-
-    const level = levelFromStats(stats).level;
-    const existingChip = chip.querySelector('.level-chip');
-    if (!existingChip) {
-      chip.insertAdjacentHTML('beforeend', levelChipHtml(level, 'sm'));
-    } else if (existingChip.textContent !== `Lv ${level}`) {
-      existingChip.outerHTML = levelChipHtml(level, 'sm');
-    }
-
-    const top = getTopAchievement(stats, records.unlocked);
-    if (!top) return;
-    let badge = chip.querySelector('.name-badge');
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.className = 'name-badge';
-      chip.appendChild(badge);
-    }
-    badge.title = `${top.label} - ${top.description}`;
-    badge.innerHTML = icon(top.icon, { size: 12 });
-  }
-
-  if (!container.dataset.progressBound) {
-    container.dataset.progressBound = '1';
-    document.addEventListener(PROGRESS_EVENT, (e) => paintChipBadges(e.detail.stats, e.detail.records));
+  // One small icon button, kept with the bell and the theme toggle so it is in
+  // the same place on every screen size - the sidebar's foot or the phone's
+  // top bar - instead of a different log out button per layout.
+  const tools = document.getElementById('nav-tools') || document.querySelector('.nav-right');
+  if (tools && !document.getElementById('nav-logout-btn')) {
+    const logout = document.createElement('button');
+    logout.type = 'button';
+    logout.id = 'nav-logout-btn';
+    logout.className = 'nav-icon-btn nav-logout-btn';
+    logout.setAttribute('aria-label', 'Log out');
+    logout.title = 'Log out';
+    logout.innerHTML = icon('log-out', { size: 18 });
+    logout.addEventListener('click', async () => {
+      logout.disabled = true;
+      await logoutUser();
+      window.location.href = '/index.html';
+    });
+    tools.appendChild(logout);
   }
 
   Promise.all([getUserStats(user.id), getAchievementRecords(user.id).catch(() => EMPTY_ACHIEVEMENT_RECORDS)])
     .then(([stats, records]) => {
-      paintChipBadges(stats, records);
-
       // The navbar is the one thing that loads on every page while signed
       // in, so it's also where new rewards get noticed and toasted -
       // piggybacking on the stats it already had to fetch rather than
@@ -165,25 +137,6 @@ async function renderNavActions(container, user) {
       watchProgress(user.id, stats, records);
     })
     .catch(() => {});
-
-  // On mobile .nav-actions (with its Log out button) is hidden in favour of
-  // the bottom tab bar, which left the profile page as the only way to sign
-  // out. The burger is where the rest of mobile navigation already lives,
-  // so it goes here - hidden on desktop, where the navbar button remains.
-  const navLinksEl = document.querySelector('.nav-links');
-  if (navLinksEl && !navLinksEl.querySelector('[data-mobile-logout]')) {
-    const logout = document.createElement('button');
-    logout.type = 'button';
-    logout.className = 'nav-link nav-link-logout';
-    logout.setAttribute('data-mobile-logout', '');
-    logout.textContent = 'Log out';
-    logout.addEventListener('click', async () => {
-      logout.disabled = true;
-      await logoutUser();
-      window.location.href = '/index.html';
-    });
-    navLinksEl.appendChild(logout);
-  }
 
   const admin = await isAdmin(user.id).catch(() => false);
   const navLinks = document.querySelector('.nav-links');
@@ -194,7 +147,6 @@ async function renderNavActions(container, user) {
     link.innerHTML = `${icon('shield', { size: 22 })}<span>Admin</span>`;
     link.setAttribute('data-admin-link', '');
     if (pageId(window.location.pathname) === 'admin') link.classList.add('active');
-    // Before the logout item, which is always meant to sit last.
-    navLinks.insertBefore(link, navLinks.querySelector('[data-mobile-logout]'));
+    navLinks.appendChild(link);
   }
 }

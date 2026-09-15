@@ -1,5 +1,0 @@
-# The site is plain HTML and uses no Jekyll features, but GitHub Pages still
-# runs it through Jekyll, which skips dot-folders. .well-known/assetlinks.json
-# is how Android verifies the app may open psekiewicz.github.io links itself.
-include:
-  - .well-known

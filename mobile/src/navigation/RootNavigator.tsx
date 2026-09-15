@@ -61,12 +61,11 @@ function Tabs() {
 // it as a deep link means React Navigation does the routing and the query
 // string lands as route params, with no separate listener to keep in step.
 //
-// The site's own entry links open here too: app.json claims
-// https://psekiewicz.github.io/project* with autoVerify, and the site serves
-// .well-known/assetlinks.json naming this app's signing key, so Android hands
-// those links straight to the app. `?id=` arrives as the `id` param.
-// initialRouteName puts the tabs underneath whatever a link opens, so back
-// goes to Home instead of closing the app.
+// Links to the website are not claimed: they open in the browser, as a normal
+// link does. (They used to open here through Android App Links; that was
+// turned off on request.) ProjectDetail keeps a path so notifications can
+// open an entry - `?id=` arrives as the `id` param - and initialRouteName
+// puts the tabs underneath whatever a link opens, so back goes to Home.
 //
 // Tapping a notification from lib/notify.ts goes through here as well: each one
 // carries a showcase:// URL, read below both at cold start and while running.
@@ -76,12 +75,12 @@ const notificationUrl = (response: Notifications.NotificationResponse | null) =>
 };
 
 const linking: LinkingOptions<Record<string, object | undefined>> = {
-  prefixes: ['showcase://', 'https://psekiewicz.github.io'],
+  prefixes: ['showcase://'],
   config: {
     initialRouteName: 'Tabs',
     screens: {
       Editor: 'share',
-      ProjectDetail: { path: 'project.html', alias: ['project'] },
+      ProjectDetail: 'project.html',
       UserProfile: 'user',
     },
   },

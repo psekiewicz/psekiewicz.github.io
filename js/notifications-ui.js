@@ -41,7 +41,9 @@ function itemHtml(notification, profiles, titles) {
 }
 
 export function mountNotifications() {
-  const navRight = document.querySelector('.nav-right');
+  // The bell sits with the other small controls (theme, log out) - at the
+  // foot of the sidebar, or in the phone's top bar.
+  const navRight = document.querySelector('.nav-tools') || document.querySelector('.nav-right');
   if (!navRight || mounted) return;
   mounted = true;
 

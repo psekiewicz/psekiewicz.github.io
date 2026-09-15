@@ -28,21 +28,6 @@
       ],
       "intentFilters": [
         {
-          "action": "VIEW",
-          "autoVerify": true,
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ],
-          "data": [
-            {
-              "scheme": "https",
-              "host": "psekiewicz.github.io",
-              "pathPrefix": "/project"
-            }
-          ]
-        },
-        {
           "action": "SEND",
           "category": [
             "DEFAULT"
