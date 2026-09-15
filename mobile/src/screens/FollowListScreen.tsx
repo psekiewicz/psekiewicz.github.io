@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
+import { FlatList, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../components/Text';
 
 import { Avatar, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { getFollowers, getFollowing, MiniProfile } from '../data/follows';

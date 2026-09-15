@@ -111,7 +111,9 @@ src/
                cosmetics, media resolution, motion.ts (shared animations),
                push.ts (push token registration)
   screens/     one per screen
-  components/  ui.tsx (the design system), ProjectCard, CommentsSheet,
+  components/  ui.tsx (the design system), Text (JetBrains Mono for every Text
+               and TextInput), PostCard / PostTile (feed posts and grid tiles,
+               as on the website), CommentsSection, CommentsSheet,
                SplashReveal (the startup animation)
   theme/       the site's CSS custom properties, transcribed, plus
                MotionProvider (Settings' animations on/off/system toggle)
@@ -175,7 +177,7 @@ a **Paste from clipboard** button for links you have merely copied.
 
 ## What differs from the website, and why
 
-Three things could not carry over as-is. All three are visible decisions rather
+Two things could not carry over as-is. Both are visible decisions rather
 than omissions:
 
 **Third-party media doesn't play in-app.** A direct `.mp4`/`.mp3`/`.jpg` URL
@@ -191,10 +193,6 @@ Lamp, Orbit, Spectrum Spin, Glitch and Sparkle are keyframe animations. Running
 one per avatar in a scrolling feed costs more frame rate than the effect is
 worth, so `lib/cosmetics.ts` maps each to a still frame of the same palette.
 Everything is still recognisably the item that was bought.
-
-**The type is Android's monospace, not JetBrains Mono.** Bundling the variable
-font would add to the APK and to first-frame cost for a face the platform
-already has a good equivalent of. Same typographic decision, local materials.
 
 Also worth knowing: gradient-filled *text* effects (`name-gradient`,
 `name-rainbow`) take their dominant colour as a solid, because React Native

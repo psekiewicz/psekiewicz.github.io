@@ -8,12 +8,11 @@ import {
   ImageBackground,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
+import { Text, TextInput } from './Text';
 
 import { borderStyle, nameStyle } from '../lib/cosmetics';
 import { usePressScale } from '../lib/motion';

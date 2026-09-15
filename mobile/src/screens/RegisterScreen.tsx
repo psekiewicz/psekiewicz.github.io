@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '../components/Text';
 
 import { BrandMark } from '../components/BrandMark';
 import { Body, Button, ErrorNote, Eyebrow, Field, SuccessNote, Title } from '../components/ui';

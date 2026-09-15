@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from './Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../theme/ThemeProvider';

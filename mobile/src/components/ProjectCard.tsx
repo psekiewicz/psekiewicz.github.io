@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
+import { Text } from './Text';
 
 import type { Project } from '../data/projects';
 import { coverFor } from '../lib/media';

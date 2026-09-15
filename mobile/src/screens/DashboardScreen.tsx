@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { Animated, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { Text } from '../components/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { AccentHeader, SectionRule, StatBlock, TonePill } from '../components/bloom';

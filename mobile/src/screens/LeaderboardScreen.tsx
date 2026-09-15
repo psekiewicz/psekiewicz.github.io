@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../components/Text';
 
 import { Avatar, Button, DisplayName, EmptyState, ErrorNote, Eyebrow, LevelChip, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';

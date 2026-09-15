@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/Text';
 
 import {
   Body,

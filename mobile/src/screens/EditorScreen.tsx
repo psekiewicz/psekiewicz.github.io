@@ -1,16 +1,8 @@
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Text, TextInput } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AccentHeader, HeaderButton } from '../components/bloom';
