@@ -3,19 +3,20 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../components/icons';
+import { Text } from '../components/Text';
 import { usePressScale } from '../lib/motion';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
 
-// Navigation the way a social app arranges it: a flat bar across the bottom
-// with a hairline over it, the current tab marked by a heavier icon and a dot,
-// and compose sitting in the middle of the row.
+// The bottom bar, drawn the way the website's is on a phone: an icon with its
+// name under it, the one you are on in terracotta, and compose as a terracotta
+// pill in the middle of the row.
 //
-// It used to be a floating cream pill with a 74px terracotta button punched
-// through the middle, which covered the middle tab's neighbours and ate 104px
-// of every list. Compose was tried as a button floating over the bottom right
-// after that, and it sat on top of whichever post's Save icon happened to be
-// there - so it is in the row itself, where nothing is underneath it.
+// Labels are the point. Before this the bar was four unlabelled glyphs, and
+// "which of these is the dashboard" is not a question a bar should ask - both
+// the site and the apps this is modelled on (Reddit, Instagram) write the names
+// out. Compose sits in the row rather than floating over the feed, where it
+// used to sit on top of whichever post's Save icon was at that height.
 //
 // It is still not a tab: it pushes the editor onto the stack above these tabs,
 // so adding an entry is a screen you finish and come back from rather than a
@@ -37,8 +38,8 @@ export function BloomTabBar({ state, navigation }: any) {
   // rather than drawing a cream strip under a black video.
   const onScrolls = state.routes[state.index]?.name === 'Scrolls';
   const bg = onScrolls ? colors.scrollsBg : colors.bg;
-  const idle = onScrolls ? 'rgba(253,247,234,0.55)' : colors.textFaint;
-  const active = onScrolls ? '#fdf7ea' : colors.text;
+  const idle = onScrolls ? 'rgba(253,247,234,0.6)' : colors.textFaint;
+  const active = onScrolls ? '#fdf7ea' : colors.primary;
   const line = onScrolls ? 'rgba(253,247,234,0.16)' : colors.border;
 
   const go = (route: any, isFocused: boolean) => {
@@ -48,6 +49,7 @@ export function BloomTabBar({ state, navigation }: any) {
 
   const renderTab = (route: any, index: number) => {
     const isFocused = state.index === index;
+    const color = isFocused ? active : idle;
     return (
       <Pressable
         key={route.key}
@@ -57,29 +59,22 @@ export function BloomTabBar({ state, navigation }: any) {
         accessibilityLabel={route.name}
         style={({ pressed }) => ({
           flex: 1,
-          height: 54,
+          height: 58,
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 3,
           opacity: pressed ? 0.6 : 1,
         })}
       >
         <Icon
           name={ICONS[route.name] || 'home'}
-          size={24}
-          color={isFocused ? active : idle}
-          // The current tab is the heavier one, which is how a bar with no pill
-          // behind the icon says where you are.
-          strokeWidth={isFocused ? 2.9 : 2.1}
+          size={22}
+          color={color}
+          strokeWidth={isFocused ? 2.7 : 2.1}
         />
-        <View
-          style={{
-            marginTop: 4,
-            width: 5,
-            height: 5,
-            borderRadius: radius.pill,
-            backgroundColor: isFocused ? colors.primary : 'transparent',
-          }}
-        />
+        <Text style={{ fontSize: 10.5, fontWeight: isFocused ? '700' : '500', color }} numberOfLines={1}>
+          {route.name}
+        </Text>
       </Pressable>
     );
   };
@@ -93,7 +88,7 @@ export function BloomTabBar({ state, navigation }: any) {
         left: 0,
         right: 0,
         bottom: 0,
-        height: 54 + insets.bottom,
+        height: 58 + insets.bottom,
         paddingBottom: insets.bottom,
         flexDirection: 'row',
         alignItems: 'center',
@@ -115,22 +110,21 @@ export function BloomTabBar({ state, navigation }: any) {
         onPressOut={onPressOut}
         accessibilityRole="button"
         accessibilityLabel="Add an entry"
-        style={{ flex: 1, height: 54, alignItems: 'center', justifyContent: 'center' }}
+        style={{ flex: 1, height: 58, alignItems: 'center', justifyContent: 'center' }}
       >
         <Animated.View
           style={{
             transform: [{ scale }],
-            width: 46,
-            height: 32,
-            borderRadius: 12,
+            width: 54,
+            height: 36,
+            borderRadius: radius.pill,
             backgroundColor: colors.primary,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Icon name="plus" size={21} color={colors.onAccent} />
+          <Icon name="plus" size={22} color={colors.onAccent} />
         </Animated.View>
-        <View style={{ marginTop: 4, height: 5 }} />
       </Pressable>
 
       {tabs.slice(2).map(({ route, index }: any) => renderTab(route, index))}

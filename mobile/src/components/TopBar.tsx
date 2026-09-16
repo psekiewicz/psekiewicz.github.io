@@ -12,10 +12,11 @@ import { Text } from './Text';
 // on the right, and whatever the screen pins under it - tabs, a search field -
 // inside the same border.
 //
-// It replaces AccentHeader on the feed screens. That header is a block of
-// terracotta with 34px corners and a day-of-the-week eyebrow, which is a lot of
-// furniture above a list you scroll: this one is 50px of page ground with a
-// hairline under it, so the posts start at the top of the screen.
+// It replaced the accent header, which was a block of terracotta with 34px
+// corners and a day-of-the-week eyebrow above every list - enough furniture
+// that the screen itself looked as though its top edge had been rounded off.
+// This is 50px of page ground with a hairline under it, so the posts start at
+// the top of the screen.
 
 export function TopBar({
   leading,
