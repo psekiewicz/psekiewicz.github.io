@@ -124,32 +124,34 @@ export function Button({
       onPressOut={inactive ? undefined : onPressOut}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactive }}
+      // The caller's style goes on the outer box, because what callers pass is
+      // layout - flex, margins, alignSelf. On the inner box `flex: 1` measured
+      // against the *column* the Pressable lays out, so the pill's content
+      // collapsed to nothing: every row of two buttons (the editor's Draft and
+      // Publish, the admin rows, a project's card) drew as empty pills.
       style={({ pressed }) => [
         {
           opacity: inactive ? 0.45 : pressed ? 0.75 : 1,
         },
+        style,
       ]}
     >
       <Animated.View
-        style={[
-          {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: space.sm,
-            backgroundColor: palette.bg,
-            borderColor: palette.border,
-            borderWidth: 1.5,
-            borderRadius: radius.pill,
-            paddingVertical: small ? 10 : 14,
-            // Narrow enough for a label to survive inside a button sharing a
-            // row: at space.xl a flexed "Publish" had less width than the word
-            // and rendered as an empty pill.
-            paddingHorizontal: small ? space.md : space.lg,
-            transform: [{ scale }],
-          },
-          style,
-        ]}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: space.sm,
+          backgroundColor: palette.bg,
+          borderColor: palette.border,
+          borderWidth: 1.5,
+          borderRadius: radius.pill,
+          paddingVertical: small ? 10 : 14,
+          // Room for a label in a button that shares a row: JetBrains Mono is
+          // wider than the face this was drawn for.
+          paddingHorizontal: small ? space.md : space.lg,
+          transform: [{ scale }],
+        }}
       >
         {loading ? (
           <ActivityIndicator size="small" color={palette.fg} />
