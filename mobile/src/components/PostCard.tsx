@@ -163,58 +163,58 @@ export function PostCard({
 
         {/* The picture fills the column beside the avatar, as an attachment. */}
         {showMedia ? (
-        <View
-          style={{
-            marginTop: 9,
-            aspectRatio: 16 / 9,
-            borderRadius: radius.sm,
-            overflow: 'hidden',
-            borderWidth: StyleSheet.hairlineWidth * 2,
-            borderColor: colors.border,
-          }}
-        >
-          <LinearGradient
-            colors={placeholderFor(type) as any}
-            start={{ x: 0.15, y: 0 }}
-            end={{ x: 0.85, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {cover ? (
-            <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-          ) : null}
           <View
             style={{
-              position: 'absolute',
-              top: 8,
-              left: 8,
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: radius.pill,
-              backgroundColor: 'rgba(32,30,29,0.62)',
+              marginTop: 9,
+              aspectRatio: 16 / 9,
+              borderRadius: radius.sm,
+              overflow: 'hidden',
+              borderWidth: StyleSheet.hairlineWidth * 2,
+              borderColor: colors.border,
             }}
           >
-            <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: '#fdf7ea' }}>
-              {meta.label.toUpperCase()}
-            </Text>
-          </View>
-          {PLAYABLE.has(type) ? (
+            <LinearGradient
+              colors={placeholderFor(type) as any}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {cover ? (
+              <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+            ) : null}
             <View
               style={{
                 position: 'absolute',
-                right: 10,
-                bottom: 10,
-                width: 38,
-                height: 38,
+                top: 8,
+                left: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
                 borderRadius: radius.pill,
-                backgroundColor: 'rgba(32,30,29,0.72)',
-                alignItems: 'center',
-                justifyContent: 'center',
+                backgroundColor: 'rgba(32,30,29,0.62)',
               }}
             >
-              <Icon name="play" size={17} color="#fdf7ea" fill="#fdf7ea" />
+              <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: '#fdf7ea' }}>
+                {meta.label.toUpperCase()}
+              </Text>
             </View>
-          ) : null}
-        </View>
+            {PLAYABLE.has(type) ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  bottom: 10,
+                  width: 38,
+                  height: 38,
+                  borderRadius: radius.pill,
+                  backgroundColor: 'rgba(32,30,29,0.72)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="play" size={17} color="#fdf7ea" fill="#fdf7ea" />
+              </View>
+            ) : null}
+          </View>
         ) : null}
 
         {/* Actions, spread across the column. */}
