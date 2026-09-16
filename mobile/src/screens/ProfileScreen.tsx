@@ -26,6 +26,7 @@ import { followUser, getFollowerCount, getFollowingCount, isFollowing, unfollowU
 import { getProfile, Profile } from '../data/profiles';
 import { getPublishedProjectsByUser, Project } from '../data/projects';
 import { getReputation, Reputation } from '../data/reputation';
+import { padRow, useCardColumns } from '../lib/layout';
 import {
   claimAchievement,
   getAchievementRecords,
@@ -47,6 +48,7 @@ import { gutter, radius, space, typography } from '../theme/tokens';
 export function ProfileScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const tileColumns = Math.max(2, useCardColumns());
   const { user, profile: myProfile, refreshProfile } = useAuth();
 
   // Reached two ways: as the Profile tab (no params - your own) and pushed
@@ -265,9 +267,13 @@ export function ProfileScreen({ route, navigation }: any) {
         />
       ) : null}
       <FlatList
+        // The grid follows the window now that the app rotates: two columns on
+        // a phone, more once there is room, and a fresh key because FlatList
+        // will not change numColumns in place.
+        key={`tiles-${tileColumns}`}
         style={{ flex: 1, backgroundColor: colors.bg }}
-        data={tab === 'posts' ? projects : []}
-        numColumns={2}
+        data={tab === 'posts' ? padRow(projects, tileColumns) : []}
+        numColumns={tileColumns}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
@@ -549,13 +555,18 @@ export function ProfileScreen({ route, navigation }: any) {
           </View>
           )
         }
-        renderItem={({ item }) => (
-          <PostTile
-            project={item}
-            showAuthor={false}
-            onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
-          />
-        )}
+        renderItem={({ item }) =>
+          item ? (
+            <PostTile
+              project={item}
+              showAuthor={false}
+              onPress={() => navigation.navigate('ProjectDetail', { projectId: item.id })}
+            />
+          ) : (
+            // A blank keeps the last row's tiles the size of every other tile.
+            <View style={{ flex: 1 }} />
+          )
+        }
       />
     </>
   );
