@@ -33,6 +33,14 @@ export function BloomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { scale, onPressIn, onPressOut } = usePressScale(0.9);
 
+  // Scrolls is full-bleed dark in both themes, so the bar goes dark with it
+  // rather than drawing a cream strip under a black video.
+  const onScrolls = state.routes[state.index]?.name === 'Scrolls';
+  const bg = onScrolls ? colors.scrollsBg : colors.bg;
+  const idle = onScrolls ? 'rgba(253,247,234,0.55)' : colors.textFaint;
+  const active = onScrolls ? '#fdf7ea' : colors.text;
+  const line = onScrolls ? 'rgba(253,247,234,0.16)' : colors.border;
+
   const go = (route: any, isFocused: boolean) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
     if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
@@ -58,7 +66,7 @@ export function BloomTabBar({ state, navigation }: any) {
         <Icon
           name={ICONS[route.name] || 'home'}
           size={24}
-          color={isFocused ? colors.text : colors.textFaint}
+          color={isFocused ? active : idle}
           // The current tab is the heavier one, which is how a bar with no pill
           // behind the icon says where you are.
           strokeWidth={isFocused ? 2.9 : 2.1}
@@ -89,9 +97,9 @@ export function BloomTabBar({ state, navigation }: any) {
         paddingBottom: insets.bottom,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.bg,
+        backgroundColor: bg,
         borderTopWidth: StyleSheet.hairlineWidth * 2,
-        borderTopColor: colors.border,
+        borderTopColor: line,
         zIndex: 12,
       }}
     >

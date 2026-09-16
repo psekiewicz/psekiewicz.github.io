@@ -76,7 +76,7 @@ export function NotificationsScreen({ navigation }: any) {
       style={{ flex: 1, backgroundColor: colors.bg }}
       data={items}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ padding: space.lg, gap: space.sm, paddingBottom: space.xxl }}
+      contentContainerStyle={{ paddingBottom: space.xxl }}
       ListHeaderComponent={<ErrorNote message={error} />}
       ListEmptyComponent={
         <EmptyState icon="bell" title="All quiet" body="Likes, comments and follows show up here." />
@@ -97,10 +97,10 @@ export function NotificationsScreen({ navigation }: any) {
               flexDirection: 'row',
               alignItems: 'center',
               gap: space.md,
-              padding: space.md,
-              borderRadius: 5,
-              borderWidth: StyleSheet.hairlineWidth * 2,
-              borderColor: colors.border,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+              borderBottomWidth: StyleSheet.hairlineWidth * 2,
+              borderBottomColor: colors.border,
               backgroundColor: item.read ? 'transparent' : colors.surface,
               opacity: pressed ? 0.7 : 1,
             })}
