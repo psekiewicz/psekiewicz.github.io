@@ -142,7 +142,10 @@ export function Button({
             borderWidth: 1.5,
             borderRadius: radius.pill,
             paddingVertical: small ? 10 : 14,
-            paddingHorizontal: small ? space.lg : space.xl,
+            // Narrow enough for a label to survive inside a button sharing a
+            // row: at space.xl a flexed "Publish" had less width than the word
+            // and rendered as an empty pill.
+            paddingHorizontal: small ? space.md : space.lg,
             transform: [{ scale }],
           },
           style,
@@ -154,11 +157,13 @@ export function Button({
           <>
             {icon ? <Feather name={icon} size={small ? 13 : 15} color={palette.fg} /> : null}
             <Text
+              numberOfLines={1}
               style={{
                 color: palette.fg,
                 fontSize: small ? 12 : 14,
                 fontWeight: '700',
                 letterSpacing: 0.3,
+                flexShrink: 1,
               }}
             >
               {label}

@@ -5,7 +5,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } fr
 import { Text, TextInput } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AccentHeader, HeaderButton } from '../components/bloom';
+import { TopBar, TopBarButton } from '../components/TopBar';
 import { Icon, IconName } from '../components/icons';
 import { Body, Button, Chip, ErrorNote, Heading, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -457,11 +457,9 @@ export function EditorScreen({ route, navigation }: any) {
   };
 
   const header = (
-    <AccentHeader
-      eyebrow={projectId ? (published ? 'Editing · published' : 'Editing · draft') : 'New entry'}
-      title={projectId ? title || 'Untitled' : 'Add something'}
-      actions={
-        <HeaderButton
+    <TopBar
+      leading={
+        <TopBarButton
           icon="back"
           label="Go back"
           // Android's share sheet can make this the first screen in the stack,
@@ -473,6 +471,7 @@ export function EditorScreen({ route, navigation }: any) {
           }
         />
       }
+      title={projectId ? (published ? 'Edit entry' : 'Edit draft') : 'New entry'}
     />
   );
 
