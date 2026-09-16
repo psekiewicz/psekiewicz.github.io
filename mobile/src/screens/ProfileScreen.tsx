@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, ImageBackground, Pressable, RefreshControl, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, RefreshControl, useWindowDimensions, View } from 'react-native';
 import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -49,6 +49,7 @@ export function ProfileScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tileColumns = Math.max(2, useCardColumns());
+  const { height: windowHeight } = useWindowDimensions();
   const { user, profile: myProfile, refreshProfile } = useAuth();
 
   // Reached two ways: as the Profile tab (no params - your own) and pushed
@@ -249,8 +250,12 @@ export function ProfileScreen({ route, navigation }: any) {
 
   // A straight banner, as every profile page draws one. It used to shed its
   // bottom corners into the page, which left the avatar hanging off a curve.
+  //
+  // Now that the app turns, the height is capped against the window as well:
+  // 158 is a third of a phone held sideways, and a cover that deep leaves no
+  // room for the person underneath it.
   const headerStyle = {
-    height: 158 + (route.params?.userId ? 0 : insets.top),
+    height: Math.min(158, Math.round(windowHeight * 0.3)) + (route.params?.userId ? 0 : insets.top),
     overflow: 'hidden' as const,
   };
 
