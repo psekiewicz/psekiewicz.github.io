@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
-import { AccentHeader, HeaderButton } from '../components/bloom';
 import { FeedTabs } from '../components/FeedTabs';
 import { PostCard } from '../components/PostCard';
-import { Button, EmptyState, ErrorNote, Loading } from '../components/ui';
+import { TopBar, TopBarButton } from '../components/TopBar';
+import { Avatar, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
 import { getFollowingIds } from '../data/follows';
@@ -17,11 +17,14 @@ import { loadSeenIds, rankFeed } from '../lib/feedRank';
 import { getLevelsForUsers } from '../lib/levels';
 import { usePostActions } from '../lib/usePostActions';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, space } from '../theme/tokens';
+import { space } from '../theme/tokens';
 
-// Home is the feed, the way the website's is: For you (ranked), Following and
-// Latest, drawn as posts you can like, save and share without opening them.
-// Searching and filtering by type moved to Explore, behind the header's search.
+// Home is the feed: For you (ranked), Following and Latest, drawn as posts you
+// can like, save and share without opening them. Searching and filtering by
+// type moved to Explore, behind the bar's search.
+//
+// The chrome is a timeline's: a 50px bar carrying your avatar, the tabs pinned
+// under it, and then posts straight away, full-bleed and divided by hairlines.
 
 type Tab = 'foryou' | 'following' | 'latest';
 
@@ -37,7 +40,7 @@ const MAX_POST_WIDTH = 620;
 
 export function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
@@ -123,8 +126,6 @@ export function HomeScreen({ navigation }: any) {
     return tab === 'following' ? newest.filter((p) => followingIds.has(p.uid)) : newest;
   }, [tab, ranked, projects, followingIds]);
 
-  const eyebrow = new Date().toLocaleDateString(undefined, { weekday: 'long' }).toUpperCase();
-
   const empty =
     tab === 'following' ? (
       user ? (
@@ -148,40 +149,35 @@ export function HomeScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <AccentHeader
-        eyebrow={eyebrow}
+      <TopBar
+        leading={
+          <Pressable
+            onPress={() => (user ? navigation.navigate('Profile') : signIn())}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={user ? 'Your profile' : 'Log in'}
+          >
+            <Avatar url={profile?.avatarUrl} name={profile?.displayName || 'You'} size={32} />
+          </Pressable>
+        }
         title="Home"
         actions={
           <>
-            <HeaderButton icon="search" label="Explore" onPress={() => navigation.navigate('Explore')} />
-            <HeaderButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
-            <View>
-              <HeaderButton
-                icon="bell"
-                label="Notifications"
-                onPress={() => (user ? navigation.navigate('Notifications') : signIn())}
-              />
-              {unread > 0 ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 2,
-                    right: 2,
-                    width: 9,
-                    height: 9,
-                    borderRadius: radius.pill,
-                    backgroundColor: colors.bg,
-                  }}
-                />
-              ) : null}
-            </View>
+            <TopBarButton icon="search" label="Explore" onPress={() => navigation.navigate('Explore')} />
+            <TopBarButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
+            <TopBarButton
+              icon="bell"
+              label="Notifications"
+              badge={unread > 0}
+              onPress={() => (user ? navigation.navigate('Notifications') : signIn())}
+            />
           </>
         }
-      />
-
-      <View style={{ width: '100%', maxWidth: MAX_POST_WIDTH, alignSelf: 'center' }}>
-        <FeedTabs tabs={TABS} value={tab} onChange={(next) => setTab(next as Tab)} />
-      </View>
+      >
+        <View style={{ width: '100%', maxWidth: MAX_POST_WIDTH, alignSelf: 'center' }}>
+          <FeedTabs tabs={TABS} value={tab} onChange={(next) => setTab(next as Tab)} />
+        </View>
+      </TopBar>
 
       {loading ? (
         <Loading label="Loading posts" />
@@ -189,16 +185,14 @@ export function HomeScreen({ navigation }: any) {
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
-          // 116 of bottom padding clears Bloom's floating tab bar and the add
-          // button overhanging it.
+          // No padding and no gaps: posts run edge to edge and are told apart
+          // by the hairline each one draws under itself. The bottom pad clears
+          // the tab bar the list scrolls behind.
           contentContainerStyle={{
             width: '100%',
             maxWidth: MAX_POST_WIDTH,
             alignSelf: 'center',
-            paddingHorizontal: 10,
-            paddingTop: 12,
-            gap: 12,
-            paddingBottom: 116,
+            paddingBottom: 96,
           }}
           refreshControl={
             <RefreshControl

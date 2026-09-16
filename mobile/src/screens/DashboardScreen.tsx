@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { Animated, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { AccentHeader, SectionRule, StatBlock, TonePill } from '../components/bloom';
+import { SectionRule, StatBlock, TonePill } from '../components/bloom';
+import { TopBar } from '../components/TopBar';
 import { placeholderFor } from '../components/ProjectCard';
 import { ProgressRing } from '../components/ProgressRing';
 import { Body, Button, Card, EmptyState, ErrorNote, Heading, Loading } from '../components/ui';
@@ -102,26 +103,7 @@ export function DashboardScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <AccentHeader tone="accent" eyebrow="Last 14 days" title="Your work">
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-          <ProgressRing progress={liveShare} value={formatCount(views)} label="Views" />
-          <View style={{ flex: 1, gap: 10 }}>
-            <StatBlock
-              tone="onAccent"
-              size={22}
-              value={formatCount(reputation?.likesReceived ?? 0)}
-              label="Likes"
-            />
-            <StatBlock
-              tone="onAccent"
-              size={22}
-              value={formatCount(reputation?.followers ?? 0)}
-              label="Followers"
-            />
-            <StatBlock tone="onAccent" size={22} value={entries} label="Entries" />
-          </View>
-        </View>
-      </AccentHeader>
+      <TopBar title="Your work" />
 
       <FlatList
       style={{ flex: 1 }}
@@ -149,6 +131,28 @@ export function DashboardScreen({ navigation }: any) {
       ListHeaderComponent={
         <View style={{ gap: 18, marginBottom: 6 }}>
           <ErrorNote message={error} />
+
+          {/* The numbers used to sit in a block of sage above the list. They
+              read the same on the page ground and cost 150px less. */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 18,
+              padding: 16,
+              borderRadius: radius.md,
+              backgroundColor: colors.surface,
+              borderWidth: StyleSheet.hairlineWidth * 2,
+              borderColor: colors.border,
+            }}
+          >
+            <ProgressRing progress={liveShare} value={formatCount(views)} label="Views" />
+            <View style={{ flex: 1, gap: 10 }}>
+              <StatBlock size={22} value={formatCount(reputation?.likesReceived ?? 0)} label="Likes" />
+              <StatBlock size={22} value={formatCount(reputation?.followers ?? 0)} label="Followers" />
+              <StatBlock size={22} value={entries} label="Entries" />
+            </View>
+          </View>
 
           <ViewsChart series={viewSeries} />
 
