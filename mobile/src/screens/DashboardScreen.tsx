@@ -146,7 +146,13 @@ export function DashboardScreen({ navigation }: any) {
               borderColor: colors.border,
             }}
           >
-            <ProgressRing progress={liveShare} value={formatCount(views)} label="Views" />
+            <ProgressRing
+              progress={liveShare}
+              value={formatCount(views)}
+              label="Views"
+              color={colors.primary}
+              trackColor={colors.mutedSoft}
+            />
             <View style={{ flex: 1, gap: 10 }}>
               <StatBlock size={22} value={formatCount(reputation?.likesReceived ?? 0)} label="Likes" />
               <StatBlock size={22} value={formatCount(reputation?.followers ?? 0)} label="Followers" />

@@ -217,14 +217,16 @@ export function PostCard({
           </View>
         ) : null}
 
-        {/* Actions, spread across the column. */}
+        {/* Actions, spread across the left of the column: the compose button
+            floats over the bottom right of the feed, and spreading these the
+            whole way put Save underneath it. */}
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             marginTop: 8,
-            paddingRight: 8,
+            maxWidth: 300,
           }}
         >
           <PostAction

@@ -146,7 +146,7 @@ export function RootNavigator() {
         <Stack.Screen
           name="ProjectDetail"
           component={ProjectDetailScreen}
-          options={{ title: '' }}
+          options={{ title: 'Post' }}
         />
         <Stack.Screen name="Editor" component={EditorScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Explore" component={ExploreScreen} options={{ headerShown: false }} />

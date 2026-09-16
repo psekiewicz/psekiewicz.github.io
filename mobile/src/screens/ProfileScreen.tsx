@@ -245,10 +245,10 @@ export function ProfileScreen({ route, navigation }: any) {
     </>
   );
 
+  // A straight banner, as every profile page draws one. It used to shed its
+  // bottom corners into the page, which left the avatar hanging off a curve.
   const headerStyle = {
     height: 158 + (route.params?.userId ? 0 : insets.top),
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
     overflow: 'hidden' as const,
   };
 
