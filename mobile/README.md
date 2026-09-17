@@ -112,8 +112,9 @@ src/
                push.ts (push token registration)
   screens/     one per screen
   components/  ui.tsx (the design system), Text (JetBrains Mono for every Text
-               and TextInput), PostCard / PostTile (feed posts and grid tiles,
-               as on the website), CommentsSection, CommentsSheet,
+               and TextInput), TopBar (the slim bar over every feed screen),
+               PostCard / PostTile (timeline posts and grid tiles),
+               FeedTabs, CommentsSection, CommentsSheet,
                SplashReveal (the startup animation)
   theme/       the site's CSS custom properties, transcribed, plus
                MotionProvider (Settings' animations on/off/system toggle)

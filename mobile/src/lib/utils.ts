@@ -51,7 +51,15 @@ export function timeAgo(isoDate: string) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(isoDate).toLocaleDateString();
+  // Past a month it becomes a date. Written the short way a feed writes it -
+  // "13 Aug", with the year only when it isn't this one.
+  const then = new Date(isoDate);
+  const sameYear = then.getFullYear() === new Date().getFullYear();
+  return then.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
 }
 
 export function formatCount(n: number) {

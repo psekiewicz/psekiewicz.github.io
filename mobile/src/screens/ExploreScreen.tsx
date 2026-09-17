@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '../components/icons';
 import { PostTile } from '../components/PostTile';
+import { TopBar } from '../components/TopBar';
 import { Text, TextInput } from '../components/Text';
 import { Avatar, DisplayName, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { getCommentCounts } from '../data/comments';
@@ -183,57 +184,50 @@ export function ExploreScreen({ navigation, route }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Search bar in place of a title - the whole screen is the search. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          paddingTop: insets.top + 10,
-          paddingBottom: 12,
-          paddingHorizontal: gutter,
-          borderBottomWidth: StyleSheet.hairlineWidth * 2,
-          borderBottomColor: colors.border,
-        }}
-      >
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Icon name="back" size={22} color={colors.text} />
-        </Pressable>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            paddingHorizontal: 16,
-            borderRadius: radius.pill,
-            backgroundColor: colors.surfaceAlt,
-          }}
-        >
-          <Icon name="search" size={17} color={colors.textFaint} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search posts, tags and people"
-            placeholderTextColor={colors.textFaint}
-            autoFocus={!route.params?.tag}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            style={{ flex: 1, paddingVertical: 11, fontSize: 14, color: colors.text }}
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
-              <Feather name="x" size={16} color={colors.textFaint} />
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
+      {/* Search field in place of a title - the whole screen is the search. */}
+      <TopBar
+        leading={
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={{ paddingRight: 2 }}
+          >
+            <Icon name="back" size={22} color={colors.text} strokeWidth={2.4} />
+          </Pressable>
+        }
+        title={
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 9,
+              paddingHorizontal: 14,
+              borderRadius: radius.pill,
+              backgroundColor: colors.surfaceAlt,
+            }}
+          >
+            <Icon name="search" size={16} color={colors.textFaint} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search posts, tags and people"
+              placeholderTextColor={colors.textFaint}
+              autoFocus={!route.params?.tag}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              style={{ flex: 1, paddingVertical: 9, fontSize: 13.5, color: colors.text }}
+            />
+            {query ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
+                <Feather name="x" size={16} color={colors.textFaint} />
+              </Pressable>
+            ) : null}
+          </View>
+        }
+      />
 
       {loading ? (
         <Loading label="Loading posts" />

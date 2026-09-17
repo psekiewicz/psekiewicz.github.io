@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { CommentsSection } from '../components/CommentsSection';
+import { PostAction } from '../components/PostCard';
 import { Icon } from '../components/icons';
 import { ReportSheet } from '../components/ReportSheet';
 import { Avatar, Button, DisplayName, ErrorNote, LevelChip, Loading, TypeBadge } from '../components/ui';
@@ -155,14 +156,13 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const media = resolveMedia(project.mediaUrl, project.type);
   const isOwner = user?.id === project.uid;
 
-  // One post, the way the website draws it: who posted it on top, then the
-  // words, the media and the actions, with the conversation directly
-  // underneath rather than in a sheet.
+  // One opened post: who posted it on top, then the words, the media and the
+  // actions, with the conversation directly underneath rather than in a sheet.
+  // Full-bleed and divided by hairlines, the way it is drawn in the feed.
   const card = {
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
+    backgroundColor: colors.bg,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: colors.border,
   };
 
   return (
@@ -173,13 +173,11 @@ export function ProjectDetailScreen({ route, navigation }: any) {
           width: '100%',
           maxWidth: 680,
           alignSelf: 'center',
-          padding: 10,
-          gap: space.lg,
           paddingBottom: space.xxl + insets.bottom,
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[card, { overflow: 'hidden' }]}>
+        <View style={card}>
           {/* Who and when */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, paddingBottom: 10 }}>
             <Pressable
@@ -259,7 +257,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
 
           {/* Media */}
           {project.imageUrl && (!media || media.kind === 'link') ? (
-            <View style={{ marginHorizontal: 10, borderRadius: radius.md, overflow: 'hidden' }}>
+            <View style={{ marginHorizontal: 14, borderRadius: radius.sm, overflow: 'hidden' }}>
               <Image
                 source={{ uri: project.imageUrl }}
                 style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.mutedSoft }}
@@ -268,7 +266,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
             </View>
           ) : null}
           {media ? (
-            <View style={{ marginHorizontal: 10 }}>
+            <View style={{ marginHorizontal: 14 }}>
               <MediaBlock media={media} colors={colors} />
             </View>
           ) : null}
@@ -299,14 +297,15 @@ export function ProjectDetailScreen({ route, navigation }: any) {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 2,
-              marginTop: 10,
-              paddingHorizontal: 6,
-              paddingVertical: 6,
+              justifyContent: 'space-between',
+              marginTop: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 11,
               borderTopWidth: StyleSheet.hairlineWidth * 2,
               borderTopColor: colors.border,
             }}
           >
+            <PostAction icon="comment" label={formatCount(commentCount)} accessibilityLabel="Comments" />
             <PostAction
               icon="heart"
               label={formatCount(likeCount)}
@@ -315,9 +314,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               onPress={toggleLike}
               accessibilityLabel={liked ? 'Unlike' : 'Like'}
             />
-            <PostAction icon="comment" label={formatCount(commentCount)} accessibilityLabel="Comments" />
             <PostAction icon="share" onPress={share} accessibilityLabel="Share" />
-            <View style={{ flex: 1 }} />
             <PostAction
               icon="bookmark"
               active={savedState}
@@ -333,52 +330,27 @@ export function ProjectDetailScreen({ route, navigation }: any) {
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="Report this entry"
-                style={{ padding: 10 }}
+                style={{ paddingVertical: 4 }}
               >
-                <Feather name="flag" size={16} color={colors.textFaint} />
+                <Feather name="flag" size={17} color={colors.textFaint} />
               </Pressable>
             ) : null}
           </View>
         </View>
 
-        <CommentsSection
-          projectId={projectId}
-          ownerId={project.uid}
-          onCountChange={(delta) => setCommentCount((c) => Math.max(0, c + delta))}
-          onSignIn={() => navigation.navigate('Login')}
-          onAuthorPress={(userId) => navigation.navigate('UserProfile', { userId })}
-        />
+        <View style={{ padding: 12 }}>
+          <CommentsSection
+            projectId={projectId}
+            ownerId={project.uid}
+            onCountChange={(delta) => setCommentCount((c) => Math.max(0, c + delta))}
+            onSignIn={() => navigation.navigate('Login')}
+            onAuthorPress={(userId) => navigation.navigate('UserProfile', { userId })}
+          />
+        </View>
       </ScrollView>
 
       <ReportSheet projectId={projectId} visible={showReport} onClose={() => setShowReport(false)} />
     </>
-  );
-}
-
-function PostAction({ icon, label, onPress, active, activeColor, accessibilityLabel }: any) {
-  const { colors } = useTheme();
-  const color = active ? activeColor || colors.primary : colors.textMuted;
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      hitSlop={6}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: !!active }}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 7,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: radius.pill,
-        backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
-      })}
-    >
-      <Icon name={icon} size={19} color={color} fill={active ? color : 'none'} />
-      {label !== undefined ? <Text style={{ fontSize: 13, color, fontWeight: '700' }}>{label}</Text> : null}
-    </Pressable>
   );
 }
 

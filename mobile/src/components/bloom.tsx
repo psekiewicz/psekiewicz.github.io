@@ -1,67 +1,21 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Text, TextInput } from './Text';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, View } from 'react-native';
+import { Text } from './Text';
 
 import { useTheme } from '../theme/ThemeProvider';
-import { gutter, radius, typography } from '../theme/tokens';
+import { radius, typography } from '../theme/tokens';
 import { Icon, IconName } from './icons';
 
-// The chrome Bloom repeats on every screen: an accent header that sheds its
-// bottom corners into the page, translucent round buttons sitting on it, and
-// tinted pills. Home and Dashboard are the same header in two different accents.
+// What is left of Bloom's chrome now that the feed screens draw a plain
+// components/TopBar instead: the round translucent button a profile's cover
+// still carries, and the tinted pills and stat blocks the dashboard uses.
+//
+// The accent header itself is gone. It was a block of terracotta with 34px
+// corners over every list, which is where the app's "rounded screen" came
+// from, and nothing imports it now.
 
 /** Cream, for anything drawn on top of an accent fill. */
 export const ON_ACCENT = '#fdf7ea';
-
-export function AccentHeader({
-  tone = 'primary',
-  eyebrow,
-  title,
-  actions,
-  children,
-}: {
-  tone?: 'primary' | 'accent';
-  eyebrow?: string;
-  title?: string;
-  actions?: React.ReactNode;
-  children?: React.ReactNode;
-}) {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  return (
-    <View
-      style={{
-        backgroundColor: tone === 'accent' ? colors.accent : colors.primary,
-        borderBottomLeftRadius: radius.xl,
-        borderBottomRightRadius: radius.xl,
-        // The artboard starts the eyebrow at 46px on a device whose status bar
-        // is ~47 tall, i.e. immediately under it. Android's is shorter, so the
-        // inset is padded rather than hard-coded to keep the same optical gap.
-        paddingTop: insets.top + 14,
-        paddingHorizontal: gutter,
-        paddingBottom: gutter,
-        gap: 16,
-      }}
-    >
-      {(eyebrow || title || actions) && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            {!!eyebrow && (
-              <Text style={[typography.eyebrow, { color: 'rgba(253,247,234,0.8)' }]}>{eyebrow}</Text>
-            )}
-            {!!title && (
-              <Text style={[typography.h1, { color: ON_ACCENT, marginTop: 3 }]}>{title}</Text>
-            )}
-          </View>
-          {actions}
-        </View>
-      )}
-      {children}
-    </View>
-  );
-}
 
 /** A 40px translucent circle holding one icon - the header's own buttons. */
 export function HeaderButton({
@@ -90,74 +44,6 @@ export function HeaderButton({
       })}
     >
       <Icon name={icon} size={size * 0.45} color={ON_ACCENT} />
-    </Pressable>
-  );
-}
-
-/** The cream search pill inset into the Home header. */
-export function SearchPill({
-  value,
-  onChangeText,
-  placeholder = 'Titles, tags, people',
-}: {
-  value?: string;
-  onChangeText?: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        backgroundColor: 'rgba(253,247,234,0.94)',
-        borderRadius: radius.pill,
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-      }}
-    >
-      {/* The pill is cream in both themes, so its icon can't follow the theme
-          either: dark mode's primaryDeep is a pale peach made for dark ground. */}
-      <Icon name="search" size={16} color="#8f4a1e" />
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#8b8177"
-        style={{ flex: 1, fontSize: 13, color: '#201e1d', padding: 0 }}
-      />
-    </View>
-  );
-}
-
-/** The filter chips under the header - active is an accent tint, idle outlined. */
-export function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active?: boolean;
-  onPress?: () => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: !!active }}
-      style={{
-        paddingHorizontal: 15,
-        paddingVertical: 9,
-        borderRadius: radius.pill,
-        backgroundColor: active ? colors.primarySoft : colors.bg,
-        borderWidth: active ? 0 : 1.5,
-        borderColor: colors.border,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: '700', color: active ? colors.primaryDeep : colors.textMuted }}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
@@ -279,8 +165,3 @@ export function StatBlock({
     </View>
   );
 }
-
-export const bloomStyles = StyleSheet.create({
-  // Every scroll view clears the floating tab bar by this much.
-  scrollPad: { paddingHorizontal: gutter, paddingTop: 18, paddingBottom: 116, gap: 16 },
-});

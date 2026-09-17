@@ -3,7 +3,7 @@
     "name": "Showcase",
     "slug": "showcase",
     "version": "1.1.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "showcase",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",

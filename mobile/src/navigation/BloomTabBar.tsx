@@ -1,22 +1,26 @@
 import React from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../components/icons';
+import { Text } from '../components/Text';
 import { usePressScale } from '../lib/motion';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
 
-// Bloom's navigation: a floating cream pill holding four tabs, with a
-// terracotta add button punched through its middle. The button is not a tab at
-// all - it pushes the editor onto the stack above these tabs, so adding an
-// entry is a screen you finish and come back from rather than a place you
-// switch to and have to leave.
+// The bottom bar, drawn the way the website's is on a phone: an icon with its
+// name under it, the one you are on in terracotta, and compose as a terracotta
+// pill in the middle of the row.
 //
-// The artboard puts a four-tile "What are you adding?" sheet between the button
-// and the editor. That is gone: every tile opened the same editor, and the
-// editor carries the type picker on its own form, so the sheet was an entire
-// screen standing in the way of a field visible one tap later.
+// Labels are the point. Before this the bar was four unlabelled glyphs, and
+// "which of these is the dashboard" is not a question a bar should ask - both
+// the site and the apps this is modelled on (Reddit, Instagram) write the names
+// out. Compose sits in the row rather than floating over the feed, where it
+// used to sit on top of whichever post's Save icon was at that height.
+//
+// It is still not a tab: it pushes the editor onto the stack above these tabs,
+// so adding an entry is a screen you finish and come back from rather than a
+// place you switch to and have to leave.
 
 const ICONS: Record<string, IconName> = {
   Home: 'home',
@@ -28,7 +32,15 @@ const ICONS: Record<string, IconName> = {
 export function BloomTabBar({ state, navigation }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { scale, onPressIn, onPressOut } = usePressScale(0.92);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.9);
+
+  // Scrolls is full-bleed dark in both themes, so the bar goes dark with it
+  // rather than drawing a cream strip under a black video.
+  const onScrolls = state.routes[state.index]?.name === 'Scrolls';
+  const bg = onScrolls ? colors.scrollsBg : colors.bg;
+  const idle = onScrolls ? 'rgba(253,247,234,0.6)' : colors.textFaint;
+  const active = onScrolls ? '#fdf7ea' : colors.primary;
+  const line = onScrolls ? 'rgba(253,247,234,0.16)' : colors.border;
 
   const go = (route: any, isFocused: boolean) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -37,6 +49,7 @@ export function BloomTabBar({ state, navigation }: any) {
 
   const renderTab = (route: any, index: number) => {
     const isFocused = state.index === index;
+    const color = isFocused ? active : idle;
     return (
       <Pressable
         key={route.key}
@@ -44,97 +57,77 @@ export function BloomTabBar({ state, navigation }: any) {
         accessibilityRole="button"
         accessibilityState={{ selected: isFocused }}
         accessibilityLabel={route.name}
-        style={{ flex: 1, alignItems: 'center' }}
+        style={({ pressed }) => ({
+          flex: 1,
+          height: 58,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          opacity: pressed ? 0.6 : 1,
+        })}
       >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.pill,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isFocused ? colors.primarySoft : 'transparent',
-          }}
-        >
-          <Icon
-            name={ICONS[route.name] || 'home'}
-            size={21}
-            color={isFocused ? colors.primaryDeep : colors.textFaint}
-          />
-        </View>
+        <Icon
+          name={ICONS[route.name] || 'home'}
+          size={22}
+          color={color}
+          strokeWidth={isFocused ? 2.7 : 2.1}
+        />
+        <Text style={{ fontSize: 10.5, fontWeight: isFocused ? '700' : '500', color }} numberOfLines={1}>
+          {route.name}
+        </Text>
       </Pressable>
     );
   };
 
-  // Home, Scrolls, [add button], Dashboard, Profile.
   const tabs = state.routes.map((route: any, index: number) => ({ route, index }));
-  const left = tabs.slice(0, 2);
-  const right = tabs.slice(2);
 
   return (
     <View
-      pointerEvents="box-none"
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 104, zIndex: 12 }}
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 58 + insets.bottom,
+        paddingBottom: insets.bottom,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: bg,
+        borderTopWidth: StyleSheet.hairlineWidth * 2,
+        borderTopColor: line,
+        zIndex: 12,
+      }}
     >
-      <View
-        style={{
-          position: 'absolute',
-          left: 14,
-          right: 14,
-          bottom: Math.max(insets.bottom, 18),
-          height: 70,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surface,
-          borderWidth: 1.5,
-          borderColor: colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 6,
-          shadowColor: '#8f4a1e',
-          shadowOffset: { width: 0, height: 14 },
-          shadowOpacity: 0.16,
-          shadowRadius: 30,
-          elevation: 12,
-        }}
+      {tabs.slice(0, 2).map(({ route, index }: any) => renderTab(route, index))}
+
+      <Pressable
+        // The stack, not the tabs: adding is a screen you come back from, not a
+        // place in the bar. getParent() is the stack navigator this tab
+        // navigator sits in - the same one the dashboard pushes the editor
+        // from, so both routes land on exactly the same screen.
+        onPress={() => navigation.getParent()?.navigate('Editor')}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        accessibilityRole="button"
+        accessibilityLabel="Add an entry"
+        style={{ flex: 1, height: 58, alignItems: 'center', justifyContent: 'center' }}
       >
-        {left.map(({ route, index }: any) => renderTab(route, index))}
+        <Animated.View
+          style={{
+            transform: [{ scale }],
+            width: 54,
+            height: 36,
+            borderRadius: radius.pill,
+            backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name="plus" size={22} color={colors.onAccent} />
+        </Animated.View>
+      </Pressable>
 
-        <View style={{ width: 86, alignItems: 'center' }}>
-          <Pressable
-            // The stack, not the tabs: adding is a screen you come back from,
-            // not a place in the bar. getParent() is the stack navigator this
-            // tab navigator sits in - the same one the dashboard pushes the
-            // editor from, so both routes land on exactly the same screen.
-            onPress={() => navigation.getParent()?.navigate('Editor')}
-            onPressIn={onPressIn}
-            onPressOut={onPressOut}
-            accessibilityRole="button"
-            accessibilityLabel="Add an entry"
-            style={{
-              width: 74,
-              height: 74,
-              marginTop: -30,
-              borderRadius: radius.pill,
-              backgroundColor: colors.primary,
-              borderWidth: 5,
-              borderColor: colors.bg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#8f4a1e',
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.42,
-              shadowRadius: 22,
-              elevation: 14,
-            }}
-          >
-            <Animated.View style={{ transform: [{ scale }] }}>
-              <Icon name="plus" size={30} color={colors.onAccent} />
-            </Animated.View>
-          </Pressable>
-        </View>
-
-        {right.map(({ route, index }: any) => renderTab(route, index))}
-      </View>
+      {tabs.slice(2).map(({ route, index }: any) => renderTab(route, index))}
     </View>
   );
 }
