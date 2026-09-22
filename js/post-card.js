@@ -4,9 +4,11 @@ import { levelChipHtml } from './levels.js';
 import { parseMedia } from './media.js';
 import { effectClass } from './shop-items.js';
 
-// An entry drawn as a post: who, when, what, the picture, and the actions
-// underneath - the shape every feed people already use is built from. Shared
-// by the home feed and anything else that lists entries as posts.
+// An entry drawn the way a timeline draws a post: the avatar down the left,
+// one column of content beside it, and a row of flat actions spread
+// underneath. Posts are full-bleed and told apart by a hairline rather than
+// each sitting in its own box, which is what the Android app settled on - a
+// card's border and margins cost about one post per screen and say nothing.
 //
 // Rendering is a pure function of the data passed in; the Supabase-backed
 // actions (like, save) are attached once per list by bindPostActions below,
@@ -47,49 +49,57 @@ export function postHtml(project, { author, level, likeCount = 0, commentCount =
   // simply removes itself and the placeholder is already there.
   const media = cover ? `<img src="${escapeHtml(cover)}" alt="" loading="lazy" onerror="this.remove()" />` : '';
 
+  // A text post stays text: no picture means no placeholder block, which at
+  // this density would be a column of gradient saying nothing. What kind of
+  // entry it is moves up beside the time instead.
+  const showMedia = !!cover || PLAYABLE.has(type);
+
   return `
     <article class="post" data-project-id="${escapeHtml(project.id)}">
-      <header class="post-head">
-        <a href="${profileHref}" aria-hidden="true" tabindex="-1">
-          ${avatarHtml(author ? author.avatarUrl : '', name, author ? effectClass(author.equippedBorder) : '')}
-        </a>
-        <div class="post-byline">
+      <a class="post-avatar" href="${profileHref}" aria-hidden="true" tabindex="-1">
+        ${avatarHtml(author ? author.avatarUrl : '', name, author ? effectClass(author.equippedBorder) : '')}
+      </a>
+      <div class="post-col">
+        <div class="post-line">
           <span class="post-author">
             <a class="${author ? effectClass(author.equippedNameEffect) : ''}" href="${profileHref}">${escapeHtml(name)}</a>
             ${level ? levelChipHtml(level.level, 'sm') : ''}
           </span>
           <span class="post-meta">
-            <time datetime="${escapeHtml(project.createdAt)}">${timeAgo(project.createdAt)}</time>
             <span aria-hidden="true">·</span>
-            <span>${escapeHtml(meta.label)}</span>
+            <time datetime="${escapeHtml(project.createdAt)}">${timeAgo(project.createdAt)}</time>
+            ${showMedia ? '' : `<span aria-hidden="true">·</span><span>${escapeHtml(meta.label)}</span>`}
           </span>
         </div>
-      </header>
-      <div class="post-body">
-        <h3 class="post-title"><a href="${href}">${escapeHtml(project.title)}</a></h3>
-        ${text ? `<p class="post-text">${escapeHtml(text)}</p>` : ''}
-        ${tags ? `<div class="post-tags">${tags}</div>` : ''}
+        <div class="post-body">
+          <h3 class="post-title"><a href="${href}">${escapeHtml(project.title)}</a></h3>
+          ${text ? `<p class="post-text">${escapeHtml(text)}</p>` : ''}
+          ${tags ? `<div class="post-tags">${tags}</div>` : ''}
+        </div>
+        ${
+          showMedia
+            ? `<a class="post-media" data-type="${type}" href="${href}" aria-label="Open ${escapeHtml(project.title)}">
+                 ${media}
+                 <span class="post-media-kind">${icon(meta.icon, { size: 13 })}${escapeHtml(meta.label)}</span>
+                 ${PLAYABLE.has(type) ? `<span class="post-media-play">${icon('play', { size: 22 })}</span>` : ''}
+               </a>`
+            : ''
+        }
+        <footer class="post-actions">
+          <a class="post-action" href="${href}#comments" aria-label="${commentCount === 1 ? '1 comment' : `${commentCount} comments`}">
+            ${icon('message-circle', { size: 18 })}${commentCount ? `<span>${commentCount}</span>` : ''}
+          </a>
+          <button class="post-action" type="button" data-action="like" aria-pressed="${liked}" aria-label="Like">
+            ${icon('heart', { size: 18 })}<span data-count="${likeCount}">${likeCount || ''}</span>
+          </button>
+          <button class="post-action" type="button" data-action="share" aria-label="Share">
+            ${icon('share', { size: 18 })}
+          </button>
+          <button class="post-action" type="button" data-action="save" aria-pressed="${saved}" aria-label="${saved ? 'Saved' : 'Save'}">
+            ${icon('bookmark', { size: 18 })}
+          </button>
+        </footer>
       </div>
-      <a class="post-media" data-type="${type}" href="${href}" aria-label="Open ${escapeHtml(project.title)}">
-        ${media}
-        <span class="post-media-kind">${icon(meta.icon, { size: 13 })}${escapeHtml(meta.label)}</span>
-        ${PLAYABLE.has(type) ? `<span class="post-media-play">${icon('play', { size: 22 })}</span>` : ''}
-      </a>
-      <footer class="post-actions">
-        <button class="post-action" type="button" data-action="like" aria-pressed="${liked}" aria-label="Like">
-          ${icon('heart', { size: 19 })}<span data-count>${likeCount}</span>
-        </button>
-        <a class="post-action" href="${href}#comments" aria-label="Comments">
-          ${icon('message-circle', { size: 19 })}<span>${commentCount}</span>
-        </a>
-        <button class="post-action" type="button" data-action="share" aria-label="Share">
-          ${icon('share', { size: 19 })}
-        </button>
-        <span class="post-action-spacer"></span>
-        <button class="post-action" type="button" data-action="save" aria-pressed="${saved}" aria-label="${saved ? 'Saved' : 'Save'}">
-          ${icon('bookmark', { size: 19 })}
-        </button>
-      </footer>
     </article>
   `;
 }
@@ -126,8 +136,12 @@ export function bindPostActions(container, { getUser }) {
     const setState = (on) => {
       btn.setAttribute('aria-pressed', String(on));
       if (action === 'like') {
+        // The attribute is the count; the text is empty at zero, the way the
+        // timeline leaves a number out rather than writing 0 under a post.
         const count = btn.querySelector('[data-count]');
-        count.textContent = String(Math.max(0, Number(count.textContent) + (on ? 1 : -1)));
+        const n = Math.max(0, Number(count.dataset.count || 0) + (on ? 1 : -1));
+        count.dataset.count = String(n);
+        count.textContent = n ? String(n) : '';
       } else {
         btn.setAttribute('aria-label', on ? 'Saved' : 'Save');
       }
