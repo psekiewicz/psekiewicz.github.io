@@ -2003,6 +2003,71 @@ begin
 end;
 $fn$;
 
+-- The way an account that has no date of birth supplies one.
+--
+-- account_ages has no insert or update policy on purpose, so this is the
+-- only route in from a client, and it decides the consent state itself -
+-- the browser saying "this account is fine" is the claim being checked.
+--
+-- A date can be filled in but never changed. Without that the gate is
+-- decoration: a 13 year old who lands on 'pending' would simply set it
+-- again to 17. Correcting a genuine mistake is an admin job, done with
+-- the service role.
+create or replace function public.set_birth_date(p_birth date)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_age int;
+  v_state text;
+  v_existing date;
+begin
+  if auth.uid() is null then
+    raise exception 'You must be signed in.';
+  end if;
+  if p_birth is null then
+    raise exception 'A date of birth is required.';
+  end if;
+  if p_birth > current_date then
+    raise exception 'That date is in the future.';
+  end if;
+
+  select birth_date into v_existing
+  from public.account_ages
+  where user_id = auth.uid();
+
+  if v_existing is not null then
+    raise exception 'A date of birth is already set on this account.';
+  end if;
+
+  v_age := public.age_years(p_birth);
+
+  if v_age > 120 then
+    raise exception 'That date does not look right.';
+  end if;
+  if v_age < 13 then
+    raise exception 'An account holder must be at least 13 years old.';
+  end if;
+
+  v_state := case when v_age < 16 then 'pending' else 'not_required' end;
+
+  insert into public.account_ages (user_id, birth_date, consent_state)
+  values (auth.uid(), p_birth, v_state)
+  on conflict (user_id) do update
+     set birth_date = excluded.birth_date,
+         consent_state = excluded.consent_state
+   where public.account_ages.birth_date is null;
+
+  return v_state;
+end;
+$fn$;
+
+revoke all on function public.set_birth_date(date) from public, anon;
+grant execute on function public.set_birth_date(date) to authenticated;
+
+
 -- A parent's authorisation, one row per account that needs one. Nobody
 -- reads or writes this from a client: the Edge Function holds the
 -- service role, and the token is stored as a hash, so a leak of this

@@ -49,7 +49,9 @@ const TERMS: LegalDocument = {
     {
       heading: 'Who may use it',
       body: [
-        `You must be at least ${MINIMUM_AGE} years old to create an account. Sign-up asks you to confirm this. Where the law where you live requires a parent or guardian to agree on your behalf, you must have that agreement before you create an account.`,
+        `You must be at least ${MINIMUM_AGE} years old to hold an account. Every account carries a date of birth, and one that would make the holder younger than that is refused.`,
+        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. Until they do, the account can read Showcase but cannot publish, comment, like, follow, save or report - and that is enforced by the database rather than by hiding buttons. The restriction lifts on its own when the account holder turns 16.',
+        'A date of birth can be filled in once and not changed afterwards. If it was entered wrongly, write to ' + CONTACT_EMAIL + '.',
         `You may hold one account. Keep the details on it accurate, and keep your password to yourself - anything done from your account is treated as done by you. Tell us at ${CONTACT_EMAIL} if you think somebody else has got into it.`,
         'If your account has been banned, you may not create another one to get around the ban.',
       ],
@@ -143,6 +145,7 @@ const PRIVACY: LegalDocument = {
       body: [
         'Your account. An email address and a password, handled by Supabase Auth - the password is stored as a hash, and nobody at Showcase can read it. Your email address is never shown to other users.',
         'Your profile. A display name, a short bio, and an avatar, which is a link to an image you already have somewhere else rather than a file you upload to us.',
+        'Your date of birth. Held so we know whether an account belongs to someone under 16, which decides whether a parent has to agree to it before the account can publish anything. It is never shown on your profile, no other user can read it, and it is stored apart from the public profile for that reason. Where a parent has to agree, their email address is held until they do.',
         'What you publish and do. Entries, their titles, descriptions, tags and links; comments; likes; who you follow; what you save to your private shelf; and any reports you file.',
         'How entries are read. Showcase counts a view when an entry is opened. A view records which entry, when, and - if you were signed in - which account, so the same person is not counted twice. Showcase does not record your IP address in its own database, and uses no analytics or advertising services.',
         'Notifications. If you turn on push notifications, the app registers a push token for your device so a message can reach it. Turning notifications off removes it.',
@@ -194,8 +197,9 @@ const PRIVACY: LegalDocument = {
     {
       heading: 'Children',
       body: [
-        `Showcase is not for anyone under ${MINIMUM_AGE}, and sign-up asks you to confirm your age. We do not knowingly keep an account for someone younger. If you believe a child has an account here, write to ${CONTACT_EMAIL} and it will be removed.`,
-        'Where the law where a child lives requires a parent or guardian to agree before a service like this may process their data, that agreement must be in place.',
+        `Showcase is not for anyone under ${MINIMUM_AGE}. Sign-up asks for a date of birth, and an account whose holder would be younger than that is refused.`,
+        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. We ask for their email address and send them one message with a link; until they open it the account can read Showcase but cannot publish, comment, like, follow, save or report. That restriction is enforced by the database, not by hiding buttons. It lifts on its own when the account holder turns 16.',
+        `If you believe a child under ${MINIMUM_AGE} has an account here, write to ${CONTACT_EMAIL} and it will be removed.`,
       ],
     },
     {
@@ -203,7 +207,7 @@ const PRIVACY: LegalDocument = {
       body: [
         'Access is enforced by the database itself through row level security, not only by what the app chooses to show - so a request for data that is not yours is refused at the source. Traffic is encrypted in transit.',
         'No service is perfectly secure, and we cannot promise otherwise.',
-        'Data is stored in the region configured for our Supabase project. Where that involves a transfer outside the European Economic Area, it is covered by the safeguards Supabase provides for it.',
+        'Data is stored by Supabase in eu-west-1 (Ireland), inside the European Economic Area. Expo relays push notifications from the United States, so a push token and the text of a notification reach it there; that transfer rests on the safeguards in Expo’s own terms.',
       ],
     },
     {
