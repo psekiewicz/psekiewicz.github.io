@@ -27,6 +27,7 @@ import {
   SHOP_CATEGORIES,
 } from '../lib/shopItems';
 import { formatCount } from '../lib/utils';
+import { column, MAX_PAGE_WIDTH } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -148,7 +149,7 @@ export function ShopScreen({ navigation }: any) {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl, gap: space.lg }}
+      contentContainerStyle={{ ...column(MAX_PAGE_WIDTH), padding: space.lg, paddingBottom: space.xxl, gap: space.lg }}
     >
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>

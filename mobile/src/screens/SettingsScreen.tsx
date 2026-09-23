@@ -26,6 +26,7 @@ import { collectEarnings } from '../data/reputation';
 import { clearSeenIds } from '../lib/feedRank';
 import { disableNotifications, enableNotifications, notificationsEnabled } from '../lib/notify';
 import { useMotion } from '../theme/MotionProvider';
+import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
 import appConfig from '../../app.json';
@@ -176,7 +177,7 @@ export function SettingsScreen({ navigation }: any) {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl, gap: space.lg }}
+      contentContainerStyle={{ ...column(), padding: space.lg, paddingBottom: space.xxl, gap: space.lg }}
     >
       <ErrorNote message={error} />
       <SuccessNote message={notice} />

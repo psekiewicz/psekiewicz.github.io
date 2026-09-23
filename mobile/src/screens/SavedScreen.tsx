@@ -5,6 +5,7 @@ import { ProjectCard } from '../components/ProjectCard';
 import { Button, EmptyState, ErrorNote, Eyebrow, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getSavedProjects } from '../data/saves';
+import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
 
@@ -58,7 +59,7 @@ export function SavedScreen({ navigation }: any) {
       style={{ flex: 1, backgroundColor: colors.bg }}
       data={items}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}
+      contentContainerStyle={{ ...column(), padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

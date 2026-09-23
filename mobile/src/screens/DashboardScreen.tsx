@@ -15,6 +15,7 @@ import { getRecentViewTimestamps } from '../data/views';
 import { levelFromXp } from '../lib/levels';
 import { formatCount, timeAgo } from '../lib/utils';
 import { useMotion } from '../theme/MotionProvider';
+import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
 
@@ -108,6 +109,7 @@ export function DashboardScreen({ navigation }: any) {
       <FlatList
       style={{ flex: 1 }}
       contentContainerStyle={{
+        ...column(),
         paddingHorizontal: gutter,
         paddingTop: 20,
         gap: 12,

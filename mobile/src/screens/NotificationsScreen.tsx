@@ -13,6 +13,7 @@ import {
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { getProjectTitles } from '../data/projects';
 import { timeAgo } from '../lib/utils';
+import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
 
@@ -76,7 +77,7 @@ export function NotificationsScreen({ navigation }: any) {
       style={{ flex: 1, backgroundColor: colors.bg }}
       data={items}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingBottom: space.xxl }}
+      contentContainerStyle={{ ...column(), paddingBottom: space.xxl }}
       ListHeaderComponent={<ErrorNote message={error} />}
       ListEmptyComponent={
         <EmptyState icon="bell" title="All quiet" body="Likes, comments and follows show up here." />

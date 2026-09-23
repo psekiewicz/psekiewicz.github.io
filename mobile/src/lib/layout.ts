@@ -32,6 +32,28 @@ export function padRow<T>(items: T[], columns: number): (T | null)[] {
   return [...items, ...new Array(columns - remainder).fill(null)];
 }
 
+/**
+ * How wide content is allowed to get before it stops being centred and starts
+ * being stretched. The website answers this with two numbers and the app now
+ * uses the same two, so a tablet shows the same shapes as the browser on it:
+ *
+ * - a reading column for lists, panels and forms (the post page already caps
+ *   itself at 680, and `.post-page` on the site is the same 680);
+ * - the site's own `--container` for pages that lay their content out in a
+ *   grid, which has room to use the width rather than trail off into it.
+ *
+ * Without these a rotated phone draws the dashboard's three stats down the
+ * left of a 900pt-wide panel and leaves the rest empty, which is the same
+ * complaint that put `useCardColumns` here in the first place.
+ */
+export const MAX_CONTENT_WIDTH = 680;
+export const MAX_PAGE_WIDTH = 1120;
+
+/** Centres a block and stops it stretching past `max`. */
+export function column(max: number = MAX_CONTENT_WIDTH) {
+  return { width: '100%' as const, maxWidth: max, alignSelf: 'center' as const };
+}
+
 // Scrolls is a portrait, full-bleed feed - the shape of a phone held upright.
 // Stretched over a tablet it is mostly empty space around a tall video, so it
 // is pinned to a phone-width column and centred, which is exactly what the

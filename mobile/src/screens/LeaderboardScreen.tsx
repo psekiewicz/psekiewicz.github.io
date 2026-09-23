@@ -9,6 +9,7 @@ import { getProfilesByIds, Profile } from '../data/profiles';
 import { getTopByXp, Reputation } from '../data/reputation';
 import { levelFromXp } from '../lib/levels';
 import { formatCount } from '../lib/utils';
+import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -92,7 +93,7 @@ export function LeaderboardScreen({ navigation }: any) {
       data={visible}
       keyExtractor={(item) => item.row.userId}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: space.lg, gap: space.sm, paddingBottom: space.xxl }}
+      contentContainerStyle={{ ...column(), padding: space.lg, gap: space.sm, paddingBottom: space.xxl }}
       ListHeaderComponent={
         <View style={{ marginBottom: space.sm, gap: space.xs }}>
           <ErrorNote message={error} />
