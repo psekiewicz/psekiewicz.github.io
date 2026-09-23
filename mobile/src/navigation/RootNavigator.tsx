@@ -18,6 +18,7 @@ import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { LegalScreen } from '../screens/LegalScreen';
 import { ProjectDetailScreen } from '../screens/ProjectDetailScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { SavedScreen } from '../screens/SavedScreen';
@@ -166,6 +167,7 @@ export function RootNavigator() {
           options={{ title: 'Notifications' }}
         />
         <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
+        <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
         <Stack.Screen
           name="Register"
