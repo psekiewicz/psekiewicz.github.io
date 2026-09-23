@@ -315,6 +315,20 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               accessibilityLabel={liked ? 'Unlike' : 'Like'}
             />
             <PostAction icon="share" onPress={share} accessibilityLabel="Share" />
+            {project.published ? (
+              // The site's post page links an entry to its own card in the
+              // feed; a draft has no card to land on, so it has no link.
+              <PostAction
+                icon="scrolls"
+                onPress={() =>
+                  navigation.navigate('Tabs', {
+                    screen: 'Scrolls',
+                    params: { projectId: project.id },
+                  })
+                }
+                accessibilityLabel="Open in Scrolls"
+              />
+            ) : null}
             <PostAction
               icon="bookmark"
               active={savedState}

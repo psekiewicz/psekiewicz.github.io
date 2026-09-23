@@ -143,7 +143,9 @@ function MediaSlot({
           onChangeText={onChange}
           onBlur={() => setEditing(false)}
           autoFocus={editing}
-          placeholder="Paste a link - YouTube, Spotify, an mp4, an image…"
+          // Longer than the field is wide gets cut mid-word on a phone, and
+          // the part that was cut is the part naming what else is accepted.
+          placeholder="Paste a link - YouTube, Spotify, an mp4…"
           placeholderTextColor={colors.textFaint}
           autoCapitalize="none"
           autoCorrect={false}
