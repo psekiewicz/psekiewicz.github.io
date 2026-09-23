@@ -1867,3 +1867,201 @@ create trigger reports_rate_limit
 -- update public.profiles set is_admin = true
 -- where id = (select id from auth.users where email = 'you@example.com');
 -- ---------------------------------------------------------------
+
+
+-- ============================================================
+-- Age, and parental authorisation for 13-15 year olds
+--
+-- GDPR Article 8 lets a child consent for themselves from an age each
+-- member state sets between 13 and 16. Poland kept 16. Showcase admits
+-- 13 year olds, so an account held by someone between 13 and 15 needs a
+-- holder of parental responsibility to authorise it, and Article 8(2)
+-- asks for reasonable efforts to verify that the authorisation is real -
+-- which a checkbox the child ticks themselves plainly is not. So the
+-- parent is emailed, and the account cannot publish, comment, like,
+-- follow, save or report until they confirm.
+--
+-- Three deliberate choices:
+--
+--   - Ages live in their own table, NOT on `profiles`. Profiles are
+--     publicly readable by design, and a date of birth - or even a
+--     consent state, which gives away that someone is under 16 - is not
+--     something to hand to every visitor.
+--   - The row is written by the signup trigger from the metadata
+--     Supabase Auth already carries, not by a later client write. A
+--     client that skipped that write would otherwise get an account
+--     with no age on it.
+--   - consent_state is derived here rather than sent by the client. The
+--     browser saying "this account is fine" is exactly the claim that
+--     needs checking.
+-- ============================================================
+
+create table if not exists public.account_ages (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  birth_date date,
+  -- 'not_required' - 16 or over, or an account from before this existed.
+  -- 'pending'      - 13 to 15, waiting on a parent.
+  -- 'granted'      - 13 to 15, a parent confirmed by email.
+  consent_state text not null default 'not_required'
+    check (consent_state in ('not_required', 'pending', 'granted')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.account_ages enable row level security;
+
+-- You may read your own age and nothing else. There is deliberately no
+-- insert, update or delete policy: the signup trigger and the Edge
+-- Function write these rows, and both run with the service role.
+drop policy if exists "You can read your own age" on public.account_ages;
+create policy "You can read your own age"
+  on public.account_ages for select
+  using (auth.uid() = user_id);
+
+-- Whole years old today. A null birth_date means an account that
+-- predates this table; those are left alone rather than locked out.
+create or replace function public.age_years(d date)
+returns integer
+language sql
+immutable
+as $fn$
+  select case when d is null then null else extract(year from age(current_date, d))::int end;
+$fn$;
+
+-- May this account write? True unless it is a 13-15 year old still
+-- waiting on a parent. A birthday does the rest on its own: once the
+-- account holder turns 16 the age test passes and the pending state
+-- stops mattering, without anything having to run on a schedule.
+--
+-- security definer so it can read account_ages regardless of the
+-- caller's own policies, and pinned to public so the search_path cannot
+-- be swapped underneath it.
+create or replace function public.consent_ok(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $fn$
+  select coalesce(
+    (
+      select a.consent_state <> 'pending'
+             or coalesce(public.age_years(a.birth_date), 99) >= 16
+      from public.account_ages a
+      where a.user_id = uid
+    ),
+    -- No row at all: an account from before this existed. Left working.
+    true
+  );
+$fn$;
+
+revoke all on function public.consent_ok(uuid) from public;
+grant execute on function public.consent_ok(uuid) to authenticated;
+
+-- The signup trigger now carries the date of birth through, and decides
+-- the state from it. Under 13 is refused outright: the clients stop it
+-- at the form, and this stops a client that did not.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_birth date := nullif(new.raw_user_meta_data ->> 'birth_date', '')::date;
+  v_age int := public.age_years(v_birth);
+  v_state text;
+begin
+  if v_age is not null and v_age < 13 then
+    raise exception 'An account holder must be at least 13 years old.';
+  end if;
+
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1))
+  )
+  on conflict (id) do nothing;
+
+  v_state := case when v_age is not null and v_age < 16 then 'pending' else 'not_required' end;
+
+  insert into public.account_ages (user_id, birth_date, consent_state)
+  values (new.id, v_birth, v_state)
+  on conflict (user_id) do nothing;
+
+  return new;
+end;
+$fn$;
+
+-- A parent's authorisation, one row per account that needs one. Nobody
+-- reads or writes this from a client: the Edge Function holds the
+-- service role, and the token is stored as a hash, so a leak of this
+-- table is not a set of working confirmation links.
+create table if not exists public.parental_consents (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  parent_email text not null,
+  token_hash text not null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '14 days',
+  confirmed_at timestamptz
+);
+
+alter table public.parental_consents enable row level security;
+
+-- No policies at all, deliberately. With RLS on and nothing granted,
+-- every client request against this table returns nothing, and only the
+-- service role can touch it.
+
+create index if not exists parental_consents_token_idx
+  on public.parental_consents (token_hash);
+
+-- ---------------------------------------------------------------
+-- The write policies, re-stated with the consent check appended.
+-- Reading is untouched: a pending account can look around, it just
+-- cannot add to the site until a parent says so.
+-- ---------------------------------------------------------------
+
+drop policy if exists "Users can create their own projects" on public.projects;
+create policy "Users can create their own projects"
+  on public.projects for insert
+  with check (auth.uid() = user_id and public.consent_ok(auth.uid()));
+
+drop policy if exists "Users can follow as themselves" on public.follows;
+create policy "Users can follow as themselves"
+  on public.follows for insert
+  with check (auth.uid() = follower_id and public.consent_ok(auth.uid()));
+
+drop policy if exists "Signed-in users can comment on visible projects" on public.comments;
+create policy "Signed-in users can comment on visible projects"
+  on public.comments for insert
+  with check (
+    auth.uid() = user_id
+    and public.consent_ok(auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id)
+  );
+
+drop policy if exists "Signed-in users can like as themselves" on public.likes;
+create policy "Signed-in users can like as themselves"
+  on public.likes for insert
+  with check (
+    auth.uid() = user_id
+    and public.consent_ok(auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+  );
+
+drop policy if exists "Users can save as themselves" on public.saves;
+create policy "Users can save as themselves"
+  on public.saves for insert
+  with check (
+    auth.uid() = user_id
+    and public.consent_ok(auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id)
+  );
+
+drop policy if exists "Signed-in users can report as themselves" on public.reports;
+create policy "Signed-in users can report as themselves"
+  on public.reports for insert
+  with check (
+    auth.uid() = reporter_id
+    and public.consent_ok(auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+  );
