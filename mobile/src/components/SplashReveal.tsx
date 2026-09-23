@@ -115,22 +115,31 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
         </Animated.View>
       </View>
 
-      <Animated.Text
+      {/* Two drivers, so two nodes. The fade and the slide run natively; the
+          tracking cannot, and putting both on one node made the native driver
+          inspect a letterSpacing it has no way to animate and log an error on
+          every launch. Split, each driver owns a node it can drive all of. */}
+      <Animated.View
         style={{
           marginTop: 24,
-          fontFamily: FONT_FAMILY,
-          fontSize: 19,
-          fontWeight: '700',
-          color: brand.splashFront,
           opacity: wordAnim,
-          letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
           transform: [
             { translateY: wordAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
           ],
         }}
       >
-        showcase
-      </Animated.Text>
+        <Animated.Text
+          style={{
+            fontFamily: FONT_FAMILY,
+            fontSize: 19,
+            fontWeight: '700',
+            color: brand.splashFront,
+            letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
+          }}
+        >
+          showcase
+        </Animated.Text>
+      </Animated.View>
     </View>
   );
 }

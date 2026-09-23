@@ -2,12 +2,13 @@ import { DarkTheme, DefaultTheme, LinkingOptions, NavigationContainer } from '@r
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Linking } from 'react-native';
 
 import { SplashReveal } from '../components/SplashReveal';
 import { BloomTabBar } from './BloomTabBar';
 import { useAuth } from '../context/AuthContext';
+import { getAccountAge, needsBirthDate } from '../data/age';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { EditorScreen } from '../screens/EditorScreen';
@@ -18,6 +19,8 @@ import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { BirthDateGate } from '../screens/BirthDateGate';
+import { LegalScreen } from '../screens/LegalScreen';
 import { ProjectDetailScreen } from '../screens/ProjectDetailScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { SavedScreen } from '../screens/SavedScreen';
@@ -104,8 +107,38 @@ const linking: LinkingOptions<Record<string, object | undefined>> = {
 
 export function RootNavigator() {
   const { colors, dark } = useTheme();
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const [revealed, setRevealed] = useState(false);
+
+  // An account with no date of birth on it cannot write anything - the
+  // database refuses it - so the app asks for one before letting anybody in,
+  // rather than leaving them to discover it as a wall of failures. Every
+  // account made before the age rules existed is in that position.
+  const [ageChecked, setAgeChecked] = useState(false);
+  const [needsAge, setNeedsAge] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setNeedsAge(false);
+      setAgeChecked(true);
+      setDismissed(false);
+      return;
+    }
+    setAgeChecked(false);
+    (async () => {
+      // A failed check must not lock somebody out of their own account, so
+      // this fails open. The database is still what actually refuses a write.
+      const age = await getAccountAge(user.id).catch(() => null);
+      if (cancelled) return;
+      setNeedsAge(needsBirthDate(age));
+      setAgeChecked(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const navTheme = {
     ...(dark ? DarkTheme : DefaultTheme),
@@ -126,8 +159,12 @@ export function RootNavigator() {
   // the time the reveal does, so waiting on it alone meant the splash was cut
   // off mid-flight, at a different frame every launch. Whichever takes longer
   // now decides, and SplashReveal bounds its own half so this can never hang.
-  if (loading || !revealed) {
+  if (loading || !revealed || (user && !ageChecked)) {
     return <SplashReveal onDone={() => setRevealed(true)} />;
+  }
+
+  if (user && needsAge && !dismissed) {
+    return <BirthDateGate onDone={() => setDismissed(true)} />;
   }
 
   return (
@@ -166,6 +203,7 @@ export function RootNavigator() {
           options={{ title: 'Notifications' }}
         />
         <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
+        <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
         <Stack.Screen
           name="Register"

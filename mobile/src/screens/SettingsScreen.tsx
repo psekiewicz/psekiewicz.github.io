@@ -73,6 +73,7 @@ export function SettingsScreen({ navigation }: any) {
         <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
         <ThemeSection preference={themePreference} setPreference={setThemePreference} />
         <MotionSection />
+        <LegalSection navigation={navigation} />
         <AboutSection />
       </View>
     );
@@ -283,6 +284,7 @@ export function SettingsScreen({ navigation }: any) {
         />
       </Card>
 
+      <LegalSection navigation={navigation} />
       <AboutSection />
 
       <View
@@ -354,6 +356,32 @@ function MotionSection() {
       <Text style={[typography.small, { color: colors.textFaint, marginTop: space.sm }]}>
         "System" follows your phone's reduce-motion accessibility setting.
       </Text>
+    </View>
+  );
+}
+
+function LegalSection({ navigation }: any) {
+  const { colors } = useTheme();
+  const links: { doc: 'terms' | 'privacy' | 'guidelines'; label: string }[] = [
+    { doc: 'terms', label: 'Terms of Service' },
+    { doc: 'privacy', label: 'Privacy Policy' },
+    { doc: 'guidelines', label: 'Community Guidelines' },
+  ];
+  return (
+    <View>
+      <Eyebrow>Legal</Eyebrow>
+      <View style={{ marginTop: space.md, gap: space.sm }}>
+        {links.map((link) => (
+          <Text
+            key={link.doc}
+            accessibilityRole="link"
+            style={[typography.body, { color: colors.primary }]}
+            onPress={() => navigation.navigate('Legal', { doc: link.doc })}
+          >
+            {link.label}
+          </Text>
+        ))}
+      </View>
     </View>
   );
 }

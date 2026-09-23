@@ -2,21 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="robots" content="noindex" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create account - Showcase</title>
-  <meta name="description" content="Join Showcase and publish your projects." />
+  <title>Confirm your age - Showcase</title>
+  <meta name="description" content="Showcase needs a date of birth on every account." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Showcase" />
-  <meta property="og:title" content="Create account - Showcase" />
-  <meta property="og:description" content="Join Showcase and publish your projects." />
-  <meta property="og:url" content="https://psekiewicz.github.io/register.html" />
+  <meta property="og:title" content="Confirm your age - Showcase" />
+  <meta property="og:description" content="Showcase needs a date of birth on every account." />
+  <meta property="og:url" content="https://psekiewicz.github.io/age.html" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Create account - Showcase" />
-  <meta name="twitter:description" content="Join Showcase and publish your projects." />
+  <meta name="twitter:title" content="Confirm your age - Showcase" />
+  <meta name="twitter:description" content="Showcase needs a date of birth on every account." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/social.css" />
@@ -58,31 +59,18 @@
 
   <main>
     <div class="auth-shell">
-      <div class="auth-card">
-        <h1>Create your account</h1>
-        <p class="sub">Start publishing your projects in minutes.</p>
+      <div class="auth-card" id="age-card">
+        <h1>How old are you?</h1>
+        <p class="sub">
+          Showcase needs a date of birth on every account. Accounts held by under 16s
+          need a parent or guardian to agree before they can post, and there is no way
+          to know which those are without asking.
+        </p>
 
         <div class="alert alert-error" id="form-alert"></div>
         <div class="alert alert-success" id="form-success"></div>
 
-        <form id="register-form" novalidate>
-          <div class="field">
-            <label for="displayName">Display name</label>
-            <input type="text" id="displayName" autocomplete="name" required minlength="2" maxlength="60" />
-          </div>
-          <div class="field">
-            <label for="email">Email</label>
-            <input type="email" id="email" autocomplete="email" required />
-          </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <input type="password" id="password" autocomplete="new-password" required minlength="6" />
-            <div class="hint">At least 6 characters.</div>
-          </div>
-          <div class="field">
-            <label for="confirm-password">Confirm password</label>
-            <input type="password" id="confirm-password" autocomplete="new-password" required minlength="6" />
-          </div>
+        <form id="age-form" novalidate>
           <div class="field-row">
             <div class="field">
               <label for="dob-day">Day</label>
@@ -98,14 +86,45 @@
             </div>
           </div>
           <p class="form-footer" style="text-align:left;">
-            Your date of birth is never shown on your profile, and it cannot be changed
-            afterwards. You must be at least 13 to hold an account; under 16s need a
-            parent or guardian to agree before they can post.
+            It is not shown on your profile, and it cannot be changed afterwards - so get
+            it right. You must be at least 13 to hold an account.
           </p>
-          <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Create account</button>
+          <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Continue</button>
         </form>
+      </div>
 
-        <p class="form-footer">Already have an account? <a href="login.html">Log in</a></p>
+      <div class="auth-card" id="parent-card" hidden>
+        <h1>A parent needs to agree</h1>
+        <p class="sub">
+          You are under 16, so a parent or guardian has to agree before you can publish
+          anything, comment or follow people. Give us their email address and we will
+          send them one message with a link. You can look around while you wait.
+        </p>
+
+        <div class="alert alert-error" id="parent-alert"></div>
+
+        <form id="parent-form" novalidate>
+          <div class="field">
+            <label for="parent-email">Parent or guardian&rsquo;s email</label>
+            <input type="email" id="parent-email" autocomplete="email" required />
+          </div>
+          <div class="field checkbox-field">
+            <input type="checkbox" id="parent-confirm" required />
+            <label for="parent-confirm" style="margin:0;">This is a parent or guardian&rsquo;s address, not my own.</label>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="parent-submit">Send it</button>
+        </form>
+        <p class="form-footer"><a href="/index.html">Look around first</a></p>
+      </div>
+
+      <div class="auth-card" id="sent-card" hidden>
+        <h1>We have emailed them</h1>
+        <p class="sub">
+          Once they open the link you can publish, comment and follow. Until then you can
+          look around. The link works for 14 days - if it does not arrive, check the spam
+          folder before trying again.
+        </p>
+        <a class="btn btn-primary btn-block" href="/index.html">Have a look around</a>
       </div>
     </div>
   </main>
@@ -117,76 +136,94 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
-    import { registerUser, getCurrentUser } from '/js/auth.js';
-    import { isoDateFrom } from '/js/age-data.js';
+    import { getCurrentUser } from '/js/auth.js';
+    import { getAccountAge, needsBirthDate, setBirthDate, requestParentalConsent, isoDateFrom } from '/js/age-data.js';
 
-    const form = document.getElementById('register-form');
+    const ageCard = document.getElementById('age-card');
+    const parentCard = document.getElementById('parent-card');
+    const sentCard = document.getElementById('sent-card');
     const alertBox = document.getElementById('form-alert');
-    const successBox = document.getElementById('form-success');
+    const parentAlert = document.getElementById('parent-alert');
     const submitBtn = document.getElementById('submit-btn');
+    const parentSubmit = document.getElementById('parent-submit');
 
-    function showError(message) {
-      successBox.classList.remove('is-visible');
-      alertBox.textContent = message;
-      alertBox.classList.add('is-visible');
+    const next = new URLSearchParams(window.location.search).get('next') || '/index.html';
+
+    function showError(box, message) {
+      box.textContent = message;
+      box.classList.add('is-visible');
     }
 
-    form.addEventListener('submit', async (e) => {
+    // Nobody signed out has anything to answer here, and anyone who already has
+    // a date is sent on rather than asked twice.
+    const user = await getCurrentUser();
+    if (!user) {
+      window.location.replace('/login.html?next=' + encodeURIComponent('/age.html'));
+    } else {
+      const age = await getAccountAge(user.id).catch(() => null);
+      if (age && !needsBirthDate(age)) {
+        if (age.consentState === 'pending') {
+          ageCard.hidden = true;
+          parentCard.hidden = false;
+        } else {
+          window.location.replace(next);
+        }
+      }
+    }
+
+    document.getElementById('age-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       alertBox.classList.remove('is-visible');
-      successBox.classList.remove('is-visible');
 
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirm-password').value;
-      if (password !== confirmPassword) {
-        showError('Passwords do not match.');
-        return;
-      }
-
-      let birthDate;
+      let iso;
       try {
-        birthDate = isoDateFrom(
+        iso = isoDateFrom(
           document.getElementById('dob-day').value,
           document.getElementById('dob-month').value,
           document.getElementById('dob-year').value
         );
       } catch (err) {
-        showError(err.message);
-        return;
+        return showError(alertBox, err.message);
       }
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Creating account…';
-
+      submitBtn.innerHTML = '<span class="spinner"></span> Saving…';
       try {
-        const { session } = await registerUser(
-          document.getElementById('email').value,
-          password,
-          document.getElementById('displayName').value.trim(),
-          birthDate
-        );
-        if (session) {
-          // Email confirmation is off for this project - already logged in.
-          window.location.href = '/dashboard.html';
+        // The server decides what the date means; 'pending' is 13-15.
+        const state = await setBirthDate(iso);
+        if (state === 'pending') {
+          ageCard.hidden = true;
+          parentCard.hidden = false;
         } else {
-          // Email confirmation is on (Supabase's default): no session yet.
-          form.reset();
-          successBox.textContent = 'Account created! Check your email for a confirmation link, then log in.';
-          successBox.classList.add('is-visible');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Create account';
+          window.location.replace(next);
         }
       } catch (err) {
-        showError(err.message);
+        showError(alertBox, err.message);
+      } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Create account';
+        submitBtn.textContent = 'Continue';
       }
     });
 
-    (async () => {
-      const user = await getCurrentUser();
-      if (user) window.location.href = '/dashboard.html';
-    })();
+    document.getElementById('parent-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      parentAlert.classList.remove('is-visible');
+      if (!document.getElementById('parent-confirm').checked) {
+        return showError(parentAlert, 'Confirm that this is a parent or guardian’s address.');
+      }
+      parentSubmit.disabled = true;
+      parentSubmit.innerHTML = '<span class="spinner"></span> Sending…';
+      try {
+        await requestParentalConsent(document.getElementById('parent-email').value.trim());
+        parentCard.hidden = true;
+        sentCard.hidden = false;
+      } catch (err) {
+        showError(parentAlert, err.message);
+      } finally {
+        parentSubmit.disabled = false;
+        parentSubmit.textContent = 'Send it';
+      }
+    });
   </script>
 </body>
 </html>

@@ -15,11 +15,14 @@ function friendlyError(err) {
 // confirmation enabled (Supabase's default) - the caller must handle that
 // case by prompting the user to check their inbox rather than assuming
 // they're immediately logged in.
-export async function registerUser(email, password, displayName) {
+export async function registerUser(email, password, displayName, birthDate) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    // birth_date rides along in the signup metadata because that is what
+    // handle_new_user() reads. Sending it afterwards would mean an account
+    // could exist with no age on it whenever that second call failed.
+    options: { data: { display_name: displayName, birth_date: birthDate } },
   });
   if (error) throw new Error(friendlyError(error));
   return { user: data.user, session: data.session };

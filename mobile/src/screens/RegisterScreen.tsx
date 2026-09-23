@@ -6,6 +6,7 @@ import { Text } from '../components/Text';
 import { BrandMark } from '../components/BrandMark';
 import { Body, Button, ErrorNote, Eyebrow, Field, SuccessNote, Title } from '../components/ui';
 import { registerUser } from '../data/auth';
+import { MINIMUM_AGE } from '../legal/documents';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -30,7 +31,7 @@ export function RegisterScreen({ navigation }: any) {
     // Same gate and wording as register.html. Without it the APK was a way to
     // sign up that skipped the site's age confirmation.
     if (!ageConfirmed) {
-      return setError('You must confirm that you are at least 13 years old to create an account.');
+      return setError(`You must confirm that you are at least ${MINIMUM_AGE} years old to create an account.`);
     }
 
     setBusy(true);
@@ -121,11 +122,41 @@ export function RegisterScreen({ navigation }: any) {
             {ageConfirmed ? <Feather name="check" size={16} color={colors.bg} /> : null}
           </View>
           <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
-            I confirm that I am at least 13 years old.
+            I confirm that I am at least {MINIMUM_AGE} years old.
           </Text>
         </Pressable>
 
         <Button label="Create account" onPress={submit} loading={busy} />
+
+        {/* Said before the account exists, where agreeing to it means
+            something, rather than buried in Settings afterwards. */}
+        <Text style={[typography.small, { color: colors.textMuted, marginTop: space.sm }]}>
+          By creating an account you agree to the{' '}
+          <Text
+            accessibilityRole="link"
+            style={{ color: colors.primary, fontWeight: '700' }}
+            onPress={() => navigation.navigate('Legal', { doc: 'terms' })}
+          >
+            Terms of Service
+          </Text>
+          {' '}and the{' '}
+          <Text
+            accessibilityRole="link"
+            style={{ color: colors.primary, fontWeight: '700' }}
+            onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}
+          >
+            Privacy Policy
+          </Text>
+          , and to follow the{' '}
+          <Text
+            accessibilityRole="link"
+            style={{ color: colors.primary, fontWeight: '700' }}
+            onPress={() => navigation.navigate('Legal', { doc: 'guidelines' })}
+          >
+            Community Guidelines
+          </Text>
+          .
+        </Text>
 
         <View
           style={{ marginTop: space.xxl, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
