@@ -22,7 +22,7 @@ import { getCommentCounts } from '../data/comments';
 import { getFollowingIds } from '../data/follows';
 import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '../data/likes';
 import { getProfilesByIds, Profile } from '../data/profiles';
-import { FEED_PAGE_SIZE, getPublishedProjects, Project } from '../data/projects';
+import { FEED_PAGE_SIZE, getProjectById, getPublishedProjects, Project } from '../data/projects';
 import { getSavedSet, saveProject, unsaveProject } from '../data/saves';
 import { logProjectView } from '../data/views';
 import { loadSeenIds, markSeen, rankFeed } from '../lib/feedRank';
@@ -43,7 +43,7 @@ const NIGHT = '#241f18';
 /** The translucent cream every control on this screen sits in. */
 const GLASS = 'rgba(253,247,234,0.16)';
 
-export function ScrollsScreen({ navigation }: any) {
+export function ScrollsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -76,6 +76,11 @@ export function ScrollsScreen({ navigation }: any) {
   // which slice of the feed is being loaded.
   const followingRef = useRef<Set<string>>(new Set());
   const seenRef = useRef<Map<string, number>>(new Map());
+  // Opening a post "in Scrolls" has to land on that post's own card - the way
+  // `scrolls.html?project=<id>` does on the site - rather than at the top of a
+  // ranked feed that may not even contain it. It lives in a ref so the loader
+  // can read and clear it without the fetch depending on it.
+  const pinRef = useRef<string | null>(route?.params?.projectId ?? null);
 
   const loadPage = useCallback(
     async (reset: boolean) => {
@@ -94,10 +99,21 @@ export function ScrollsScreen({ navigation }: any) {
           seenRef.current = await loadSeenIds();
         }
 
-        const rows = await getPublishedProjects({ before: cursorRef.current ?? undefined });
+        const pinned = reset ? pinRef.current : null;
+        let rows = await getPublishedProjects({ before: cursorRef.current ?? undefined });
         // A short page means there is nothing older left; asking again would
         // just repeat the same empty answer on every scroll to the bottom.
         if (rows.length < FEED_PAGE_SIZE) exhaustedRef.current = true;
+        // The card that was asked for may be older than this slice, so it is
+        // fetched on its own and joins the page. Joining here rather than at
+        // the end is what gives it an author, counts and like state below,
+        // and prepending leaves the oldest row - the cursor - where it was.
+        if (pinned && !rows.some((p) => p.id === pinned)) {
+          const row = await getProjectById(pinned).catch(() => null);
+          // Own draft: readable by its owner, but the feed only carries
+          // published entries and this one would be the single exception.
+          if (row && row.published) rows = [row, ...rows];
+        }
         if (rows.length === 0) {
           if (reset) setFeed([]);
           return;
@@ -133,7 +149,14 @@ export function ScrollsScreen({ navigation }: any) {
           followingIds: followingRef.current,
           seenIds: seenRef.current,
         });
-        setFeed((prev) => (reset ? ranked : [...prev, ...ranked]));
+        // Ranking decides the rest of the order; the card that was asked for
+        // goes first regardless, because a link that lands somewhere else has
+        // not done its job.
+        const ordered = pinned
+          ? [...ranked.filter((p) => p.id === pinned), ...ranked.filter((p) => p.id !== pinned)]
+          : ranked;
+        if (reset) pinRef.current = null;
+        setFeed((prev) => (reset ? ordered : [...prev, ...ranked]));
       } catch {
         if (reset) setFeed([]);
       } finally {
@@ -149,6 +172,19 @@ export function ScrollsScreen({ navigation }: any) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Arriving from a post while this tab is already mounted: take the id, clear
+  // it so an ordinary pull-to-refresh later shows the ordinary feed, and load
+  // again. On first mount the effect above is already running with the same
+  // id, and `busyRef` makes this second call a no-op rather than a second
+  // fetch.
+  useEffect(() => {
+    const id = route?.params?.projectId;
+    if (!id) return;
+    pinRef.current = id;
+    navigation.setParams({ projectId: undefined });
+    load();
+  }, [route?.params?.projectId, navigation, load]);
 
   // A view counts on a 3-second dwell - the same threshold the web build uses,
   // and the same one that marks a card seen for ranking purposes.
