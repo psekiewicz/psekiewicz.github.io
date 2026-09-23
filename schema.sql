@@ -1923,6 +1923,7 @@ create or replace function public.age_years(d date)
 returns integer
 language sql
 immutable
+set search_path = public
 as $fn$
   select case when d is null then null else extract(year from age(current_date, d))::int end;
 $fn$;
@@ -1935,7 +1936,12 @@ $fn$;
 -- security definer so it can read account_ages regardless of the
 -- caller's own policies, and pinned to public so the search_path cannot
 -- be swapped underneath it.
-create or replace function public.consent_ok(uid uuid)
+--
+-- It takes no argument on purpose. An earlier version took a user id,
+-- which meant anyone holding a profile id - and those are public - could
+-- ask whether that person was a 13-15 year old waiting on a parent.
+-- Answering only about auth.uid() leaves nothing to enumerate.
+create or replace function public.consent_ok()
 returns boolean
 language sql
 stable
@@ -1947,15 +1953,20 @@ as $fn$
       select a.consent_state <> 'pending'
              or coalesce(public.age_years(a.birth_date), 99) >= 16
       from public.account_ages a
-      where a.user_id = uid
+      where a.user_id = auth.uid()
     ),
     -- No row at all: an account from before this existed. Left working.
     true
   );
 $fn$;
 
-revoke all on function public.consent_ok(uuid) from public;
-grant execute on function public.consent_ok(uuid) to authenticated;
+-- Neither needs to be reachable over the REST API. consent_ok is called
+-- from inside policy expressions, which need the caller to hold EXECUTE;
+-- age_years only ever runs inside a SECURITY DEFINER function, as the
+-- owner, so nobody needs it directly.
+revoke all on function public.age_years(date) from public, anon, authenticated;
+revoke all on function public.consent_ok() from public, anon;
+grant execute on function public.consent_ok() to authenticated;
 
 -- The signup trigger now carries the date of birth through, and decides
 -- the state from it. Under 13 is refused outright: the clients stop it
@@ -2023,19 +2034,19 @@ create index if not exists parental_consents_token_idx
 drop policy if exists "Users can create their own projects" on public.projects;
 create policy "Users can create their own projects"
   on public.projects for insert
-  with check (auth.uid() = user_id and public.consent_ok(auth.uid()));
+  with check (auth.uid() = user_id and public.consent_ok());
 
 drop policy if exists "Users can follow as themselves" on public.follows;
 create policy "Users can follow as themselves"
   on public.follows for insert
-  with check (auth.uid() = follower_id and public.consent_ok(auth.uid()));
+  with check (auth.uid() = follower_id and public.consent_ok());
 
 drop policy if exists "Signed-in users can comment on visible projects" on public.comments;
 create policy "Signed-in users can comment on visible projects"
   on public.comments for insert
   with check (
     auth.uid() = user_id
-    and public.consent_ok(auth.uid())
+    and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id)
   );
 
@@ -2044,7 +2055,7 @@ create policy "Signed-in users can like as themselves"
   on public.likes for insert
   with check (
     auth.uid() = user_id
-    and public.consent_ok(auth.uid())
+    and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
   );
 
@@ -2053,7 +2064,7 @@ create policy "Users can save as themselves"
   on public.saves for insert
   with check (
     auth.uid() = user_id
-    and public.consent_ok(auth.uid())
+    and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id)
   );
 
@@ -2062,6 +2073,6 @@ create policy "Signed-in users can report as themselves"
   on public.reports for insert
   with check (
     auth.uid() = reporter_id
-    and public.consent_ok(auth.uid())
+    and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
   );
