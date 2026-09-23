@@ -8,6 +8,10 @@ import { getAchievementRecords, EMPTY_ACHIEVEMENT_RECORDS } from './points-data.
 import { effectClass } from './shop-items.js';
 import { watchProgress } from './progress-watch.js';
 import { mountNotifications, unmountNotifications } from './notifications-ui.js';
+// Runs on import: sends a signed-in account with no date of birth to the
+// page that asks for one. Here rather than in each page's own script so a
+// new page is covered without anybody remembering to add it.
+import './age-gate.js';
 
 // Tracked at module scope so the keyboard shortcut below can tell whether
 // there is anyone to create a project as, without re-querying Supabase on

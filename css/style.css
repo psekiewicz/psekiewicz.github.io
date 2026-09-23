@@ -1350,6 +1350,22 @@ img {
   min-height: 110px;
 }
 
+/* Day / month / year side by side. The year needs the most room, and on a
+   narrow phone three boxes still beat a native date picker for typing a year
+   sixteen or more back. */
+.field-row {
+  display: flex;
+  gap: 10px;
+}
+
+.field-row .field {
+  flex: 1;
+}
+
+.field-row .field:last-child {
+  flex: 1.4;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;
