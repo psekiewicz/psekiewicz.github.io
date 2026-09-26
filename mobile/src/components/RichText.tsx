@@ -1,14 +1,15 @@
-import React from 'react';
-import { Linking, View } from 'react-native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import { Linking, Pressable, View } from 'react-native';
 
 import { parseBlocks, parseInline } from '../lib/markdown';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
 
 // A post body: the small Markdown slice from lib/markdown.ts drawn as
-// native text - headings, bullet and numbered lists, paragraphs, and links
-// that open in the browser. A plain text post comes out as paragraphs with
-// its line breaks kept, the same as before.
+// native text - headings, bullet and numbered lists, paragraphs, links that
+// open in the browser, and pictures placed anywhere in the article. A plain
+// text post comes out as paragraphs with its line breaks kept, as before.
 
 const BODY = { fontSize: 14, lineHeight: 22 };
 
@@ -55,6 +56,36 @@ function Inline({ source }: { source: string }) {
   );
 }
 
+// Width fills the column; height follows the picture's own proportions once
+// it has loaded (16:9 until then). One that fails to load disappears rather
+// than leaving an empty box in the middle of the article.
+function Figure({ src, caption }: { src: string; caption: string }) {
+  const { colors } = useTheme();
+  const [ratio, setRatio] = useState(16 / 9);
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <View style={{ gap: 6, marginVertical: 4 }}>
+      <Pressable onPress={() => Linking.openURL(src).catch(() => {})} accessibilityRole="imagebutton" accessibilityLabel={caption || 'Image'}>
+        <Image
+          source={{ uri: src }}
+          contentFit="cover"
+          transition={150}
+          onLoad={(e) => {
+            const { width, height } = e.source;
+            if (width && height) setRatio(Math.max(0.5, width / height));
+          }}
+          onError={() => setFailed(true)}
+          style={{ width: '100%', aspectRatio: ratio, borderRadius: 10, backgroundColor: colors.surface }}
+        />
+      </Pressable>
+      {caption ? (
+        <Text style={{ fontSize: 12, lineHeight: 18, color: colors.textMuted, textAlign: 'center' }}>{caption}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export function RichText({ source }: { source: string }) {
   const { colors } = useTheme();
   const blocks = parseBlocks(source);
@@ -62,6 +93,9 @@ export function RichText({ source }: { source: string }) {
   return (
     <View style={{ gap: 10 }}>
       {blocks.map((block, i) => {
+        if (block.type === 'image') {
+          return <Figure key={i} src={block.src} caption={block.caption} />;
+        }
         if (block.type === 'heading') {
           return (
             <Text

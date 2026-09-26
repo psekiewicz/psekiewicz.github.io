@@ -15,11 +15,15 @@ import { escapeHtml, safeUrl } from './utils.js';
 const HEADING = /^(#{1,3})\s+(.+?)\s*#*\s*$/;
 const BULLET = /^\s*[-*•]\s+(.*)$/;
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
+// A picture is a line of its own: ![caption](https://...). The caption is
+// optional and doubles as the alt text.
+const IMAGE = /^\s*!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)\s*$/;
 
 // Splits the text into blocks. Each block is one of:
 //   { type: 'heading', level: 1-3, text }
 //   { type: 'list', ordered: bool, items: [text] }
 //   { type: 'para', lines: [text] }
+//   { type: 'image', src, caption }
 export function parseBlocks(source) {
   const blocks = [];
   let para = null;
@@ -33,6 +37,13 @@ export function parseBlocks(source) {
     const line = raw.trimEnd();
     if (!line.trim()) {
       close();
+      continue;
+    }
+
+    const image = line.match(IMAGE);
+    if (image) {
+      close();
+      blocks.push({ type: 'image', src: image[2], caption: image[1].trim() });
       continue;
     }
 
@@ -72,9 +83,11 @@ export function parseBlocks(source) {
   return blocks;
 }
 
+// An image written in the middle of a sentence has nowhere to go, so the
+// leading ! is swallowed and it reads as an ordinary link.
 // Links and inline code first, so their contents are never read as
 // emphasis; then **bold**, then *italic* / _italic_.
-const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
+const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
 
 // Splits one line into { type: 'text' | 'link' | 'code' | 'bold' | 'italic',
 // text, href? } tokens.
@@ -133,6 +146,14 @@ function inlineHtml(source) {
 export function renderMarkdown(source) {
   return parseBlocks(source)
     .map((block) => {
+      if (block.type === 'image') {
+        const src = safeUrl(block.src);
+        if (!src) return '';
+        const caption = escapeHtml(block.caption);
+        // A dead link takes its whole figure with it rather than leaving a
+        // broken-image box in the middle of the article.
+        return `<figure class="post-figure"><a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer ugc"><img src="${escapeHtml(src)}" alt="${caption}" loading="lazy" onerror="this.closest('figure').remove()" /></a>${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
+      }
       if (block.type === 'heading') {
         const tag = `h${block.level + 1}`;
         return `<${tag}>${inlineHtml(block.text)}</${tag}>`;
@@ -153,9 +174,18 @@ export function stripMarkdown(source) {
   return parseBlocks(source)
     .map((block) => {
       const plain = (s) => parseInline(s).map((t) => t.text).join('');
+      if (block.type === 'image') return '';
       if (block.type === 'heading') return plain(block.text);
       if (block.type === 'list') return block.items.map(plain).join(' · ');
       return block.lines.map(plain).join(' ');
     })
+    .filter(Boolean)
     .join(' · ');
+}
+
+// The first picture in the body, so a post whose only images are inline
+// still gets a cover in the feed.
+export function firstImage(source) {
+  const block = parseBlocks(source).find((b) => b.type === 'image');
+  return block ? block.src : '';
 }

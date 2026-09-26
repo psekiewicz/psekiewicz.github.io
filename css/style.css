@@ -1827,6 +1827,32 @@ tbody tr {
   text-decoration-color: currentColor;
 }
 
+.detail-body .post-figure {
+  margin: 1.4em 0;
+}
+
+.detail-body .post-figure a {
+  display: block;
+}
+
+.detail-body .post-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.detail-body figcaption {
+  margin-top: 0.5em;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .detail-body code {
   font-family: var(--font-mono);
   font-size: 0.9em;
@@ -5168,4 +5194,108 @@ body {
   50% {
     box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 25%, transparent);
   }
+}
+
+/* Formatting bar over the description box (js/format-toolbar.js). It sits
+   flush on top of the textarea so the two read as one editor. */
+.fmt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--color-surface);
+}
+
+.fmt-tools {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Fades the last button out so a row cut off by a narrow screen reads as
+     "there's more", not as the end. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+}
+
+.fmt-tools::-webkit-scrollbar {
+  display: none;
+}
+
+.fmt-bar.is-previewing .fmt-tools {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.fmt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 5px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.fmt-btn:hover,
+.fmt-btn:focus-visible {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.fmt-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.fmt-tab {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.fmt-tab.is-active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.field .fmt-textarea {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  min-height: 180px;
+  resize: vertical;
+}
+
+.fmt-preview {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 0.92rem;
+  overflow: auto;
+  max-height: 60vh;
+}
+
+.fmt-preview .fmt-empty {
+  color: var(--color-text-faint);
 }

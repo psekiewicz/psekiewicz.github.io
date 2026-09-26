@@ -1,4 +1,5 @@
 import { safeUrl } from './utils';
+import { firstImage } from './markdown';
 
 // The web build (js/media.js) turns a media URL into either a native <video>/
 // <audio>/<img> or a provider iframe. There are no iframes here, and by design
@@ -175,6 +176,11 @@ export function posterFor(url: string) {
  * else a still from its media. Without the fallback a YouTube entry with no
  * cover sat on a flat gradient in the feed while its own page showed the video.
  */
-export function coverFor(project: { imageUrl?: string; mediaUrl?: string }) {
-  return project.imageUrl || (project.mediaUrl ? posterFor(project.mediaUrl) : null) || '';
+export function coverFor(project: { imageUrl?: string; mediaUrl?: string; description?: string }) {
+  return (
+    project.imageUrl ||
+    (project.mediaUrl ? posterFor(project.mediaUrl) : null) ||
+    firstImage(project.description) ||
+    ''
+  );
 }

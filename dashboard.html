@@ -157,7 +157,8 @@
         </div>
         <div class="field">
           <label for="description">Description</label>
-          <textarea id="description" maxlength="5000" placeholder="What is it, how does it work, what did you learn? Supports ## headings, - lists, **bold** and links."></textarea>
+          <textarea id="description" maxlength="20000" rows="10" placeholder="What is it, how does it work, what did you learn?"></textarea>
+          <div class="hint">Use the buttons above: headings, lists, links, and pictures from a link anywhere in the text. Preview shows how it will look.</div>
         </div>
         <div class="field">
           <label for="imageUrl">Image URL</label>
@@ -211,6 +212,7 @@
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { parseMedia } from '/js/media.js';
+    import { attachFormatToolbar } from '/js/format-toolbar.js';
     import { getSavedProjects, unsaveProject } from '/js/saves-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -298,8 +300,11 @@
     const form = document.getElementById('project-form');
     const submitBtn = document.getElementById('modal-submit-btn');
 
+    const descriptionBar = attachFormatToolbar(document.getElementById('description'));
+
     function openModal(project) {
       form.reset();
+      descriptionBar.reset();
       modalAlert.classList.remove('is-visible');
       document.getElementById('project-id').value = project ? project.id : '';
       modalTitle.textContent = project ? 'Edit project' : 'New project';

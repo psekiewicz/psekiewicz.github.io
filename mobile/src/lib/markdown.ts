@@ -6,18 +6,23 @@
 export type Block =
   | { type: 'heading'; level: number; text: string }
   | { type: 'list'; ordered: boolean; items: string[] }
-  | { type: 'para'; lines: string[] };
+  | { type: 'para'; lines: string[] }
+  | { type: 'image'; src: string; caption: string };
 
 export type Inline = { type: 'text' | 'link' | 'code' | 'bold' | 'italic'; text: string; href?: string };
 
 const HEADING = /^(#{1,3})\s+(.+?)\s*#*\s*$/;
 const BULLET = /^\s*[-*•]\s+(.*)$/;
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
+// A picture is a line of its own: ![caption](https://...). The caption is
+// optional and doubles as the alt text.
+const IMAGE = /^\s*!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)\s*$/;
 
 // Splits the text into blocks. Each block is one of:
 //   { type: 'heading', level: 1-3, text }
 //   { type: 'list', ordered: bool, items: [text] }
 //   { type: 'para', lines: [text] }
+//   { type: 'image', src, caption }
 export function parseBlocks(source: string | null | undefined): Block[] {
   const blocks: Block[] = [];
   let para: Extract<Block, { type: 'para' }> | null = null;
@@ -31,6 +36,13 @@ export function parseBlocks(source: string | null | undefined): Block[] {
     const line = raw.trimEnd();
     if (!line.trim()) {
       close();
+      continue;
+    }
+
+    const image = line.match(IMAGE);
+    if (image) {
+      close();
+      blocks.push({ type: 'image', src: image[2], caption: image[1].trim() });
       continue;
     }
 
@@ -70,9 +82,11 @@ export function parseBlocks(source: string | null | undefined): Block[] {
   return blocks;
 }
 
+// An image written in the middle of a sentence has nowhere to go, so the
+// leading ! is swallowed and it reads as an ordinary link.
 // Links and inline code first, so their contents are never read as
 // emphasis; then **bold**, then *italic* / _italic_.
-const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
+const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
 
 // Splits one line into { type: 'text' | 'link' | 'code' | 'bold' | 'italic',
 // text, href? } tokens.
@@ -110,9 +124,18 @@ export function stripMarkdown(source: string | null | undefined): string {
   return parseBlocks(source)
     .map((block) => {
       const plain = (s: string) => parseInline(s).map((t) => t.text).join('');
+      if (block.type === 'image') return '';
       if (block.type === 'heading') return plain(block.text);
       if (block.type === 'list') return block.items.map(plain).join(' · ');
       return block.lines.map(plain).join(' ');
     })
+    .filter(Boolean)
     .join(' · ');
+}
+
+// The first picture in the body, so a post whose only images are inline
+// still gets a cover in the feed.
+export function firstImage(source: string | null | undefined): string {
+  const block = parseBlocks(source).find((b) => b.type === 'image');
+  return block && block.type === 'image' ? block.src : '';
 }

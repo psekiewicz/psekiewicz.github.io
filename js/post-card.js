@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { levelChipHtml } from './levels.js';
 import { parseMedia } from './media.js';
 import { effectClass } from './shop-items.js';
-import { stripMarkdown } from './markdown.js';
+import { firstImage, stripMarkdown } from './markdown.js';
 
 // An entry drawn the way a timeline draws a post: the avatar down the left,
 // one column of content beside it, and a row of flat actions spread
@@ -24,13 +24,13 @@ function coverFor(project) {
   const cover = safeUrl(project.imageUrl);
   if (cover) return cover;
   const media = parseMedia(project.mediaUrl, project.type);
-  if (!media) return '';
-  if (media.kind === 'image') return media.src;
-  if (media.provider === 'YouTube') {
+  if (media && media.kind === 'image') return media.src;
+  if (media && media.provider === 'YouTube') {
     const id = media.embedUrl.split('/').pop();
     return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
   }
-  return '';
+  // A text post whose pictures are all inside the article still gets one.
+  return safeUrl(firstImage(project.description));
 }
 
 export function postHtml(project, { author, level, likeCount = 0, commentCount = 0, liked = false, saved = false } = {}) {

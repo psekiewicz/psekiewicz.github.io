@@ -52,3 +52,20 @@ test('user HTML is escaped, never rendered', () => {
 test('stripMarkdown gives a plain one-line preview', () => {
   assert.equal(stripMarkdown('## Top\n- **One** https://a.com/x\n- Two'), 'Top · One a.com · Two');
 });
+
+test('a picture on its own line becomes a figure with its caption', () => {
+  const html = renderMarkdown('Before\n\n![The new hub](https://a.com/p.jpg)\n\nAfter');
+  assert.match(html, /<p>Before<\/p><figure class="post-figure"><a href="https:\/\/a.com\/p.jpg"[^>]*><img src="https:\/\/a.com\/p.jpg" alt="The new hub"/);
+  assert.match(html, /<figcaption>The new hub<\/figcaption><\/figure><p>After<\/p>$/);
+});
+
+test('a picture directly under a line of text still breaks out of the paragraph', () => {
+  assert.deepEqual(parseBlocks('text\n![](https://a.com/p.png)').map((b) => b.type), ['para', 'image']);
+});
+
+test('pictures only load from http(s) and are left out of previews', async () => {
+  assert.equal(renderMarkdown('![x](javascript:alert(1))').includes('<img'), false);
+  const { stripMarkdown, firstImage } = await import('../js/markdown.js');
+  assert.equal(stripMarkdown('Hi\n\n![cap](https://a.com/p.png)'), 'Hi');
+  assert.equal(firstImage('Hi\n\n![cap](https://a.com/p.png)'), 'https://a.com/p.png');
+});
