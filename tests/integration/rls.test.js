@@ -109,17 +109,35 @@ function uuid() {
 // Fixture helper: inserts an auth.users row (which the on_auth_user_created
 // trigger turns into a public.profiles row) as the superuser connection,
 // bypassing RLS the way only Supabase's own auth server normally can.
-async function makeUser({ email = `${uuid()}@example.com`, displayName = null, admin = false } = {}) {
+//
+// birthDate travels in the signup metadata, the way both clients send it,
+// and defaults to an adult's: an account with no date of birth cannot write
+// at all (see consent_ok() in schema.sql). Pass null for one that never
+// gave a date.
+async function makeUser({
+  email = `${uuid()}@example.com`,
+  displayName = null,
+  admin = false,
+  birthDate = '1990-01-01',
+  db = client,
+} = {}) {
   const id = uuid();
-  await client.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)', [
-    id,
-    email,
-    displayName ? { display_name: displayName } : {},
-  ]);
+  const meta = {};
+  if (displayName) meta.display_name = displayName;
+  if (birthDate) meta.birth_date = birthDate;
+  await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)', [id, email, meta]);
   if (admin) {
-    await client.query('update public.profiles set is_admin = true where id = $1', [id]);
+    await db.query('update public.profiles set is_admin = true where id = $1', [id]);
   }
   return id;
+}
+
+// A date of birth that makes the holder `years` old today.
+function birthDateYearsAgo(years) {
+  const d = new Date();
+  d.setUTCFullYear(d.getUTCFullYear() - years);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 async function makeProject(userId, { published = true, title = 'Test Project' } = {}) {
@@ -433,4 +451,248 @@ itRls('purchase_item rejects insufficient points and never double-charges a repe
 
   const second = await client.query("select public.purchase_item('test-item') as points");
   assert.equal(second.rows[0].points, 50, 'buying an already-owned item again must not charge twice');
+});
+
+// --- age and parental consent ---------------------------------------------
+
+itRls('an account with no date of birth can read but not write, until it gives one', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+  const noDate = await makeUser({ birthDate: null });
+
+  await asUser(noDate);
+  assert.equal((await client.query('select 1 from public.projects where id = $1', [projectId])).rowCount, 1);
+  await expectRejects(
+    () => client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, noDate]),
+    /row-level security/,
+    'signing up without a birth_date must not get round the age rules',
+  );
+
+  const { rows } = await client.query("select public.set_birth_date('1990-01-01') as state");
+  assert.equal(rows[0].state, 'not_required');
+  await assert.doesNotReject(
+    client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, noDate]),
+  );
+});
+
+itRls('an account from before ages were asked for (no row at all) has to give a date too', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+  const legacy = await makeUser({ birthDate: null });
+  await client.query('delete from public.account_ages where user_id = $1', [legacy]);
+
+  await asUser(legacy);
+  await expectRejects(
+    () => client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, legacy]),
+    /row-level security/,
+  );
+
+  await client.query("select public.set_birth_date('1990-01-01')");
+  await assert.doesNotReject(
+    client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, legacy]),
+  );
+});
+
+itRls('a 13-15 year old waiting on a parent cannot write; a 16 year old can', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+  const young = await makeUser({ birthDate: birthDateYearsAgo(14) });
+  const sixteen = await makeUser({ birthDate: birthDateYearsAgo(16) });
+
+  await asUser(young);
+  await expectRejects(
+    () => client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, young]),
+    /row-level security/,
+  );
+
+  await asUser(sixteen);
+  await assert.doesNotReject(
+    client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, sixteen]),
+  );
+});
+
+// --- notifications -----------------------------------------------------------
+
+itRls('notifications cannot be forged by calling add_notification directly', async () => {
+  const victim = await makeUser();
+  const someone = await makeUser();
+
+  await asUser(someone);
+  await expectRejects(
+    () => client.query("select public.add_notification($1, $2, 'follow')", [victim, someone]),
+    /permission denied/,
+    'a signed-in user must not be able to hand anyone a notification',
+  );
+  await asAnon();
+  await expectRejects(
+    () => client.query("select public.add_notification($1, $2, 'follow')", [victim, someone]),
+    /permission denied/,
+  );
+
+  // A real follow still notifies, through the trigger.
+  await asUser(someone);
+  await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [someone, victim]);
+  await asUser(victim);
+  const { rows } = await client.query("select count(*)::int as n from public.notifications where type = 'follow'");
+  assert.equal(rows[0].n, 1);
+});
+
+// --- created_at --------------------------------------------------------------
+// now() is the transaction's start time, so a row the server dated itself
+// compares equal to it exactly.
+
+itRls('clients cannot backdate or future-date what they write, nor re-date it later', async () => {
+  const me = await makeUser();
+  const other = await makeUser();
+  const projectId = await makeProject(other);
+
+  await asUser(me);
+  const entry = await client.query(
+    "insert into public.projects (user_id, title, created_at) values ($1, 'Dated', '2099-01-01') returning created_at = now() as pinned",
+    [me],
+  );
+  assert.equal(entry.rows[0].pinned, true, 'a future date would pin an entry to the top of Latest');
+
+  const redated = await client.query(
+    "update public.projects set created_at = '2099-01-01' where user_id = $1 returning created_at = now() as pinned",
+    [me],
+  );
+  assert.equal(redated.rows[0].pinned, true);
+
+  for (const [sql, params] of [
+    ["insert into public.comments (project_id, user_id, body, created_at) values ($1, $2, 'hi', '2000-01-01')", [projectId, me]],
+    ["insert into public.likes (project_id, user_id, created_at) values ($1, $2, '2000-01-01')", [projectId, me]],
+    ["insert into public.follows (follower_id, following_id, created_at) values ($1, $2, '2000-01-01')", [me, other]],
+    ["insert into public.saves (user_id, project_id, created_at) values ($1, $2, '2000-01-01')", [me, projectId]],
+  ]) {
+    const { rows } = await client.query(`${sql} returning created_at = now() as pinned`, params);
+    assert.equal(rows[0].pinned, true, `${sql.split(' ')[2]} must be dated by the server`);
+  }
+});
+
+itRls('backdating rows does not get round the rate limits', async () => {
+  const owner = await makeUser();
+  const me = await makeUser();
+  const projectId = await makeProject(owner);
+
+  await asUser(me);
+  for (let i = 0; i < 20; i++) {
+    await client.query(
+      "insert into public.comments (project_id, user_id, body, created_at) values ($1, $2, $3, '2000-01-01')",
+      [projectId, me, `comment ${i}`],
+    );
+  }
+  await expectRejects(
+    () =>
+      client.query(
+        "insert into public.comments (project_id, user_id, body, created_at) values ($1, $2, 'one more', '2000-01-01')",
+        [projectId, me],
+      ),
+    /Slow down/,
+  );
+});
+
+itRls("an account's age cannot be faked by moving profiles.created_at", async () => {
+  const me = await makeUser();
+  await client.query(
+    "insert into public.achievement_defs (id, metric, threshold, reward) values ('test-old', 'account_age_days', 365, 50)",
+  );
+
+  await asUser(me);
+  await client.query("update public.profiles set created_at = now() - interval '800 days' where id = $1", [me]);
+  const { rows } = await client.query('select created_at = now() as unchanged from public.profiles where id = $1', [me]);
+  assert.equal(rows[0].unchanged, true);
+  await expectRejects(() => client.query("select public.claim_achievement('test-old')"), /not yet earned/);
+});
+
+// --- spending under concurrency --------------------------------------------
+// These need a second connection racing the first, which one rolled-back
+// transaction cannot give. Their fixtures are committed instead - harmless,
+// since the whole database is a scratch copy recreated on every run - and
+// each racer holds its own connection and transaction.
+
+function itRace(name, fn) {
+  const options = unavailableReason ? { skip: unavailableReason } : {};
+  test(name, options, fn);
+}
+
+async function connectAsUser(uid) {
+  const c = new pg.Client({ connectionString: withDatabase(ADMIN_URL, DB_NAME) });
+  await c.connect();
+  await c.query('begin');
+  await c.query('set local role authenticated');
+  await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid })]);
+  return c;
+}
+
+// Resolves once the backend `pid` is waiting on a lock, so the race is set
+// up the same way on every run rather than depending on timing.
+async function waitUntilBlocked(pid) {
+  for (let i = 0; i < 250; i++) {
+    const { rows } = await client.query('select wait_event_type from pg_stat_activity where pid = $1', [pid]);
+    if (rows[0] && rows[0].wait_event_type === 'Lock') return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error('the second call never waited on the first');
+}
+
+// Starts `sql` on `second` while `first` still holds its transaction open,
+// waits until it is blocked behind it, then lets `first` commit.
+async function race(first, second, sql, params = []) {
+  const pid = (await second.query('select pg_backend_pid() as pid')).rows[0].pid;
+  const racing = second.query(sql, params);
+  racing.catch(() => {}); // observed by the caller; this only stops an unhandled-rejection warning
+  await waitUntilBlocked(pid);
+  await first.query('commit');
+  return racing;
+}
+
+itRace('two purchases fired at once cannot spend the same points twice', async () => {
+  const buyer = await makeUser();
+  const tag = uuid().slice(0, 8);
+  await client.query('insert into public.shop_item_defs (id, price) values ($1, 100), ($2, 100)', [
+    `race-a-${tag}`,
+    `race-b-${tag}`,
+  ]);
+  await client.query('update public.profiles set points = 100 where id = $1', [buyer]);
+
+  const first = await connectAsUser(buyer);
+  const second = await connectAsUser(buyer);
+  try {
+    await first.query('select public.purchase_item($1)', [`race-a-${tag}`]);
+    await assert.rejects(
+      race(first, second, 'select public.purchase_item($1)', [`race-b-${tag}`]),
+      /Not enough points/,
+      'the second purchase has to see the balance the first one left',
+    );
+    await second.query('rollback');
+  } finally {
+    await first.end();
+    await second.end();
+  }
+
+  const { rows } = await client.query('select points from public.profiles where id = $1', [buyer]);
+  assert.equal(rows[0].points, 0, 'a balance must never be driven below zero');
+});
+
+itRace('two collects fired at once pay the same earnings out once', async () => {
+  const earner = await makeUser();
+  const fan = await makeUser();
+  // One follower is worth 10 lifetime points (see user_reputation).
+  await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [fan, earner]);
+
+  const first = await connectAsUser(earner);
+  const second = await connectAsUser(earner);
+  try {
+    await first.query('select public.collect_earnings()');
+    const { rows } = await race(first, second, 'select public.collect_earnings() as result');
+    assert.equal(rows[0].result.paid, 0, 'the second collect has to see what the first one already paid');
+    await second.query('commit');
+  } finally {
+    await first.end();
+    await second.end();
+  }
+
+  const { rows } = await client.query('select points, points_earned_total from public.profiles where id = $1', [earner]);
+  assert.deepEqual(rows[0], { points: 10, points_earned_total: 10 });
 });
