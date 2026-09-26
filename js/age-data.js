@@ -1,4 +1,5 @@
 import { supabase } from './supabase-init.js';
+import { functionErrorMessage } from './utils.js';
 
 // The account's age and what it means for what it may do. `account_ages` is
 // readable only by its owner and writable by nobody from a client, so this is
@@ -46,15 +47,26 @@ export async function setBirthDate(birthDate) {
 
 /** Asks the Edge Function to email a parent. */
 export async function requestParentalConsent(parentEmail) {
-  const { data, error } = await supabase.functions.invoke('parental-consent', {
+  const { error } = await supabase.functions.invoke('parental-consent', {
     body: { action: 'request', parentEmail },
   });
-  if (error) {
-    // The function answers with a readable reason; surface that rather than
-    // "Edge Function returned a non-2xx status code".
-    throw new Error((data && data.error) || error.message);
-  }
+  // The function answers with a readable reason; surface that rather than
+  // "Edge Function returned a non-2xx status code".
+  if (error) throw new Error(await functionErrorMessage(error));
   return true;
+}
+
+/**
+ * The parent pressing the button on consent.html. Needs no account - the
+ * token from the email is the whole proof. Resolves to 'confirmed',
+ * 'already', 'expired' or 'invalid'.
+ */
+export async function confirmParentalConsent(token) {
+  const { data, error } = await supabase.functions.invoke('parental-consent', {
+    body: { action: 'confirm', token },
+  });
+  if (error) throw new Error(await functionErrorMessage(error));
+  return (data && data.status) || 'invalid';
 }
 
 /**

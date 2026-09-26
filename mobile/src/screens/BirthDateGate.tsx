@@ -242,8 +242,8 @@ export function BirthDateGate({ onDone }: { onDone: () => void }) {
                 We have emailed them
               </Text>
               <Text style={[typography.body, { color: colors.textMuted }]}>
-                Once they open the link, you can publish, comment and follow. Until
-                then you can look around. The link works for 14 days.
+                Once they confirm on the page the link opens, you can publish, comment
+                and follow. Until then you can look around. The link works for 14 days.
               </Text>
               <Text style={[typography.small, { color: colors.textFaint }]}>
                 Sent to {parentEmail.trim()}. If it does not arrive, check the spam

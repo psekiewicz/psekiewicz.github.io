@@ -18,6 +18,9 @@ const EXEMPT = new Set([
   '/login.html',
   '/register.html',
   '/404.html',
+  // A parent confirming a child's account may be signed in to an account of
+  // their own that has no date yet; that must not bounce them off the page.
+  '/consent.html',
 ]);
 
 function isExempt() {

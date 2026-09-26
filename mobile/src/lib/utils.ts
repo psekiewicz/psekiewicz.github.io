@@ -85,3 +85,21 @@ export function normalizeTags(tags: string[]): string[] {
   }
   return out;
 }
+
+/**
+ * The reason an Edge Function gave for turning a request down.
+ *
+ * supabase-js hands back `data: null` whenever a function answers with a
+ * non-2xx status, so reading `data.error` never found anything and every
+ * refusal reached the person as "Edge Function returned a non-2xx status
+ * code". The body the function sent is on the raw Response in `error.context`.
+ */
+export async function functionErrorMessage(error: any): Promise<string> {
+  try {
+    const body = await error?.context?.json();
+    if (body && body.error) return String(body.error);
+  } catch {
+    // Not JSON, or no response at all (a network failure) - use the generic one.
+  }
+  return error?.message || 'Request failed.';
+}
