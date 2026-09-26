@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Project } from '../data/projects';
 import { coverFor } from '../lib/media';
+import { stripMarkdown } from '../lib/markdown';
 import { formatCount, timeAgo, typeMeta } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
@@ -105,7 +106,7 @@ export function PostCard({
   const type = project.type || 'other';
   const meta = typeMeta(type);
   const cover = coverFor(project);
-  const text = project.summary || project.description.slice(0, 220);
+  const text = project.summary || stripMarkdown(project.description).slice(0, 220);
   const name = author?.displayName || project.authorName;
   // A text post stays text: no picture means no placeholder block, which at
   // this density would be a screenful of gradient saying nothing. What kind of

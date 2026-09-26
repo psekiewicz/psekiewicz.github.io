@@ -42,7 +42,7 @@ function fieldsHtml() {
       </div>
       <div class="field">
         <label for="sheet-description">Description</label>
-        <textarea id="sheet-description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
+        <textarea id="sheet-description" maxlength="5000" placeholder="What is it, how does it work, what did you learn? Supports ## headings, - lists, **bold** and links."></textarea>
       </div>
       <div class="field">
         <label for="sheet-image">Image URL</label>

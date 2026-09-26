@@ -87,6 +87,7 @@
     import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { stripMarkdown } from '/js/markdown.js';
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
@@ -341,7 +342,7 @@
               ${authorLevels.get(project.uid) ? levelChipHtml(authorLevels.get(project.uid).level, 'sm') : ''}
             </a>
             <h2>${escapeHtml(project.title)}</h2>
-            <p>${escapeHtml(project.summary || project.description.slice(0, 140))}</p>
+            <p>${escapeHtml(project.summary || stripMarkdown(project.description).slice(0, 140))}</p>
             <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
           </div>
           ${rail}

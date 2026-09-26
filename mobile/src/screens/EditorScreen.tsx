@@ -542,7 +542,7 @@ export function EditorScreen({ route, navigation }: any) {
         <PlainInput
           value={description}
           onChangeText={setDescription}
-          placeholder="Write something about it…"
+          placeholder="Write something about it… (## headings, - lists, **bold** and links work)"
           colors={colors}
           multiline
         />

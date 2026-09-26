@@ -11,6 +11,7 @@ import { CommentsSection } from '../components/CommentsSection';
 import { PostAction } from '../components/PostCard';
 import { Icon } from '../components/icons';
 import { ReportSheet } from '../components/ReportSheet';
+import { RichText } from '../components/RichText';
 import { Avatar, Button, DisplayName, ErrorNote, LevelChip, Loading, TypeBadge } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
@@ -237,7 +238,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted }}>{project.summary}</Text>
             ) : null}
             {project.description ? (
-              <Text style={{ fontSize: 14, lineHeight: 22, color: colors.text }}>{project.description}</Text>
+              <RichText source={project.description} />
             ) : null}
             {project.tags.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>

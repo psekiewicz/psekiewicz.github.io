@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { levelChipHtml } from './levels.js';
 import { parseMedia } from './media.js';
 import { effectClass } from './shop-items.js';
+import { stripMarkdown } from './markdown.js';
 
 // An entry drawn the way a timeline draws a post: the avatar down the left,
 // one column of content beside it, and a row of flat actions spread
@@ -39,7 +40,7 @@ export function postHtml(project, { author, level, likeCount = 0, commentCount =
   const meta = PROJECT_TYPES[type];
   const name = (author && author.displayName) || project.authorName;
   const cover = coverFor(project);
-  const text = project.summary || project.description.slice(0, 220);
+  const text = project.summary || stripMarkdown(project.description).slice(0, 220);
   const tags = project.tags
     .slice(0, 4)
     .map((t) => `<a class="tag" href="/projects.html?tag=${encodeURIComponent(t)}">${escapeHtml(t)}</a>`)

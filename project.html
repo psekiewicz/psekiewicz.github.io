@@ -94,6 +94,7 @@
     import { getProfile, getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
+    import { renderMarkdown } from '/js/markdown.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getComments, addComment, deleteComment } from '/js/comments-data.js';
     import { refreshProgress } from '/js/progress-watch.js';
@@ -277,7 +278,7 @@
             </header>
             <div class="post-body">
               <h1 class="post-detail-title">${escapeHtml(project.title)}${draftBadge}</h1>
-              <div class="detail-body">${escapeHtml(project.description || project.summary || '')}</div>
+              <div class="detail-body">${renderMarkdown(project.description || project.summary || '')}</div>
               <div class="post-tags">${typeBadgeHtml(project.type)}${tags}</div>
             </div>
             <div class="post-detail-media">
