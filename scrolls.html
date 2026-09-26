@@ -306,11 +306,16 @@
       const media = parseMedia(project.mediaUrl, project.type);
       const cardImage = scrollImageFor(project);
       const hasImage = Boolean(cardImage);
+      // The initials sit in the upper part of the card, clear of the caption,
+      // and under the image rather than instead of it: a picture that fails
+      // to load removes itself and the card falls back to them instead of
+      // going blank.
+      const initials = `<div class="scroll-empty-icon" style="position:absolute;inset:0 0 40% 0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
       const bg = media
         ? `<div class="scroll-card-media">${mediaHtml(project.mediaUrl, { inline: true, typeHint: project.type })}</div>`
         : hasImage
-        ? `<img class="scroll-card-bg" src="${escapeHtml(safeUrl(cardImage))}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
-        : `<div class="scroll-empty-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
+        ? `${initials}<img class="scroll-card-bg" src="${escapeHtml(safeUrl(cardImage))}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
+        : initials;
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = profiles.get(project.uid);

@@ -1,4 +1,5 @@
 import { supabase } from './supabase-init.js';
+import { functionErrorMessage } from './utils.js';
 
 export async function isAdmin(userId) {
   if (!userId) return false;
@@ -36,7 +37,7 @@ export async function listUsersForAdmin() {
 // supabase/functions/admin-actions/index.ts and the README for setup.
 async function callAdminAction(payload) {
   const { data, error } = await supabase.functions.invoke('admin-actions', { body: payload });
-  if (error) throw new Error(error.message || 'Request failed.');
+  if (error) throw new Error(await functionErrorMessage(error));
   if (data && data.error) throw new Error(data.error);
   return data;
 }

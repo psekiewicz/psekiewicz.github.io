@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { functionErrorMessage } from '../lib/utils';
 
 // The account's age and what it means for what it may do. `account_ages` is
 // readable only by its owner and writable by nobody from a client, so this is
@@ -51,14 +52,11 @@ export async function setBirthDate(birthDate: string): Promise<ConsentState> {
 
 /** Asks the Edge Function to email a parent. */
 export async function requestParentalConsent(parentEmail: string) {
-  const { data, error } = await supabase.functions.invoke('parental-consent', {
+  const { error } = await supabase.functions.invoke('parental-consent', {
     body: { action: 'request', parentEmail },
   });
-  if (error) {
-    // The function answers with a readable reason; surface that rather than
-    // "Edge Function returned a non-2xx status code".
-    const detail = (data as any)?.error;
-    throw new Error(detail || error.message);
-  }
+  // The function answers with a readable reason; surface that rather than
+  // "Edge Function returned a non-2xx status code".
+  if (error) throw new Error(await functionErrorMessage(error));
   return true;
 }

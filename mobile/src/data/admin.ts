@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { functionErrorMessage } from '../lib/utils';
 
 export async function isAdmin(userId: string | null) {
   if (!userId) return false;
@@ -52,7 +53,7 @@ export async function listUsersForAdmin(): Promise<AdminUser[]> {
 // true here than on the web.
 async function callAdminAction(payload: any) {
   const { data, error } = await supabase.functions.invoke('admin-actions', { body: payload });
-  if (error) throw new Error(error.message || 'Request failed.');
+  if (error) throw new Error(await functionErrorMessage(error));
   if (data && data.error) throw new Error(data.error);
   return data;
 }

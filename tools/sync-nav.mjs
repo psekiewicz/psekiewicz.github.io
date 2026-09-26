@@ -19,6 +19,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PAGES = [
   '404.html',
   'admin.html',
+  'age.html',
+  'consent.html',
   'dashboard.html',
   'index.html',
   'leaderboard.html',
@@ -31,6 +33,10 @@ const PAGES = [
   'settings.html',
   'shop.html',
   'download/index.html',
+  // Written by tools/build-legal.mjs; listed so a nav change reaches them too.
+  'legal/terms.html',
+  'legal/privacy.html',
+  'legal/guidelines.html',
 ];
 
 // Order is the sidebar's order. Active state is set at runtime by js/nav.js,

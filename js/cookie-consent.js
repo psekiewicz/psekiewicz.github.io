@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   banner.setAttribute('aria-label', 'Cookie notice');
   banner.innerHTML = `
     <div class="cookie-banner-inner">
-      <p>We use essential cookies and local storage to keep you signed in and remember your preferences, like dark mode. We don't use tracking or advertising cookies.</p>
+      <p>We use essential cookies and local storage to keep you signed in and remember your preferences, like dark mode. Showcase sets no tracking or advertising cookies, though players embedded from YouTube and similar services may set their own. <a href="/legal/privacy.html">Privacy Policy</a></p>
       <button class="btn btn-primary" id="cookie-accept" type="button">Got it</button>
     </div>
   `;

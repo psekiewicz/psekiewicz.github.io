@@ -77,7 +77,7 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 drop trigger if exists projects_set_updated_at on public.projects;
 create trigger projects_set_updated_at
@@ -111,7 +111,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 drop trigger if exists projects_guard_client_writes on public.projects;
 create trigger projects_guard_client_writes
@@ -386,7 +386,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 drop trigger if exists comments_guard_client_writes on public.comments;
 create trigger comments_guard_client_writes
@@ -623,7 +623,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 drop trigger if exists profiles_guard_client_writes on public.profiles;
 create trigger profiles_guard_client_writes
@@ -916,7 +916,6 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_price integer;
-  v_points integer;
 begin
   if v_uid is null then
     raise exception 'Not signed in';
@@ -931,12 +930,16 @@ begin
     return (select points from public.profiles where id = v_uid);
   end if;
 
-  select points into v_points from public.profiles where id = v_uid;
-  if v_points < v_price then
+  -- The balance check and the charge are one statement. They used to be a
+  -- read followed by an update, and two purchases fired at once both read
+  -- the same starting balance, both passed, and drove it below zero. Now a
+  -- second concurrent call waits on the row and re-checks the new balance.
+  update public.profiles set points = points - v_price
+  where id = v_uid and points >= v_price;
+  if not found then
     raise exception 'Not enough points';
   end if;
 
-  update public.profiles set points = points - v_price where id = v_uid;
   insert into public.owned_items (user_id, item_id) values (v_uid, p_item_id);
 
   return (select points from public.profiles where id = v_uid);
@@ -1102,7 +1105,6 @@ declare
   v_list_total integer;
   v_missing_total integer;
   v_charge integer;
-  v_points integer;
   v_granted integer;
 begin
   if v_uid is null then
@@ -1135,12 +1137,13 @@ begin
   -- and never charges a fraction.
   v_charge := ceil(v_bundle_price::numeric * v_missing_total / v_list_total);
 
-  select points into v_points from public.profiles where id = v_uid;
-  if v_points < v_charge then
+  -- Checked and charged in one statement, as in purchase_item(), so two
+  -- purchases fired at once cannot both spend the same balance.
+  update public.profiles set points = points - v_charge
+  where id = v_uid and points >= v_charge;
+  if not found then
     raise exception 'Not enough points';
   end if;
-
-  update public.profiles set points = points - v_charge where id = v_uid;
 
   insert into public.owned_items (user_id, item_id)
   select v_uid, b.item_id
@@ -1376,6 +1379,14 @@ begin
 end;
 $$;
 
+-- Only the triggers below may call this. Like every function in `public` it
+-- was executable by anon and authenticated by default, which made it an
+-- open door around the "no insert policy" above: anyone could POST to
+-- /rest/v1/rpc/add_notification and hand any user a "X followed you" from
+-- any account they liked. The notify_on_* triggers are security definer, so
+-- they call it as its owner and are unaffected.
+revoke execute on function public.add_notification(uuid, uuid, text, uuid) from public, anon, authenticated;
+
 create or replace function public.notify_on_follow()
 returns trigger
 language plpgsql
@@ -1550,8 +1561,13 @@ begin
     v_lifetime := 0;
   end if;
 
+  -- Locked until this call finishes. Two collects fired at once - two tabs,
+  -- or the app and the site open together - used to both read the same
+  -- high-water mark and both pay the difference. The second one now waits
+  -- here and reads the mark the first one has already moved.
   select greatest(0, v_lifetime - points_earned_total) into v_paid
-  from public.profiles where id = v_uid;
+  from public.profiles where id = v_uid
+  for update;
 
   if v_paid is null then
     return json_build_object('paid', 0, 'points', 0);
@@ -1831,7 +1847,7 @@ begin
 
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 drop trigger if exists comments_rate_limit on public.comments;
 create trigger comments_rate_limit
@@ -1857,6 +1873,58 @@ drop trigger if exists reports_rate_limit on public.reports;
 create trigger reports_rate_limit
   before insert on public.reports
   for each row execute function public.enforce_rate_limit('20', '1 hour', 'reporter_id');
+
+
+-- ---------------------------------------------------------------
+-- created_at belongs to the server.
+--
+-- Every table here takes created_at from its default, but a default is
+-- only what happens when the client says nothing: PostgREST passes an
+-- explicit value straight through, and nothing stopped one. That mattered
+-- in three places:
+--
+--   - the rate limits above count rows newer than their window, so a
+--     script that stamped each insert with last year's date was never
+--     counted and could comment, like, follow and report without limit;
+--   - an entry dated next month sat at the top of Latest and kept the
+--     "just posted" boost in the For you ranking until the date came round;
+--   - profiles.created_at is what account_age_days measures, so moving it
+--     back two years unlocked 'veteran' and 'old-timer' and paid out their
+--     points on the spot.
+--
+-- Pinned the way views_count and points are: only when the write comes
+-- straight from a client role, so the security definer functions, the
+-- signup trigger and the SQL Editor are untouched. Deliberately NOT
+-- security definer, for the same reason as guard_profile_client_writes().
+-- ---------------------------------------------------------------
+create or replace function public.pin_created_at()
+returns trigger as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if tg_op = 'INSERT' then
+      new.created_at := now();
+    else
+      new.created_at := old.created_at;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql set search_path = public;
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['projects', 'profiles', 'comments', 'likes', 'follows', 'saves', 'reports', 'notifications'] loop
+    execute format('drop trigger if exists %I on public.%I', t || '_pin_created_at', t);
+    execute format(
+      'create trigger %I before insert or update on public.%I for each row execute function public.pin_created_at()',
+      t || '_pin_created_at',
+      t
+    );
+  end loop;
+end
+$$;
 
 
 -- ---------------------------------------------------------------
@@ -1917,21 +1985,34 @@ create policy "You can read your own age"
   on public.account_ages for select
   using (auth.uid() = user_id);
 
--- Whole years old today. A null birth_date means an account that
--- predates this table; those are left alone rather than locked out.
+-- Whole years old today. Null in, null out.
+--
+-- stable, not immutable: the answer depends on today's date, and an
+-- immutable function is one Postgres may evaluate once and reuse - in a
+-- cached plan or an index - long after the birthday that should change it.
 create or replace function public.age_years(d date)
 returns integer
 language sql
-immutable
+stable
 set search_path = public
 as $fn$
   select case when d is null then null else extract(year from age(current_date, d))::int end;
 $fn$;
 
--- May this account write? True unless it is a 13-15 year old still
--- waiting on a parent. A birthday does the rest on its own: once the
--- account holder turns 16 the age test passes and the pending state
--- stops mattering, without anything having to run on a schedule.
+-- May this account write? Only once it has a date of birth, and not while
+-- it is a 13-15 year old still waiting on a parent. A birthday does the
+-- rest on its own: once the account holder turns 16 the age test passes
+-- and the pending state stops mattering, without anything having to run
+-- on a schedule.
+--
+-- An account with no date - one from before ages were asked for, or one
+-- made by a client that never sent it - cannot write until it gives one.
+-- This used to let them through, on purpose, until the website asked for
+-- a date as well as the app: refusing them before then would have locked
+-- everybody out with no way to answer. Both clients now stand in front of
+-- everything and ask (age.html, BirthDateGate), so the database agreeing
+-- with them closes the gap a direct API call walked straight through -
+-- sign up without a birth_date and nothing was ever restricted.
 --
 -- security definer so it can read account_ages regardless of the
 -- caller's own policies, and pinned to public so the search_path cannot
@@ -1950,13 +2031,14 @@ set search_path = public
 as $fn$
   select coalesce(
     (
-      select a.consent_state <> 'pending'
-             or coalesce(public.age_years(a.birth_date), 99) >= 16
+      select a.birth_date is not null
+             and (a.consent_state <> 'pending' or public.age_years(a.birth_date) >= 16)
       from public.account_ages a
       where a.user_id = auth.uid()
     ),
-    -- No row at all: an account from before this existed. Left working.
-    true
+    -- No row at all: an account from before ages were asked for. Same as a
+    -- row with no date - set_birth_date() is the way through.
+    false
   );
 $fn$;
 
@@ -2080,6 +2162,14 @@ create table if not exists public.parental_consents (
   expires_at timestamptz not null default now() + interval '14 days',
   confirmed_at timestamptz
 );
+
+-- How many emails this account has had sent in the current 24 hours, and
+-- when that window opened. The Edge Function's request path mails an address
+-- the child types in, so it caps itself with these - anyone can make a
+-- pending account, and without a cap that is a way to flood a stranger's
+-- inbox from this project's sender.
+alter table public.parental_consents add column if not exists sends integer not null default 0;
+alter table public.parental_consents add column if not exists sends_since timestamptz not null default now();
 
 alter table public.parental_consents enable row level security;
 
