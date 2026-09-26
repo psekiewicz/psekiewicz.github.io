@@ -1,3 +1,5 @@
+import { firstImage } from './markdown.js';
+
 // How a project looks in the Scrolls feed.
 //
 // This used to also offer gradient presets for a text-only card. They were
@@ -7,7 +9,10 @@
 //
 // What's left is the part that earns its place: a project can supply a
 // portrait image just for Scrolls, because the full-screen vertical card
-// crops a wide thumbnail badly.
+// crops a wide thumbnail badly. Failing both, the first picture inside the
+// post itself - the same fallback the home feed uses, so a post whose only
+// images are in its body does not show a picture on one and initials on the
+// other.
 export function scrollImageFor(project) {
-  return project.scrollImageUrl || project.imageUrl || '';
+  return project.scrollImageUrl || project.imageUrl || firstImage(project.description) || '';
 }

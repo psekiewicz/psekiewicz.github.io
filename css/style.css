@@ -2381,6 +2381,32 @@ body.has-bottom-nav .scroll-card {
   height: calc(100vh - 68px - 66px);
 }
 
+/* The card is near-black in both themes, so everything drawn on it takes the
+   dark palette too. Without this a card with no picture painted the light
+   theme's ink straight onto it - dark grey on black - and a feed of text
+   posts could barely be read in light mode. Keep these in step with the dark
+   palette at the top of this file. */
+.scroll-card {
+  color-scheme: dark;
+  --color-bg: #1b1917;
+  --color-surface: #25221f;
+  --color-surface-alt: #2e2b25;
+  --color-border: #3b3730;
+  --color-border-strong: #56503f;
+  --color-text: #f9f4ed;
+  --color-text-muted: #c0b6a5;
+  --color-text-faint: #a19786;
+  --color-primary: #d67f48;
+  --color-primary-hover: #f6a06b;
+  --color-primary-deep: #ffc6a5;
+  --color-primary-soft: #3d2a1c;
+  --color-accent: #8fa073;
+  --color-accent-deep: #ccdbb2;
+  --color-accent-soft: #2f3626;
+  --color-muted-soft: #2e2b25;
+  color: var(--color-text);
+}
+
 .scroll-card-bg {
   position: absolute;
   inset: 0;
