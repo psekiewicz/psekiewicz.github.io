@@ -2,6 +2,7 @@ import { PROJECT_TYPE_OPTIONS, escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
 import { parseMedia } from './media.js';
+import { attachFormatToolbar } from './format-toolbar.js';
 
 // Only local modules are imported statically. Anything that reaches
 // Supabase is pulled in when the form is actually submitted, so opening
@@ -42,7 +43,8 @@ function fieldsHtml() {
       </div>
       <div class="field">
         <label for="sheet-description">Description</label>
-        <textarea id="sheet-description" maxlength="5000" placeholder="What is it, how does it work, what did you learn?"></textarea>
+        <textarea id="sheet-description" maxlength="20000" rows="8" placeholder="What is it, how does it work, what did you learn?"></textarea>
+        <div class="hint">Use the buttons above: headings, lists, links, and pictures from a link anywhere in the text. Preview shows how it will look.</div>
       </div>
       <div class="field">
         <label for="sheet-image">Image URL</label>
@@ -149,6 +151,8 @@ function mount() {
   document.body.appendChild(sheet);
 
   sheet.querySelector('#sheet-close').addEventListener('click', closeSheet);
+  const descriptionBar = attachFormatToolbar(sheet.querySelector('#sheet-description'));
+  sheet.querySelector('#sheet-form').addEventListener('reset', () => descriptionBar.reset());
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) closeSheet();
   });

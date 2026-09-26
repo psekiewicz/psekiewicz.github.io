@@ -5,6 +5,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } fr
 import { Text, TextInput } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FormatEditor } from '../components/FormatEditor';
 import { TopBar, TopBarButton } from '../components/TopBar';
 import { Icon, IconName } from '../components/icons';
 import { Body, Button, Chip, ErrorNote, Heading, Loading } from '../components/ui';
@@ -41,7 +42,7 @@ import { Colors, gutter, radius, space, typography } from '../theme/tokens';
 // Two fields, title and media, carry almost every entry. They are the two at
 // the top and the two that look like anything.
 
-/** The unboxed text inputs - title, summary, description. */
+/** The unboxed text inputs - title and summary. */
 function PlainInput({
   value,
   onChangeText,
@@ -539,12 +540,11 @@ export function EditorScreen({ route, navigation }: any) {
 
         <MediaSlot url={mediaUrl} onChange={setMediaUrl} onPaste={pasteMedia} colors={colors} />
 
-        <PlainInput
+        <FormatEditor
           value={description}
           onChangeText={setDescription}
           placeholder="Write something about it…"
           colors={colors}
-          multiline
         />
 
         <View style={{ height: 1.5, backgroundColor: colors.border, borderRadius: radius.pill }} />
