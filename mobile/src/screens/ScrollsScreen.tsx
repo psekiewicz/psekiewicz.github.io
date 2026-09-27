@@ -26,6 +26,7 @@ import { FEED_PAGE_SIZE, getProjectById, getPublishedProjects, Project } from '.
 import { getSavedSet, saveProject, unsaveProject } from '../data/saves';
 import { logProjectView } from '../data/views';
 import { loadSeenIds, markSeen, rankFeed } from '../lib/feedRank';
+import { firstImage } from '../lib/markdown';
 import { resolveMedia } from '../lib/media';
 import { formatCount } from '../lib/utils';
 import { useMotion } from '../theme/MotionProvider';
@@ -415,7 +416,9 @@ function ScrollCard({
   onOpen,
 }: any) {
   const media = resolveMedia(project.mediaUrl, project.type);
-  const poster = project.scrollImageUrl || project.imageUrl;
+  // Same fallback as the home feed and the site's Scrolls: a post whose only
+  // pictures are inside its body still gets one here.
+  const poster = project.scrollImageUrl || project.imageUrl || firstImage(project.description);
 
   // Double-tap-to-like on the media itself - the classic feed gesture,
   // parallel to the web build's scrolls.html. Only ever likes, never
