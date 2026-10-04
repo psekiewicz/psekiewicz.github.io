@@ -1,0 +1,150 @@
+/* FAQ and legal pages. */
+
+.faq {
+  display: grid;
+  gap: 10px;
+  max-width: 46rem;
+  padding-bottom: clamp(56px, 9vw, 96px);
+}
+
+.faq details {
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  cursor: pointer;
+  list-style: none;
+  font: 700 var(--step-1) / 1.25 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-right: 2.5px solid var(--rec-text);
+  border-bottom: 2.5px solid var(--rec-text);
+  rotate: 45deg;
+  translate: 0 -3px;
+  transition: rotate 0.2s ease, translate 0.2s ease;
+}
+
+.faq details[open] summary::after {
+  rotate: 225deg;
+  translate: 0 3px;
+}
+
+.faq .answer {
+  padding: 0 22px 22px;
+  max-width: 40rem;
+  color: var(--muted);
+}
+
+.faq .answer p + p {
+  margin-top: 10px;
+}
+
+.faq .answer a {
+  color: var(--rec-text);
+  text-underline-offset: 3px;
+}
+
+.faq-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+/* Legal */
+
+.updated {
+  color: var(--muted);
+}
+
+.summary-box {
+  margin-top: 8px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: var(--rec-soft);
+}
+
+.summary-box h2 {
+  margin: 0 0 10px;
+  font-size: var(--step-1);
+}
+
+.toc {
+  margin-top: 28px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toc a {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--step--1);
+}
+
+.toc a:hover {
+  border-color: var(--muted);
+}
+
+.facts-table {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 24px;
+  margin-top: 8px;
+}
+
+.facts-table dt {
+  color: var(--muted);
+}
+
+.facts-table dd {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .facts-table {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .facts-table dd {
+    margin-bottom: 10px;
+  }
+}
+
+.not-found {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding-block: clamp(48px, 10vw, 120px);
+}
+
+.not-found h1 {
+  font-size: var(--step-4);
+}
