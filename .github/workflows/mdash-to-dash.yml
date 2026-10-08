@@ -25,8 +25,9 @@ jobs:
           # even with `contents: write`), so the whole directory is excluded
           # rather than just this file - touching any other workflow's em
           # dash would get the whole commit's push rejected.
-          git grep -zIl $'\xe2\x80\x94' -- . ':!.github/workflows/*' || true \
-            | xargs -0 -r perl -CSD -i -pe 's/\x{2014}/-/g'
+          git grep -zIl $'\xe2\x80\x94' -- . ':!.github/workflows/*' \
+            | xargs -0 -r perl -CSD -i.bak -pe 's/\x{2014}/-/g' || true
+          find . -name '*.bak' -delete
 
       - name: Commit and push if changed
         run: |
