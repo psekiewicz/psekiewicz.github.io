@@ -1707,6 +1707,33 @@ tbody tr {
   color: var(--color-text);
 }
 
+/* ---------- Announcement popup ---------- */
+.announcement-overlay {
+  align-items: center;
+  z-index: 300;
+}
+
+.announcement {
+  max-width: 440px;
+}
+
+.announcement h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.announcement-body {
+  margin: 0 0 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+}
+
+.announcement-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ---------- Project detail ---------- */
 .detail-hero {
   background: var(--color-surface);

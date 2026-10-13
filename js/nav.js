@@ -12,6 +12,8 @@ import { mountNotifications, unmountNotifications } from './notifications-ui.js'
 // page that asks for one. Here rather than in each page's own script so a
 // new page is covered without anybody remembering to add it.
 import './age-gate.js';
+// Also runs on import: the admin's popup notice, once per announcement.
+import './announcement.js';
 
 // Tracked at module scope so the keyboard shortcut below can tell whether
 // there is anyone to create a project as, without re-querying Supabase on

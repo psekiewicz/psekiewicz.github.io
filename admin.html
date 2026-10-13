@@ -93,6 +93,20 @@
         </div>
 
         <div class="section-head">
+          <h2>Notice to everyone</h2>
+          <p>Pops up once for every user, on the site and in the app.</p>
+        </div>
+        <form id="notice-form" style="display:grid;gap:12px;max-width:560px;margin-bottom:40px;">
+          <input type="text" id="notice-title" maxlength="80" placeholder="Title" required />
+          <textarea id="notice-body" maxlength="600" rows="4" placeholder="Message" required></textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="btn btn-primary" type="submit" id="notice-send">Send to everyone</button>
+            <button class="btn btn-secondary" type="button" id="notice-withdraw">Withdraw current notice</button>
+            <span id="notice-status" role="status" style="font-size:0.85rem;color:var(--color-text-faint);"></span>
+          </div>
+        </form>
+
+        <div class="section-head">
           <h2>Users</h2>
           <button class="btn btn-secondary btn-sm" type="button" id="users-toggle" aria-expanded="true">Hide list</button>
         </div>
@@ -150,6 +164,7 @@
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { adminListReports, adminCloseReports } from '/js/reports-data.js';
     import { icon } from '/js/icons.js';
+    import { publishAnnouncement, clearAnnouncements } from '/js/announcements-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -491,6 +506,31 @@
       renderStats();
       renderUsersTable();
     }
+
+    const noticeForm = document.getElementById('notice-form');
+    const noticeStatus = document.getElementById('notice-status');
+    noticeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('notice-title').value.trim();
+      if (!title || !currentAdminId) return;
+      if (!confirm('Send "' + title + '" to every user?')) return;
+      noticeStatus.textContent = 'Sending…';
+      try {
+        await publishAnnouncement(currentAdminId, title, document.getElementById('notice-body').value);
+        noticeForm.reset();
+        noticeStatus.textContent = 'Sent. Users see it the next time they open the site or app.';
+      } catch (err) {
+        noticeStatus.textContent = err.message + ' - notices need the announcements table from schema.sql.';
+      }
+    });
+    document.getElementById('notice-withdraw').addEventListener('click', async () => {
+      try {
+        await clearAnnouncements();
+        noticeStatus.textContent = 'Notice withdrawn.';
+      } catch (err) {
+        noticeStatus.textContent = err.message;
+      }
+    });
 
     projectSearchInput.addEventListener('input', renderTable);
     userSearchInput.addEventListener('input', renderUsersTable);
