@@ -1724,6 +1724,8 @@ tbody tr {
 
 .announcement {
   max-height: calc(100vh - 80px);
+  /* iOS Safari's 100vh counts the address bar; dvh is the visible height. */
+  max-height: calc(100dvh - 80px);
   overflow-y: auto;
 }
 
