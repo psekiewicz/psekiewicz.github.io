@@ -9,7 +9,8 @@ const MARK = 132;
 
 // The splash: the logo on white, exactly as the native splash shows it, then a
 // quick flip through a handful of backdrops behind it, the way a phone's boot
-// animation cycles pictures, and back to white. The logo spells the name, so
+// animation cycles pictures. It ends on the last picture and hands straight to
+// the app, with no white frame in between. The logo spells the name, so
 // there is no separate wordmark. Opacity only, so all of it is on the native
 // driver; each picture simply appears above the last (no fades between them).
 //
@@ -41,7 +42,6 @@ const PICTURES = [
 ];
 const HOLD = 220; // the plain logo on white, so the handover from native is still
 const FLIP = 130; // each picture
-const FADE = 220; // back to white
 
 // Fixed rather than keyed to the theme, like the rest of the splash: the logo
 // is ink on white at rest and white over the pictures, which a dark scrim keeps
@@ -90,7 +90,6 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
         ...shown.map((v, i) => cut(v, i * FLIP)),
       ]),
       Animated.delay(FLIP),
-      Animated.timing(over, { toValue: 0, duration: FADE, useNativeDriver: true }),
     ]);
     flip.start(finish);
     return () => {
@@ -101,14 +100,11 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
 
   const white = over.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const ink = over.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  // The pictures and their scrim leave with the logo's colour, not before it,
-  // so white fades in over them rather than the logo flashing on a bare field.
-  const backdrop = over;
 
   return (
     <View style={[styles.container, { backgroundColor: brand.splashBg }]}>
       {enabled && (
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: backdrop }]}>
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: over }]}>
           {PICTURES.map((src, i) => (
             <Animated.Image
               key={i}
