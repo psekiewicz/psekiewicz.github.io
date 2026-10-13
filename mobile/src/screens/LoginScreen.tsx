@@ -67,7 +67,7 @@ export function LoginScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ padding: space.xl, paddingTop: space.xxl }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <BrandMark size={13} />
-          <Eyebrow>Showcase</Eyebrow>
+          <Eyebrow>XOXD</Eyebrow>
         </View>
         <Title style={{ marginTop: space.xs, marginBottom: space.sm }}>Sign in</Title>
         <Body muted style={{ marginBottom: space.xl }}>

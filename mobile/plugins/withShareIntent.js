@@ -3,7 +3,7 @@
  *
  * The whole point of an entry here is a link, and until now the only way to
  * get one in was to find it in another app, copy it, come back, and paste -
- * which is exactly the errand a phone should be saving you. With this, Showcase
+ * which is exactly the errand a phone should be saving you. With this, XOXD
  * appears in the share sheet of YouTube, a browser, Spotify or anything else,
  * and the editor opens with the link already filled in.
  *

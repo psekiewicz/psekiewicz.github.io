@@ -57,7 +57,7 @@ const nav = `<nav class="navbar">
     <div class="container">
       <a class="brand" href="/index.html">
         ${BRAND_MARK}
-        <span class="brand-name">Showcase</span>
+        <span class="brand-name">XOXD</span>
       </a>
       <div class="nav-links">
 ${LINKS.map(

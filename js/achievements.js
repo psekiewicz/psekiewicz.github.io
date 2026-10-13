@@ -56,7 +56,7 @@ export const ACHIEVEMENTS = [
   {
     id: 'old-timer',
     label: 'Old Timer',
-    description: 'Been part of Showcase for 2 years.',
+    description: 'Been part of XOXD for 2 years.',
     icon: 'star',
     reward: 90,
     check: (s) => s.accountAgeDays >= 730,
@@ -122,7 +122,7 @@ export const ACHIEVEMENTS = [
   {
     id: 'veteran',
     label: 'Veteran',
-    description: "Been part of Showcase for a year.",
+    description: "Been part of XOXD for a year.",
     icon: 'star',
     reward: 50,
     check: (s) => s.accountAgeDays >= 365,

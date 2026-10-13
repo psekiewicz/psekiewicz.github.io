@@ -137,7 +137,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
             letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
           }}
         >
-          showcase
+          XOXD
         </Animated.Text>
       </Animated.View>
     </View>

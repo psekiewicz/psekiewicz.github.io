@@ -44,7 +44,7 @@
 //
 // Secrets to set before this works (supabase secrets set NAME=value):
 //   RESEND_API_KEY      - an API key from https://resend.com
-//   CONSENT_FROM_EMAIL  - the verified sender, e.g. "Showcase <no-reply@yourdomain>"
+//   CONSENT_FROM_EMAIL  - the verified sender, e.g. "XOXD <no-reply@yourdomain>"
 //   PUBLIC_SITE_URL     - where the site lives, e.g. https://psekiewicz.github.io -
 //                         the email links to consent.html there
 
@@ -97,9 +97,9 @@ async function sendParentEmail(to: string, childName: string, link: string) {
     throw new Error('Email is not configured on the server (RESEND_API_KEY / CONSENT_FROM_EMAIL).');
   }
   const text = [
-    `${childName} has created an account on Showcase and gave this address as a parent or guardian.`,
+    `${childName} has created an account on XOXD and gave this address as a parent or guardian.`,
     '',
-    'Showcase is a place to publish things you have made - music, video, images, apps - and to see',
+    'XOXD is a place to publish things you have made - music, video, images, apps - and to see',
     'what other people have made. Accounts held by 13 to 15 year olds need a parent or guardian to',
     'agree before they can publish anything, leave a comment, or follow anyone.',
     '',
@@ -123,7 +123,7 @@ async function sendParentEmail(to: string, childName: string, link: string) {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [to],
-      subject: `Please confirm ${childName}'s Showcase account`,
+      subject: `Please confirm ${childName}'s XOXD account`,
       text,
     }),
   });
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
   if (req.method === 'GET') {
     const token = new URL(req.url).searchParams.get('token') ?? '';
     if (!SITE_URL) {
-      return new Response('This link opens a page on the Showcase website, which is not configured yet.', {
+      return new Response('This link opens a page on the XOXD website, which is not configured yet.', {
         status: 503,
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       });

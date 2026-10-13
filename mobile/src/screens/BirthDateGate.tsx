@@ -113,7 +113,7 @@ export function BirthDateGate({ onDone }: { onDone: () => void }) {
               <Eyebrow>One thing first</Eyebrow>
               <Text style={[typography.h2, { color: colors.text }]}>How old are you?</Text>
               <Text style={[typography.body, { color: colors.textMuted }]}>
-                Showcase needs a date of birth on every account. Accounts held by under
+                XOXD needs a date of birth on every account. Accounts held by under
                 16s need a parent or guardian to agree before they can post, and there
                 is no way to know which those are without asking.
               </Text>
@@ -177,7 +177,7 @@ export function BirthDateGate({ onDone }: { onDone: () => void }) {
                 and we will send them one message with a link.
               </Text>
               <Text style={[typography.body, { color: colors.textMuted }]}>
-                You can look around Showcase while you wait.
+                You can look around XOXD while you wait.
               </Text>
             </View>
 

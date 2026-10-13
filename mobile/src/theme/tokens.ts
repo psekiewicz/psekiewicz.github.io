@@ -1,5 +1,5 @@
 // The "Organic" design system, as drawn in the Bloom direction (artboard 1b of
-// the Showcase App canvas). Warm cream ground, terracotta accent with a sage
+// the XOXD App canvas). Warm cream ground, terracotta accent with a sage
 // second accent, corners that run from 14px up to 34px and then to full pills.
 //
 // This deliberately no longer tracks css/style.css. The app used to transcribe

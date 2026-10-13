@@ -102,7 +102,7 @@ export async function checkForNew() {
     const verb = VERBS[row.type] || row.type;
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Showcase',
+        title: 'XOXD',
         body: title ? `${name} ${verb} ${title}` : `${name} ${verb}`,
         // Opened through the app's own linking config (RootNavigator).
         data: {

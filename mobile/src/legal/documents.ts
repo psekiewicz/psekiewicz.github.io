@@ -7,7 +7,7 @@
 // one that admits it is unfinished. Fill them in, and have the result read by
 // somebody qualified - none of this was written by a lawyer.
 
-/** The person or company that runs Showcase and answers for the data in it. */
+/** The person or company that runs XOXD and answers for the data in it. */
 export const OPERATOR = '[OPERATOR NAME]';
 /** Where privacy requests, reports and appeals actually arrive. */
 export const CONTACT_EMAIL = '[CONTACT EMAIL]';
@@ -37,20 +37,20 @@ export type LegalDocument = {
 const TERMS: LegalDocument = {
   key: 'terms',
   title: 'Terms of Service',
-  summary: `The agreement between you and ${OPERATOR} for using Showcase.`,
+  summary: `The agreement between you and ${OPERATOR} for using XOXD.`,
   sections: [
     {
-      heading: 'What Showcase is',
+      heading: 'What XOXD is',
       body: [
-        'Showcase is a place to publish things you have made - music, video, images, apps and anything else - and to find work by other people. It runs as a website and as this Android app. Both use the same account and the same data.',
-        `Showcase is run by ${OPERATOR}. These terms are an agreement between you and ${OPERATOR}. By creating an account or using Showcase, you accept them. If you do not accept them, do not use Showcase.`,
+        'XOXD is a place to publish things you have made - music, video, images, apps and anything else - and to find work by other people. It runs as a website and as this Android app. Both use the same account and the same data.',
+        `XOXD is run by ${OPERATOR}. These terms are an agreement between you and ${OPERATOR}. By creating an account or using XOXD, you accept them. If you do not accept them, do not use XOXD.`,
       ],
     },
     {
       heading: 'Who may use it',
       body: [
         `You must be at least ${MINIMUM_AGE} years old to hold an account. Every account carries a date of birth, and one that would make the holder younger than that is refused.`,
-        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. Until they do, the account can read Showcase but cannot publish, comment, like, follow, save or report - and that is enforced by the database rather than by hiding buttons. The restriction lifts on its own when the account holder turns 16.',
+        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. Until they do, the account can read XOXD but cannot publish, comment, like, follow, save or report - and that is enforced by the database rather than by hiding buttons. The restriction lifts on its own when the account holder turns 16.',
         'A date of birth can be filled in once and not changed afterwards. If it was entered wrongly, write to ' + CONTACT_EMAIL + '.',
         `You may hold one account. Keep the details on it accurate, and keep your password to yourself - anything done from your account is treated as done by you. Tell us at ${CONTACT_EMAIL} if you think somebody else has got into it.`,
         'If your account has been banned, you may not create another one to get around the ban.',
@@ -59,34 +59,34 @@ const TERMS: LegalDocument = {
     {
       heading: 'What you post stays yours',
       body: [
-        'You keep every right you already had in what you publish on Showcase. Nothing here transfers ownership.',
-        `You do give ${OPERATOR} permission to host, store, copy and display what you publish, so that Showcase can do the thing you asked it to do: show your work to other people, in feeds, on your profile, in search, and in the Scrolls feed. That permission is limited to running and promoting Showcase itself, it earns us nothing on its own, and it ends for new displays when you delete the entry or your account.`,
-        'You promise that what you publish is yours to publish - that you made it, or have permission for it - and that showing it on Showcase breaks no law and no one else’s rights.',
+        'You keep every right you already had in what you publish on XOXD. Nothing here transfers ownership.',
+        `You do give ${OPERATOR} permission to host, store, copy and display what you publish, so that XOXD can do the thing you asked it to do: show your work to other people, in feeds, on your profile, in search, and in the Scrolls feed. That permission is limited to running and promoting XOXD itself, it earns us nothing on its own, and it ends for new displays when you delete the entry or your account.`,
+        'You promise that what you publish is yours to publish - that you made it, or have permission for it - and that showing it on XOXD breaks no law and no one else’s rights.',
       ],
     },
     {
       heading: 'What you may not do',
       body: [
-        'The Community Guidelines are part of these terms and describe what belongs on Showcase and what does not. Beyond those:',
-        '- Do not break the law with it, or use Showcase to help somebody else break the law.',
+        'The Community Guidelines are part of these terms and describe what belongs on XOXD and what does not. Beyond those:',
+        '- Do not break the law with it, or use XOXD to help somebody else break the law.',
         '- Do not upload or link to anything designed to damage, disable or gain unauthorised access to a device, an account or a system.',
         '- Do not try to read, change or delete data that is not yours, or to get around the permission checks that stop you.',
-        '- Do not scrape Showcase in bulk, or hammer it with automated traffic.',
+        '- Do not scrape XOXD in bulk, or hammer it with automated traffic.',
         '- Do not impersonate anybody, or pretend an entry is somebody else’s work.',
-        '- Do not use Showcase to send unsolicited advertising.',
+        '- Do not use XOXD to send unsolicited advertising.',
       ],
     },
     {
       heading: 'Points, XP, levels and shop items',
       body: [
-        'XP, levels, points, achievements and the cosmetic items in the shop exist inside Showcase and nowhere else. They are not money, they are not property, and they have no cash value. They cannot be bought with money, sold, transferred between accounts, or exchanged for anything outside Showcase.',
+        'XP, levels, points, achievements and the cosmetic items in the shop exist inside XOXD and nowhere else. They are not money, they are not property, and they have no cash value. They cannot be bought with money, sold, transferred between accounts, or exchanged for anything outside XOXD.',
         'What things cost, what they are worth, and how they are earned can change, and items can be withdrawn or altered. If your account is deleted - by you or by us - whatever it held goes with it, and nothing is owed to you for it.',
       ],
     },
     {
       heading: 'Other people’s content, and links out',
       body: [
-        `Most of what you see on Showcase was published by other users. They are responsible for it, not ${OPERATOR}. We do not check entries before they appear.`,
+        `Most of what you see on XOXD was published by other users. They are responsible for it, not ${OPERATOR}. We do not check entries before they appear.`,
         'Entries can carry links to other services - YouTube, Vimeo, Spotify, SoundCloud, a repository, a live site. Opening one takes you to that service, which has its own terms and its own privacy policy. We do not control those services and are not responsible for them.',
       ],
     },
@@ -99,16 +99,16 @@ const TERMS: LegalDocument = {
       ],
     },
     {
-      heading: 'Showcase comes as it is',
+      heading: 'XOXD comes as it is',
       body: [
-        'Showcase is provided free, as it is, without any warranty. We do not promise it will be available, that it will be free of faults, or that anything you publish will be kept forever. Keep your own copy of anything you care about.',
-        'Features can change or be removed, and Showcase could be shut down entirely. If that happens we will try to give reasonable notice so you can take your work with you.',
+        'XOXD is provided free, as it is, without any warranty. We do not promise it will be available, that it will be free of faults, or that anything you publish will be kept forever. Keep your own copy of anything you care about.',
+        'Features can change or be removed, and XOXD could be shut down entirely. If that happens we will try to give reasonable notice so you can take your work with you.',
       ],
     },
     {
       heading: 'Liability',
       body: [
-        `To the extent the law allows, ${OPERATOR} is not liable for indirect or consequential loss, for lost profit, or for the loss of data or content arising from your use of Showcase.`,
+        `To the extent the law allows, ${OPERATOR} is not liable for indirect or consequential loss, for lost profit, or for the loss of data or content arising from your use of XOXD.`,
         'Nothing here limits liability that cannot be limited by law - including liability for death or personal injury caused by negligence, or for fraud.',
         'Nothing here removes rights you have as a consumer under the law where you live.',
       ],
@@ -116,7 +116,7 @@ const TERMS: LegalDocument = {
     {
       heading: 'Changes to these terms',
       body: [
-        'These terms can change. When they change in a way that matters, we will say so in the app before the change takes effect. Carrying on using Showcase after that means you accept the new version. If you do not, delete your account.',
+        'These terms can change. When they change in a way that matters, we will say so in the app before the change takes effect. Carrying on using XOXD after that means you accept the new version. If you do not, delete your account.',
       ],
     },
     {
@@ -132,23 +132,23 @@ const TERMS: LegalDocument = {
 const PRIVACY: LegalDocument = {
   key: 'privacy',
   title: 'Privacy Policy',
-  summary: 'What Showcase knows about you, why, and what you can make it do about that.',
+  summary: 'What XOXD knows about you, why, and what you can make it do about that.',
   sections: [
     {
       heading: 'Who is responsible',
       body: [
-        `${OPERATOR} decides what personal data Showcase collects and why, and so is the data controller for it. Write to ${CONTACT_EMAIL} about anything in this policy.`,
+        `${OPERATOR} decides what personal data XOXD collects and why, and so is the data controller for it. Write to ${CONTACT_EMAIL} about anything in this policy.`,
       ],
     },
     {
-      heading: 'What Showcase collects',
+      heading: 'What XOXD collects',
       body: [
-        'Your account. An email address and a password, handled by Supabase Auth - the password is stored as a hash, and nobody at Showcase can read it. Your email address is never shown to other users.',
+        'Your account. An email address and a password, handled by Supabase Auth - the password is stored as a hash, and nobody at XOXD can read it. Your email address is never shown to other users.',
         'Your profile. A display name, a short bio, and an avatar, which is a link to an image you already have somewhere else rather than a file you upload to us.',
         'Your date of birth. Held so we know whether an account belongs to someone under 16, which decides whether a parent has to agree to it before the account can publish anything. It is never shown on your profile, no other user can read it, and it is stored apart from the public profile for that reason. Where a parent has to agree, we keep their email address and when they confirmed, as the record of who agreed; it is deleted with the account.',
         'What you publish and do. Entries, their titles, descriptions, tags and links; comments; likes; who you follow; what you save to your private shelf; and any reports you file.',
-        'How entries are read. Showcase counts a view when an entry is opened. A view records which entry, when, and - if you were signed in - which account, so the same person is not counted twice. Showcase does not record your IP address in its own database, and uses no analytics or advertising services. The services that carry the traffic (listed below) keep short-lived server logs, which include IP addresses, as any web server does.',
-        'Notifications. If you turn notifications on in the app, your phone checks Showcase for new likes, comments and follows in the background, about every 15 minutes, and shows them itself. Nothing is registered with a push service, and turning notifications off stops the checks.',
+        'How entries are read. XOXD counts a view when an entry is opened. A view records which entry, when, and - if you were signed in - which account, so the same person is not counted twice. XOXD does not record your IP address in its own database, and uses no analytics or advertising services. The services that carry the traffic (listed below) keep short-lived server logs, which include IP addresses, as any web server does.',
+        'Notifications. If you turn notifications on in the app, your phone checks XOXD for new likes, comments and follows in the background, about every 15 minutes, and shows them itself. Nothing is registered with a push service, and turning notifications off stops the checks.',
         'Settings on your device. Your theme and motion preferences, the tab you last used and similar conveniences are kept on the device itself and are never sent to us.',
       ],
     },
@@ -156,7 +156,7 @@ const PRIVACY: LegalDocument = {
       heading: 'Why, and on what legal basis',
       body: [
         '- To give you the service you asked for - your account, your entries, your feed, your notifications. Legal basis: performance of our contract with you.',
-        '- To keep Showcase working and safe: view counts, rate limits, reports and moderation. Legal basis: our legitimate interest in a service that works and is not abused.',
+        '- To keep XOXD working and safe: view counts, rate limits, reports and moderation. Legal basis: our legitimate interest in a service that works and is not abused.',
         '- To show notifications on your phone. Legal basis: your consent, which you can withdraw at any time in Settings or in Android’s own settings.',
         '- To know the age of each account holder, and to get a parent’s agreement for those aged 13 to 15. Legal basis: our legal obligation to get that agreement for younger users.',
         '- To meet other legal obligations, where one applies.',
@@ -172,9 +172,9 @@ const PRIVACY: LegalDocument = {
     {
       heading: 'Who else sees it',
       body: [
-        'Showcase does not sell personal data, and does not share it for advertising. It is handled by these services on our behalf:',
-        '- Supabase - the database, authentication, and the two small server functions Showcase runs. Your account and everything in it lives there, as our processor.',
-        '- GitHub Pages - serves the Showcase website.',
+        'XOXD does not sell personal data, and does not share it for advertising. It is handled by these services on our behalf:',
+        '- Supabase - the database, authentication, and the two small server functions XOXD runs. Your account and everything in it lives there, as our processor.',
+        '- GitHub Pages - serves the XOXD website.',
         '- esm.sh - delivers the code libraries the website loads into your browser.',
         '- Resend - sends the one email to a parent or guardian, so it receives their address and the account’s display name.',
         '- images.weserv.nl - an image proxy used only when an avatar’s own host refuses to serve it directly.',
@@ -199,8 +199,8 @@ const PRIVACY: LegalDocument = {
     {
       heading: 'Children',
       body: [
-        `Showcase is not for anyone under ${MINIMUM_AGE}. Sign-up asks for a date of birth, and an account whose holder would be younger than that is refused.`,
-        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. We ask for their email address and send them one message with a link to a page where they confirm; until they do, the account can read Showcase but cannot publish, comment, like, follow, save or report. That restriction is enforced by the database, not by hiding buttons. It lifts on its own when the account holder turns 16.',
+        `XOXD is not for anyone under ${MINIMUM_AGE}. Sign-up asks for a date of birth, and an account whose holder would be younger than that is refused.`,
+        'An account held by someone between 13 and 15 needs a parent or guardian to agree to it. We ask for their email address and send them one message with a link to a page where they confirm; until they do, the account can read XOXD but cannot publish, comment, like, follow, save or report. That restriction is enforced by the database, not by hiding buttons. It lifts on its own when the account holder turns 16.',
         `If you believe a child under ${MINIMUM_AGE} has an account here, write to ${CONTACT_EMAIL} and it will be removed.`,
       ],
     },
@@ -224,12 +224,12 @@ const PRIVACY: LegalDocument = {
 const GUIDELINES: LegalDocument = {
   key: 'guidelines',
   title: 'Community Guidelines',
-  summary: 'What belongs on Showcase, what does not, and what happens when something is reported.',
+  summary: 'What belongs on XOXD, what does not, and what happens when something is reported.',
   sections: [
     {
       heading: 'The short version',
       body: [
-        'Showcase is for showing what you made. Post your own work, be straight about what it is, and leave other people room to do the same.',
+        'XOXD is for showing what you made. Post your own work, be straight about what it is, and leave other people room to do the same.',
       ],
     },
     {
@@ -243,7 +243,7 @@ const GUIDELINES: LegalDocument = {
       heading: 'What is not allowed',
       body: [
         '- Anything sexual involving a minor. This is reported to the authorities and the account is removed, with no warning and no appeal.',
-        '- Sexual content generally. Showcase is open to teenagers and is not the place for it.',
+        '- Sexual content generally. XOXD is open to teenagers and is not the place for it.',
         '- Harassment, threats, or pile-ons aimed at a person.',
         '- Hate directed at people for who they are - race, ethnicity, nationality, religion, disability, sex, gender identity or sexual orientation.',
         '- Violent content meant to shock, and anything glorifying violence or its perpetrators.',
@@ -252,7 +252,7 @@ const GUIDELINES: LegalDocument = {
         '- Malware, phishing, or links that are not what they claim to be.',
         '- Spam: the same entry over and over, tags that have nothing to do with the entry, or engagement bait.',
         '- Impersonating a person or an organisation.',
-        '- Anything illegal where you are, or where Showcase is run.',
+        '- Anything illegal where you are, or where XOXD is run.',
       ],
     },
     {

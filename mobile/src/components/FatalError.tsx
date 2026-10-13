@@ -18,7 +18,7 @@ export function FatalError({ error, where }: { error: unknown; where: string }) 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.title}>Showcase couldn't start</Text>
+        <Text style={styles.title}>XOXD couldn't start</Text>
         <Text style={styles.lead}>
           Something failed while the app was loading. The details below are what went wrong -
           sending them on is what makes this fixable.

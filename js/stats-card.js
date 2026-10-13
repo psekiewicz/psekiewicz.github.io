@@ -578,7 +578,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
     ctx.font = `700 26px ${FONT}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('SHOWCASE', cx - 118 + markSize + 14, y + 1);
+    ctx.fillText('XOXD', cx - 118 + markSize + 14, y + 1);
   });
 
   y += 90;
@@ -770,8 +770,8 @@ export async function shareStatsCard(opts) {
     try {
       await navigator.share({
         files: [file],
-        title: 'My Showcase stats',
-        text: `Lv ${opts.lvl.level} on Showcase - find things worth your time at psekiewicz.github.io`,
+        title: 'My XOXD stats',
+        text: `Lv ${opts.lvl.level} on XOXD - find things worth your time at psekiewicz.github.io`,
       });
       return;
     } catch (err) {

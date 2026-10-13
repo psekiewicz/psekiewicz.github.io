@@ -1,4 +1,4 @@
-# Showcase - Android app
+# XOXD - Android app
 
 A real React Native app, not a WebView. Every screen is built from native
 Android views (`View`, `FlatList`, `TextInput`, ExoPlayer via `expo-video`);
@@ -161,7 +161,7 @@ AsyncStorage in place of `localStorage`.
 
 ## What the app does that the site can't
 
-**It receives Android's Share.** Showcase appears in the share sheet of
+**It receives Android's Share.** XOXD appears in the share sheet of
 anything that shares plain text - a browser, YouTube, Spotify - and opens the
 editor with the link already in place and any accompanying text as a starting
 title. Entries here are links, so this removes the entire find-copy-return-paste

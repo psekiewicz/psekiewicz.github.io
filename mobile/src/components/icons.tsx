@@ -3,7 +3,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 // The artboard's iconography: Lucide, drawn at stroke-width 2.75 for the
 // rounder, heavier look the design system asks for. The paths below are copied
-// verbatim out of `Showcase App.dc.html` rather than pulled from an icon
+// verbatim out of `XOXD App.dc.html` rather than pulled from an icon
 // package, so what ships is exactly what was drawn - @expo/vector-icons' Feather
 // set can't express the heavier stroke (its glyphs bake one in), and a second
 // icon dependency would only approximate these.
