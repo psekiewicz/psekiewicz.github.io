@@ -696,3 +696,93 @@ itRace('two collects fired at once pay the same earnings out once', async () => 
   const { rows } = await client.query('select points, points_earned_total from public.profiles where id = $1', [earner]);
   assert.deepEqual(rows[0], { points: 10, points_earned_total: 10 });
 });
+
+// --- announcements -----------------------------------------------------
+
+async function makeAnnouncement(adminId, { title = 'Notice', active = true, expiresAt = null, attachments = [] } = {}) {
+  const { rows } = await client.query(
+    'insert into public.announcements (title, body, created_by, active, expires_at, attachments) values ($1, $2, $3, $4, $5, $6) returning id',
+    [title, 'Body', adminId, active, expiresAt, JSON.stringify(attachments)],
+  );
+  return rows[0].id;
+}
+
+itRls('only an admin can publish, change or remove announcements', async () => {
+  const admin = await makeUser({ admin: true });
+  const user = await makeUser();
+
+  await asUser(admin);
+  await assert.doesNotReject(
+    client.query('insert into public.announcements (title, body, created_by) values ($1, $2, $3)', ['Hi', 'There', admin]),
+  );
+
+  await asUser(user);
+  await expectRejects(
+    () => client.query('insert into public.announcements (title, body, created_by) values ($1, $2, $3)', ['Hi', 'There', user]),
+    /row-level security/,
+  );
+  // Posing as the admin does not help: created_by has to be the caller.
+  await expectRejects(
+    () => client.query('insert into public.announcements (title, body, created_by) values ($1, $2, $3)', ['Hi', 'There', admin]),
+    /row-level security/,
+  );
+  assert.equal((await client.query('update public.announcements set active = false')).rowCount, 0);
+  assert.equal((await client.query('delete from public.announcements')).rowCount, 0);
+});
+
+itRls('everyone can read a live announcement, but nobody but admins sees withdrawn or expired ones', async () => {
+  const admin = await makeUser({ admin: true });
+  const user = await makeUser();
+  await makeAnnouncement(admin, { title: 'live' });
+  await makeAnnouncement(admin, { title: 'withdrawn', active: false });
+  await makeAnnouncement(admin, { title: 'expired', expiresAt: new Date(Date.now() - 3600 * 1000) });
+  await makeAnnouncement(admin, { title: 'later', expiresAt: new Date(Date.now() + 3600 * 1000) });
+
+  const titles = async () =>
+    (await client.query('select title from public.announcements order by title')).rows.map((r) => r.title);
+
+  await asAnon();
+  assert.deepEqual(await titles(), ['later', 'live']);
+  await asUser(user);
+  assert.deepEqual(await titles(), ['later', 'live']);
+  await asUser(admin);
+  assert.deepEqual(await titles(), ['expired', 'later', 'live', 'withdrawn']);
+});
+
+itRls('an announcement needs a title, a body within the limit and a list of attachments', async () => {
+  const admin = await makeUser({ admin: true });
+  await asUser(admin);
+  await expectRejects(
+    () => client.query('insert into public.announcements (title, body, created_by) values ($1, $2, $3)', ['', 'x', admin]),
+    /check constraint/,
+  );
+  await expectRejects(
+    () => client.query('insert into public.announcements (title, body, created_by) values ($1, $2, $3)', ['t', 'x'.repeat(4001), admin]),
+    /check constraint/,
+  );
+  await expectRejects(
+    () => client.query("insert into public.announcements (title, body, created_by, attachments) values ('t', 'x', $1, '{}'::jsonb)", [admin]),
+    /check constraint/,
+  );
+});
+
+itRls('only an admin can add, replace or remove files in the announcements bucket', async () => {
+  const admin = await makeUser({ admin: true });
+  const user = await makeUser();
+
+  await asUser(admin);
+  await assert.doesNotReject(
+    client.query("insert into storage.objects (bucket_id, name, owner) values ('announcements', 'a/one.bin', $1)", [admin]),
+  );
+  await assert.doesNotReject(
+    client.query("update storage.objects set name = 'a/two.bin' where bucket_id = 'announcements'"),
+  );
+
+  await asUser(user);
+  await expectRejects(
+    () => client.query("insert into storage.objects (bucket_id, name, owner) values ('announcements', 'u/x.bin', $1)", [user]),
+    /row-level security/,
+  );
+  assert.equal((await client.query("update storage.objects set name = 'u/y.bin' where bucket_id = 'announcements'")).rowCount, 0);
+  assert.equal((await client.query("delete from storage.objects where bucket_id = 'announcements'")).rowCount, 0);
+});
