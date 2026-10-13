@@ -1722,11 +1722,24 @@ tbody tr {
   font-size: 1.15rem;
 }
 
+.announcement {
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.announcement-media {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  margin: 0 0 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt, rgba(0, 0, 0, 0.06));
+}
+
 .announcement-body {
   margin: 0 0 24px;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--color-text-muted);
 }
 
 .announcement-actions {

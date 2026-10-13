@@ -2241,7 +2241,11 @@ create policy "Signed-in users can report as themselves"
 create table if not exists public.announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null check (char_length(title) between 1 and 80),
-  body text not null check (char_length(body) between 1 and 600),
+  body text not null check (char_length(body) between 1 and 4000),
+  image_url text check (image_url is null or image_url ~ '^https://'),
+  video_url text check (video_url is null or video_url ~ '^https://'),
+  -- Optional end: after this moment the announcement stops showing.
+  expires_at timestamptz,
   active boolean not null default true,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
@@ -2252,7 +2256,10 @@ alter table public.announcements enable row level security;
 drop policy if exists "Anyone can read active announcements" on public.announcements;
 create policy "Anyone can read active announcements"
   on public.announcements for select
-  using (active = true or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (
+    (active = true and (expires_at is null or expires_at > now()))
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
 
 drop policy if exists "Admins can publish announcements" on public.announcements;
 create policy "Admins can publish announcements"
@@ -2271,3 +2278,47 @@ drop policy if exists "Admins can delete announcements" on public.announcements;
 create policy "Admins can delete announcements"
   on public.announcements for delete
   using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+-- For a database that already has the first version of the table above.
+alter table public.announcements add column if not exists image_url text check (image_url is null or image_url ~ '^https://');
+alter table public.announcements add column if not exists video_url text check (video_url is null or video_url ~ '^https://');
+alter table public.announcements add column if not exists expires_at timestamptz;
+alter table public.announcements drop constraint if exists announcements_body_check;
+alter table public.announcements add constraint announcements_body_check check (char_length(body) between 1 and 4000);
+
+-- The picture or film attached to an announcement is uploaded by an admin to a
+-- public bucket (readable by link, so it shows for logged-out visitors too).
+-- Only admins can add, replace or remove files in it.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'announcements', 'announcements', true, 52428800,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Admins can upload announcement media" on storage.objects;
+create policy "Admins can upload announcement media"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can replace announcement media" on storage.objects;
+create policy "Admins can replace announcement media"
+  on storage.objects for update
+  using (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can remove announcement media" on storage.objects;
+create policy "Admins can remove announcement media"
+  on storage.objects for delete
+  using (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );

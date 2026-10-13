@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FormatEditor } from '../components/FormatEditor';
 import { Text, TextInput } from '../components/Text';
 
 import {
@@ -29,7 +30,7 @@ import {
   TITLE_MAX,
 } from '../data/announcements';
 import { deleteProject, getAllProjects, Project, togglePublish } from '../data/projects';
-import { timeAgo } from '../lib/utils';
+import { safeUrl, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -41,6 +42,9 @@ export function AdminScreen({ navigation }: any) {
   const [tab, setTab] = useState<'projects' | 'users' | 'notice'>('projects');
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeBody, setNoticeBody] = useState('');
+  const [noticeImage, setNoticeImage] = useState('');
+  const [noticeVideo, setNoticeVideo] = useState('');
+  const [noticeHours, setNoticeHours] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   // A hidden list stays hidden until you search: typing is a deliberate ask for
   // rows, so matches show, and clearing the box puts the list away again.
@@ -190,7 +194,15 @@ export function AdminScreen({ navigation }: any) {
   };
 
   const confirmNotice = () => {
-    Alert.alert('Send to everyone?', `"${noticeTitle.trim()}" will pop up for every user.`, [
+    const image = noticeImage.trim();
+    const video = noticeVideo.trim();
+    if ((image && !safeUrl(image)) || (video && !safeUrl(video))) {
+      setError('The picture and film links must be full https:// addresses.');
+      return;
+    }
+    const expiresAt = noticeHours ? new Date(Date.now() + noticeHours * 3600 * 1000) : null;
+    const when = expiresAt ? ` until ${expiresAt.toLocaleString()}` : '';
+    Alert.alert('Send to everyone?', `"${noticeTitle.trim()}" will pop up for every user${when}.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Send',
@@ -199,9 +211,18 @@ export function AdminScreen({ navigation }: any) {
           setSending(true);
           setError('');
           try {
-            await publishAnnouncement(user.id, noticeTitle, noticeBody);
+            await publishAnnouncement(user.id, {
+              title: noticeTitle,
+              body: noticeBody,
+              imageUrl: image ? safeUrl(image) : '',
+              videoUrl: video ? safeUrl(video) : '',
+              expiresAt,
+            });
             setNoticeTitle('');
             setNoticeBody('');
+            setNoticeImage('');
+            setNoticeVideo('');
+            setNoticeHours(null);
             setNotice('Notice sent. Users see it the next time they open the app.');
           } catch (e: any) {
             setError(`${e.message} - notices need the announcements table from schema.sql.`);
@@ -312,7 +333,7 @@ export function AdminScreen({ navigation }: any) {
       {tab === 'notice' ? (
         <View style={{ padding: space.lg, paddingTop: 0, gap: space.md }}>
           <Text style={[typography.small, { color: colors.textMuted }]}>
-            Shown once to every user as a popup, the next time they open the app.
+            Shown once to every user as a popup, the next time they open the app or the site.
           </Text>
           <TextInput
             value={noticeTitle}
@@ -322,18 +343,66 @@ export function AdminScreen({ navigation }: any) {
             placeholderTextColor={colors.textFaint}
             style={noticeInput}
           />
-          <TextInput
+          <FormatEditor
             value={noticeBody}
-            onChangeText={setNoticeBody}
-            maxLength={BODY_MAX}
-            multiline
+            onChangeText={(v) => setNoticeBody(v.slice(0, BODY_MAX))}
             placeholder="Message"
-            placeholderTextColor={colors.textFaint}
-            style={[noticeInput, { minHeight: 120, textAlignVertical: 'top' }]}
+            colors={colors}
           />
           <Text style={[typography.small, { color: colors.textFaint }]}>
             {noticeBody.length}/{BODY_MAX}
           </Text>
+          <TextInput
+            value={noticeImage}
+            onChangeText={setNoticeImage}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            placeholder="Picture link (https://…), optional"
+            placeholderTextColor={colors.textFaint}
+            style={noticeInput}
+          />
+          <TextInput
+            value={noticeVideo}
+            onChangeText={setNoticeVideo}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            placeholder="Film link (https://…, MP4 or WebM), optional"
+            placeholderTextColor={colors.textFaint}
+            style={noticeInput}
+          />
+          <Text style={[typography.small, { color: colors.textFaint }]}>
+            To upload a file instead of linking one, use the admin page on the site.
+          </Text>
+          <Text style={[typography.small, { color: colors.textMuted }]}>Show for</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+            {([[null, 'Until withdrawn'], [1, '1 hour'], [24, '1 day'], [24 * 7, '1 week']] as const).map(
+              ([hours, label]) => {
+                const on = noticeHours === hours;
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => setNoticeHours(hours)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: space.md,
+                      borderRadius: radius.pill,
+                      borderWidth: 1.5,
+                      borderColor: on ? colors.primary : colors.border,
+                      backgroundColor: on ? colors.primarySoft : colors.surface,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: on ? colors.primaryDeep : colors.textMuted }}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              }
+            )}
+          </View>
           <Button
             label="Send to everyone"
             loading={sending}

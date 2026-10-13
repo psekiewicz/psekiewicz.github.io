@@ -1,11 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Image } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { AppState, Modal, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Announcement, getActiveAnnouncement, markSeen, wasSeen } from '../data/announcements';
+import { safeUrl } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
+import { RichText } from './RichText';
 import { Text } from './Text';
 import { Button } from './ui';
+
+function Film({ url }: { url: string }) {
+  const player = useVideoPlayer(url, (p) => {
+    p.loop = false;
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md, backgroundColor: '#000' }}
+      contentFit="contain"
+      nativeControls
+    />
+  );
+}
 
 // The admin's message, as a centred popup. It is shown once per announcement on
 // a device: dismissing it records the id, and a newer announcement shows again.
@@ -27,6 +45,9 @@ export function AnnouncementPopup() {
     });
     return () => sub.remove();
   }, [check]);
+
+  const image = item ? safeUrl(item.imageUrl) : '';
+  const video = item ? safeUrl(item.videoUrl) : '';
 
   const close = () => {
     if (item) markSeen(item.id);
@@ -50,8 +71,16 @@ export function AnnouncementPopup() {
           }}
         >
           <Text style={[typography.h3, { color: colors.text }]}>{item?.title}</Text>
-          <ScrollView>
-            <Text style={{ color: colors.textMuted, fontSize: 14, lineHeight: 21 }}>{item?.body}</Text>
+          <ScrollView contentContainerStyle={{ gap: space.md }}>
+            {image ? (
+              <Image
+                source={{ uri: image }}
+                style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md }}
+                contentFit="cover"
+              />
+            ) : null}
+            {video ? <Film url={video} /> : null}
+            {item ? <RichText source={item.body} /> : null}
           </ScrollView>
           <Button label="Got it" onPress={close} />
         </View>
