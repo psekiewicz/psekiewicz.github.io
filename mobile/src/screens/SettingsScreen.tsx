@@ -392,7 +392,7 @@ function AboutSection() {
     <View>
       <Eyebrow>About</Eyebrow>
       <View style={{ marginTop: space.md, gap: space.xs }}>
-        <Body>Showcase v{appConfig.expo.version}</Body>
+        <Body>XOXD v{appConfig.expo.version}</Body>
         <Text
           style={[typography.small, { color: colors.primary }]}
           onPress={() => Linking.openURL(WEBSITE_URL)}

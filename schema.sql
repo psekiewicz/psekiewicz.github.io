@@ -1375,7 +1375,7 @@ begin
     else v_actor_name || ' did something.'
   end;
 
-  perform public.send_push(p_user_id, 'Showcase', v_body, jsonb_build_object('type', p_type, 'projectId', p_project_id));
+  perform public.send_push(p_user_id, 'XOXD', v_body, jsonb_build_object('type', p_type, 'projectId', p_project_id));
 end;
 $$;
 
@@ -1941,7 +1941,7 @@ $$;
 -- Age, and parental authorisation for 13-15 year olds
 --
 -- GDPR Article 8 lets a child consent for themselves from an age each
--- member state sets between 13 and 16. Poland kept 16. Showcase admits
+-- member state sets between 13 and 16. Poland kept 16. XOXD admits
 -- 13 year olds, so an account held by someone between 13 and 15 needs a
 -- holder of parental responsibility to authorise it, and Article 8(2)
 -- asks for reasonable efforts to verify that the authorisation is real -

@@ -143,7 +143,7 @@ jobs:
               -keystore android/app/release.keystore \
               -alias showcase -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass showcase -keypass showcase \
-              -dname "CN=Showcase, OU=Dev, O=Showcase, L=-, S=-, C=PL"
+              -dname "CN=XOXD, OU=Dev, O=XOXD, L=-, S=-, C=PL"
             store_password=showcase
             key_alias=showcase
             key_password=showcase
@@ -258,7 +258,7 @@ jobs:
           cp "$aab" showcase.aab
 
           gh release create "$tag" showcase.apk showcase.aab \
-            --title "Showcase ${version} (build ${{ github.run_number }})" \
+            --title "XOXD ${version} (build ${{ github.run_number }})" \
             --latest \
             --notes "Android build ${{ github.run_number }} from \`${{ github.sha }}\`.
 

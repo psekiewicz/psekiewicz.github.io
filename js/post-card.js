@@ -119,7 +119,7 @@ export function bindPostActions(container, { getUser }) {
 
     if (action === 'share') {
       const { shareLink } = await import('./share.js');
-      const title = post.querySelector('.post-title a')?.textContent || 'Showcase';
+      const title = post.querySelector('.post-title a')?.textContent || 'XOXD';
       shareLink({ url: `/project.html?id=${encodeURIComponent(projectId)}`, title });
       return;
     }

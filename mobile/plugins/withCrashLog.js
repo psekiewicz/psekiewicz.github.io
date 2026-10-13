@@ -33,7 +33,7 @@ const HANDLER = `
         val sw = java.io.StringWriter()
         throwable.printStackTrace(java.io.PrintWriter(sw))
         val report = StringBuilder()
-        report.append("Showcase crash report\\n")
+        report.append("XOXD crash report\\n")
         report.append("time    : ").append(java.util.Date().toString()).append("\\n")
         report.append("device  : ").append(android.os.Build.MANUFACTURER).append(" ").append(android.os.Build.MODEL).append("\\n")
         report.append("android : ").append(android.os.Build.VERSION.RELEASE).append(" (API ").append(android.os.Build.VERSION.SDK_INT).append(")\\n")

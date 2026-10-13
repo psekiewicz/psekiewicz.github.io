@@ -92,7 +92,7 @@ export function StatsCardSheet({ visible, onClose, profile, level, stats, topAch
             />
           )}
           <View style={{ position: 'absolute', top: space.lg, left: space.lg, flexDirection: 'row', gap: 6 }}>
-            <Text style={[typography.eyebrow, { color: 'rgba(253,247,234,0.9)' }]}>SHOWCASE</Text>
+            <Text style={[typography.eyebrow, { color: 'rgba(253,247,234,0.9)' }]}>XOXD</Text>
           </View>
 
           <View style={{ alignItems: 'center', marginTop: -52, paddingHorizontal: space.lg, paddingBottom: space.xl }}>

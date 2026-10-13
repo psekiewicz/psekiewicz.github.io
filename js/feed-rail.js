@@ -77,12 +77,12 @@ export async function renderRail(el, { user, projects, followingIds = new Set() 
   const base = (people = []) => `
     <form class="rail-search" action="/projects.html" role="search">
       ${icon('search', { size: 18 })}
-      <input type="search" name="q" placeholder="Search Showcase" aria-label="Search Showcase" />
+      <input type="search" name="q" placeholder="Search XOXD" aria-label="Search XOXD" />
     </form>
     ${whoToFollowHtml(people, followingIds, Boolean(user))}
     ${trendingHtml(tags)}
     <section class="rail-app">
-      <strong>Showcase for Android</strong>
+      <strong>XOXD for Android</strong>
       <p>Same account, same feed - plus sharing straight from any app.</p>
       <a class="btn btn-sm btn-primary" href="/download/">${icon('download', { size: 15 })} Get the app</a>
     </section>
@@ -90,7 +90,7 @@ export async function renderRail(el, { user, projects, followingIds = new Set() 
       <a href="/leaderboard.html">Leaderboard</a>
       <a href="/shop">Shop</a>
       <a href="/download/">Android app</a>
-      <span>© ${new Date().getFullYear()} Showcase</span>
+      <span>© ${new Date().getFullYear()} XOXD</span>
     </nav>
   `;
   el.innerHTML = base();

@@ -1,4 +1,4 @@
-# Showcase (psekiewicz.github.io)
+# XOXD (psekiewicz.github.io)
 
 A professional, multi-page website for publishing and discovering projects, with a full working authentication system - built to run entirely as static files on GitHub Pages.
 
