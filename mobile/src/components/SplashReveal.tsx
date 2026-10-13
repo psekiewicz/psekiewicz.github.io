@@ -1,15 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { useMotion } from '../theme/MotionProvider';
 import { brand } from '../theme/tokens';
-import { LOGO_BOTTOM, LOGO_TOP, LogoRow } from './BrandMark';
+import { LOGO_D, LOGO_O, LOGO_X1, LOGO_X2, LogoRow } from './BrandMark';
 
 const MARK = 132;
 
-// The splash: a white field, a ring breathing out behind the logo and its
-// two rows (X O over X D) flying in from opposite sides a beat apart. The logo
-// spells the name, so there is no separate wordmark.
+// The splash: a white field and the logo assembling itself - its four letters
+// (X O over X D) each slide in from their own corner, a beat apart, overshoot a
+// little and settle into the finished logo, which then gives one small pulse.
+// The logo spells the name, so there is no separate wordmark. Everything runs
+// on transform and opacity, so all of it is on the native driver.
 //
 // It used to be shown for exactly as long as AuthContext took to read the
 // persisted session off disk, on the reasoning that the reveal should play
@@ -28,12 +30,21 @@ const MARK = 132;
 // short.
 const GUARD = 2600;
 
+// Where each letter starts, as a fraction of the mark, and when it leaves. The
+// last letter lands at about 1s, the settling pulse ends near 1.2s.
+const LETTERS = [
+  { d: LOGO_X1, dx: -0.28, dy: -0.28, delay: 0 },
+  { d: LOGO_O, dx: 0.28, dy: -0.28, delay: 110 },
+  { d: LOGO_X2, dx: -0.28, dy: 0.28, delay: 220 },
+  { d: LOGO_D, dx: 0.28, dy: 0.28, delay: 330 },
+];
+const LAND = 640;
+
 export function SplashReveal({ onDone }: { onDone?: () => void }) {
   const { enabled } = useMotion();
 
-  const frontAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const backAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const ring = useRef(new Animated.Value(0)).current;
+  const anims = useRef(LETTERS.map(() => new Animated.Value(enabled ? 0 : 1))).current;
+  const pulse = useRef(new Animated.Value(0)).current;
 
   // Held in a ref so a caller passing an inline arrow doesn't restart the
   // animation on every render of the screen above.
@@ -49,7 +60,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
     };
     const guard = setTimeout(finish, GUARD);
 
-    // Reduced motion gets the still frame and a single beat to read it, not a
+    // Reduced motion gets the finished logo and a single beat to read it, not a
     // hold it has no reason to sit through.
     if (!enabled) {
       const beat = setTimeout(finish, 420);
@@ -59,55 +70,56 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
       };
     }
 
-    const reveal = Animated.parallel([
-      Animated.timing(frontAnim, { toValue: 1, duration: 580, useNativeDriver: true }),
-      Animated.timing(backAnim, { toValue: 1, duration: 580, delay: 150, useNativeDriver: true }),
+    const assemble = Animated.sequence([
+      Animated.parallel(
+        anims.map((a, i) =>
+          Animated.timing(a, {
+            toValue: 1,
+            duration: LAND,
+            delay: LETTERS[i].delay,
+            easing: Easing.out(Easing.back(1.5)),
+            useNativeDriver: true,
+          }),
+        ),
+      ),
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
     ]);
-    reveal.start(finish);
-
-    const pulse = Animated.loop(
-      Animated.timing(ring, { toValue: 1, duration: 1600, delay: 200, useNativeDriver: true }),
-    );
-    pulse.start();
+    assemble.start(finish);
     return () => {
       clearTimeout(guard);
-      reveal.stop();
-      pulse.stop();
+      assemble.stop();
     };
-  }, [frontAnim, backAnim, ring, enabled]);
+  }, [anims, pulse, enabled]);
 
-  const flyIn = (anim: Animated.Value, from: number) => ({
-    opacity: anim,
-    transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [from, 0] }) }],
-  });
+  const settle = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.05, 1] });
 
   return (
     <View style={[styles.container, { backgroundColor: brand.splashBg }]}>
-      <View style={{ width: MARK, height: MARK, alignItems: 'center', justifyContent: 'center' }}>
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            left: -14,
-            right: -14,
-            top: -14,
-            bottom: -14,
-            borderRadius: 999,
-            backgroundColor: 'rgba(25,23,19,0.08)',
-            opacity: ring.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0.35, 0] }),
-            transform: [
-              { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.2, 2.6] }) },
-            ],
-          }}
-        />
-        <Animated.View style={[StyleSheet.absoluteFill, flyIn(frontAnim, -34)]}>
-          <LogoRow size={MARK} d={LOGO_TOP} color={brand.splashFront} />
-        </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFill, flyIn(backAnim, 34)]}>
-          <LogoRow size={MARK} d={LOGO_BOTTOM} color={brand.splashFront} />
-        </Animated.View>
-      </View>
-
+      <Animated.View style={{ width: MARK, height: MARK, transform: [{ scale: settle }] }}>
+        {LETTERS.map((l, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                opacity: anims[i].interpolate({ inputRange: [0, 0.5], outputRange: [0, 1], extrapolate: 'clamp' }),
+                transform: [
+                  { translateX: anims[i].interpolate({ inputRange: [0, 1], outputRange: [l.dx * MARK, 0] }) },
+                  { translateY: anims[i].interpolate({ inputRange: [0, 1], outputRange: [l.dy * MARK, 0] }) },
+                  { scale: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <LogoRow size={MARK} d={l.d} color={brand.splashFront} />
+          </Animated.View>
+        ))}
+      </Animated.View>
     </View>
   );
 }
