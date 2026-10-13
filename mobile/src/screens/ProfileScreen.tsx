@@ -208,7 +208,7 @@ export function ProfileScreen({ route, navigation }: any) {
           width: 170,
           height: 170,
           borderRadius: radius.pill,
-          backgroundColor: 'rgba(122,138,94,0.34)',
+          backgroundColor: 'rgba(31,122,153,0.34)',
         }}
       />
       {isSelf ? (
@@ -238,7 +238,7 @@ export function ProfileScreen({ route, navigation }: any) {
       <Text
         style={[
           typography.eyebrow,
-          { position: 'absolute', right: gutter, bottom: 16, color: 'rgba(253,247,234,0.85)' },
+          { position: 'absolute', right: gutter, bottom: 16, color: 'rgba(255,255,255,0.85)' },
         ]}
       >
         {projects.length} {projects.length === 1 ? 'entry' : 'entries'}
@@ -303,7 +303,7 @@ export function ProfileScreen({ route, navigation }: any) {
               </CosmeticBackground>
             ) : (
               <LinearGradient
-                colors={['#d98a4f', colors.primary, '#8f4a1e']}
+                colors={['#5bb0cf', colors.primary, '#12506a']}
                 start={{ x: 0.1, y: 0 }}
                 end={{ x: 0.9, y: 1 }}
                 style={headerStyle}

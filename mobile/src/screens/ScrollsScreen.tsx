@@ -38,11 +38,11 @@ import { gutter, radius, space } from '../theme/tokens';
 // Scrolls is full-bleed dark in both themes - a feed of media reads better on
 // black, and the artboard draws it that way too. Bloom's dark is a warm
 // near-black with cream ink rather than white on pure black.
-const INK = '#fdf7ea';
-const SUBTLE = 'rgba(253,247,234,0.75)';
-const NIGHT = '#241f18';
+const INK = '#ffffff';
+const SUBTLE = 'rgba(255,255,255,0.75)';
+const NIGHT = '#191713';
 /** The translucent cream every control on this screen sits in. */
-const GLASS = 'rgba(253,247,234,0.16)';
+const GLASS = 'rgba(255,255,255,0.16)';
 
 export function ScrollsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
@@ -359,7 +359,7 @@ export function ScrollsScreen({ navigation, route }: any) {
                 style={{
                   fontSize: 13,
                   fontWeight: '700',
-                  color: on ? INK : 'rgba(253,247,234,0.55)',
+                  color: on ? INK : 'rgba(255,255,255,0.55)',
                   borderBottomWidth: on ? 2.5 : 0,
                   borderBottomColor: INK,
                   paddingBottom: 4,
@@ -466,13 +466,13 @@ function ScrollCard({
           transform: [{ scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.15] }) }],
         }}
       >
-        <Icon name="heart" size={96} color={INK} fill="#c67139" strokeWidth={1.4} />
+        <Icon name="heart" size={96} color={INK} fill="#e0245e" strokeWidth={1.4} />
       </Animated.View>
 
       {/* Legibility scrim: the text rail sits over arbitrary user media, so it
           needs its own contrast rather than hoping the image is dark. */}
       <LinearGradient
-        colors={['rgba(36,31,24,0.55)', 'transparent', 'rgba(36,31,24,0.88)']}
+        colors={['rgba(25,23,19,0.55)', 'transparent', 'rgba(25,23,19,0.88)']}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
@@ -598,7 +598,7 @@ function Rail({ icon, value, onPress, filled }: any) {
           name={icon}
           size={23}
           color={INK}
-          fill={filled ? '#c67139' : 'none'}
+          fill={filled ? '#e0245e' : 'none'}
           strokeWidth={filled ? 1.6 : 2.4}
         />
       </Animated.View>
@@ -676,7 +676,7 @@ function ScrollMedia({ media, poster, active, height }: any) {
   // Nothing playable: Bloom's own warm wash rather than a flat dark panel.
   return (
     <LinearGradient
-      colors={['#c67139', '#5c4327', NIGHT]}
+      colors={['#1f7a99', '#12384a', NIGHT]}
       locations={[0, 0.45, 1]}
       start={{ x: 0.85, y: 0 }}
       end={{ x: 0.15, y: 1 }}

@@ -15,7 +15,7 @@ import { Icon, IconName } from './icons';
 // from, and nothing imports it now.
 
 /** Cream, for anything drawn on top of an accent fill. */
-export const ON_ACCENT = '#fdf7ea';
+export const ON_ACCENT = '#ffffff';
 
 /** A 40px translucent circle holding one icon - the header's own buttons. */
 export function HeaderButton({
@@ -38,7 +38,7 @@ export function HeaderButton({
         width: size,
         height: size,
         borderRadius: radius.pill,
-        backgroundColor: `rgba(253,247,234,${pressed ? 0.34 : 0.2})`,
+        backgroundColor: `rgba(255,255,255,${pressed ? 0.34 : 0.2})`,
         alignItems: 'center',
         justifyContent: 'center',
       })}
@@ -61,7 +61,7 @@ export function TonePill({
     primary: { bg: colors.primarySoft, fg: colors.primaryDeep },
     accent: { bg: colors.accentSoft, fg: colors.accentDeep },
     neutral: { bg: colors.mutedSoft, fg: colors.textFaint },
-    dark: { bg: 'rgba(32,30,29,0.6)', fg: colors.surface },
+    dark: { bg: 'rgba(25,23,19,0.6)', fg: colors.surface },
   }[tone];
 
   return (
@@ -157,7 +157,7 @@ export function StatBlock({
       <Text
         style={[
           typography.label,
-          { color: onAccent ? 'rgba(253,247,234,0.8)' : colors.accent, marginTop: 2 },
+          { color: onAccent ? 'rgba(255,255,255,0.8)' : colors.accent, marginTop: 2 },
         ]}
       >
         {label}

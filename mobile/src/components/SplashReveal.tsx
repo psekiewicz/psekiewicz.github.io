@@ -1,17 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
 import { useMotion } from '../theme/MotionProvider';
 import { brand } from '../theme/tokens';
-import { LOGO_D, LOGO_O, LOGO_X1, LOGO_X2, LogoRow } from './BrandMark';
+import { BrandMark } from './BrandMark';
 
 const MARK = 132;
 
-// The splash: a white field and the logo assembling itself - its four letters
-// (X O over X D) each slide in from their own corner, a beat apart, overshoot a
-// little and settle into the finished logo, which then gives one small pulse.
-// The logo spells the name, so there is no separate wordmark. Everything runs
-// on transform and opacity, so all of it is on the native driver.
+// The splash: the logo on white, exactly as the native splash shows it, then a
+// quick flip through a handful of backdrops behind it, the way a phone's boot
+// animation cycles pictures, and back to white. The logo spells the name, so
+// there is no separate wordmark. Opacity only, so all of it is on the native
+// driver; each picture simply appears above the last (no fades between them).
 //
 // It used to be shown for exactly as long as AuthContext took to read the
 // persisted session off disk, on the reasoning that the reveal should play
@@ -30,21 +30,31 @@ const MARK = 132;
 // short.
 const GUARD = 2600;
 
-// Where each letter starts, as a fraction of the mark, and when it leaves. The
-// last letter lands at about 1s, the settling pulse ends near 1.2s.
-const LETTERS = [
-  { d: LOGO_X1, dx: -0.28, dy: -0.28, delay: 0 },
-  { d: LOGO_O, dx: 0.28, dy: -0.28, delay: 110 },
-  { d: LOGO_X2, dx: -0.28, dy: 0.28, delay: 220 },
-  { d: LOGO_D, dx: 0.28, dy: 0.28, delay: 330 },
+// The pictures, in the order they flip past. Credits: assets/splash/CREDITS.md.
+const PICTURES = [
+  require('../../assets/splash/gaming.jpg'),
+  require('../../assets/splash/valley.jpg'),
+  require('../../assets/splash/river.jpg'),
+  require('../../assets/splash/peaks.jpg'),
+  require('../../assets/splash/clouds.jpg'),
+  require('../../assets/splash/lake.jpg'),
 ];
-const LAND = 640;
+const HOLD = 220; // the plain logo on white, so the handover from native is still
+const FLIP = 130; // each picture
+const FADE = 220; // back to white
+
+// Fixed rather than keyed to the theme, like the rest of the splash: the logo
+// is ink on white at rest and white over the pictures, which a dark scrim keeps
+// legible whatever they hold behind it.
+const SCRIM = 'rgba(0,0,0,0.3)';
+const INK = brand.splashFront;
 
 export function SplashReveal({ onDone }: { onDone?: () => void }) {
   const { enabled } = useMotion();
 
-  const anims = useRef(LETTERS.map(() => new Animated.Value(enabled ? 0 : 1))).current;
-  const pulse = useRef(new Animated.Value(0)).current;
+  const shown = useRef(PICTURES.map(() => new Animated.Value(0))).current;
+  // 0 at rest (ink logo on white), 1 while the pictures are up.
+  const over = useRef(new Animated.Value(0)).current;
 
   // Held in a ref so a caller passing an inline arrow doesn't restart the
   // animation on every render of the screen above.
@@ -60,7 +70,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
     };
     const guard = setTimeout(finish, GUARD);
 
-    // Reduced motion gets the finished logo and a single beat to read it, not a
+    // Reduced motion gets the still logo and a single beat to read it, not a
     // hold it has no reason to sit through.
     if (!enabled) {
       const beat = setTimeout(finish, 420);
@@ -70,56 +80,55 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
       };
     }
 
-    const assemble = Animated.sequence([
-      Animated.parallel(
-        anims.map((a, i) =>
-          Animated.timing(a, {
-            toValue: 1,
-            duration: LAND,
-            delay: LETTERS[i].delay,
-            easing: Easing.out(Easing.back(1.5)),
-            useNativeDriver: true,
-          }),
-        ),
-      ),
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
+    const cut = (v: Animated.Value, delay: number) =>
+      Animated.timing(v, { toValue: 1, duration: 1, delay, useNativeDriver: true });
+
+    const flip = Animated.sequence([
+      Animated.delay(HOLD),
+      Animated.parallel([
+        cut(over, 0),
+        ...shown.map((v, i) => cut(v, i * FLIP)),
+      ]),
+      Animated.delay(FLIP),
+      Animated.timing(over, { toValue: 0, duration: FADE, useNativeDriver: true }),
     ]);
-    assemble.start(finish);
+    flip.start(finish);
     return () => {
       clearTimeout(guard);
-      assemble.stop();
+      flip.stop();
     };
-  }, [anims, pulse, enabled]);
+  }, [shown, over, enabled]);
 
-  const settle = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.05, 1] });
+  const white = over.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const ink = over.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  // The pictures and their scrim leave with the logo's colour, not before it,
+  // so white fades in over them rather than the logo flashing on a bare field.
+  const backdrop = over;
 
   return (
     <View style={[styles.container, { backgroundColor: brand.splashBg }]}>
-      <Animated.View style={{ width: MARK, height: MARK, transform: [{ scale: settle }] }}>
-        {LETTERS.map((l, i) => (
-          <Animated.View
-            key={i}
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                opacity: anims[i].interpolate({ inputRange: [0, 0.5], outputRange: [0, 1], extrapolate: 'clamp' }),
-                transform: [
-                  { translateX: anims[i].interpolate({ inputRange: [0, 1], outputRange: [l.dx * MARK, 0] }) },
-                  { translateY: anims[i].interpolate({ inputRange: [0, 1], outputRange: [l.dy * MARK, 0] }) },
-                  { scale: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
-                ],
-              },
-            ]}
-          >
-            <LogoRow size={MARK} d={l.d} color={brand.splashFront} />
-          </Animated.View>
-        ))}
-      </Animated.View>
+      {enabled && (
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: backdrop }]}>
+          {PICTURES.map((src, i) => (
+            <Animated.Image
+              key={i}
+              source={src}
+              resizeMode="cover"
+              fadeDuration={0}
+              style={[StyleSheet.absoluteFill, { opacity: shown[i] }]}
+            />
+          ))}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: SCRIM }]} />
+        </Animated.View>
+      )}
+      <View style={{ width: MARK, height: MARK }}>
+        <Animated.View style={{ position: 'absolute', opacity: ink }}>
+          <BrandMark size={MARK} color={INK} />
+        </Animated.View>
+        <Animated.View style={{ position: 'absolute', opacity: white }}>
+          <BrandMark size={MARK} color="#ffffff" />
+        </Animated.View>
+      </View>
     </View>
   );
 }

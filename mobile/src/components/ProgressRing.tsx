@@ -19,8 +19,8 @@ export function ProgressRing({
   progress,
   value,
   label,
-  color = '#fdf7ea',
-  trackColor = 'rgba(253,247,234,0.28)',
+  color = '#ffffff',
+  trackColor = 'rgba(255,255,255,0.28)',
 }: {
   size?: number;
   /** 0..1 */
@@ -80,7 +80,7 @@ export function ProgressRing({
         }}
       >
         <Text style={{ fontSize: 24, fontWeight: '700', letterSpacing: -0.7, color }}>{value}</Text>
-        <Text style={[typography.label, { fontSize: 9, letterSpacing: 1.4, color: trackColor === 'rgba(253,247,234,0.28)' ? 'rgba(253,247,234,0.8)' : color }]}>
+        <Text style={[typography.label, { fontSize: 9, letterSpacing: 1.4, color: trackColor === 'rgba(255,255,255,0.28)' ? 'rgba(255,255,255,0.8)' : color }]}>
           {label}
         </Text>
       </View>

@@ -85,14 +85,14 @@ export function StatsCardSheet({ visible, onClose, profile, level, stats, topAch
             <CosmeticBackground itemId={profile.equippedBg} style={band} />
           ) : (
             <LinearGradient
-              colors={['#d98a4f', colors.primary, '#8f4a1e']}
+              colors={['#5bb0cf', colors.primary, '#12506a']}
               start={{ x: 0.1, y: 0 }}
               end={{ x: 0.9, y: 1 }}
               style={band}
             />
           )}
           <View style={{ position: 'absolute', top: space.lg, left: space.lg, flexDirection: 'row', gap: 6 }}>
-            <Text style={[typography.eyebrow, { color: 'rgba(253,247,234,0.9)' }]}>XOXD</Text>
+            <Text style={[typography.eyebrow, { color: 'rgba(255,255,255,0.9)' }]}>XOXD</Text>
           </View>
 
           <View style={{ alignItems: 'center', marginTop: -52, paddingHorizontal: space.lg, paddingBottom: space.xl }}>

@@ -191,10 +191,10 @@ export function PostCard({
                 paddingHorizontal: 8,
                 paddingVertical: 3,
                 borderRadius: radius.pill,
-                backgroundColor: 'rgba(32,30,29,0.62)',
+                backgroundColor: 'rgba(25,23,19,0.62)',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: '#fdf7ea' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: '#ffffff' }}>
                 {meta.label.toUpperCase()}
               </Text>
             </View>
@@ -207,12 +207,12 @@ export function PostCard({
                   width: 38,
                   height: 38,
                   borderRadius: radius.pill,
-                  backgroundColor: 'rgba(32,30,29,0.72)',
+                  backgroundColor: 'rgba(25,23,19,0.72)',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Icon name="play" size={17} color="#fdf7ea" fill="#fdf7ea" />
+                <Icon name="play" size={17} color="#ffffff" fill="#ffffff" />
               </View>
             ) : null}
           </View>

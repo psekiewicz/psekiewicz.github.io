@@ -140,7 +140,7 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
       provider: 'soundcloud',
       label: 'Open in SoundCloud',
       url,
-      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23c67139`,
+      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231f7a99`,
       embedHosts: ['w.soundcloud.com', 'soundcloud.com', 'm.soundcloud.com'],
       compact: true,
     };

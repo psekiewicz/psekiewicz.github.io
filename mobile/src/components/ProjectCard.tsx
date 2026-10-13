@@ -31,11 +31,11 @@ type Props = {
 // an entry with no image still lands somewhere in the palette rather than on a
 // flat grey.
 const PLACEHOLDERS: Record<string, string[]> = {
-  music: ['#d8c9a4', '#b9a887', '#8f8468'],
-  video: ['#c9d0b3', '#6f7a55'],
-  image: ['#e2d0ae', '#c67139'],
-  app: ['#e4e7d5', '#a6b287'],
-  other: ['#b9a887', '#4a4034'],
+  music: ['#d9dde0', '#aab3b9', '#6f7a80'],
+  video: ['#cfe3ec', '#2b7a99'],
+  image: ['#e3f0f5', '#1f7a99'],
+  app: ['#eeeeec', '#b8b5ae'],
+  other: ['#b8b5ae', '#3b3833'],
 };
 
 export function placeholderFor(type?: string) {

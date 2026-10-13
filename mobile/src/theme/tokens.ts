@@ -1,102 +1,90 @@
-// The "Organic" design system, as drawn in the Bloom direction (artboard 1b of
-// the XOXD App canvas). Warm cream ground, terracotta accent with a sage
-// second accent, corners that run from 14px up to 34px and then to full pills.
+// The app's palette: white and ink, like the splash, with a single blue.
+// Corners run from 14px up to 34px and then to full pills.
 //
-// This deliberately no longer tracks css/style.css. The app used to transcribe
-// the site's tokens so the two read as one product; Bloom is its own direction
-// and the site has not moved to it, so the two are expected to differ until it
-// does.
-//
-// Values are lifted from the artboard and from the design system's own
-// styles.css (`_ds/organic-*/styles.css`) that it links.
+// This deliberately does not track css/style.css; the app is its own direction
+// and the site has not moved to it.
 
 export const lightColors = {
-  // The page ground is the lighter cream; cards sit a shade *deeper* than it
-  // rather than lighter, which is what gives Bloom its stacked-paper look.
-  bg: '#fdf7ea',
-  surface: '#f5ead8',
-  surfaceAlt: '#ebddc5',
-  border: '#efe0c6',
-  borderStrong: '#e2d0ae',
+  // White ground, ink type, one blue. The splash is ink on white and the app
+  // now carries on in the same terms: surfaces are warm greys stepped off the
+  // ink (#191713), and blue is the only colour that is not neutral.
+  bg: '#ffffff',
+  surface: '#f6f5f3',
+  surfaceAlt: '#ecebe8',
+  border: '#e9e8e4',
+  borderStrong: '#d6d4cf',
 
-  text: '#201e1d',
-  textMuted: '#5f5852',
-  textFaint: '#8b8177',
+  text: '#191713',
+  textMuted: '#5c5952',
+  textFaint: '#8a867e',
 
-  // Terracotta. `primary` is the fill, `primaryDeep` the text/icon colour on
-  // top of a `primarySoft` tint - the ramp step past the base, as the design
-  // system's guidance asks for.
-  primary: '#c67139',
-  primaryHover: '#b2622d',
-  primaryDeep: '#8f4a1e',
-  primarySoft: '#f3e0cf',
+  // The blue. `primary` is the fill, `primaryDeep` the text/icon colour on top
+  // of a `primarySoft` tint. Change these four and the whole app follows.
+  primary: '#1f7a99',
+  primaryHover: '#196681',
+  primaryDeep: '#12506a',
+  primarySoft: '#e3f0f5',
 
-  // Sage, the second accent, with the same three roles.
-  accent: '#7a8a5e',
-  accentDeep: '#4e5a38',
-  accentSoft: '#e4e7d5',
+  // The second accent is ink itself, with the same three roles.
+  accent: '#191713',
+  accentDeep: '#191713',
+  accentSoft: '#efeeec',
 
-  sand: '#e2d0ae',
+  sand: '#d6d4cf',
 
-  // Cream, for type and icons sitting on an accent fill.
-  onAccent: '#fdf7ea',
+  // White, for type and icons sitting on an accent fill.
+  onAccent: '#ffffff',
 
   // Scrolls is full-bleed dark in both themes - a feed of media reads better
-  // on black, and the artboard draws it that way.
-  scrollsBg: '#241f18',
+  // on black.
+  scrollsBg: '#191713',
 
-  // Not in the artboard, which never draws an error or a success state. Left
-  // on the previous values rather than invented, but pulled towards the warm
-  // ground so they don't read as a different app.
   danger: '#b3261e',
-  dangerSoft: '#f7ded9',
-  success: '#4e5a38',
-  successSoft: '#e4e7d5',
+  dangerSoft: '#fbe6e4',
+  success: '#2f7d4f',
+  successSoft: '#e1f1e7',
 
-  mutedSoft: '#efe0c6',
-  navbarBg: 'rgba(253, 247, 234, 0.94)',
-  scrim: 'rgba(32, 30, 29, 0.58)',
+  mutedSoft: '#efeeec',
+  navbarBg: 'rgba(255, 255, 255, 0.94)',
+  scrim: 'rgba(25, 23, 19, 0.58)',
 };
 
-// Bloom is drawn light-only. The app already ships a dark mode and a setting
-// for it, so rather than drop either, this is the same palette walked down the
-// design system's own neutral ramp (`--color-neutral-800/900`) - the accents
-// keep their hue and step one lighter, as its guidance says to do on a dark
-// ground.
+// The same palette turned over: ink ground, white type, the blue a step
+// lighter so it holds against the ink and still carries white type.
 export const darkColors: typeof lightColors = {
-  bg: '#201e1d',
-  surface: '#2e2b25',
-  surfaceAlt: '#474238',
-  border: '#3b3730',
-  borderStrong: '#56503f',
+  bg: '#191713',
+  surface: '#242220',
+  surfaceAlt: '#33302c',
+  border: '#2f2c28',
+  borderStrong: '#48443e',
 
-  text: '#f9f4ed',
-  textMuted: '#c0b6a5',
-  textFaint: '#a19786',
+  text: '#f6f5f3',
+  textMuted: '#b9b5ad',
+  textFaint: '#8f8b83',
 
-  primary: '#d67f48',
-  primaryHover: '#f6a06b',
-  primaryDeep: '#ffc6a5',
-  primarySoft: '#3d2a1c',
+  primary: '#2a86a8',
+  primaryHover: '#3a9bbd',
+  primaryDeep: '#a9d9ea',
+  primarySoft: '#17323c',
 
-  accent: '#8fa073',
-  accentDeep: '#ccdbb2',
-  accentSoft: '#2f3626',
+  accent: '#f6f5f3',
+  accentDeep: '#f6f5f3',
+  accentSoft: '#2b2926',
 
-  sand: '#645c50',
+  sand: '#48443e',
 
-  onAccent: '#fdf7ea',
+  onAccent: '#ffffff',
 
-  scrollsBg: '#241f18',
+  scrollsBg: '#191713',
 
   danger: '#e5675c',
   dangerSoft: '#3a211e',
-  success: '#8fa073',
-  successSoft: '#2f3626',
+  success: '#6fbf8b',
+  successSoft: '#1d3326',
 
-  mutedSoft: '#35312a',
-  navbarBg: 'rgba(32, 30, 29, 0.94)',
-  scrim: 'rgba(32, 30, 29, 0.58)',
+  mutedSoft: '#2b2926',
+  navbarBg: 'rgba(25, 23, 19, 0.94)',
+  scrim: 'rgba(25, 23, 19, 0.58)',
 };
 
 // The splash's own colours, fixed across both themes: the ink logo on white.
