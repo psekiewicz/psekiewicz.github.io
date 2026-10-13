@@ -3874,6 +3874,10 @@ body.sheet-open .bottom-nav {
   background: url('/assets/shop/bg/bg-terminal.webp') center / cover no-repeat;
 }
 
+.shop-bg-blocks {
+  background: url('/assets/shop/bg-blocks.webp') center / cover no-repeat;
+}
+
 .shop-bg-vhs {
   background: url('/assets/shop/bg/bg-vhs.webp') center / cover no-repeat;
 }
@@ -4036,6 +4040,29 @@ body.sheet-open .bottom-nav {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* Swaps the typeface rather than recolouring it, so it stacks visually
+   with none of the other name effects - you pick one or the other.
+   text-transform is not cosmetic here: this font only draws letterforms in
+   its uppercase slots, and its lowercase slots hold decorative dingbats, so
+   without forcing uppercase a name like "Peter" renders as unreadable
+   symbols. Digits and spaces are unaffected. */
+.shop-name-oxygene {
+  font-family: 'Oxygene 1', var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  /* This face is drawn on a coarse pixel grid rather than smooth
+     outlines, and collides into an illegible blur below a surprisingly
+     large size - legible at 40px, still not at 32px, verified by eye
+     since this isn't the kind of thing a contrast/size formula predicts.
+     max() lets it keep scaling up in a larger context (a profile header)
+     while never rendering smaller than the size it's actually legible
+     at, even though that means it now dominates whatever line it's on. */
+  font-size: max(1em, 40px);
+  line-height: 1.1;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .shop-name-caps {
