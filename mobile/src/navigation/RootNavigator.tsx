@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import React, { useState, useEffect } from 'react';
 import { Linking } from 'react-native';
 
+import { AnnouncementPopup } from '../components/AnnouncementPopup';
 import { SplashReveal } from '../components/SplashReveal';
 import { BloomTabBar } from './BloomTabBar';
 import { useAuth } from '../context/AuthContext';
@@ -211,6 +212,7 @@ export function RootNavigator() {
           options={{ title: 'Create account' }}
         />
       </Stack.Navigator>
+      <AnnouncementPopup />
     </NavigationContainer>
   );
 }

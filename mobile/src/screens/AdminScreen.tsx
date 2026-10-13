@@ -22,6 +22,12 @@ import {
   listUsersForAdmin,
   unbanUser,
 } from '../data/admin';
+import {
+  BODY_MAX,
+  clearAnnouncements,
+  publishAnnouncement,
+  TITLE_MAX,
+} from '../data/announcements';
 import { deleteProject, getAllProjects, Project, togglePublish } from '../data/projects';
 import { timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -32,7 +38,10 @@ export function AdminScreen({ navigation }: any) {
   const { user } = useAuth();
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<'projects' | 'users'>('projects');
+  const [tab, setTab] = useState<'projects' | 'users' | 'notice'>('projects');
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeBody, setNoticeBody] = useState('');
+  const [sending, setSending] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState('');
@@ -176,6 +185,51 @@ export function AdminScreen({ navigation }: any) {
     );
   };
 
+  const confirmNotice = () => {
+    Alert.alert('Send to everyone?', `"${noticeTitle.trim()}" will pop up for every user.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Send',
+        onPress: async () => {
+          if (!user) return;
+          setSending(true);
+          setError('');
+          try {
+            await publishAnnouncement(user.id, noticeTitle, noticeBody);
+            setNoticeTitle('');
+            setNoticeBody('');
+            setNotice('Notice sent. Users see it the next time they open the app.');
+          } catch (e: any) {
+            setError(`${e.message} - notices need the announcements table from schema.sql.`);
+          } finally {
+            setSending(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const withdrawNotice = async () => {
+    setError('');
+    try {
+      await clearAnnouncements();
+      setNotice('Notice withdrawn.');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const noticeInput = {
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    fontSize: 14,
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ padding: space.lg, gap: space.md }}>
@@ -183,7 +237,7 @@ export function AdminScreen({ navigation }: any) {
         <SuccessNote message={notice} />
 
         <View style={{ flexDirection: 'row', gap: space.sm }}>
-          {(['projects', 'users'] as const).map((t) => (
+          {(['projects', 'users', 'notice'] as const).map((t) => (
             <Pressable
               key={t}
               onPress={() => setTab(t)}
@@ -203,12 +257,17 @@ export function AdminScreen({ navigation }: any) {
                   color: tab === t ? colors.primary : colors.textMuted,
                 }}
               >
-                {t === 'projects' ? `ENTRIES · ${projects.length}` : `USERS · ${users.length}`}
+                {t === 'projects'
+                  ? `ENTRIES · ${projects.length}`
+                  : t === 'users'
+                    ? `USERS · ${users.length}`
+                    : 'NOTICE'}
               </Text>
             </Pressable>
           ))}
         </View>
 
+        {tab !== 'notice' && (
         <View
           style={{
             flexDirection: 'row',
@@ -230,9 +289,43 @@ export function AdminScreen({ navigation }: any) {
             style={{ flex: 1, color: colors.text, paddingVertical: space.sm, fontSize: 13 }}
           />
         </View>
+        )}
       </View>
 
-      {tab === 'projects' ? (
+      {tab === 'notice' ? (
+        <View style={{ padding: space.lg, paddingTop: 0, gap: space.md }}>
+          <Text style={[typography.small, { color: colors.textMuted }]}>
+            Shown once to every user as a popup, the next time they open the app.
+          </Text>
+          <TextInput
+            value={noticeTitle}
+            onChangeText={setNoticeTitle}
+            maxLength={TITLE_MAX}
+            placeholder="Title"
+            placeholderTextColor={colors.textFaint}
+            style={noticeInput}
+          />
+          <TextInput
+            value={noticeBody}
+            onChangeText={setNoticeBody}
+            maxLength={BODY_MAX}
+            multiline
+            placeholder="Message"
+            placeholderTextColor={colors.textFaint}
+            style={[noticeInput, { minHeight: 120, textAlignVertical: 'top' }]}
+          />
+          <Text style={[typography.small, { color: colors.textFaint }]}>
+            {noticeBody.length}/{BODY_MAX}
+          </Text>
+          <Button
+            label="Send to everyone"
+            loading={sending}
+            disabled={!noticeTitle.trim() || !noticeBody.trim()}
+            onPress={confirmNotice}
+          />
+          <Button label="Withdraw current notice" variant="secondary" onPress={withdrawNotice} />
+        </View>
+      ) : tab === 'projects' ? (
         <FlatList
           data={shownProjects}
           keyExtractor={(item) => item.id}

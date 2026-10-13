@@ -2231,3 +2231,43 @@ create policy "Signed-in users can report as themselves"
     and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
   );
+
+-- ---------------------------------------------------------------------------
+-- Announcements: a message an admin can push to every user as a popup.
+-- The app shows the newest active row once per device (it remembers the id it
+-- has shown). Publishing a new one makes it the newest; "clear" switches every
+-- row off. Anyone can read the active rows; only admins can write.
+-- ---------------------------------------------------------------------------
+create table if not exists public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 1 and 80),
+  body text not null check (char_length(body) between 1 and 600),
+  active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.announcements enable row level security;
+
+drop policy if exists "Anyone can read active announcements" on public.announcements;
+create policy "Anyone can read active announcements"
+  on public.announcements for select
+  using (active = true or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+drop policy if exists "Admins can publish announcements" on public.announcements;
+create policy "Admins can publish announcements"
+  on public.announcements for insert
+  with check (
+    created_by = auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can edit announcements" on public.announcements;
+create policy "Admins can edit announcements"
+  on public.announcements for update
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+drop policy if exists "Admins can delete announcements" on public.announcements;
+create policy "Admins can delete announcements"
+  on public.announcements for delete
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
