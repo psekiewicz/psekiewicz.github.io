@@ -36,9 +36,14 @@ function isKnown(id: string) {
   return SHOP_ITEMS.some((item) => item.id === id);
 }
 
+// bg-blocks was drawn before the bg/ folder existed and stays where it was, so
+// the installed apps that already fetch it from there keep working.
+const LEGACY_BG: Record<string, string> = { 'bg-blocks': `${ASSET_BASE}/bg-blocks.webp` };
+
 export function bgImage(itemId: string | null | undefined): string | null {
   const id = resolveId(itemId);
-  return id && id.startsWith('bg-') && isKnown(id) ? `${ASSET_BASE}/bg/${id}.webp` : null;
+  if (!id || !id.startsWith('bg-') || !isKnown(id)) return null;
+  return LEGACY_BG[id] || `${ASSET_BASE}/bg/${id}.webp`;
 }
 
 export type Frame = {
@@ -69,6 +74,9 @@ export const NAME_STYLES: Record<string, TextStyle> = {
   'name-woof': { color: '#b5651d' },
   'name-tropic': { color: '#00b894', textShadowColor: 'rgba(0,40,60,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
   'name-terminal': { color: '#39ff88', fontFamily: 'monospace' },
+  // The web build ships an Oxygene 1 TTF for this one. The app doesn't bundle
+  // it, so the effect falls back to a wide-tracked treatment of the same face.
+  'name-oxygene': { letterSpacing: 3, fontWeight: '300', textTransform: 'uppercase' },
   'name-ice': { color: '#7fd0f5', textShadowColor: 'rgba(10,60,100,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   'name-gold': { color: '#d4af37', textShadowColor: '#8a6d1f', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
   'name-glitch': { color: '#ff2bd6', textShadowColor: '#00f0ff', textShadowOffset: { width: -2, height: 0 }, textShadowRadius: 0 },

@@ -7,6 +7,10 @@
 Needs numpy and Pillow. Output is deterministic (every random source is
 seeded), so re-running it produces the same files.
 
+Not everything in the shop is made here: bg-blocks (assets/shop/bg-blocks.webp)
+and border-flame (assets/shop/border-flame.png) are hand-made art, and
+name-oxygene is a typeface (fonts/oxygene-1.ttf), not a picture.
+
 Three kinds of file come out, all WebP (animated where the item moves):
 
   assets/shop/bg/<id>.webp      800x240  profile backgrounds, drawn edge to edge

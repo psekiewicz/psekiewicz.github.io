@@ -8,18 +8,18 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
-    "backgroundColor": "#c67139",
+    "backgroundColor": "#ffffff",
     "splash": {
       "image": "./assets/splash-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#c67139"
+      "backgroundColor": "#ffffff"
     },
     "android": {
       "package": "io.github.psekiewicz.showcase",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0ea5e9"
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
