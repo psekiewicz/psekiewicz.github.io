@@ -446,8 +446,8 @@ img {
    the text colour, so it follows light/dark mode, and nudges up a touch on
    hover. */
 .brand-mark {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: block;
   flex-shrink: 0;
   color: var(--color-text);
