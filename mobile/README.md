@@ -189,15 +189,13 @@ canonical link and hands it to Android, which opens the official app if it's
 installed. The host allowlist from `js/media.js` is kept, so a user-supplied
 link can never send the OS somewhere of its own choosing.
 
-**Animated shop cosmetics render as static frames.** The CSS versions of Lava
-Lamp, Orbit, Spectrum Spin, Glitch and Sparkle are keyframe animations. Running
-one per avatar in a scrolling feed costs more frame rate than the effect is
-worth, so `lib/cosmetics.ts` maps each to a still frame of the same palette.
-Everything is still recognisably the item that was bought.
-
-Also worth knowing: gradient-filled *text* effects (`name-gradient`,
-`name-rainbow`) take their dominant colour as a solid, because React Native
-can't paint a gradient into glyphs without a masking layer.
+**Shop cosmetics are the web's pictures.** Backgrounds and avatar frames are
+the same WebP files the site draws (`assets/shop/`, fetched from the site, not
+bundled), animated ones included - `expo-image` plays them. What does not carry
+over is the nickname fill: the web paints a picture through the glyphs, which
+React Native can't do without a masking layer, so a nickname takes a solid
+colour from its picture instead (`NAME_STYLES` in `lib/cosmetics.ts`). Items
+that are no longer sold are drawn as their replacement (`RETIRED_ALIASES`).
 
 ## Things that need the Edge Function
 

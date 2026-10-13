@@ -5,7 +5,6 @@ import React from 'react';
 import {
   ActivityIndicator,
   Animated,
-  ImageBackground,
   Pressable,
   StyleSheet,
   TextStyle,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { Text, TextInput } from './Text';
 
-import { borderStyle, nameStyle } from '../lib/cosmetics';
+import { frameFor, nameStyle } from '../lib/cosmetics';
 import { usePressScale } from '../lib/motion';
 import { initials, timeAgo, typeMeta } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -280,8 +279,7 @@ export function Chip({ label, active, onPress, icon }: any) {
 
 export function Avatar({ url, name, size = 40, ring }: any) {
   const { colors } = useTheme();
-  const cosmetic = ring ? borderStyle(ring) : null;
-  const ringWidth = cosmetic ? cosmetic.width : 0;
+  const frame = ring ? frameFor(ring) : null;
 
   const inner = url ? (
     <Image
@@ -309,45 +307,29 @@ export function Avatar({ url, name, size = 40, ring }: any) {
     </LinearGradient>
   );
 
-  if (!cosmetic) return inner;
+  if (!frame) return inner;
 
-  const ring_ = { padding: ringWidth, borderRadius: (size + ringWidth * 2) / 2 };
-
-  // border-flame is a texture PNG on the web (.shop-border-flame::after),
-  // not a colour - painting it as a flat blue ring threw the actual art
-  // away. Stretched to the ring's exact box the same way the web's
-  // `100% 100%` background-size does, since the PNG already has the
-  // transparent centre baked in.
-  if (cosmetic.image) {
-    return (
-      <ImageBackground
-        source={{ uri: cosmetic.image }}
-        style={ring_}
-        imageStyle={{ borderRadius: ring_.borderRadius }}
-        resizeMode="stretch"
-      >
-        {inner}
-      </ImageBackground>
-    );
-  }
-
-  // Two borders - rainbow and conic - are defined as gradients. Painting them
-  // with the flat `color` threw that away, which made the two showiest things
-  // in the shop the two that looked like nothing in particular.
-  if (cosmetic.gradient) {
-    return (
-      <LinearGradient
-        colors={cosmetic.gradient as any}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={ring_}
-      >
-        {inner}
-      </LinearGradient>
-    );
-  }
-
-  return <View style={[ring_, { backgroundColor: cosmetic.color }]}>{inner}</View>;
+  // The frame is a transparent picture that sits around the avatar and
+  // overhangs it - the same placement as .shop-border-* on the web, as
+  // fractions of the avatar so one rule fits every size. It takes no layout
+  // space and no touches.
+  return (
+    <View style={{ width: size, height: size }}>
+      {inner}
+      <Image
+        pointerEvents="none"
+        source={{ uri: frame.image }}
+        style={{
+          position: 'absolute',
+          left: frame.box.left * size,
+          top: frame.box.top * size,
+          width: frame.box.width * size,
+          height: frame.box.height * size,
+        }}
+        contentFit="fill"
+      />
+    </View>
+  );
 }
 
 // The display name, wearing whichever nickname effect the account has equipped.

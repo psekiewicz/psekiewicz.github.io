@@ -3836,102 +3836,338 @@ body.sheet-open .bottom-nav {
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* ---------- Shop cosmetics ----------
+   Every cosmetic is a picture: tools/gen-shop-art.py renders them into
+   assets/shop/{bg,border,name}/ (animated WebP where the item moves). An
+   item is one rule here, a line in js/shop-items.js and a price row in
+   schema.sql. Items that move also have a <id>.still.webp, which is what
+   prefers-reduced-motion gets.
+
+   Backgrounds paint over the whole element. Frames sit *around* the avatar
+   (see below) and nicknames are filled with the picture through the text. */
+
+.shop-bg-paper {
+  background: url('/assets/shop/bg/bg-paper.webp') center / cover no-repeat;
+}
+
 .shop-bg-sunset {
-  background: linear-gradient(135deg, #f97316, #ec4899 60%, #f97316);
-}
-
-.shop-bg-ocean {
-  background: linear-gradient(135deg, #0ea5e9, #22d3ee 60%, #0369a1);
-}
-
-.shop-bg-midnight {
-  background: linear-gradient(135deg, #1e1b4b, #4c1d95 60%, #0f172a);
+  background: url('/assets/shop/bg/bg-sunset.webp') center / cover no-repeat;
 }
 
 .shop-bg-aurora {
-  background: linear-gradient(120deg, #22d3ee, #a855f7, #34d399, #22d3ee);
-  background-size: 300% 300%;
-  animation: shop-aurora-shift 8s ease infinite;
+  background: url('/assets/shop/bg/bg-aurora.webp') center / cover no-repeat;
 }
 
-@keyframes shop-aurora-shift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+.shop-bg-paws {
+  background: url('/assets/shop/bg/bg-paws.webp') center / cover no-repeat;
 }
 
-.shop-bg-blocks {
-  background: url('/assets/shop/bg-blocks.webp') center / cover no-repeat;
+.shop-bg-beach {
+  background: url('/assets/shop/bg/bg-beach.webp') center / cover no-repeat;
 }
 
-.shop-bg-confetti {
-  background-color: #4338ca;
-  background-image: radial-gradient(circle at 15% 25%, #fbbf24 0 4px, transparent 5px),
-    radial-gradient(circle at 75% 15%, #f472b6 0 4px, transparent 5px),
-    radial-gradient(circle at 45% 70%, #34d399 0 4px, transparent 5px),
-    radial-gradient(circle at 85% 65%, #60a5fa 0 4px, transparent 5px),
-    radial-gradient(circle at 25% 85%, #f87171 0 4px, transparent 5px);
-  background-size: 160px 160px;
+.shop-bg-snow {
+  background: url('/assets/shop/bg/bg-snow.webp') center / cover no-repeat;
 }
 
-/* ---------- Avatar borders (shop item, equipped on .avatar / .profile-avatar) ---------- */
-.shop-border-bronze {
-  box-shadow: 0 0 0 3px #b08d57;
+.shop-bg-terminal {
+  background: url('/assets/shop/bg/bg-terminal.webp') center / cover no-repeat;
 }
 
-.shop-border-silver {
-  box-shadow: 0 0 0 3px #c7cbd1;
+.shop-bg-vhs {
+  background: url('/assets/shop/bg/bg-vhs.webp') center / cover no-repeat;
+}
+
+/* Frames: a transparent picture 4/3 the size of the avatar, its hole 75% of
+   the picture, so it overhangs the avatar by a sixth of its width on each
+   side. .avatar/.profile-avatar clip their content (that is what makes the
+   photo round), which would cut the frame off, so framed avatars become
+   overflow:visible and the photo gets its roundness from the image. The
+   percentages make one rule work at every size from the navbar chip up. */
+.shop-border-ink,
+.shop-border-double,
+.shop-border-gold,
+.shop-border-collar,
+.shop-border-sun,
+.shop-border-frost,
+.shop-border-glitch {
+  overflow: visible;
+  position: relative;
+}
+
+.shop-border-ink img,
+.shop-border-double img,
+.shop-border-gold img,
+.shop-border-collar img,
+.shop-border-sun img,
+.shop-border-frost img,
+.shop-border-glitch img {
+  border-radius: 50%;
+}
+
+.shop-border-ink::after,
+.shop-border-double::after,
+.shop-border-gold::after,
+.shop-border-collar::after,
+.shop-border-sun::after,
+.shop-border-frost::after,
+.shop-border-glitch::after {
+  content: '';
+  position: absolute;
+  left: -16.667%;
+  top: -16.667%;
+  width: 133.333%;
+  height: 133.333%;
+  background: var(--frame) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.shop-border-ink {
+  --frame: url('/assets/shop/border/border-ink.webp');
+}
+
+.shop-border-double {
+  --frame: url('/assets/shop/border/border-double.webp');
 }
 
 .shop-border-gold {
-  box-shadow: 0 0 0 3px #f0c419, 0 0 10px 1px rgba(240, 196, 25, 0.5);
+  --frame: url('/assets/shop/border/border-gold.webp');
 }
 
-.shop-border-neon {
-  animation: shop-neon-pulse 2.2s ease-in-out infinite;
+.shop-border-collar {
+  --frame: url('/assets/shop/border/border-collar.webp');
 }
 
-@keyframes shop-neon-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px #22d3ee, 0 0 10px 2px rgba(34, 211, 238, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 0 3px #22d3ee, 0 0 20px 6px rgba(34, 211, 238, 0.85);
+.shop-border-sun {
+  --frame: url('/assets/shop/border/border-sun.webp');
+}
+
+.shop-border-frost {
+  --frame: url('/assets/shop/border/border-frost.webp');
+}
+
+.shop-border-glitch {
+  --frame: url('/assets/shop/border/border-glitch.webp');
+}
+
+/* The frame overhangs, so framed avatars reserve a little room instead of
+   laying the picture over whatever follows. */
+.profile-header .shop-border-ink,
+.profile-header .shop-border-double,
+.profile-header .shop-border-gold,
+.profile-header .shop-border-collar,
+.profile-header .shop-border-sun,
+.profile-header .shop-border-frost,
+.profile-header .shop-border-glitch {
+  margin-right: 14px;
+}
+
+.avatar.shop-border-ink,
+.avatar.shop-border-double,
+.avatar.shop-border-gold,
+.avatar.shop-border-collar,
+.avatar.shop-border-sun,
+.avatar.shop-border-frost,
+.avatar.shop-border-glitch {
+  margin: 0 4px;
+}
+
+/* Nicknames: the picture is the text's fill. The shadow keeps the pale ends
+   of the ramps readable on a light page. */
+.shop-name-caps {
+  background: url('/assets/shop/name/name-caps.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-gradient {
+  background: url('/assets/shop/name/name-gradient.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-terminal {
+  background: url('/assets/shop/name/name-terminal.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-woof {
+  background: url('/assets/shop/name/name-woof.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-tropic {
+  background: url('/assets/shop/name/name-tropic.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-ice {
+  background: url('/assets/shop/name/name-ice.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-gold {
+  background: url('/assets/shop/name/name-gold.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-glitch {
+  background: url('/assets/shop/name/name-glitch.webp') center / 100% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shop-name-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.9em;
+  font-weight: 600;
+  filter: none;
+}
+
+.shop-name-gradient {
+  filter: none;
+}
+
+:root[data-theme='dark'] .shop-name-caps {
+  background-image: url('/assets/shop/name/name-caps-dark.webp');
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .shop-name-caps {
+    background-image: url('/assets/shop/name/name-caps-dark.webp');
   }
 }
 
-.shop-border-rainbow {
-  animation: shop-rainbow-ring 4s linear infinite;
+.shop-name-terminal {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-weight: 500;
 }
 
-@keyframes shop-rainbow-ring {
-  0% {
-    box-shadow: 0 0 0 3px #ff3b3b, 0 0 14px 1px rgba(255, 59, 59, 0.5);
+.shop-name-woof {
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-bg-aurora {
+    background-image: url('/assets/shop/bg/bg-aurora.still.webp');
   }
-  16% {
-    box-shadow: 0 0 0 3px #ff9d3b, 0 0 14px 1px rgba(255, 157, 59, 0.5);
+  .shop-bg-beach {
+    background-image: url('/assets/shop/bg/bg-beach.still.webp');
   }
-  33% {
-    box-shadow: 0 0 0 3px #f4e04d, 0 0 14px 1px rgba(244, 224, 77, 0.5);
+  .shop-bg-snow {
+    background-image: url('/assets/shop/bg/bg-snow.still.webp');
   }
-  50% {
-    box-shadow: 0 0 0 3px #3ddc84, 0 0 14px 1px rgba(61, 220, 132, 0.5);
+  .shop-bg-terminal {
+    background-image: url('/assets/shop/bg/bg-terminal.still.webp');
   }
-  66% {
-    box-shadow: 0 0 0 3px #3bb2ff, 0 0 14px 1px rgba(59, 178, 255, 0.5);
+  .shop-bg-vhs {
+    background-image: url('/assets/shop/bg/bg-vhs.still.webp');
   }
-  83% {
-    box-shadow: 0 0 0 3px #b23bff, 0 0 14px 1px rgba(178, 59, 255, 0.5);
+  .shop-border-gold {
+    --frame: url('/assets/shop/border/border-gold.still.webp');
   }
-  100% {
-    box-shadow: 0 0 0 3px #ff3b3b, 0 0 14px 1px rgba(255, 59, 59, 0.5);
+  .shop-border-sun {
+    --frame: url('/assets/shop/border/border-sun.still.webp');
+  }
+  .shop-border-frost {
+    --frame: url('/assets/shop/border/border-frost.still.webp');
+  }
+  .shop-border-glitch {
+    --frame: url('/assets/shop/border/border-glitch.still.webp');
+  }
+  .shop-name-terminal {
+    background-image: url('/assets/shop/name/name-terminal.still.webp');
+  }
+  .shop-name-tropic {
+    background-image: url('/assets/shop/name/name-tropic.still.webp');
+  }
+  .shop-name-ice {
+    background-image: url('/assets/shop/name/name-ice.still.webp');
+  }
+  .shop-name-gold {
+    background-image: url('/assets/shop/name/name-gold.still.webp');
+  }
+  .shop-name-glitch {
+    background-image: url('/assets/shop/name/name-glitch.still.webp');
   }
 }
+
+/* Light backgrounds need dark text.
+   The profile header assumes its background is dark and forces white
+   text with a shadow, which is right for most and invisible on the pale
+   ones. These win on specificity (three classes to the header rule's two)
+   and also cover the shop's set preview, which inherits the page's text
+   colour and would otherwise put cream on cream in dark mode. */
+.shop-bg-paper,
+.shop-bg-beach,
+.shop-bg-paws {
+  color: #191713;
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .profile-info h1,
+.profile-header.has-profile-bg.shop-bg-beach .profile-info h1,
+.profile-header.has-profile-bg.shop-bg-paws .profile-info h1,
+.profile-header.has-profile-bg.shop-bg-paper .profile-info > p,
+.profile-header.has-profile-bg.shop-bg-beach .profile-info > p,
+.profile-header.has-profile-bg.shop-bg-paws .profile-info > p,
+.profile-header.has-profile-bg.shop-bg-paper .profile-stat .num,
+.profile-header.has-profile-bg.shop-bg-beach .profile-stat .num,
+.profile-header.has-profile-bg.shop-bg-paws .profile-stat .num {
+  color: #191713;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .profile-stat .label,
+.profile-header.has-profile-bg.shop-bg-beach .profile-stat .label,
+.profile-header.has-profile-bg.shop-bg-paws .profile-stat .label,
+.profile-header.has-profile-bg.shop-bg-paper .level-progress-head,
+.profile-header.has-profile-bg.shop-bg-beach .level-progress-head,
+.profile-header.has-profile-bg.shop-bg-paws .level-progress-head {
+  color: rgba(25, 23, 19, 0.72);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .reach-chip,
+.profile-header.has-profile-bg.shop-bg-beach .reach-chip,
+.profile-header.has-profile-bg.shop-bg-paws .reach-chip {
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(25, 23, 19, 0.8);
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .reach-chip strong,
+.profile-header.has-profile-bg.shop-bg-beach .reach-chip strong,
+.profile-header.has-profile-bg.shop-bg-paws .reach-chip strong {
+  color: #191713;
+}
+
+.profile-header.has-profile-bg.shop-bg-paper .level-progress-track,
+.profile-header.has-profile-bg.shop-bg-beach .level-progress-track,
+.profile-header.has-profile-bg.shop-bg-paws .level-progress-track {
+  background: rgba(25, 23, 19, 0.2);
+}
+
+/* ---------- Avatar borders (shop item, equipped on .avatar / .profile-avatar) ---------- */
 
 /* Image-art borders work differently from the box-shadow rings above: the
    frame is a picture that has to sit *around* the avatar, so it's drawn as
@@ -3980,36 +4216,6 @@ body.sheet-open .bottom-nav {
 }
 
 /* ---------- Nickname effects (shop item, wraps a display name) ---------- */
-.shop-name-gradient {
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.shop-name-shadow {
-  text-shadow: 2px 2px 0 var(--color-accent), 4px 4px 0 rgba(0, 0, 0, 0.18);
-}
-
-.shop-name-glow {
-  color: #22d3ee;
-  text-shadow: 0 0 6px rgba(34, 211, 238, 0.85), 0 0 14px rgba(34, 211, 238, 0.5);
-}
-
-.shop-name-rainbow {
-  background: linear-gradient(90deg, #ff3b3b, #ff9d3b, #f4e04d, #3ddc84, #3bb2ff, #b23bff, #ff3b3b);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shop-name-rainbow-move 5s linear infinite;
-}
-
-@keyframes shop-name-rainbow-move {
-  to {
-    background-position: 200% center;
-  }
-}
 
 /* Swaps the typeface rather than recolouring it, so it stacks visually
    with none of the other name effects - you pick one or the other.
@@ -4017,63 +4223,11 @@ body.sheet-open .bottom-nav {
    its uppercase slots, and its lowercase slots hold decorative dingbats, so
    without forcing uppercase a name like "Peter" renders as unreadable
    symbols. Digits and spaces are unaffected. */
-.shop-name-oxygene {
-  font-family: 'Oxygene 1', var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  /* This face is drawn on a coarse pixel grid rather than smooth
-     outlines, and collides into an illegible blur below a surprisingly
-     large size - legible at 40px, still not at 32px, verified by eye
-     since this isn't the kind of thing a contrast/size formula predicts.
-     max() lets it keep scaling up in a larger context (a profile header)
-     while never rendering smaller than the size it's actually legible
-     at, even though that means it now dominates whatever line it's on. */
-  font-size: max(1em, 40px);
-  line-height: 1.1;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.shop-name-sparkle {
-  position: relative;
-}
 
 /* Was a single ✦, easy to miss entirely at this size and a thin result
    for the second-most-expensive name effect - three, twinkling out of
    step with each other, read as "sparkling" instead of "one static
    asterisk". */
-.shop-name-sparkle::before,
-.shop-name-sparkle::after {
-  content: '✦';
-  position: absolute;
-  color: #f4e04d;
-  animation: shop-sparkle-twinkle 1.6s ease-in-out infinite;
-}
-
-.shop-name-sparkle::after {
-  top: -0.3em;
-  right: -0.9em;
-  font-size: 0.6em;
-}
-
-.shop-name-sparkle::before {
-  bottom: -0.2em;
-  left: -0.7em;
-  font-size: 0.4em;
-  animation-delay: 0.5s;
-}
-
-@keyframes shop-sparkle-twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(0.7);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
 
 /* ---------- Shop page ---------- */
 .points-chip {
@@ -4149,6 +4303,30 @@ body.sheet-open .bottom-nav {
   background: none;
   font-size: 1.3rem;
   font-weight: 800;
+}
+
+/* Rarity follows the price (rarityOf in js/shop-items.js): common items are
+   still pictures, rare ones move a little, epic ones are the showpieces. */
+.shop-rarity {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid currentColor;
+}
+
+.shop-rarity-common {
+  color: var(--color-text-faint);
+}
+
+.shop-rarity-rare {
+  color: #2b7bb9;
+}
+
+.shop-rarity-epic {
+  color: #a23fd0;
 }
 
 .shop-item-name {
@@ -4238,174 +4416,18 @@ body.sheet-open .bottom-nav {
 /* ---------- Profile backgrounds ---------- */
 
 /* The site's own paper, for people who don't want a light show. */
-.shop-bg-paper {
-  background-color: #efe9dd;
-  background-image: repeating-linear-gradient(45deg, transparent 0 7px, rgba(120, 105, 80, 0.09) 7px 8px);
-}
-
-.shop-bg-grid {
-  background-color: #16283d;
-  background-image: linear-gradient(rgba(120, 190, 255, 0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 190, 255, 0.22) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-
-.shop-bg-sunrise {
-  background: linear-gradient(160deg, #7c2d12, #ea580c 55%, #fbbf24);
-}
-
-.shop-bg-forest {
-  background: linear-gradient(150deg, #052e21, #0f5132 60%, #1a7f4b);
-}
 
 /* A prompt, a cursor and scanlines. The stripes are a hard-stop
    repeating gradient rather than an image so they stay crisp at any
    height the header happens to be. */
-.shop-bg-terminal {
-  background-color: #08120b;
-  background-image: repeating-linear-gradient(
-      0deg,
-      rgba(74, 222, 128, 0.22) 0 1px,
-      transparent 1px 4px
-    ),
-    radial-gradient(120% 90% at 50% 120%, rgba(74, 222, 128, 0.35), transparent 70%);
-}
-
-.shop-bg-halftone {
-  background-color: #c03a17;
-  background-image: radial-gradient(rgba(0, 0, 0, 0.42) 22%, transparent 23%);
-  background-size: 14px 14px;
-}
-
-.shop-bg-topo {
-  background-color: #1c1a16;
-  background-image: repeating-radial-gradient(
-    circle at 30% 40%,
-    rgba(240, 160, 60, 0.35) 0 2px,
-    transparent 2px 22px
-  );
-}
 
 /* Colour bars with a tracking band drifting down them. */
-.shop-bg-vhs {
-  background: linear-gradient(
-    90deg,
-    #c0c0c0 0 14.28%,
-    #c0c000 14.28% 28.56%,
-    #00c0c0 28.56% 42.84%,
-    #00c000 42.84% 57.12%,
-    #c000c0 57.12% 71.4%,
-    #c00000 71.4% 85.68%,
-    #0000c0 85.68% 100%
-  );
-  position: relative;
-  overflow: hidden;
-}
-
-.shop-bg-vhs::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 14%;
-  background: linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
-  animation: shop-vhs-band 3.6s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes shop-vhs-band {
-  from {
-    top: -14%;
-  }
-  to {
-    top: 100%;
-  }
-}
-
-.shop-bg-starfield {
-  background-color: #070912;
-  background-image: radial-gradient(1.6px 1.6px at 12% 22%, #fff, transparent),
-    radial-gradient(1.4px 1.4px at 68% 14%, #cbd5ff, transparent),
-    radial-gradient(1.8px 1.8px at 38% 68%, #fff, transparent),
-    radial-gradient(1.2px 1.2px at 84% 58%, #ffe9c4, transparent),
-    radial-gradient(1.5px 1.5px at 24% 86%, #fff, transparent),
-    radial-gradient(1.3px 1.3px at 92% 88%, #dbeafe, transparent);
-  background-size: 88px 76px;
-  animation: shop-star-twinkle 4.5s ease-in-out infinite;
-}
-
-@keyframes shop-star-twinkle {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.72;
-  }
-}
 
 /* Sun, then the horizon grid - the grid is a single gradient skewed by
    its own background-size gradient rather than a 3D transform, which
    would need an extra element and a perspective context. */
-.shop-bg-vaporwave {
-  background-color: #1a0b2e;
-  background-image: repeating-linear-gradient(
-      0deg,
-      rgba(255, 106, 213, 0.55) 0 1px,
-      transparent 1px 18px
-    ),
-    repeating-linear-gradient(90deg, rgba(255, 106, 213, 0.4) 0 1px, transparent 1px 26px),
-    linear-gradient(180deg, #ff2e88 0%, #ff9a3c 34%, #1a0b2e 62%);
-}
 
 /* Analogue noise: two dot layers sliding across each other. */
-.shop-bg-static {
-  background-color: #101010;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.45) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px);
-  background-size: 5px 5px, 7px 7px;
-  animation: shop-static-shift 0.35s steps(4) infinite;
-}
-
-@keyframes shop-static-shift {
-  0% {
-    background-position: 0 0, 3px 4px;
-  }
-  25% {
-    background-position: 2px 3px, 0 2px;
-  }
-  50% {
-    background-position: 4px 1px, 5px 0;
-  }
-  75% {
-    background-position: 1px 4px, 2px 5px;
-  }
-  100% {
-    background-position: 3px 2px, 4px 3px;
-  }
-}
-
-.shop-bg-lava {
-  background-color: #240b02;
-  background-image: radial-gradient(closest-side at 28% 30%, #ff7a18 0%, rgba(255, 122, 24, 0) 100%),
-    radial-gradient(closest-side at 72% 66%, #e11d48 0%, rgba(225, 29, 72, 0) 100%),
-    radial-gradient(closest-side at 52% 88%, #f59e0b 0%, rgba(245, 158, 11, 0) 100%);
-  background-size: 60% 70%, 55% 65%, 45% 55%;
-  background-repeat: no-repeat;
-  animation: shop-lava-drift 12s ease-in-out infinite alternate;
-}
-
-@keyframes shop-lava-drift {
-  0% {
-    background-position: 10% 10%, 80% 70%, 45% 95%;
-  }
-  50% {
-    background-position: 30% 60%, 60% 20%, 70% 40%;
-  }
-  100% {
-    background-position: 5% 80%, 90% 40%, 20% 20%;
-  }
-}
 
 /* ---------- Avatar borders ----------
    The plain ones are a box-shadow ring: it doesn't affect layout and
@@ -4413,56 +4435,10 @@ body.sheet-open .bottom-nav {
    gradient, a moving part or a halo use a pseudo-element instead, and
    those have to opt out of the avatar's overflow:hidden - which is
    there to clip the photo, so the photo gets its own radius back. */
-.shop-border-ink {
-  box-shadow: 0 0 0 2px var(--color-text);
-}
 
 /* outline, not box-shadow: dashes are the whole point and box-shadow
    has no dash. outline-offset keeps it clear of the photo, and like
    box-shadow it takes up no layout space. */
-.shop-border-dashed {
-  outline: 2px dashed var(--color-primary);
-  outline-offset: 2px;
-}
-
-.shop-border-double {
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 5px var(--color-text);
-}
-
-.shop-border-emerald {
-  box-shadow: 0 0 0 3px #10b981;
-}
-
-.shop-border-violet {
-  box-shadow: 0 0 0 3px #8b5cf6;
-}
-
-.shop-border-ember {
-  animation: shop-ember-breathe 3s ease-in-out infinite;
-}
-
-@keyframes shop-ember-breathe {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px #ea580c, 0 0 8px 1px rgba(234, 88, 12, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 3px #f59e0b, 0 0 16px 4px rgba(245, 158, 11, 0.75);
-  }
-}
-
-.shop-border-orbit,
-.shop-border-conic,
-.shop-border-halo {
-  overflow: visible;
-  position: relative;
-}
-
-.shop-border-orbit img,
-.shop-border-conic img,
-.shop-border-halo img {
-  border-radius: 50%;
-}
 
 /* Was a neutral --color-border-strong ring - the same grey every avatar
    already has by default, so at 190pts (more than Emerald or Violet,
@@ -4470,77 +4446,10 @@ body.sheet-open .bottom-nav {
    dot easy to miss entirely between animation frames. A colour of its
    own on the ring itself, and a bigger dot trailing a fading tail, both
    read as "for sale" even in a still screenshot. */
-.shop-border-orbit {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.55);
-}
-
-.shop-border-orbit::after {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 0, #818cf8 0 4px, rgba(129, 140, 248, 0.55) 4px 9px, transparent 10px);
-  animation: shop-orbit-spin 3.2s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes shop-orbit-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /* A conic gradient masked into a ring - a gradient border, which a
    box-shadow cannot do at all. The mask punches out everything inside
    the ring so the avatar underneath still shows through. */
-.shop-border-conic::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: conic-gradient(#ef4444, #f59e0b, #facc15, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444);
-  -webkit-mask: radial-gradient(circle, transparent calc(50% - 4px), #000 calc(50% - 4px));
-  mask: radial-gradient(circle, transparent calc(50% - 4px), #000 calc(50% - 4px));
-  animation: shop-orbit-spin 4s linear infinite;
-  pointer-events: none;
-}
-
-.shop-border-halo::after {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  /* Transparent through the middle: filled all the way across, the glow
-     sat on top of the face instead of around it. */
-  background: radial-gradient(
-    circle,
-    rgba(250, 204, 21, 0) 0 47%,
-    rgba(250, 204, 21, 0.6) 53%,
-    rgba(250, 204, 21, 0) 76%
-  );
-  animation: shop-halo-pulse 3.4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.shop-border-halo {
-  box-shadow: 0 0 0 2px #facc15;
-}
-
-@keyframes shop-halo-pulse {
-  0%,
-  100% {
-    transform: scale(0.92);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-}
-
-.shop-border-glitch {
-  animation: shop-border-glitch-shift 1.6s steps(2, end) infinite;
-}
 
 /* The base ring here used to be the exact same 2px var(--color-text) as
    Ink Ring - the cheapest border in the shop - with only a 3px colour
@@ -4548,154 +4457,23 @@ body.sheet-open .bottom-nav {
    to a same-hued avatar. Thinned the ring so it stops competing with the
    colours, and widened the split so the red/cyan offset is the effect
    you're actually paying for. */
-@keyframes shop-border-glitch-shift {
-  0% {
-    box-shadow: -5px 0 0 0 #ff003c, 5px 0 0 0 #00e5ff, 0 0 0 1px var(--color-text);
-  }
-  50% {
-    box-shadow: 5px 0 0 0 #ff003c, -5px 0 0 0 #00e5ff, 0 0 0 1px var(--color-text);
-  }
-  100% {
-    box-shadow: -3px 4px 0 0 #ff003c, 3px -4px 0 0 #00e5ff, 0 0 0 1px var(--color-text);
-  }
-}
 
 /* The pseudo-element borders overhang their avatar, which is fine over
    empty space but would sit on the text that follows one inline. Same
    reservation the Blue Flame frame makes. */
-.profile-header .shop-border-orbit,
-.profile-header .shop-border-halo {
-  margin-right: 10px;
-}
-
-.avatar.shop-border-orbit,
-.avatar.shop-border-halo {
-  margin: 0 5px;
-}
 
 /* ---------- Nickname effects ---------- */
-.shop-name-caps {
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 0.9em;
-  font-weight: 600;
-}
-
-.shop-name-underline {
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.24em;
-}
 
 /* Sits behind the bottom half of the text like a marker stroke, and
    because it's a background it survives any colour the name already
    has. */
-.shop-name-marker {
-  background: linear-gradient(transparent 55%, rgba(250, 204, 21, 0.75) 55%);
-  padding: 0 2px;
-}
-
-.shop-name-emboss {
-  color: var(--color-text);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 -1px 0 rgba(0, 0, 0, 0.35);
-}
 
 /* Hollow letters. Needs a colour behind it to read, so the stroke is the
    text colour and the fill is knocked out. */
-.shop-name-outline {
-  color: transparent;
-  -webkit-text-stroke: 1px var(--color-text);
-  paint-order: stroke fill;
-}
-
-.shop-name-terminal {
-  color: #4ade80;
-  font-weight: 500;
-}
-
-.shop-name-terminal::after {
-  content: '█';
-  margin-left: 0.15em;
-  animation: shop-terminal-blink 1.1s steps(1, end) infinite;
-}
-
-@keyframes shop-terminal-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.shop-name-ice {
-  background: linear-gradient(180deg, #e0f2fe, #38bdf8 55%, #0369a1);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
-}
-
-.shop-name-fire {
-  background: linear-gradient(0deg, #7c2d12, #ea580c 40%, #facc15 90%);
-  background-size: 100% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shop-name-fire-flicker 2.4s ease-in-out infinite;
-}
-
-@keyframes shop-name-fire-flicker {
-  0%,
-  100% {
-    background-position: 50% 0%;
-  }
-  50% {
-    background-position: 50% 60%;
-  }
-}
-
-.shop-name-gold {
-  background: linear-gradient(100deg, #5c410a, #d9b746 28%, #f7e9a8 44%, #b8912a 62%, #5c410a);
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
-  background-size: 250% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shop-name-gold-sheen 6s linear infinite;
-}
-
-@keyframes shop-name-gold-sheen {
-  to {
-    background-position: 250% center;
-  }
-}
 
 /* RGB split. The two coloured copies are text-shadows rather than
    duplicated elements, so it works on a name of any length without the
    markup knowing anything about it. */
-.shop-name-glitch {
-  color: var(--color-text);
-  animation: shop-name-glitch-split 2.2s steps(2, end) infinite;
-}
-
-@keyframes shop-name-glitch-split {
-  0% {
-    text-shadow: -2px 0 #ff003c, 2px 0 #00e5ff;
-  }
-  40% {
-    text-shadow: 2px 0 #ff003c, -2px 0 #00e5ff;
-  }
-  60% {
-    text-shadow: -1px 1px #ff003c, 1px -1px #00e5ff;
-  }
-  100% {
-    text-shadow: -2px 0 #ff003c, 2px 0 #00e5ff;
-  }
-}
 
 /* ============================================================
    Set cosmetics
@@ -4708,190 +4486,18 @@ body.sheet-open .bottom-nav {
 /* Four toes and a pad, drawn as five radial gradients and tiled. Two
    tiles offset from each other so the prints don't line up in a grid,
    which is what would give away that it's a pattern. */
-.shop-bg-paws {
-  background-color: #e8d5b7;
-  background-image: radial-gradient(ellipse 7px 9px at 22px 30px, #a97142 60%, transparent 62%),
-    radial-gradient(ellipse 3.5px 4.5px at 13px 20px, #a97142 60%, transparent 62%),
-    radial-gradient(ellipse 3.5px 4.5px at 20px 16px, #a97142 60%, transparent 62%),
-    radial-gradient(ellipse 3.5px 4.5px at 27px 16px, #a97142 60%, transparent 62%),
-    radial-gradient(ellipse 3.5px 4.5px at 33px 21px, #a97142 60%, transparent 62%);
-  background-size: 62px 62px;
-}
-
-.shop-bg-beach {
-  background: linear-gradient(
-    180deg,
-    #7dd3fc 0%,
-    #38bdf8 34%,
-    #0ea5e9 46%,
-    #0284c7 58%,
-    #fde68a 62%,
-    #f5d689 100%
-  );
-  position: relative;
-  overflow: hidden;
-}
-
-.shop-bg-beach::after {
-  content: '';
-  position: absolute;
-  top: 10%;
-  right: 12%;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fffbe6 40%, #fbbf24 70%, rgba(251, 191, 36, 0) 72%);
-}
 
 /* Flakes on two layers falling at different speeds - the parallax is what
    stops it reading as a texture sliding down the page in one piece. */
-.shop-bg-snow {
-  background-color: #1e293b;
-  background-image: radial-gradient(2px 2px at 12% 18%, #fff, transparent),
-    radial-gradient(1.6px 1.6px at 62% 12%, #e0f2fe, transparent),
-    radial-gradient(2.2px 2.2px at 34% 62%, #fff, transparent),
-    radial-gradient(1.4px 1.4px at 82% 48%, #fff, transparent),
-    radial-gradient(1.8px 1.8px at 48% 86%, #e0f2fe, transparent);
-  background-size: 90px 90px, 130px 130px, 90px 90px, 130px 130px, 90px 90px;
-  animation: shop-snow-fall 9s linear infinite;
-}
-
-@keyframes shop-snow-fall {
-  to {
-    background-position: 0 90px, 0 130px, 0 90px, 0 130px, 0 90px;
-  }
-}
 
 /* ---------- Set borders ---------- */
 
 /* The ring is the collar; the tag hangs off the bottom of it. */
-.shop-border-collar {
-  box-shadow: 0 0 0 4px #b91c1c;
-  overflow: visible;
-  position: relative;
-}
-
-.shop-border-collar img {
-  border-radius: 50%;
-}
-
-.shop-border-collar::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -22%;
-  width: 30%;
-  height: 30%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #fde68a, #d97706 70%);
-  box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.6);
-  pointer-events: none;
-}
 
 /* Rays cut from a repeating conic gradient, masked to a ring so the
    avatar shows through, turning slowly. */
-.shop-border-sun,
-.shop-border-frost {
-  overflow: visible;
-  position: relative;
-}
-
-.shop-border-sun img,
-.shop-border-frost img {
-  border-radius: 50%;
-}
-
-.shop-border-sun {
-  box-shadow: 0 0 0 3px #f59e0b;
-}
-
-.shop-border-sun::after {
-  content: '';
-  position: absolute;
-  inset: -9px;
-  border-radius: 50%;
-  background: repeating-conic-gradient(#fbbf24 0deg 9deg, transparent 9deg 24deg);
-  -webkit-mask: radial-gradient(circle, transparent calc(50% - 9px), #000 calc(50% - 9px));
-  mask: radial-gradient(circle, transparent calc(50% - 9px), #000 calc(50% - 9px));
-  animation: shop-orbit-spin 22s linear infinite;
-  pointer-events: none;
-}
-
-.shop-border-frost {
-  box-shadow: 0 0 0 3px #bae6fd, 0 0 12px 2px rgba(186, 230, 253, 0.55);
-}
-
-.shop-border-frost::after {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  background: repeating-conic-gradient(rgba(224, 242, 254, 0.95) 0deg 3deg, transparent 3deg 30deg);
-  -webkit-mask: radial-gradient(circle, transparent calc(50% - 7px), #000 calc(50% - 7px));
-  mask: radial-gradient(circle, transparent calc(50% - 7px), #000 calc(50% - 7px));
-  animation: shop-frost-shimmer 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes shop-frost-shimmer {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: rotate(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: rotate(12deg);
-  }
-}
-
-.profile-header .shop-border-collar,
-.profile-header .shop-border-sun,
-.profile-header .shop-border-frost {
-  margin-right: 12px;
-}
-
-.avatar.shop-border-collar,
-.avatar.shop-border-sun,
-.avatar.shop-border-frost {
-  margin: 0 6px;
-}
 
 /* ---------- Set nickname effects ---------- */
-.shop-name-woof {
-  color: #92400e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.shop-name-woof::after {
-  content: '🐾';
-  margin-left: 0.3em;
-  font-size: 0.7em;
-  animation: shop-woof-wag 1.8s ease-in-out infinite;
-  display: inline-block;
-}
-
-@keyframes shop-woof-wag {
-  0%,
-  100% {
-    transform: rotate(-12deg);
-  }
-  50% {
-    transform: rotate(12deg);
-  }
-}
-
-.shop-name-tropic {
-  background: linear-gradient(92deg, #0e7490, #22d3ee 35%, #fde047 70%, #fb923c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* The teal end of the ramp sits on sky blue in the Summer set, which is
-     where this name is most likely to be worn - the shadow is what keeps
-     it off the background it was designed to sit on. */
-  filter: drop-shadow(0 1px 1px rgba(0, 40, 60, 0.45));
-}
 
 /* ---------- Set cards on the shop page ---------- */
 .shop-bundle-grid {
@@ -4991,51 +4597,6 @@ body.sheet-open .bottom-nav {
 .shop-bundle-save {
   color: var(--color-success);
   font-weight: 600;
-}
-
-/* Light backgrounds need dark text on them.
-   The profile header assumes its background is dark and forces white
-   text with a shadow, which is right for fourteen of the sixteen and
-   invisible on the two pale ones. These win on specificity (three
-   classes to the header rule's two) and also cover the shop's set
-   preview, which inherits the page's text colour and would otherwise
-   put cream on cream in dark mode. */
-.shop-bg-paper,
-.shop-bg-beach {
-  color: #191713;
-}
-
-.profile-header.has-profile-bg.shop-bg-paper .profile-info h1,
-.profile-header.has-profile-bg.shop-bg-paper .profile-info > p,
-.profile-header.has-profile-bg.shop-bg-paper .profile-stat .num,
-.profile-header.has-profile-bg.shop-bg-beach .profile-info h1,
-.profile-header.has-profile-bg.shop-bg-beach .profile-info > p,
-.profile-header.has-profile-bg.shop-bg-beach .profile-stat .num {
-  color: #191713;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
-}
-
-.profile-header.has-profile-bg.shop-bg-paper .profile-stat .label,
-.profile-header.has-profile-bg.shop-bg-paper .level-progress-head,
-.profile-header.has-profile-bg.shop-bg-beach .profile-stat .label,
-.profile-header.has-profile-bg.shop-bg-beach .level-progress-head {
-  color: rgba(25, 23, 19, 0.72);
-}
-
-.profile-header.has-profile-bg.shop-bg-paper .reach-chip,
-.profile-header.has-profile-bg.shop-bg-beach .reach-chip {
-  background: rgba(255, 255, 255, 0.6);
-  color: rgba(25, 23, 19, 0.8);
-}
-
-.profile-header.has-profile-bg.shop-bg-paper .reach-chip strong,
-.profile-header.has-profile-bg.shop-bg-beach .reach-chip strong {
-  color: #191713;
-}
-
-.profile-header.has-profile-bg.shop-bg-paper .level-progress-track,
-.profile-header.has-profile-bg.shop-bg-beach .level-progress-track {
-  background: rgba(25, 23, 19, 0.2);
 }
 
 /* Saved state on the project page's Save button - filled rather than

@@ -39,7 +39,6 @@ import {
   unrecordedAchievementIds,
   UserStats,
 } from '../lib/achievements';
-import { bgGradient } from '../lib/cosmetics';
 import { levelFromXp } from '../lib/levels';
 import { formatCount } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -184,7 +183,6 @@ export function ProfileScreen({ route, navigation }: any) {
   if (loading) return <Loading />;
 
   const level = levelFromXp(reputation?.xp ?? 0);
-  const gradient = bgGradient(profile?.equippedBg || 'none');
   const achievements = stats ? computeAchievements(stats, unlocked) : [];
   const unlockedList = achievements.filter((a) => a.unlocked);
   const claimable = isSelf ? unlockedList.filter((a) => !claimed.has(a.id)) : [];
@@ -197,8 +195,8 @@ export function ProfileScreen({ route, navigation }: any) {
 
   // Bloom's header is a band whose bottom corners round off into the page, with
   // the avatar hanging below it. The equipped background cosmetic still wears
-  // it - which wrapper is used is the only thing that differs, per bg-blocks
-  // being a real image rather than a gradient.
+  // it - which wrapper is used is the only thing that differs, per the
+  // background being an image.
   const headerContent = (
     <>
       <View
@@ -297,9 +295,8 @@ export function ProfileScreen({ route, navigation }: any) {
         }
         ListHeaderComponent={
           <View>
-            {/* The equipped background, drawn by CosmeticBackground so a
-                patterned one is the real tiled pattern rather than a flattened
-                gradient. `none` falls through to Bloom's own terracotta band. */}
+            {/* The equipped background, drawn by CosmeticBackground so it is
+                the same picture the web draws. `none` falls through to Bloom's own terracotta band. */}
             {profile?.equippedBg && profile.equippedBg !== 'none' ? (
               <CosmeticBackground itemId={profile.equippedBg} style={headerStyle}>
                 {headerContent}
