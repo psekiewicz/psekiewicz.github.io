@@ -2,22 +2,21 @@ import { supabase } from './supabase-init.js';
 
 export const TITLE_MAX = 80;
 export const BODY_MAX = 4000;
+export const FILE_MAX_BYTES = 50 * 1024 * 1024;
+export const FILES_MAX = 5;
 
 const BUCKET = 'announcements';
-const IMAGE_MAX = 10 * 1024 * 1024;
-const VIDEO_MAX = 50 * 1024 * 1024;
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const COLUMNS = 'id, title, body, attachments, expires_at, created_at';
 
-const COLUMNS = 'id, title, body, image_url, video_url, expires_at, created_at';
-
+// One attached file: { url, name, type, size, path? }. `path` is where an
+// uploaded file lives in the bucket; the cleanup function deletes it once the
+// announcement is over.
 function toAnnouncement(row) {
   return {
     id: row.id,
     title: row.title,
     body: row.body,
-    imageUrl: row.image_url || '',
-    videoUrl: row.video_url || '',
+    attachments: Array.isArray(row.attachments) ? row.attachments : [],
     expiresAt: row.expires_at || null,
     createdAt: row.created_at,
   };
@@ -40,44 +39,56 @@ export async function getActiveAnnouncement() {
   return toAnnouncement(data);
 }
 
-// Uploads an image or a film to the admin-only bucket and returns its public
-// address. The type and size limits are enforced again by the bucket itself.
-export async function uploadAnnouncementMedia(userId, file, kind) {
-  const types = kind === 'video' ? VIDEO_TYPES : IMAGE_TYPES;
-  const max = kind === 'video' ? VIDEO_MAX : IMAGE_MAX;
-  if (!types.includes(file.type)) {
-    throw new Error(kind === 'video' ? 'Use an MP4 or WebM film.' : 'Use a JPEG, PNG, WebP or GIF picture.');
+// Uploads any file to the admin-only bucket and returns its attachment record.
+// Only admins can write to the bucket, so no file type is refused; the size is
+// capped by the bucket as well as here.
+export async function uploadAnnouncementFile(userId, file) {
+  if (file.size > FILE_MAX_BYTES) {
+    throw new Error(`"${file.name}" is over ${Math.round(FILE_MAX_BYTES / 1024 / 1024)} MB.`);
   }
-  if (file.size > max) {
-    throw new Error(`That file is over ${Math.round(max / 1024 / 1024)} MB.`);
-  }
-  const ext = (file.name.split('.').pop() || kind).toLowerCase().replace(/[^a-z0-9]/g, '');
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext ? '.' + ext : ''}`;
+  const type = file.type || 'application/octet-stream';
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type,
-    cacheControl: '31536000',
+    contentType: type,
+    cacheControl: '3600',
   });
   if (error) throw new Error(error.message);
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  return { url, path, name: file.name, type, size: file.size };
+}
+
+// Best effort: used when a publish fails after the files were already uploaded.
+export async function discardUploads(attachments) {
+  const paths = attachments.map((a) => a.path).filter(Boolean);
+  if (paths.length) await supabase.storage.from(BUCKET).remove(paths).catch(() => {});
+}
+
+// Asks the server to delete the files of announcements that are over. The
+// schedule does this on its own every 15 minutes; calling it after a publish or
+// a withdrawal just makes it immediate. Failure is not worth reporting.
+export async function cleanupAnnouncements() {
+  await supabase.functions.invoke('announcement-cleanup', { body: {} }).catch(() => {});
 }
 
 // Admin only (RLS rejects anyone else). Retires the previous ones so the table
 // holds at most one live notice. `expiresAt` is a Date or null (no end).
-export async function publishAnnouncement(userId, { title, body, imageUrl, videoUrl, expiresAt }) {
+export async function publishAnnouncement(userId, { title, body, attachments = [], expiresAt }) {
   const off = await supabase.from('announcements').update({ active: false }).eq('active', true);
   if (off.error) throw new Error(off.error.message);
   const { error } = await supabase.from('announcements').insert({
     title: title.trim(),
     body: body.trim(),
-    image_url: imageUrl || null,
-    video_url: videoUrl || null,
+    attachments,
     expires_at: expiresAt ? expiresAt.toISOString() : null,
     created_by: userId,
   });
   if (error) throw new Error(error.message);
+  cleanupAnnouncements();
 }
 
 export async function clearAnnouncements() {
   const { error } = await supabase.from('announcements').update({ active: false }).eq('active', true);
   if (error) throw new Error(error.message);
+  cleanupAnnouncements();
 }

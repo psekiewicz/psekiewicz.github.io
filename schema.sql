@@ -2242,8 +2242,10 @@ create table if not exists public.announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null check (char_length(title) between 1 and 80),
   body text not null check (char_length(body) between 1 and 4000),
-  image_url text check (image_url is null or image_url ~ '^https://'),
-  video_url text check (video_url is null or video_url ~ '^https://'),
+  -- Files shown with the notice: [{ url, name, type, size, path? }]. `path` is
+  -- the file's place in the 'announcements' bucket when an admin uploaded it;
+  -- announcement-cleanup deletes those files once the notice is over.
+  attachments jsonb not null default '[]'::jsonb check (jsonb_typeof(attachments) = 'array'),
   -- Optional end: after this moment the announcement stops showing.
   expires_at timestamptz,
   active boolean not null default true,
@@ -2280,20 +2282,20 @@ create policy "Admins can delete announcements"
   using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
 
 -- For a database that already has the first version of the table above.
-alter table public.announcements add column if not exists image_url text check (image_url is null or image_url ~ '^https://');
-alter table public.announcements add column if not exists video_url text check (video_url is null or video_url ~ '^https://');
+alter table public.announcements add column if not exists attachments jsonb not null default '[]'::jsonb check (jsonb_typeof(attachments) = 'array');
+alter table public.announcements drop column if exists image_url;
+alter table public.announcements drop column if exists video_url;
 alter table public.announcements add column if not exists expires_at timestamptz;
 alter table public.announcements drop constraint if exists announcements_body_check;
 alter table public.announcements add constraint announcements_body_check check (char_length(body) between 1 and 4000);
 
--- The picture or film attached to an announcement is uploaded by an admin to a
--- public bucket (readable by link, so it shows for logged-out visitors too).
--- Only admins can add, replace or remove files in it.
+-- Files attached to an announcement - pictures, films, sound, documents,
+-- anything - are uploaded by an admin to a public bucket (readable by link, so
+-- they show for logged-out visitors too). Only admins can add, replace or
+-- remove files in it, so any type is accepted; only the size is capped. The
+-- announcement-cleanup function deletes the files when the notice is over.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'announcements', 'announcements', true, 52428800,
-  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm']
-)
+values ('announcements', 'announcements', true, 52428800, null)
 on conflict (id) do update
   set public = excluded.public,
       file_size_limit = excluded.file_size_limit,
@@ -2322,3 +2324,25 @@ create policy "Admins can remove announcement media"
     bucket_id = 'announcements'
     and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
   );
+
+-- Runs announcement-cleanup (supabase/functions/announcement-cleanup) every 15
+-- minutes: files of withdrawn, replaced and expired announcements go, and so do
+-- uploads that never got attached to one. Replace <project-ref> with your
+-- project's reference (the part of the API URL before .supabase.co).
+create extension if not exists pg_cron;
+create extension if not exists pg_net with schema extensions;
+
+select cron.unschedule('announcement-cleanup')
+where exists (select 1 from cron.job where jobname = 'announcement-cleanup');
+
+select cron.schedule(
+  'announcement-cleanup',
+  '*/15 * * * *',
+  $cron$
+    select net.http_post(
+      url := 'https://<project-ref>.supabase.co/functions/v1/announcement-cleanup',
+      headers := '{"Content-Type": "application/json"}'::jsonb,
+      body := '{}'::jsonb
+    );
+  $cron$
+);

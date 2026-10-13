@@ -1737,6 +1737,21 @@ tbody tr {
   background: var(--color-surface-alt, rgba(0, 0, 0, 0.06));
 }
 
+.announcement-audio {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px;
+}
+
+.announcement-file {
+  display: block;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
 .announcement-body {
   margin: 0 0 24px;
   overflow-wrap: anywhere;

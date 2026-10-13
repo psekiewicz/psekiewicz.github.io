@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { AppState, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Announcement, getActiveAnnouncement, markSeen, wasSeen } from '../data/announcements';
+import { Announcement, Attachment, getActiveAnnouncement, markSeen, wasSeen } from '../data/announcements';
 import { safeUrl } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
@@ -11,17 +11,58 @@ import { RichText } from './RichText';
 import { Text } from './Text';
 import { Button } from './ui';
 
-function Film({ url }: { url: string }) {
+// A film, or - with `audio` - a sound shown as a slim controls-only bar.
+function Film({ url, audio }: { url: string; audio?: boolean }) {
   const player = useVideoPlayer(url, (p) => {
     p.loop = false;
   });
   return (
     <VideoView
       player={player}
-      style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md, backgroundColor: '#000' }}
+      style={{
+        width: '100%',
+        height: audio ? 64 : undefined,
+        aspectRatio: audio ? undefined : 16 / 9,
+        borderRadius: radius.md,
+        backgroundColor: audio ? '#e9e8e4' : '#000',
+      }}
       contentFit="contain"
       nativeControls
     />
+  );
+}
+
+// One attached file: pictures, films and sound in place, anything else as a link.
+function AttachmentView({ file }: { file: Attachment }) {
+  const { colors } = useTheme();
+  const url = safeUrl(file.url);
+  if (!url) return null;
+  const type = String(file.type || '');
+  if (type.startsWith('image/')) {
+    return (
+      <Image
+        source={{ uri: url }}
+        style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md }}
+        contentFit="cover"
+      />
+    );
+  }
+  if (type.startsWith('video/')) return <Film url={url} />;
+  if (type.startsWith('audio/')) return <Film url={url} audio />;
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(url).catch(() => {})}
+      accessibilityRole="link"
+      style={{
+        padding: space.md,
+        borderRadius: radius.md,
+        borderWidth: StyleSheet.hairlineWidth * 2,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+      }}
+    >
+      <Text style={{ color: colors.primary, textDecorationLine: 'underline' }}>{file.name || 'Download'}</Text>
+    </Pressable>
   );
 }
 
@@ -46,9 +87,6 @@ export function AnnouncementPopup() {
     return () => sub.remove();
   }, [check]);
 
-  const image = item ? safeUrl(item.imageUrl) : '';
-  const video = item ? safeUrl(item.videoUrl) : '';
-
   const close = () => {
     if (item) markSeen(item.id);
     setItem(null);
@@ -72,14 +110,7 @@ export function AnnouncementPopup() {
         >
           <Text style={[typography.h3, { color: colors.text }]}>{item?.title}</Text>
           <ScrollView contentContainerStyle={{ gap: space.md }}>
-            {image ? (
-              <Image
-                source={{ uri: image }}
-                style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md }}
-                contentFit="cover"
-              />
-            ) : null}
-            {video ? <Film url={video} /> : null}
+            {item?.attachments.map((file, i) => <AttachmentView key={i} file={file} />)}
             {item ? <RichText source={item.body} /> : null}
           </ScrollView>
           <Button label="Got it" onPress={close} />

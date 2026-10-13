@@ -27,19 +27,35 @@ function remember(id) {
 
 let showing = false;
 
-// The picture and the film sit above the text. Both addresses go through
-// safeUrl, so only https links ever reach an attribute.
+// The files sit above the text: pictures, films and sound are shown in place
+// and anything else becomes a download link. Every address goes through
+// safeUrl, so only http(s) links ever reach an attribute.
+function formatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return ` (${Math.max(1, Math.round(bytes / 1024))} KB)`;
+  return ` (${(bytes / 1024 / 1024).toFixed(1)} MB)`;
+}
+
 function mediaHtml(item) {
-  const image = safeUrl(item.imageUrl);
-  const video = safeUrl(item.videoUrl);
-  return [
-    image
-      ? `<img class="announcement-media" src="${escapeHtml(image)}" alt="" onerror="this.remove()" />`
-      : '',
-    video
-      ? `<video class="announcement-media" src="${escapeHtml(video)}" controls playsinline preload="metadata"></video>`
-      : '',
-  ].join('');
+  return (item.attachments || [])
+    .map((file) => {
+      const url = safeUrl(file.url);
+      if (!url) return '';
+      const src = escapeHtml(url);
+      const type = String(file.type || '');
+      if (type.startsWith('image/')) {
+        return `<img class="announcement-media" src="${src}" alt="${escapeHtml(file.name || '')}" onerror="this.remove()" />`;
+      }
+      if (type.startsWith('video/')) {
+        return `<video class="announcement-media" src="${src}" controls playsinline preload="metadata"></video>`;
+      }
+      if (type.startsWith('audio/')) {
+        return `<audio class="announcement-audio" src="${src}" controls preload="metadata"></audio>`;
+      }
+      const name = escapeHtml(file.name || 'Download');
+      return `<a class="announcement-file" href="${src}" target="_blank" rel="noopener noreferrer" download>${name}${escapeHtml(formatSize(file.size))}</a>`;
+    })
+    .join('');
 }
 
 function show(item) {
@@ -67,8 +83,8 @@ function show(item) {
     remember(item.id);
     overlay.classList.remove('is-open');
     document.removeEventListener('keydown', onKey);
-    // A film left playing would carry on behind the closed popup.
-    overlay.querySelectorAll('video').forEach((v) => v.pause());
+    // A film or sound left playing would carry on behind the closed popup.
+    overlay.querySelectorAll('video, audio').forEach((v) => v.pause());
     setTimeout(() => {
       overlay.remove();
       showing = false;

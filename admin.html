@@ -100,12 +100,8 @@
           <input type="text" id="notice-title" maxlength="80" placeholder="Title" required />
           <textarea id="notice-body" maxlength="4000" rows="6" placeholder="Message" required></textarea>
           <label style="display:grid;gap:4px;font-size:0.85rem;color:var(--color-text-faint);">
-            Picture (JPEG, PNG, WebP or GIF, up to 10 MB)
-            <input type="file" id="notice-image" accept="image/jpeg,image/png,image/webp,image/gif" />
-          </label>
-          <label style="display:grid;gap:4px;font-size:0.85rem;color:var(--color-text-faint);">
-            Film (MP4 or WebM, up to 50 MB)
-            <input type="file" id="notice-video" accept="video/mp4,video/webm" />
+            Files (up to 5, 50 MB each; pictures, films, sound and anything else - deleted when the notice ends)
+            <input type="file" id="notice-files" multiple />
           </label>
           <label style="display:grid;gap:4px;font-size:0.85rem;color:var(--color-text-faint);">
             Show until (optional, your local time; empty means until you withdraw it)
@@ -176,7 +172,7 @@
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { adminListReports, adminCloseReports } from '/js/reports-data.js';
     import { icon } from '/js/icons.js';
-    import { publishAnnouncement, clearAnnouncements, uploadAnnouncementMedia } from '/js/announcements-data.js';
+    import { publishAnnouncement, clearAnnouncements, uploadAnnouncementFile, discardUploads, FILES_MAX } from '/js/announcements-data.js';
     import { attachFormatToolbar } from '/js/format-toolbar.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -539,32 +535,32 @@
       const when = expiresAt ? ' until ' + expiresAt.toLocaleString() : '';
       if (!confirm('Send "' + title + '" to every user' + when + '?')) return;
 
+      const files = [...document.getElementById('notice-files').files];
+      if (files.length > FILES_MAX) {
+        noticeStatus.textContent = 'At most ' + FILES_MAX + ' files.';
+        return;
+      }
+
       noticeSend.disabled = true;
+      const uploaded = [];
       try {
-        const image = document.getElementById('notice-image').files[0];
-        const video = document.getElementById('notice-video').files[0];
-        let imageUrl = '';
-        let videoUrl = '';
-        if (image) {
-          noticeStatus.textContent = 'Uploading the picture…';
-          imageUrl = await uploadAnnouncementMedia(currentAdminId, image, 'image');
-        }
-        if (video) {
-          noticeStatus.textContent = 'Uploading the film…';
-          videoUrl = await uploadAnnouncementMedia(currentAdminId, video, 'video');
+        for (const [i, file] of files.entries()) {
+          noticeStatus.textContent = 'Uploading ' + (i + 1) + ' of ' + files.length + '…';
+          uploaded.push(await uploadAnnouncementFile(currentAdminId, file));
         }
         noticeStatus.textContent = 'Sending…';
         await publishAnnouncement(currentAdminId, {
           title,
           body: document.getElementById('notice-body').value,
-          imageUrl,
-          videoUrl,
+          attachments: uploaded,
           expiresAt,
         });
         noticeForm.reset();
         noticeBar.reset();
         noticeStatus.textContent = 'Sent. Users see it the next time they open the site or app.';
       } catch (err) {
+        // The files went up before the publish failed: take them down again.
+        await discardUploads(uploaded);
         noticeStatus.textContent = err.message + ' - notices need the announcements table and bucket from schema.sql.';
       } finally {
         noticeSend.disabled = false;

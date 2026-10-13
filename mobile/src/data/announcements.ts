@@ -2,12 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '../lib/supabase';
 
+// One attached file. `path` is where an uploaded file lives in the bucket; the
+// server deletes it once the announcement is over.
+export type Attachment = { url: string; name?: string; type?: string; size?: number; path?: string };
+
 export type Announcement = {
   id: string;
   title: string;
   body: string;
-  imageUrl: string;
-  videoUrl: string;
+  attachments: Attachment[];
   expiresAt: string | null;
   createdAt: string;
 };
@@ -24,7 +27,7 @@ const SEEN_KEY = 'announcement:lastSeen';
 export async function getActiveAnnouncement(): Promise<Announcement | null> {
   const { data, error } = await supabase
     .from('announcements')
-    .select('id, title, body, image_url, video_url, expires_at, created_at')
+    .select('id, title, body, attachments, expires_at, created_at')
     .eq('active', true)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order('created_at', { ascending: false })
@@ -36,8 +39,7 @@ export async function getActiveAnnouncement(): Promise<Announcement | null> {
     id: row.id,
     title: row.title,
     body: row.body,
-    imageUrl: row.image_url || '',
-    videoUrl: row.video_url || '',
+    attachments: Array.isArray(row.attachments) ? row.attachments : [],
     expiresAt: row.expires_at || null,
     createdAt: row.created_at,
   };
@@ -60,12 +62,15 @@ export async function markSeen(id: string) {
 }
 
 // Admin only (RLS rejects anyone else). Retires the previous ones so the table
-// holds at most one live notice. Pictures and films are uploaded from the site's
-// admin page; here they are attached by their https address.
+// holds at most one live notice. Files are uploaded from the site's admin page;
+// here a picture or film is attached by its https address.
 export async function publishAnnouncement(
   userId: string,
   fields: { title: string; body: string; imageUrl?: string; videoUrl?: string; expiresAt?: Date | null }
 ) {
+  const attachments: Attachment[] = [];
+  if (fields.imageUrl) attachments.push({ url: fields.imageUrl, type: 'image/*' });
+  if (fields.videoUrl) attachments.push({ url: fields.videoUrl, type: 'video/*' });
   const { error: offError } = await supabase
     .from('announcements')
     .update({ active: false })
@@ -74,8 +79,7 @@ export async function publishAnnouncement(
   const { error } = await supabase.from('announcements').insert({
     title: fields.title.trim(),
     body: fields.body.trim(),
-    image_url: fields.imageUrl || null,
-    video_url: fields.videoUrl || null,
+    attachments,
     expires_at: fields.expiresAt ? fields.expiresAt.toISOString() : null,
     created_by: userId,
   });
