@@ -1709,6 +1709,74 @@ tbody tr {
   color: var(--color-text);
 }
 
+/* ---------- Notice panel on admin.html ---------- */
+.notice-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: 640px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.notice-live.is-live {
+  border-color: #2f7d4f;
+  background: rgba(47, 125, 79, 0.1);
+}
+
+.notice-live-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #2f7d4f;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.notice-live-badge.is-off {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.notice-live-text {
+  flex: 1;
+  min-width: 160px;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.notice-live-text small {
+  color: var(--color-text-faint);
+}
+
+.notice-status {
+  font-size: 0.9rem;
+  color: var(--color-text-faint);
+}
+
+.notice-status.is-ok {
+  color: #2f7d4f;
+  font-weight: 600;
+}
+
+.notice-status.is-error {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.toast-notice .toast-icon {
+  background: #2f7d4f;
+  color: #fff;
+}
+
 /* ---------- Announcement popup ---------- */
 .announcement-overlay {
   align-items: center;
