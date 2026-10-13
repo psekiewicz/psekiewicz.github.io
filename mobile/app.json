@@ -8,11 +8,11 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
-    "backgroundColor": "#c67139",
+    "backgroundColor": "#ffffff",
     "splash": {
       "image": "./assets/splash-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#c67139"
+      "backgroundColor": "#ffffff"
     },
     "android": {
       "package": "io.github.psekiewicz.showcase",

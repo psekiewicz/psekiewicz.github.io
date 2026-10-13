@@ -99,16 +99,15 @@ export const darkColors: typeof lightColors = {
   scrim: 'rgba(32, 30, 29, 0.58)',
 };
 
-// The splash's own colours, fixed across both themes: the logo is cream on a
-// terracotta field.
+// The splash's own colours, fixed across both themes: the ink logo on white.
 //
-// `splashBg` is the light theme's `primary` written out rather than read from
-// it: the field has to be the same colour as the native splash underneath,
-// which app.json states once and cannot vary by theme, so taking it from
-// `colors.primary` made the handover jump a shade in dark mode.
+// `splashBg` is written out rather than read from the theme: the field has to
+// be the same colour as the native splash underneath, which app.json states
+// once and cannot vary by theme, so taking it from the theme made the handover
+// jump a shade in dark mode.
 export const brand = {
-  splashBg: '#c67139',
-  splashFront: '#fdf7ea',
+  splashBg: '#ffffff',
+  splashFront: '#191713',
 };
 
 // Bloom rounds hard: 14 on thumbnails, 22 on rows and tiles, 26 on feed cards,

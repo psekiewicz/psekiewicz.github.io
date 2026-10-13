@@ -7,7 +7,7 @@ import { LOGO_BOTTOM, LOGO_TOP, LogoRow } from './BrandMark';
 
 const MARK = 132;
 
-// The splash: a terracotta field, a ring breathing out behind the logo and its
+// The splash: a white field, a ring breathing out behind the logo and its
 // two rows (X O over X D) flying in from opposite sides a beat apart. The logo
 // spells the name, so there is no separate wordmark.
 //
@@ -93,7 +93,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
             top: -14,
             bottom: -14,
             borderRadius: 999,
-            backgroundColor: 'rgba(253,247,234,0.18)',
+            backgroundColor: 'rgba(25,23,19,0.08)',
             opacity: ring.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0.35, 0] }),
             transform: [
               { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.2, 2.6] }) },

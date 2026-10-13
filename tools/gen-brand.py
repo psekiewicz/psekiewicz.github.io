@@ -14,7 +14,7 @@ Writes:
   icons/apple-touch-icon.png                  180px, opaque as iOS requires
   mobile/assets/icon.png                      1024px app icon
   mobile/assets/adaptive-icon.png             Android foreground, transparent
-  mobile/assets/splash-mark.png               cream logo for the terracotta splash
+  mobile/assets/splash-mark.png               ink logo for the white splash
 """
 from pathlib import Path
 
@@ -23,7 +23,6 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'assets' / 'brand' / 'xoxd-logo.png'
-CREAM = (253, 247, 234)
 
 
 def load_mask():
@@ -68,7 +67,7 @@ def main():
     save(render(mask, 180, black, white + (255,), 0.7), 'icons/apple-touch-icon.png', opaque=True)
     save(render(mask, 1024, black, white + (255,), 0.66), 'mobile/assets/icon.png', opaque=True)
     save(render(mask, 1024, black, None, 0.46), 'mobile/assets/adaptive-icon.png')
-    save(render(mask, 1024, CREAM, None, 0.5), 'mobile/assets/splash-mark.png')
+    save(render(mask, 1024, (25, 23, 19), None, 0.5), 'mobile/assets/splash-mark.png')
 
 
 if __name__ == '__main__':
