@@ -42,6 +42,9 @@ export function AdminScreen({ navigation }: any) {
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeBody, setNoticeBody] = useState('');
   const [sending, setSending] = useState(false);
+  // A hidden list stays hidden until you search: typing is a deliberate ask for
+  // rows, so matches show, and clearing the box puts the list away again.
+  const [hidden, setHidden] = useState({ projects: false, users: false });
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState('');
@@ -97,11 +100,12 @@ export function AdminScreen({ navigation }: any) {
 
   const q = query.trim().toLowerCase();
   const shownProjects = projects.filter(
-    (p) => !q || p.title.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q)
+    (p) => (!hidden.projects || !!q) && (!q || p.title.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q))
   );
   const shownUsers = users.filter(
     (u) =>
-      !q || u.displayName.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+      (!hidden.users || !!q) &&
+      (!q || u.displayName.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q))
   );
 
   const unpublish = async (project: Project) => {
@@ -290,6 +294,19 @@ export function AdminScreen({ navigation }: any) {
           />
         </View>
         )}
+        {tab !== 'notice' && (
+          <Pressable
+            onPress={() => setHidden((h) => ({ ...h, [tab]: !h[tab] }))}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: !hidden[tab] }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
+          >
+            <Feather name={hidden[tab] ? 'eye' : 'eye-off'} size={14} color={colors.textMuted} />
+            <Text style={[typography.small, { color: colors.textMuted }]}>
+              {hidden[tab] ? 'Show list' : 'Hide list'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {tab === 'notice' ? (
@@ -330,7 +347,13 @@ export function AdminScreen({ navigation }: any) {
           data={shownProjects}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: space.lg, paddingTop: 0, gap: space.sm, paddingBottom: space.xxl }}
-          ListEmptyComponent={<EmptyState icon="package" title="No entries match" />}
+          ListEmptyComponent={
+            hidden.projects && !q ? (
+              <EmptyState icon="eye-off" title="List hidden" body="Search to find entries, or show the list." />
+            ) : (
+              <EmptyState icon="package" title="No entries match" />
+            )
+          }
           renderItem={({ item }) => (
             <View
               style={{
@@ -391,11 +414,15 @@ export function AdminScreen({ navigation }: any) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: space.lg, paddingTop: 0, gap: space.sm, paddingBottom: space.xxl }}
           ListEmptyComponent={
-            <EmptyState
-              icon="users"
-              title="No accounts listed"
-              body="The Users tab needs admin_list_users() from schema.sql."
-            />
+            hidden.users && !q ? (
+              <EmptyState icon="eye-off" title="List hidden" body="Search to find accounts, or show the list." />
+            ) : (
+              <EmptyState
+                icon="users"
+                title="No accounts listed"
+                body="The Users tab needs admin_list_users() from schema.sql."
+              />
+            )
           }
           renderItem={({ item }) => {
             const banned = item.bannedUntil && new Date(item.bannedUntil) > new Date();

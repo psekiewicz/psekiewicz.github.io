@@ -94,6 +94,7 @@
 
         <div class="section-head">
           <h2>Users</h2>
+          <button class="btn btn-secondary btn-sm" type="button" id="users-toggle" aria-expanded="true">Hide list</button>
         </div>
         <div class="filter-bar">
           <input type="search" id="user-search-input" placeholder="Search by name or email…" />
@@ -104,6 +105,7 @@
 
         <div class="section-head">
           <h2>Projects</h2>
+          <button class="btn btn-secondary btn-sm" type="button" id="projects-toggle" aria-expanded="true">Hide list</button>
         </div>
         <div class="filter-bar">
           <input type="search" id="project-search-input" placeholder="Search by title, summary, or author…" />
@@ -241,8 +243,27 @@
 
     // ---------- Projects ----------
 
+    // A hidden list stays hidden until you search: typing is a deliberate ask for
+    // rows, so the results show, and clearing the box puts the list away again.
+    const hidden = { users: false, projects: false };
+    function hideNote(kind) {
+      return `<p style="color:var(--color-text-faint);margin:0 0 40px;">The ${kind} list is hidden. Search to find ${kind}, or press Show list.</p>`;
+    }
+    function bindToggle(btn, kind, render) {
+      btn.addEventListener('click', () => {
+        hidden[kind] = !hidden[kind];
+        btn.textContent = hidden[kind] ? 'Show list' : 'Hide list';
+        btn.setAttribute('aria-expanded', String(!hidden[kind]));
+        render();
+      });
+    }
+
     function renderTable() {
       const q = projectSearchInput.value.trim().toLowerCase();
+      if (hidden.projects && !q) {
+        tableRegion.innerHTML = hideNote('project');
+        return;
+      }
       const filtered = allProjects.filter(
         (p) =>
           !q ||
@@ -337,6 +358,10 @@
 
     function renderUsersTable() {
       const q = userSearchInput.value.trim().toLowerCase();
+      if (hidden.users && !q) {
+        usersTableRegion.innerHTML = hideNote('user');
+        return;
+      }
       const filtered = allUsers.filter(
         (u) => !q || u.displayName.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
       );
@@ -469,6 +494,8 @@
 
     projectSearchInput.addEventListener('input', renderTable);
     userSearchInput.addEventListener('input', renderUsersTable);
+    bindToggle(document.getElementById('users-toggle'), 'users', renderUsersTable);
+    bindToggle(document.getElementById('projects-toggle'), 'projects', renderTable);
 
     let initialized = false;
     onAuthChange(async (user) => {
