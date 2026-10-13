@@ -3,14 +3,13 @@ import { Animated, StyleSheet, View } from 'react-native';
 
 import { useMotion } from '../theme/MotionProvider';
 import { brand } from '../theme/tokens';
-import { CHEVRON_BACK, CHEVRON_FRONT, Chevron } from './BrandMark';
-import { FONT_FAMILY } from './Text';
+import { LOGO_BOTTOM, LOGO_TOP, LogoRow } from './BrandMark';
 
-const MARK = 116;
+const MARK = 132;
 
-// Bloom's splash: a terracotta field, a ring breathing out behind the mark, the
-// two chevrons flying in from opposite sides a beat apart, and the wordmark
-// settling out of wide tracking. Lowercase, as the artboard sets it.
+// The splash: a terracotta field, a ring breathing out behind the logo and its
+// two rows (X O over X D) flying in from opposite sides a beat apart. The logo
+// spells the name, so there is no separate wordmark.
 //
 // It used to be shown for exactly as long as AuthContext took to read the
 // persisted session off disk, on the reasoning that the reveal should play
@@ -34,11 +33,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
 
   const frontAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
   const backAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
-  const wordAnim = useRef(new Animated.Value(enabled ? 0 : 1)).current;
   const ring = useRef(new Animated.Value(0)).current;
-  // letterSpacing can't be driven natively, so the wordmark's tracking runs on
-  // its own value rather than being mixed into wordAnim.
-  const track = useRef(new Animated.Value(enabled ? 0 : 1)).current;
 
   // Held in a ref so a caller passing an inline arrow doesn't restart the
   // animation on every render of the screen above.
@@ -67,8 +62,6 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
     const reveal = Animated.parallel([
       Animated.timing(frontAnim, { toValue: 1, duration: 580, useNativeDriver: true }),
       Animated.timing(backAnim, { toValue: 1, duration: 580, delay: 150, useNativeDriver: true }),
-      Animated.timing(wordAnim, { toValue: 1, duration: 540, delay: 400, useNativeDriver: true }),
-      Animated.timing(track, { toValue: 1, duration: 540, delay: 400, useNativeDriver: false }),
     ]);
     reveal.start(finish);
 
@@ -81,7 +74,7 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
       reveal.stop();
       pulse.stop();
     };
-  }, [frontAnim, backAnim, wordAnim, track, ring, enabled]);
+  }, [frontAnim, backAnim, ring, enabled]);
 
   const flyIn = (anim: Animated.Value, from: number) => ({
     opacity: anim,
@@ -108,38 +101,13 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
           }}
         />
         <Animated.View style={[StyleSheet.absoluteFill, flyIn(frontAnim, -34)]}>
-          <Chevron size={MARK} points={CHEVRON_FRONT} color={brand.splashFront} />
+          <LogoRow size={MARK} d={LOGO_TOP} color={brand.splashFront} />
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, flyIn(backAnim, 34)]}>
-          <Chevron size={MARK} points={CHEVRON_BACK} color={brand.splashBack} />
+          <LogoRow size={MARK} d={LOGO_BOTTOM} color={brand.splashFront} />
         </Animated.View>
       </View>
 
-      {/* Two drivers, so two nodes. The fade and the slide run natively; the
-          tracking cannot, and putting both on one node made the native driver
-          inspect a letterSpacing it has no way to animate and log an error on
-          every launch. Split, each driver owns a node it can drive all of. */}
-      <Animated.View
-        style={{
-          marginTop: 24,
-          opacity: wordAnim,
-          transform: [
-            { translateY: wordAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
-          ],
-        }}
-      >
-        <Animated.Text
-          style={{
-            fontFamily: FONT_FAMILY,
-            fontSize: 19,
-            fontWeight: '700',
-            color: brand.splashFront,
-            letterSpacing: track.interpolate({ inputRange: [0, 1], outputRange: [9.5, 0.4] }),
-          }}
-        >
-          XOXD
-        </Animated.Text>
-      </Animated.View>
     </View>
   );
 }

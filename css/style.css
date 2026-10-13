@@ -98,9 +98,8 @@
   --color-accent-soft: #e4e7d5;
   --color-on-accent: #fdf7ea;
 
-  /* The brand mark's own colours - fixed across both themes on purpose.
-     A logo that reheus with light/dark mode stops being a stable mark;
-     these two only ever appear inside .brand-mark. */
+  /* Orange and blue from the old double-chevron mark; what is left of them is
+     the gradient rule that uses both. The logo itself is plain text colour. */
   --color-brand-orange: #f97316;
   --color-brand-blue: #0ea5e9;
 
@@ -443,26 +442,20 @@ img {
   text-decoration: none;
 }
 
-/* A double chevron in the brand's own fixed orange/blue pair - sharp,
-   angular, the same shape language as the mono face. On hover the two
-   halves push apart and snap back, like the mark is mid-stride. */
+/* The XOXD logo, one solid shape (assets/brand/xoxd.svg). It is drawn in
+   the text colour, so it follows light/dark mode, and nudges up a touch on
+   hover. */
 .brand-mark {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: block;
   flex-shrink: 0;
-}
-
-.brand-mark polygon {
+  color: var(--color-text);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.brand:hover .brand-mark polygon:first-child {
-  transform: translateX(-2px);
-}
-
-.brand:hover .brand-mark polygon:last-child {
-  transform: translateX(2px);
+.brand:hover .brand-mark {
+  transform: scale(1.08);
 }
 
 .nav-links {

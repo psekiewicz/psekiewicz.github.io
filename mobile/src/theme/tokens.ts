@@ -99,20 +99,16 @@ export const darkColors: typeof lightColors = {
   scrim: 'rgba(32, 30, 29, 0.58)',
 };
 
-// The brand mark's own colours, fixed across both themes. On Bloom's splash
-// the mark sits on a terracotta field, so the two chevrons are cream and a
-// pale sage rather than the site's orange and blue.
+// The splash's own colours, fixed across both themes: the logo is cream on a
+// terracotta field.
 //
 // `splashBg` is the light theme's `primary` written out rather than read from
 // it: the field has to be the same colour as the native splash underneath,
 // which app.json states once and cannot vary by theme, so taking it from
 // `colors.primary` made the handover jump a shade in dark mode.
 export const brand = {
-  orange: '#f97316',
-  blue: '#0ea5e9',
   splashBg: '#c67139',
   splashFront: '#fdf7ea',
-  splashBack: '#e4e7d5',
 };
 
 // Bloom rounds hard: 14 on thumbnails, 22 on rows and tiles, 26 on feed cards,
