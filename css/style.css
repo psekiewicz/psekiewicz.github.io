@@ -242,7 +242,9 @@ textarea {
 
 html,
 body {
-  padding: 0;
+  /* viewport-fit=cover lets the page run under an iPhone's notch in landscape;
+     these keep the content clear of it. Zero everywhere else. */
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
   margin: 0;
 }
 
@@ -1707,6 +1709,63 @@ tbody tr {
   color: var(--color-text);
 }
 
+/* ---------- Announcement popup ---------- */
+.announcement-overlay {
+  align-items: center;
+  z-index: 300;
+}
+
+.announcement {
+  max-width: 440px;
+}
+
+.announcement h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.announcement {
+  max-height: calc(100vh - 80px);
+  /* iOS Safari's 100vh counts the address bar; dvh is the visible height. */
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+}
+
+.announcement-media {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  margin: 0 0 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt, rgba(0, 0, 0, 0.06));
+}
+
+.announcement-audio {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px;
+}
+
+.announcement-file {
+  display: block;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.announcement-body {
+  margin: 0 0 24px;
+  overflow-wrap: anywhere;
+}
+
+.announcement-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ---------- Project detail ---------- */
 .detail-hero {
   background: var(--color-surface);
@@ -2270,7 +2329,8 @@ tbody tr {
   z-index: 60;
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 6px calc(6px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px))
+    calc(6px + env(safe-area-inset-left, 0px));
   align-items: center;
   justify-content: space-around;
 }

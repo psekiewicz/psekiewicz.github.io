@@ -65,7 +65,7 @@ function page(doc) {
 <head>
   <meta charset="UTF-8" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>${escape(doc.title)} - XOXD</title>
   <meta name="description" content="${escape(doc.summary)}" />
   <meta property="og:type" content="website" />

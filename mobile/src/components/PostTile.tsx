@@ -27,7 +27,7 @@ type Props = {
 };
 
 const PLAYABLE = new Set(['music', 'video']);
-const CREAM = '#fdf7ea';
+const CREAM = '#ffffff';
 
 export function PostTile({ project, author, likeCount, commentCount, showAuthor = true, onPress }: Props) {
   const type = project.type || 'other';
@@ -67,7 +67,7 @@ export function PostTile({ project, author, likeCount, commentCount, showAuthor 
           paddingHorizontal: 8,
           paddingVertical: 3,
           borderRadius: radius.pill,
-          backgroundColor: 'rgba(32,30,29,0.62)',
+          backgroundColor: 'rgba(25,23,19,0.62)',
         }}
       >
         <Feather name={meta.icon} size={10} color={CREAM} />
@@ -83,17 +83,17 @@ export function PostTile({ project, author, likeCount, commentCount, showAuthor 
             width: 28,
             height: 28,
             borderRadius: radius.pill,
-            backgroundColor: 'rgba(253,247,234,0.92)',
+            backgroundColor: 'rgba(255,255,255,0.92)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Icon name="play" size={13} color="#8f4a1e" />
+          <Icon name="play" size={13} color="#12506a" />
         </View>
       ) : null}
 
       <LinearGradient
-        colors={['rgba(20,16,12,0)', 'rgba(20,16,12,0.82)']}
+        colors={['rgba(25,23,19,0)', 'rgba(25,23,19,0.82)']}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 36, paddingHorizontal: 10, paddingBottom: 9, gap: 6 }}
       >
         <Text style={{ color: CREAM, fontWeight: '800', fontSize: 13, lineHeight: 17 }} numberOfLines={2}>

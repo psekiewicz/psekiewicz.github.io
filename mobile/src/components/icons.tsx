@@ -43,7 +43,7 @@ type Props = {
   strokeWidth?: number;
 };
 
-export function Icon({ name, size = 21, color = '#201e1d', fill = 'none', strokeWidth = 2.75 }: Props) {
+export function Icon({ name, size = 21, color = '#191713', fill = 'none', strokeWidth = 2.75 }: Props) {
   const s = {
     fill: 'none' as const,
     stroke: color,

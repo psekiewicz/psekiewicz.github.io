@@ -299,8 +299,10 @@ textarea:focus {
     --sidebar-w: 84px;
   }
 
+  /* env() is the notch's width on an iPhone held sideways (viewport-fit=cover),
+     so the rail and the page both start clear of it. Zero elsewhere. */
   body {
-    padding-left: var(--sidebar-w);
+    padding-left: calc(var(--sidebar-w) + env(safe-area-inset-left, 0px));
   }
 
   .navbar {
@@ -308,7 +310,8 @@ textarea:focus {
     top: 0;
     bottom: 0;
     left: 0;
-    width: var(--sidebar-w);
+    width: calc(var(--sidebar-w) + env(safe-area-inset-left, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
     border-bottom: none;
     border-right: 1px solid var(--color-border);
     background: var(--color-bg);
@@ -389,7 +392,7 @@ textarea:focus {
     top: auto;
     bottom: 16px;
     right: auto;
-    left: calc(var(--sidebar-w) + 12px);
+    left: calc(var(--sidebar-w) + 12px + env(safe-area-inset-left, 0px));
   }
 
   .navbar .container {
@@ -425,7 +428,7 @@ textarea:focus {
     position: fixed;
     top: auto;
     bottom: 16px;
-    left: calc(var(--sidebar-w) + 12px);
+    left: calc(var(--sidebar-w) + 12px + env(safe-area-inset-left, 0px));
     right: auto;
   }
 

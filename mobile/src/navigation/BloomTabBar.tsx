@@ -38,9 +38,9 @@ export function BloomTabBar({ state, navigation }: any) {
   // rather than drawing a cream strip under a black video.
   const onScrolls = state.routes[state.index]?.name === 'Scrolls';
   const bg = onScrolls ? colors.scrollsBg : colors.bg;
-  const idle = onScrolls ? 'rgba(253,247,234,0.6)' : colors.textFaint;
-  const active = onScrolls ? '#fdf7ea' : colors.primary;
-  const line = onScrolls ? 'rgba(253,247,234,0.16)' : colors.border;
+  const idle = onScrolls ? 'rgba(255,255,255,0.6)' : colors.textFaint;
+  const active = onScrolls ? '#ffffff' : colors.primary;
+  const line = onScrolls ? 'rgba(255,255,255,0.16)' : colors.border;
 
   const go = (route: any, isFocused: boolean) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });

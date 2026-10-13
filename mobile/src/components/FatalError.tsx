@@ -44,7 +44,7 @@ export function FatalError({ error, where }: { error: unknown; where: string }) 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#14120f' },
   body: { padding: 24, paddingTop: 72, gap: 8 },
-  title: { color: '#f2efe9', fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  title: { color: '#f6f5f3', fontSize: 22, fontWeight: '700', marginBottom: 4 },
   lead: { color: '#a8a29a', fontSize: 13, lineHeight: 19, marginBottom: 16 },
   label: {
     color: '#c1543a',
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 16,
   },
-  mono: { color: '#f2efe9', fontFamily: 'monospace', fontSize: 13, lineHeight: 19 },
+  mono: { color: '#f6f5f3', fontFamily: 'monospace', fontSize: 13, lineHeight: 19 },
   stack: { color: '#a8a29a', fontFamily: 'monospace', fontSize: 11, lineHeight: 16 },
 });

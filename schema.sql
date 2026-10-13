@@ -2231,3 +2231,96 @@ create policy "Signed-in users can report as themselves"
     and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
   );
+
+-- ---------------------------------------------------------------------------
+-- Announcements: a message an admin can push to every user as a popup.
+-- The app shows the newest active row once per device (it remembers the id it
+-- has shown). Publishing a new one makes it the newest; "clear" switches every
+-- row off. Anyone can read the active rows; only admins can write.
+-- ---------------------------------------------------------------------------
+create table if not exists public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 1 and 80),
+  body text not null check (char_length(body) between 1 and 4000),
+  -- Files shown with the notice: [{ url, name, type, size, path? }]. `path` is
+  -- the file's place in the 'announcements' bucket when an admin uploaded it;
+  -- announcement-cleanup deletes those files once the notice is over.
+  attachments jsonb not null default '[]'::jsonb check (jsonb_typeof(attachments) = 'array'),
+  -- Optional end: after this moment the announcement stops showing.
+  expires_at timestamptz,
+  active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.announcements enable row level security;
+
+drop policy if exists "Anyone can read active announcements" on public.announcements;
+create policy "Anyone can read active announcements"
+  on public.announcements for select
+  using (
+    (active = true and (expires_at is null or expires_at > now()))
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can publish announcements" on public.announcements;
+create policy "Admins can publish announcements"
+  on public.announcements for insert
+  with check (
+    created_by = auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can edit announcements" on public.announcements;
+create policy "Admins can edit announcements"
+  on public.announcements for update
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+drop policy if exists "Admins can delete announcements" on public.announcements;
+create policy "Admins can delete announcements"
+  on public.announcements for delete
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+
+-- For a database that already has the first version of the table above.
+alter table public.announcements add column if not exists attachments jsonb not null default '[]'::jsonb check (jsonb_typeof(attachments) = 'array');
+alter table public.announcements drop column if exists image_url;
+alter table public.announcements drop column if exists video_url;
+alter table public.announcements add column if not exists expires_at timestamptz;
+alter table public.announcements drop constraint if exists announcements_body_check;
+alter table public.announcements add constraint announcements_body_check check (char_length(body) between 1 and 4000);
+
+-- Files attached to an announcement - pictures, films, sound, documents,
+-- anything - are uploaded by an admin to a public bucket (readable by link, so
+-- they show for logged-out visitors too). Only admins can add, replace or
+-- remove files in it, so any type is accepted; only the size is capped. The
+-- announcement-cleanup function deletes the files when the notice is over.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('announcements', 'announcements', true, 52428800, null)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Admins can upload announcement media" on storage.objects;
+create policy "Admins can upload announcement media"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can replace announcement media" on storage.objects;
+create policy "Admins can replace announcement media"
+  on storage.objects for update
+  using (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+drop policy if exists "Admins can remove announcement media" on storage.objects;
+create policy "Admins can remove announcement media"
+  on storage.objects for delete
+  using (
+    bucket_id = 'announcements'
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
