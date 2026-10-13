@@ -1,10 +1,10 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 
 import {
+  Avatar,
   Body,
   Button,
   Card,
@@ -17,12 +17,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getProfile } from '../data/profiles';
 import { equipItem, getOwnedItemIds, purchaseBundle, purchaseItem } from '../data/shop';
-import { CosmeticBackground, hasPattern } from '../components/CosmeticBackground';
-import { previewColors } from '../lib/cosmetics';
+import { CosmeticBackground } from '../components/CosmeticBackground';
+import { nameStyle } from '../lib/cosmetics';
 import {
   bundleMissingListPrice,
   bundlePriceFor,
   itemsByCategory,
+  rarityOf,
   SHOP_BUNDLES,
   SHOP_CATEGORIES,
 } from '../lib/shopItems';
@@ -30,6 +31,51 @@ import { formatCount } from '../lib/utils';
 import { column, MAX_PAGE_WIDTH } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
+
+// What an item looks like, as a tile: the background itself, an avatar
+// wearing the frame, or a nickname in its colour. `size` makes a square one.
+function Swatch({
+  itemId,
+  size,
+  height,
+  children,
+}: {
+  itemId: string;
+  size?: number;
+  height?: number;
+  children?: React.ReactNode;
+}) {
+  const { colors } = useTheme();
+  const box = size ? { width: size, height: size } : { height: height || 54 };
+  const centre = { alignItems: 'center', justifyContent: 'center' } as const;
+
+  if (itemId.startsWith('bg-')) {
+    return (
+      <CosmeticBackground
+        itemId={itemId}
+        style={size ? { ...box, borderRadius: radius.sm, ...centre } : { ...box, ...centre }}
+      >
+        {children}
+      </CosmeticBackground>
+    );
+  }
+
+  const avatarSize = size ? size * 0.62 : (height || 54) * 0.6;
+  return (
+    <View
+      style={{ ...box, backgroundColor: colors.surfaceAlt || colors.border, borderRadius: size ? radius.sm : 0, ...centre }}
+    >
+      {itemId.startsWith('border-') ? (
+        <Avatar name="P" size={avatarSize} ring={itemId} />
+      ) : (
+        <Text style={[{ fontWeight: '800', fontSize: size ? 13 : 16, color: colors.text }, nameStyle(itemId) as any]}>
+          Peter
+        </Text>
+      )}
+      {children ? <View style={{ position: 'absolute' }}>{children}</View> : null}
+    </View>
+  );
+}
 
 export function ShopScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -189,28 +235,9 @@ export function ShopScreen({ navigation }: any) {
                   marginTop: space.md,
                 }}
               >
-                {bundle.items.map((id) =>
-                  // A patterned background previews as the pattern; everything
-                  // else (borders, name effects) stays its colour swatch.
-                  hasPattern(id) ? (
-                    <CosmeticBackground
-                      key={id}
-                      itemId={id}
-                      preview
-                      // Bigger than the plain colour swatches beside it: a
-                      // pattern needs room to repeat before it reads as one.
-                      style={{ width: 32, height: 32, borderRadius: radius.sm }}
-                    />
-                  ) : (
-                    <LinearGradient
-                      key={id}
-                      colors={previewColors(id) as any}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{ width: 26, height: 26, borderRadius: radius.sm }}
-                    />
-                  )
-                )}
+                {bundle.items.map((id) => (
+                  <Swatch key={id} itemId={id} size={34} />
+                ))}
                 <View style={{ flex: 1 }} />
                 {complete ? (
                   <Text style={[typography.small, { color: colors.success, fontWeight: '700' }]}>
@@ -288,24 +315,9 @@ export function ShopScreen({ navigation }: any) {
                 overflow: 'hidden',
               }}
             >
-              {hasPattern(item.id) ? (
-                <CosmeticBackground
-                  itemId={item.id}
-                  preview
-                  style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
-                </CosmeticBackground>
-              ) : (
-                <LinearGradient
-                  colors={previewColors(item.id) as any}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
-                </LinearGradient>
-              )}
+              <Swatch itemId={item.id} height={54}>
+                {isEquipped ? <Feather name="check" size={18} color="#fff" /> : null}
+              </Swatch>
               <View style={{ padding: space.sm, gap: 2 }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: colors.text }} numberOfLines={1}>
                   {item.label}
@@ -316,7 +328,7 @@ export function ShopScreen({ navigation }: any) {
                     color: isOwned ? colors.success : colors.textFaint,
                   }}
                 >
-                  {isOwned ? (isEquipped ? 'Equipped' : 'Owned') : `${item.price} pts`}
+                  {isOwned ? (isEquipped ? 'Equipped' : 'Owned') : `${item.price} pts \u00b7 ${rarityOf(item).label}`}
                 </Text>
               </View>
             </Pressable>

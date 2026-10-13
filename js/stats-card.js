@@ -87,9 +87,8 @@ function drawCheck(ctx, cx, cy, size, color) {
 // ---------------------------------------------------------------------
 // Shop cosmetics on the card.
 //
-// The shop's 58 items (js/shop-items.js) are CSS classes defined in
-// css/style.css - gradients, tiled patterns, conic-gradient masks,
-// pseudo-elements, keyframe animations, two image-based items. An earlier
+// The shop's items (js/shop-items.js) are CSS classes defined in
+// css/style.css, each drawn from a picture in assets/shop/. An earlier
 // version tried rasterizing the real DOM (via an SVG <foreignObject>) into
 // an image and drawing *that* onto the canvas - it turns out any <svg>
 // containing a <foreignObject> permanently taints a canvas it's drawn onto,
@@ -321,6 +320,16 @@ function drawBgCosmetic(ctx, cosmetic, x, y, w, h) {
   return null;
 }
 
+// ---- Picture-based cosmetics ----
+// Frames and nickname fills are pictures (assets/shop/), so the computed
+// style carries a url(...) rather than a gradient. Same-origin, so they load
+// straight onto the canvas without tainting it.
+
+function firstUrl(backgroundImage) {
+  const m = /url\(["']?([^"')]+)["']?\)/.exec(backgroundImage || '');
+  return m ? m[1] : null;
+}
+
 // ---- Avatar border ----
 
 function readBorderCosmetic(borderClass) {
@@ -338,6 +347,14 @@ function readBorderCosmetic(borderClass) {
       outlineColor: cs.outlineColor,
       outlineWidth: parseFloat(cs.outlineWidth) || 0,
       conicColors: parseConicColors(afterCs.backgroundImage),
+      // Where the ::after frame picture sits, in px of the 200px probe.
+      frameUrl: firstUrl(afterCs.backgroundImage),
+      frameBox: {
+        left: parseFloat(afterCs.left) || 0,
+        top: parseFloat(afterCs.top) || 0,
+        width: parseFloat(afterCs.width) || 0,
+        height: parseFloat(afterCs.height) || 0,
+      },
     };
   } finally {
     wrap.remove();
@@ -346,6 +363,15 @@ function readBorderCosmetic(borderClass) {
 
 function drawBorderCosmetic(ctx, cosmetic, cx, cy, avatarR) {
   if (!cosmetic) return false;
+
+  // A picture frame: scale the probe's box (measured on a 200px avatar) to
+  // this avatar and draw it around the photo.
+  if (cosmetic.frameImage && cosmetic.frameBox.width) {
+    const k = (avatarR * 2) / 200;
+    const b = cosmetic.frameBox;
+    ctx.drawImage(cosmetic.frameImage, cx - avatarR + b.left * k, cy - avatarR + b.top * k, b.width * k, b.height * k);
+    return true;
+  }
 
   const crisp = cosmetic.shadowLayers.filter((l) => l.blur === 0 && l.spread > 0);
   const glow = cosmetic.shadowLayers.filter((l) => l.blur > 0).sort((a, b) => b.blur - a.blur)[0];
@@ -392,7 +418,7 @@ function drawBorderCosmetic(ctx, cosmetic, cx, cy, avatarR) {
     return true;
   }
 
-  return false; // e.g. the one image-based border (Blue Flame) - caller keeps the plain ring
+  return false;
 }
 
 // ---- Name effect ----
@@ -416,6 +442,7 @@ async function readNameCosmetic(nameClass, displayName) {
       strokeWidth: parseFloat(cs.webkitTextStrokeWidth) || 0,
       strokeColor: cs.webkitTextStrokeColor,
       fontFamily: cs.fontFamily,
+      imageUrl: firstUrl(cs.backgroundImage),
       textDecoration: cs.textDecorationLine,
       decorationColor: cs.textDecorationColor,
     };
@@ -434,7 +461,19 @@ function drawNameCosmetic(ctx, cosmetic, rawText, cx, y, fontPx) {
   const isTransparent = /,\s*0\s*\)$/.test(cosmetic.color) || cosmetic.color === 'transparent';
 
   let fillStyle = null;
-  if (isTransparent && cosmetic.gradient) {
+  if (isTransparent && cosmetic.fillImage) {
+    // The nickname is filled with a picture, stretched over the text's box
+    // the way the stylesheet does it.
+    ctx.font = `700 ${fontPx}px ${cosmetic.fontFamily || FONT}`;
+    const w = Math.max(1, Math.ceil(ctx.measureText(text).width));
+    const h = Math.ceil(fontPx * 1.3);
+    const tile = document.createElement('canvas');
+    tile.width = w;
+    tile.height = h;
+    tile.getContext('2d').drawImage(cosmetic.fillImage, 0, 0, w, h);
+    fillStyle = ctx.createPattern(tile, 'no-repeat');
+    fillStyle.setTransform(new DOMMatrix().translate(cx - w / 2, y - fontPx));
+  } else if (isTransparent && cosmetic.gradient) {
     ctx.font = `700 ${fontPx}px ${cosmetic.fontFamily || FONT}`;
     const w = ctx.measureText(text).width;
     fillStyle =
@@ -453,7 +492,11 @@ function drawNameCosmetic(ctx, cosmetic, rawText, cx, y, fontPx) {
   if ('letterSpacing' in ctx && cosmetic.letterSpacing && parseFloat(cosmetic.letterSpacing)) {
     ctx.letterSpacing = cosmetic.letterSpacing;
   }
-  if (cosmetic.shadow) {
+  if (cosmetic.fillImage) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetY = 1;
+  } else if (cosmetic.shadow) {
     ctx.shadowColor = cosmetic.shadow.color;
     ctx.shadowBlur = cosmetic.shadow.blur;
     ctx.shadowOffsetX = cosmetic.shadow.offsetX;
@@ -515,6 +558,8 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
     Promise.resolve(readBorderCosmetic(borderClassName)),
     readNameCosmetic(nameClassName, profile.displayName),
   ]);
+  if (borderCosmetic?.frameUrl) borderCosmetic.frameImage = await loadImageDirect(borderCosmetic.frameUrl);
+  if (nameCosmetic?.imageUrl) nameCosmetic.fillImage = await loadImageDirect(nameCosmetic.imageUrl);
   const bgCosmeticFallback = !bgCanvas && bgClassName ? readBgCosmetic(bgClassName) : null;
 
   ctx.fillStyle = c.bg;
@@ -571,7 +616,7 @@ export async function renderStatsCard({ profile, lvl, stats, topAchievement }) {
   ctx.font = `700 22px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('S', cx - 118 + markSize / 2, y + 1);
+  ctx.fillText('X', cx - 118 + markSize / 2, y + 1);
 
   withTextShadow(() => {
     ctx.fillStyle = textScheme.text;

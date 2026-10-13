@@ -100,6 +100,7 @@
       itemsByCategory,
       effectClass,
       findItem,
+      rarityOf,
       bundleListPrice,
       bundleMissingListPrice,
       bundlePriceFor,
@@ -224,6 +225,7 @@
         <div class="shop-item-card${equipped ? ' is-equipped' : ''}${owned ? ' is-owned' : ''}">
           ${previewFor(item)}
           <span class="shop-item-name">${escapeHtml(item.label)}</span>
+          <span class="shop-rarity shop-rarity-${rarityOf(item).id}">${rarityOf(item).label}</span>
           ${priceLine}
           ${action}
         </div>

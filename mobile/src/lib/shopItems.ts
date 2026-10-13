@@ -12,67 +12,88 @@ export const SHOP_CATEGORIES = [
 ];
 
 export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'bg-sunset', category: 'bg', label: 'Sunset', price: 50 },
-  { id: 'bg-ocean', category: 'bg', label: 'Ocean', price: 50 },
-  { id: 'bg-midnight', category: 'bg', label: 'Midnight', price: 75 },
-  { id: 'bg-aurora', category: 'bg', label: 'Aurora', price: 150 },
-  { id: 'bg-confetti', category: 'bg', label: 'Confetti', price: 200 },
-  { id: 'bg-blocks', category: 'bg', label: 'Blocks', price: 100 },
   { id: 'bg-paper', category: 'bg', label: 'Paper', price: 40 },
-  { id: 'bg-grid', category: 'bg', label: 'Blueprint', price: 55 },
-  { id: 'bg-sunrise', category: 'bg', label: 'Sunrise', price: 60 },
-  { id: 'bg-forest', category: 'bg', label: 'Deep Forest', price: 70 },
-  { id: 'bg-terminal', category: 'bg', label: 'Terminal', price: 85 },
-  { id: 'bg-halftone', category: 'bg', label: 'Halftone', price: 95 },
-  { id: 'bg-topo', category: 'bg', label: 'Contours', price: 110 },
-  { id: 'bg-vhs', category: 'bg', label: 'VHS', price: 130 },
-  { id: 'bg-starfield', category: 'bg', label: 'Starfield', price: 160 },
-  { id: 'bg-vaporwave', category: 'bg', label: 'Vaporwave', price: 175 },
-  { id: 'bg-static', category: 'bg', label: 'Static', price: 190 },
-  { id: 'bg-lava', category: 'bg', label: 'Lava Lamp', price: 220 },
+  { id: 'bg-sunset', category: 'bg', label: 'Sunset', price: 50 },
   { id: 'bg-paws', category: 'bg', label: 'Paw Prints', price: 70 },
   { id: 'bg-beach', category: 'bg', label: 'Beach Day', price: 80 },
+  { id: 'bg-terminal', category: 'bg', label: 'Terminal', price: 85 },
   { id: 'bg-snow', category: 'bg', label: 'Snowfall', price: 95 },
+  { id: 'bg-vhs', category: 'bg', label: 'VHS', price: 130 },
+  { id: 'bg-aurora', category: 'bg', label: 'Aurora', price: 150 },
 
-  { id: 'border-bronze', category: 'border', label: 'Bronze Ring', price: 30 },
-  { id: 'border-silver', category: 'border', label: 'Silver Ring', price: 60 },
-  { id: 'border-gold', category: 'border', label: 'Gold Ring', price: 120 },
-  { id: 'border-neon', category: 'border', label: 'Neon Glow', price: 150 },
-  { id: 'border-rainbow', category: 'border', label: 'Rainbow Ring', price: 200 },
-  { id: 'border-flame', category: 'border', label: 'Blue Flame', price: 250 },
   { id: 'border-ink', category: 'border', label: 'Ink Ring', price: 20 },
-  { id: 'border-dashed', category: 'border', label: 'Dashed', price: 45 },
   { id: 'border-double', category: 'border', label: 'Double Ring', price: 70 },
-  { id: 'border-emerald', category: 'border', label: 'Emerald', price: 90 },
-  { id: 'border-violet', category: 'border', label: 'Violet', price: 90 },
-  { id: 'border-ember', category: 'border', label: 'Ember', price: 130 },
-  { id: 'border-orbit', category: 'border', label: 'Orbit', price: 190 },
-  { id: 'border-conic', category: 'border', label: 'Spectrum Spin', price: 210 },
-  { id: 'border-glitch', category: 'border', label: 'Glitch', price: 230 },
-  { id: 'border-halo', category: 'border', label: 'Halo', price: 260 },
   { id: 'border-collar', category: 'border', label: 'Dog Collar', price: 90 },
   { id: 'border-sun', category: 'border', label: 'Sunburst', price: 110 },
+  { id: 'border-gold', category: 'border', label: 'Gold Ring', price: 120 },
   { id: 'border-frost', category: 'border', label: 'Frost', price: 120 },
+  { id: 'border-glitch', category: 'border', label: 'Glitch', price: 230 },
+  { id: 'border-flame', category: 'border', label: 'Blue Flame', price: 250 },
 
-  { id: 'name-gradient', category: 'name', label: 'Gradient', price: 40 },
-  { id: 'name-shadow', category: 'name', label: 'Pop Shadow', price: 60 },
-  { id: 'name-glow', category: 'name', label: 'Cyan Glow', price: 80 },
-  { id: 'name-rainbow', category: 'name', label: 'Rainbow', price: 150 },
-  { id: 'name-sparkle', category: 'name', label: 'Sparkle', price: 180 },
-  { id: 'name-oxygene', category: 'name', label: 'Oxygene 1', price: 120 },
   { id: 'name-caps', category: 'name', label: 'Small Caps', price: 25 },
-  { id: 'name-underline', category: 'name', label: 'Underline', price: 35 },
-  { id: 'name-marker', category: 'name', label: 'Highlighter', price: 55 },
-  { id: 'name-emboss', category: 'name', label: 'Emboss', price: 65 },
-  { id: 'name-outline', category: 'name', label: 'Outline', price: 75 },
-  { id: 'name-terminal', category: 'name', label: 'Terminal', price: 90 },
-  { id: 'name-ice', category: 'name', label: 'Ice', price: 130 },
-  { id: 'name-fire', category: 'name', label: 'Fire', price: 140 },
-  { id: 'name-gold', category: 'name', label: 'Gold Leaf', price: 170 },
-  { id: 'name-glitch', category: 'name', label: 'Glitch', price: 200 },
+  { id: 'name-gradient', category: 'name', label: 'Gradient', price: 40 },
   { id: 'name-woof', category: 'name', label: 'Woof', price: 80 },
   { id: 'name-tropic', category: 'name', label: 'Tropical', price: 90 },
+  { id: 'name-terminal', category: 'name', label: 'Terminal', price: 90 },
+  { id: 'name-ice', category: 'name', label: 'Ice', price: 130 },
+  { id: 'name-gold', category: 'name', label: 'Gold Leaf', price: 170 },
+  { id: 'name-glitch', category: 'name', label: 'Glitch', price: 200 },
 ];
+
+// Items that used to be sold and are not any more. They stay in
+// shop_item_defs and in people's owned_items, so nobody loses what they
+// bought, but they are no longer listed - and the CSS for them is gone, so
+// wherever one is equipped it is drawn as the closest current item instead.
+export const RETIRED_ALIASES: Record<string, string> = {
+  'bg-ocean': 'bg-beach',
+  'bg-midnight': 'bg-snow',
+  'bg-confetti': 'bg-sunset',
+  'bg-blocks': 'bg-paper',
+  'bg-grid': 'bg-terminal',
+  'bg-sunrise': 'bg-sunset',
+  'bg-forest': 'bg-terminal',
+  'bg-halftone': 'bg-paper',
+  'bg-topo': 'bg-paper',
+  'bg-starfield': 'bg-snow',
+  'bg-vaporwave': 'bg-vhs',
+  'bg-static': 'bg-vhs',
+  'bg-lava': 'bg-aurora',
+  'border-bronze': 'border-double',
+  'border-silver': 'border-double',
+  'border-neon': 'border-glitch',
+  'border-rainbow': 'border-gold',
+  'border-dashed': 'border-ink',
+  'border-emerald': 'border-gold',
+  'border-violet': 'border-frost',
+  'border-ember': 'border-flame',
+  'border-orbit': 'border-frost',
+  'border-conic': 'border-glitch',
+  'border-halo': 'border-gold',
+  'name-shadow': 'name-caps',
+  'name-glow': 'name-ice',
+  'name-rainbow': 'name-gradient',
+  'name-sparkle': 'name-gold',
+  'name-oxygene': 'name-caps',
+  'name-underline': 'name-caps',
+  'name-marker': 'name-caps',
+  'name-emboss': 'name-caps',
+  'name-outline': 'name-caps',
+  'name-fire': 'name-gold',
+};
+
+// Rarity follows the price, and the artwork follows the rarity: common
+// items are still pictures, rare ones move a little, epic ones are the
+// showpieces. Prices are the real ones in schema.sql, so this can't drift.
+export const RARITIES: { id: 'common' | 'rare' | 'epic'; label: string; max: number }[] = [
+  { id: 'common', label: 'Common', max: 70 },
+  { id: 'rare', label: 'Rare', max: 149 },
+  { id: 'epic', label: 'Epic', max: Infinity },
+];
+
+export function rarityOf(item: ShopItem | number | null) {
+  const price = typeof item === 'number' ? item : item?.price || 0;
+  return RARITIES.find((rarity) => price <= rarity.max)!;
+}
 
 // Sets: one background, one border and one nickname effect drawn to go
 // together, sold for less than the three separately. A set owns no cosmetics
