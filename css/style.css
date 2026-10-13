@@ -242,7 +242,9 @@ textarea {
 
 html,
 body {
-  padding: 0;
+  /* viewport-fit=cover lets the page run under an iPhone's notch in landscape;
+     these keep the content clear of it. Zero everywhere else. */
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
   margin: 0;
 }
 
@@ -2327,7 +2329,8 @@ tbody tr {
   z-index: 60;
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 6px calc(6px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px))
+    calc(6px + env(safe-area-inset-left, 0px));
   align-items: center;
   justify-content: space-around;
 }
