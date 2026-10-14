@@ -87,6 +87,7 @@
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
     import { scrollHint } from '/js/scroll-hint.js';
+    import { getLatestUpdates } from '/js/updates-data.js';
     import { stripMarkdown } from '/js/markdown.js';
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
@@ -116,6 +117,7 @@
     const likeState = new Map(); // projectId -> { liked, count }
     const lastTapAt = new WeakMap(); // card element -> timestamp, for double-tap-to-like
     const commentCounts = new Map(); // projectId -> count
+    const latestUpdates = new Map(); // projectId -> newest changelog entry
     // Unlike the other pages, the feed can't paint levels in afterwards:
     // re-rendering the container would reset the scroll position mid-swipe
     // and detach the dwell observer, so levels are loaded up front instead.
@@ -318,8 +320,12 @@
     }
 
     function peekHtml(project, media) {
-      const { action, meta } = scrollHint(project, media);
-      return `<a class="scroll-peek" href="project.html?id=${encodeURIComponent(project.id)}">
+      const { action, meta, href } = scrollHint(project, media, latestUpdates.get(project.id) || null);
+      // "Try it" leaves for the running project; everything else opens the entry.
+      const target = href
+        ? `href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"`
+        : `href="project.html?id=${encodeURIComponent(project.id)}"`;
+      return `<a class="scroll-peek" ${target}>
         <span class="scroll-peek-action">${escapeHtml(action)}</span>
         ${meta.length ? `<span class="scroll-peek-meta">${escapeHtml(meta.join(' · '))}</span>` : ''}
       </a>`;
@@ -706,12 +712,14 @@
         const profiles = await getProfilesByIds(projects.map((p) => p.uid));
 
         const projectIds = projects.map((p) => p.id);
-        const [likeCounts, commentCountsMap, levels, followingIds] = await Promise.all([
+        const [likeCounts, commentCountsMap, levels, followingIds, updatesMap] = await Promise.all([
           getLikeCounts(projectIds).catch(() => new Map()),
           getCommentCounts(projectIds).catch(() => new Map()),
           getLevelsForUsers(projects.map((p) => p.uid)).catch(() => new Map()),
           currentUser ? getFollowingIds(currentUser.id).catch(() => new Set()) : Promise.resolve(new Set()),
+          getLatestUpdates(projectIds).catch(() => new Map()),
         ]);
+        updatesMap.forEach((update, pid) => latestUpdates.set(pid, update));
         levels.forEach((info, uid) => authorLevels.set(uid, info));
         projectIds.forEach((pid) => {
           likeState.set(pid, { liked: false, count: likeCounts.get(pid) || 0 });

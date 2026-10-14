@@ -744,6 +744,10 @@ begin
       return (select coalesce(unique_viewers, 0) from public.user_reputation where user_id = p_uid);
     when 'comments_received' then
       return (select coalesce(comments_received, 0) from public.user_reputation where user_id = p_uid);
+    when 'releases' then
+      return (select coalesce(releases, 0) from public.user_reputation where user_id = p_uid);
+    when 'demo_projects' then
+      return (select coalesce(demo_projects, 0) from public.user_reputation where user_id = p_uid);
     when 'comment_count' then
       return (select count(*) from public.comments where user_id = p_uid);
     when 'follower_count' then
@@ -879,7 +883,9 @@ insert into public.achievement_defs (id, metric, threshold, reward) values
   ('talked-about', 'comments_received', 25, 80),
   ('collector', 'owned_items_count', 5, 70),
   ('trendsetter', 'stylized', 1, 60),
-  ('all-set', 'profile_complete', 1, 15)
+  ('all-set', 'profile_complete', 1, 15),
+  ('shipper', 'demo_projects', 1, 40),
+  ('maintainer', 'releases', 5, 60)
 on conflict (id) do update set
   metric = excluded.metric,
   threshold = excluded.threshold,
@@ -1446,6 +1452,55 @@ create trigger comments_notify
 
 
 -- ============================================================
+-- Project updates - a project's changelog.
+--
+-- A project is something a person is making, so the useful thing to show
+-- about it is that it is still being made: "v0.3 - added the editor".
+-- Anyone who can see the project can read its updates; only the project's
+-- owner can post one (an admin can remove one). There is no edit - an
+-- update is a dated statement of what shipped, and rewriting it afterwards
+-- would make the history something other than history.
+--
+-- user_id is the owner, and the insert policy checks that against the
+-- project rather than trusting it, the way comments check author_name.
+-- The consent gate for 13-15 year olds is added to the insert policy in the
+-- age section below, with the other tables'.
+-- ============================================================
+create table if not exists public.project_updates (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  version text not null default '' check (char_length(version) <= 24),
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists project_updates_project_idx on public.project_updates (project_id, created_at desc);
+
+alter table public.project_updates enable row level security;
+
+drop policy if exists "Updates are readable if their project is" on public.project_updates;
+create policy "Updates are readable if their project is"
+  on public.project_updates for select
+  using (exists (select 1 from public.projects p where p.id = project_id));
+
+drop policy if exists "Owners can post updates to their projects" on public.project_updates;
+create policy "Owners can post updates to their projects"
+  on public.project_updates for insert
+  with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+  );
+
+drop policy if exists "Update author or admin can delete" on public.project_updates;
+create policy "Update author or admin can delete"
+  on public.project_updates for delete
+  using (
+    auth.uid() = user_id
+    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
+  );
+
+-- ============================================================
 -- Reputation & earnings
 --
 -- XP used to be paid for things you could do to yourself: publishing an
@@ -1465,8 +1520,9 @@ create trigger comments_notify
 -- one place stops the client and the server disagreeing about someone's
 -- level. js/levels.js only turns the xp number into a level.
 --
---   xp      = 25/published entry (first 20 only), 2/unique viewer,
---             30/like, 15/comment received, 60/follower
+--   xp      = 25/published entry (first 20 only), 10/release (first 20
+--             only), 2/unique viewer, 30/like, 15/comment received,
+--             60/follower
 --   points  = 1/unique viewer, 5/like, 3/comment received, 10/follower
 --
 -- Publishing pays XP again - putting something out is the thing this site
@@ -1476,6 +1532,12 @@ create trigger comments_notify
 -- posting rather than a reason to post twenty times. Points are untouched
 -- and still come only from reach - currency stays something other people
 -- decide you've earned.
+--
+-- A release is a project update, counted once per project per day and only
+-- on published entries, and it stops counting after the twentieth - so it
+-- rewards keeping something going, is worth a third of a like, and is
+-- bounded: a script posting updates all day earns the same 200 XP a person
+-- posting twenty real ones does, and nothing beyond it.
 --
 -- Aggregates only, and only over published entries, so this is safe to
 -- expose publicly - it's what draws the leaderboard and every level chip.
@@ -1508,6 +1570,17 @@ commented as (
 followed as (
   select following_id as user_id, count(*) as followers
   from public.follows group by following_id
+),
+released as (
+  select pub.user_id, count(distinct (u.project_id, u.created_at::date)) as releases
+  from pub join public.project_updates u on u.project_id = pub.id
+  group by pub.user_id
+),
+demoed as (
+  select user_id, count(*) as demo_projects
+  from public.projects
+  where published = true and (live_url <> '' or media_url <> '')
+  group by user_id
 )
 select
   p.id as user_id,
@@ -1518,6 +1591,7 @@ select
   coalesce(cm.comments_received, 0)::integer as comments_received,
   coalesce(fl.followers, 0)::integer as followers,
   (least(coalesce(t.published_projects, 0), 20) * 25
+    + least(coalesce(rl.releases, 0), 20) * 10
     + coalesce(vw.unique_viewers, 0) * 2
     + coalesce(lk.likes_received, 0) * 30
     + coalesce(cm.comments_received, 0) * 15
@@ -1525,13 +1599,17 @@ select
   (coalesce(vw.unique_viewers, 0) * 1
     + coalesce(lk.likes_received, 0) * 5
     + coalesce(cm.comments_received, 0) * 3
-    + coalesce(fl.followers, 0) * 10)::integer as lifetime_points
+    + coalesce(fl.followers, 0) * 10)::integer as lifetime_points,
+  coalesce(rl.releases, 0)::integer as releases,
+  coalesce(dm.demo_projects, 0)::integer as demo_projects
 from public.profiles p
 left join totals t on t.user_id = p.id
 left join viewers vw on vw.user_id = p.id
 left join liked lk on lk.user_id = p.id
 left join commented cm on cm.user_id = p.id
-left join followed fl on fl.user_id = p.id;
+left join followed fl on fl.user_id = p.id
+left join released rl on rl.user_id = p.id
+left join demoed dm on dm.user_id = p.id;
 
 grant select on public.user_reputation to anon, authenticated;
 
@@ -1798,7 +1876,8 @@ begin
     ('likes', 'user_id'),
     ('follows', 'follower_id'),
     ('reports', 'reporter_id'),
-    ('saves', 'user_id')
+    ('saves', 'user_id'),
+    ('project_updates', 'user_id')
   ) then
     raise exception 'Not a rate-limited table: %.%', p_table, p_column;
   end if;
@@ -2324,3 +2403,25 @@ create policy "Admins can remove announcement media"
     bucket_id = 'announcements'
     and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
   );
+
+-- ============================================================
+-- Project updates: the consent gate, server-owned created_at, a rate limit
+-- ============================================================
+drop policy if exists "Owners can post updates to their projects" on public.project_updates;
+create policy "Owners can post updates to their projects"
+  on public.project_updates for insert
+  with check (
+    auth.uid() = user_id
+    and public.consent_ok()
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+  );
+
+drop trigger if exists project_updates_pin_created_at on public.project_updates;
+create trigger project_updates_pin_created_at
+  before insert or update on public.project_updates
+  for each row execute function public.pin_created_at();
+
+drop trigger if exists project_updates_rate_limit on public.project_updates;
+create trigger project_updates_rate_limit
+  before insert on public.project_updates
+  for each row execute function public.enforce_rate_limit('10', '1 hour', 'user_id');

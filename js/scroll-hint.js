@@ -1,4 +1,5 @@
 import { stripMarkdown } from './markdown.js';
+import { timeAgo, safeUrl } from './utils.js';
 
 // What a Scrolls card is about to hand you.
 //
@@ -13,12 +14,17 @@ const MIN_WORDS_FOR_READ_TIME = 40;
 
 const IMAGE_IN_BODY = /!\[[^\]]*\]\([^)\s]+/g;
 
-export function scrollHint(project, media) {
+export function scrollHint(project, media, latestUpdate = null) {
   const words = stripMarkdown(project.description || '').split(/\s+/).filter(Boolean).length;
   const meta = [];
+  if (latestUpdate) meta.push(`${latestUpdate.version || 'Updated'} ${timeAgo(latestUpdate.createdAt)}`);
 
+  // A running thing outranks everything else the card could offer: the point
+  // of showing a project is that you can try it.
+  const live = safeUrl(project.liveUrl);
   let action = 'Open';
-  if (media && (media.kind === 'video' || (media.kind === 'iframe' && !media.compact))) action = 'Watch';
+  if (live) action = 'Try it';
+  else if (media && (media.kind === 'video' || (media.kind === 'iframe' && !media.compact))) action = 'Watch';
   else if (media && (media.kind === 'audio' || media.compact)) action = 'Listen';
   else if (words >= MIN_WORDS_FOR_READ_TIME) action = 'Read';
 
@@ -27,8 +33,7 @@ export function scrollHint(project, media) {
   }
   const images = (project.description || '').match(IMAGE_IN_BODY);
   if (images) meta.push(`${images.length} ${images.length === 1 ? 'image' : 'images'}`);
-  if (project.liveUrl) meta.push('Live demo');
   if (project.repoUrl) meta.push('Source code');
 
-  return { action, meta };
+  return { action, meta, href: live || '' };
 }

@@ -12,8 +12,26 @@ import { supabase } from './supabase-init.js';
 // profile card disagreeing with the level on the profile page.
 const VIEW = 'user_reputation';
 
-const COLUMNS =
+const BASE_COLUMNS =
   'user_id, published_projects, total_views, unique_viewers, likes_received, comments_received, followers, xp, lifetime_points';
+const FULL_COLUMNS = `${BASE_COLUMNS}, releases, demo_projects`;
+
+// releases and demo_projects arrived with project updates. A site that has
+// shipped this file before its database has re-run schema.sql would have the
+// whole select rejected for naming a column that is not there yet - and with
+// it every level chip and the leaderboard. So the first rejection that names
+// one of them drops back to the columns that always existed, and stays there.
+let columns = FULL_COLUMNS;
+
+async function selectReputation(build) {
+  const { data, error } = await build(supabase.from(VIEW).select(columns));
+  if (error && columns === FULL_COLUMNS && /releases|demo_projects/.test(error.message)) {
+    columns = BASE_COLUMNS;
+    return selectReputation(build);
+  }
+  if (error) throw new Error(error.message);
+  return data;
+}
 
 export const EMPTY_REPUTATION = {
   userId: '',
@@ -25,6 +43,8 @@ export const EMPTY_REPUTATION = {
   followers: 0,
   xp: 0,
   lifetimePoints: 0,
+  releases: 0,
+  demoProjects: 0,
 };
 
 function toPlainReputation(row) {
@@ -38,13 +58,14 @@ function toPlainReputation(row) {
     followers: row.followers || 0,
     xp: row.xp || 0,
     lifetimePoints: row.lifetime_points || 0,
+    releases: row.releases || 0,
+    demoProjects: row.demo_projects || 0,
   };
 }
 
 export async function getReputation(userId) {
   if (!userId) return { ...EMPTY_REPUTATION };
-  const { data, error } = await supabase.from(VIEW).select(COLUMNS).eq('user_id', userId).maybeSingle();
-  if (error) throw new Error(error.message);
+  const data = await selectReputation((q) => q.eq('user_id', userId).maybeSingle());
   return data ? toPlainReputation(data) : { ...EMPTY_REPUTATION, userId };
 }
 
@@ -56,8 +77,7 @@ export async function getReputations(userIds) {
   const uniqueIds = [...new Set(userIds)].filter(Boolean);
   const map = new Map();
   if (uniqueIds.length === 0) return map;
-  const { data, error } = await supabase.from(VIEW).select(COLUMNS).in('user_id', uniqueIds);
-  if (error) throw new Error(error.message);
+  const data = await selectReputation((q) => q.in('user_id', uniqueIds));
   data.forEach((row) => map.set(row.user_id, toPlainReputation(row)));
   // Accounts with no row yet (nothing published) still get an entry, so
   // callers never have to special-case a missing key.
@@ -70,13 +90,7 @@ export async function getReputations(userIds) {
 // The top of the leaderboard, ranked by the server rather than by pulling
 // every profile and sorting in the browser.
 export async function getTopByXp(limit = 50) {
-  const { data, error } = await supabase
-    .from(VIEW)
-    .select(COLUMNS)
-    .gt('xp', 0)
-    .order('xp', { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
+  const data = await selectReputation((q) => q.gt('xp', 0).order('xp', { ascending: false }).limit(limit));
   return data.map(toPlainReputation);
 }
 

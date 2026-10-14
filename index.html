@@ -104,6 +104,7 @@
     import { getLevelsForUsers } from '/js/levels.js';
     import { getLikeCounts, getLikedSet } from '/js/likes-data.js';
     import { getCommentCounts } from '/js/comments-data.js';
+    import { getLatestUpdates } from '/js/updates-data.js';
     import { getSavedSet } from '/js/saves-data.js';
     import { getFollowingIds } from '/js/follows-data.js';
     import { rankFeed, getSeenIds } from '/js/feed-rank.js';
@@ -135,6 +136,7 @@
       levels: new Map(),
       likeCounts: new Map(),
       commentCounts: new Map(),
+      latestUpdates: new Map(),
       liked: new Set(),
       saved: new Set(),
       followingIds: new Set(),
@@ -215,6 +217,7 @@
             level: state.levels.get(p.uid),
             likeCount: state.likeCounts.get(p.id) || 0,
             commentCount: state.commentCounts.get(p.id) || 0,
+            latestUpdate: state.latestUpdates.get(p.id) || null,
             liked: state.liked.has(p.id),
             saved: state.saved.has(p.id),
           })
@@ -276,15 +279,17 @@
         const ids = projects.map((p) => p.id);
         const authorIds = projects.map((p) => p.uid).concat(user ? [user.id] : []);
 
-        const [profiles, likeCounts, commentCounts, liked, saved, followingIds] = await Promise.all([
+        const [profiles, likeCounts, commentCounts, latestUpdates, liked, saved, followingIds] = await Promise.all([
           getProfilesByIds(authorIds).catch(() => new Map()),
           getLikeCounts(ids).catch(() => new Map()),
           getCommentCounts(ids).catch(() => new Map()),
+          // Absent until schema.sql has added project_updates; cards just omit the line.
+          getLatestUpdates(ids).catch(() => new Map()),
           user ? getLikedSet(user.id, ids).catch(() => new Set()) : new Set(),
           user ? getSavedSet(user.id, ids).catch(() => new Set()) : new Set(),
           user ? getFollowingIds(user.id).catch(() => new Set()) : new Set(),
         ]);
-        Object.assign(state, { profiles, likeCounts, commentCounts, liked, saved, followingIds });
+        Object.assign(state, { profiles, likeCounts, commentCounts, latestUpdates, liked, saved, followingIds });
 
         intro.innerHTML = introHtml(user);
         render();
