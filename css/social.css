@@ -1759,6 +1759,11 @@ textarea:focus {
 
 .profile-card {
   position: relative;
+  /* The avatar row pulls itself up over the cover with a negative margin. Without
+     a block formatting context that margin collapses through the card and drags
+     the card's own background up with it, painting over the bottom third of the
+     banner. flow-root keeps the card where it starts, so only the avatar overlaps. */
+  display: flow-root;
   padding: 0 24px 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
