@@ -63,7 +63,8 @@ jobs:
           # channel named production". Only create it when missing, so a channel
           # someone deliberately re-pointed is left alone.
           if ! npx eas-cli@latest channel:view production --non-interactive >/dev/null 2>&1; then
-            npx eas-cli@latest channel:create production --branch production --non-interactive
+            npx eas-cli@latest channel:create production --non-interactive
+            npx eas-cli@latest channel:edit production --branch production --non-interactive
           fi
 
           npx eas-cli@latest update \
