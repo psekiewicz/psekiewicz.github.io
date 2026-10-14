@@ -57,6 +57,15 @@ jobs:
             echo "::warning::No EXPO_TOKEN secret set - skipping the OTA update."
             exit 0
           fi
+          # An update is published to a *branch*, but installed apps ask for a
+          # *channel*. EAS creates the channel on `eas build`; we build with
+          # Gradle, so without this the manifest endpoint answers 404 "no
+          # channel named production". Only create it when missing, so a channel
+          # someone deliberately re-pointed is left alone.
+          if ! npx eas-cli@latest channel:view production --non-interactive >/dev/null 2>&1; then
+            npx eas-cli@latest channel:create production --branch production --non-interactive
+          fi
+
           npx eas-cli@latest update \
             --branch production \
             --platform android \
