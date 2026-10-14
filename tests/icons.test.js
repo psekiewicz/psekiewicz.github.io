@@ -1,29 +1,51 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
 import { icon } from '../js/icons.js';
 
-test('icon renders a known name with the requested size and stroke width', () => {
-  const svg = icon('heart', { size: 32, strokeWidth: 2 });
-  assert.match(svg, /^<svg /);
-  assert.match(svg, /width="32"/);
-  assert.match(svg, /height="32"/);
-  assert.match(svg, /stroke-width="2"/);
-  assert.match(svg, /<path/);
+test('icon renders an empty masked element with the requested size', () => {
+  const html = icon('heart', { size: 32 });
+  assert.match(html, /^<i class="icon" data-icon="heart"/);
+  assert.match(html, /width:32px;height:32px/);
+  assert.match(html, /aria-hidden="true"/);
+  assert.match(html, /><\/i>$/);
 });
 
-test('icon defaults size to 20 and strokeWidth to 1.8', () => {
-  const svg = icon('star');
-  assert.match(svg, /width="20"/);
-  assert.match(svg, /stroke-width="1.8"/);
+test('icon defaults the size to 20', () => {
+  assert.match(icon('star'), /width:20px;height:20px/);
 });
 
 test('icon appends an extra className when given one', () => {
-  const svg = icon('bell', { className: 'audio-icon-play' });
-  assert.match(svg, /class="icon audio-icon-play"/);
+  assert.match(icon('bell', { className: 'audio-icon-play' }), /class="icon audio-icon-play"/);
 });
 
-test('icon falls back to an empty body for an unknown name rather than throwing', () => {
-  const svg = icon('does-not-exist');
-  assert.match(svg, /^<svg /);
-  assert.equal(/<path|<circle|<rect/.test(svg), false);
+test('icon keeps a name from breaking out of its attribute', () => {
+  const html = icon('x" onload="alert(1)');
+  assert.equal(html.includes('onload'), true); // the letters survive...
+  assert.equal(/data-icon="[^"]*"[^>]*onload/.test(html), false); // ...but never as an attribute
+});
+
+test('every icon the code asks for has a file, and the stylesheet knows it', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  const used = new Set();
+  for (const file of ['../js/bottom-nav.js', '../js/nav.js', '../js/post-card.js', '../js/media.js', '../js/create-sheet.js']) {
+    const src = readFileSync(new URL(file, import.meta.url), 'utf8');
+    for (const m of src.matchAll(/icon\('([a-z0-9-]+)'/g)) used.add(m[1]);
+  }
+  assert.ok(used.size > 5, 'found the icons the code uses');
+  for (const name of used) {
+    assert.ok(existsSync(new URL(`../assets/icons/${name}.svg`, import.meta.url)), `assets/icons/${name}.svg exists`);
+    assert.ok(css.includes(`.icon[data-icon='${name}']`), `the stylesheet has a rule for ${name}`);
+  }
+});
+
+test('the filled twins exist for the icons that have an on state', () => {
+  for (const name of ['heart', 'bookmark', 'star']) {
+    assert.ok(existsSync(new URL(`../assets/icons/${name}-filled.svg`, import.meta.url)), `${name}-filled.svg exists`);
+  }
+});
+
+test('the lock carries its keyhole dot', () => {
+  const svg = readFileSync(new URL('../assets/icons/lock.svg', import.meta.url), 'utf8');
+  assert.match(svg, /M12 16h\.01/);
 });

@@ -633,7 +633,10 @@ textarea:focus {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--color-bg);
+  /* Translucent like the top and bottom bars, so the feed shows through as it
+     scrolls under. */
+  background: var(--navbar-bg);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: 16px 4px 0;
   border-bottom: 1px solid var(--color-border);
@@ -736,7 +739,7 @@ textarea:focus {
   margin: 14px 16px;
   padding: 26px 24px 24px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #d98a4f, var(--color-primary) 48%, #8f4a1e);
+  background: linear-gradient(135deg, #5bb0cf, var(--color-primary) 48%, #12506a);
   color: var(--color-on-accent);
 }
 
@@ -762,7 +765,7 @@ textarea:focus {
 
 .welcome-card p {
   position: relative;
-  color: rgba(253, 247, 234, 0.9);
+  color: rgba(255, 255, 255, 0.9);
   max-width: 44ch;
   margin-bottom: 18px;
 }
@@ -777,9 +780,9 @@ textarea:focus {
 /* Fixed colours: the card is terracotta in both themes, so its buttons can't
    take their text colour from the theme. */
 .welcome-card .btn-primary {
-  background: #fdf7ea;
-  border-color: #fdf7ea;
-  color: #8f4a1e;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #12506a;
 }
 
 .welcome-card .btn-primary:hover {
@@ -789,12 +792,12 @@ textarea:focus {
 
 .welcome-card .btn-secondary {
   background: transparent;
-  border-color: rgba(253, 247, 234, 0.6);
+  border-color: rgba(255, 255, 255, 0.6);
   color: var(--color-on-accent);
 }
 
 .welcome-card .btn-secondary:hover {
-  background: rgba(253, 247, 234, 0.14);
+  background: rgba(255, 255, 255, 0.14);
   border-color: var(--color-on-accent);
   color: var(--color-on-accent);
 }
@@ -993,8 +996,8 @@ textarea:focus {
   top: 12px;
   padding: 5px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(32, 30, 29, 0.62);
-  color: #fdf7ea;
+  background: rgba(25, 23, 19, 0.62);
+  color: #ffffff;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1007,19 +1010,19 @@ textarea:focus {
 /* The app's per-type gradient, behind the image - what shows when an entry
    has no picture or its picture fails to load. */
 .post-media[data-type='music'] {
-  background: linear-gradient(135deg, #d8c9a4, #b9a887 55%, #8f8468);
+  background: linear-gradient(135deg, #d9dde0, #aab3b9 55%, #6f7a80);
 }
 .post-media[data-type='video'] {
-  background: linear-gradient(135deg, #c9d0b3, #6f7a55);
+  background: linear-gradient(135deg, #cfe3ec, #2b7a99);
 }
 .post-media[data-type='image'] {
-  background: linear-gradient(135deg, #e2d0ae, #c67139);
+  background: linear-gradient(135deg, #e3f0f5, #1f7a99);
 }
 .post-media[data-type='app'] {
-  background: linear-gradient(135deg, #e4e7d5, #a6b287);
+  background: linear-gradient(135deg, #eeeeec, #b8b5ae);
 }
 .post-media[data-type='other'] {
-  background: linear-gradient(135deg, #b9a887, #4a4034);
+  background: linear-gradient(135deg, #b8b5ae, #3b3833);
 }
 
 .post-actions {
@@ -1057,16 +1060,16 @@ textarea:focus {
   background: rgba(224, 36, 94, 0.08);
 }
 
-.post-action[data-action='like'][aria-pressed='true'] svg {
-  fill: currentColor;
+.post-action[data-action='like'][aria-pressed='true'] .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-action[data-action='save'][aria-pressed='true'] {
   color: var(--color-accent-deep);
 }
 
-.post-action[data-action='save'][aria-pressed='true'] svg {
-  fill: currentColor;
+.post-action[data-action='save'][aria-pressed='true'] .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-action-spacer {
@@ -1099,7 +1102,7 @@ textarea:focus {
   }
 }
 
-.post-action.is-popping svg {
+.post-action.is-popping .icon {
   animation: post-like-pop 0.3s ease;
 }
 
@@ -1413,7 +1416,7 @@ textarea:focus {
   aspect-ratio: 4 / 5;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  color: #fdf7ea;
+  color: #ffffff;
   animation: fade-in-up 0.35s ease both;
 }
 
@@ -1433,19 +1436,19 @@ textarea:focus {
 }
 
 .tile[data-type='music'] {
-  background: linear-gradient(135deg, #d8c9a4, #b9a887 55%, #8f8468);
+  background: linear-gradient(135deg, #d9dde0, #aab3b9 55%, #6f7a80);
 }
 .tile[data-type='video'] {
-  background: linear-gradient(135deg, #c9d0b3, #6f7a55);
+  background: linear-gradient(135deg, #cfe3ec, #2b7a99);
 }
 .tile[data-type='image'] {
-  background: linear-gradient(135deg, #e2d0ae, #c67139);
+  background: linear-gradient(135deg, #e3f0f5, #1f7a99);
 }
 .tile[data-type='app'] {
-  background: linear-gradient(135deg, #e4e7d5, #a6b287);
+  background: linear-gradient(135deg, #eeeeec, #b8b5ae);
 }
 .tile[data-type='other'] {
-  background: linear-gradient(135deg, #b9a887, #4a4034);
+  background: linear-gradient(135deg, #b8b5ae, #3b3833);
 }
 
 .tile-play {
@@ -1458,8 +1461,8 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(253, 247, 234, 0.92);
-  color: #8f4a1e;
+  background: rgba(255, 255, 255, 0.92);
+  color: #12506a;
 }
 
 .tile-info {
@@ -1558,7 +1561,9 @@ textarea:focus {
   align-items: center;
   gap: 14px;
   padding: 12px 0;
-  background: var(--color-bg);
+  background: var(--navbar-bg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   font-size: 1.15rem;
 }
 
@@ -1653,8 +1658,8 @@ textarea:focus {
   background: rgba(224, 36, 94, 0.08);
 }
 
-.post-actions .like-btn.is-liked svg {
-  fill: currentColor;
+.post-actions .like-btn.is-liked .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-actions .post-action[disabled] {
@@ -1734,7 +1739,7 @@ textarea:focus {
 
 /* Only when nothing is equipped - a shop background class supplies its own. */
 .profile-cover:not([class*='shop-bg-']) {
-  background: linear-gradient(135deg, #d98a4f, var(--color-primary) 50%, #8f4a1e);
+  background: linear-gradient(135deg, #5bb0cf, var(--color-primary) 50%, #12506a);
 }
 
 .profile-cover::after {

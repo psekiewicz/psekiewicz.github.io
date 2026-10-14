@@ -76,39 +76,37 @@
      light-themed even when the page itself is dark. */
   color-scheme: light;
 
-  /* Bloom, the Android app's design system (mobile/src/theme/tokens.ts), so
-     the site and the app read as one product: warm cream ground, cards a
-     shade deeper than the page, terracotta for anything you act on and sage
-     as the quiet second accent. */
-  --color-bg: #fdf7ea;
-  --color-surface: #fffbf3;
-  --color-surface-alt: #f5ead8;
-  --color-border: #efe0c6;
-  --color-border-strong: #e2d0ae;
-  --color-text: #201e1d;
-  --color-text-muted: #5f5852;
-  --color-text-faint: #8b8177;
+  /* The app's palette (mobile/src/theme/tokens.ts), so the site and the app
+     read as one product: white ground, ink type, cards a shade deeper than the
+     page, and a single blue for anything you act on. */
+  --color-bg: #ffffff;
+  --color-surface: #f6f5f3;
+  --color-surface-alt: #ecebe8;
+  --color-border: #e9e8e4;
+  --color-border-strong: #d6d4cf;
+  --color-text: #191713;
+  --color-text-muted: #5c5952;
+  --color-text-faint: #8a867e;
 
-  --color-primary: #c67139;
-  --color-primary-hover: #b2622d;
-  --color-primary-deep: #8f4a1e;
-  --color-primary-soft: #f3e0cf;
-  --color-accent: #7a8a5e;
-  --color-accent-deep: #4e5a38;
-  --color-accent-soft: #e4e7d5;
-  --color-on-accent: #fdf7ea;
+  --color-primary: #1f7a99;
+  --color-primary-hover: #196681;
+  --color-primary-deep: #12506a;
+  --color-primary-soft: #e3f0f5;
+  /* The second accent is ink itself. */
+  --color-accent: #191713;
+  --color-accent-deep: #191713;
+  --color-accent-soft: #efeeec;
+  --color-on-accent: #ffffff;
 
-  /* Orange and blue from the old double-chevron mark; what is left of them is
-     the gradient rule that uses both. The logo itself is plain text colour. */
   --color-brand-orange: #f97316;
   --color-brand-blue: #0ea5e9;
 
   --color-danger: #b3261e;
-  --color-danger-soft: #f7ded9;
-  --color-success: #4e5a38;
-  --color-success-soft: #e4e7d5;
-  --color-muted-soft: #f5ead8;
-  --navbar-bg: rgba(253, 247, 234, 0.92);
+  --color-danger-soft: #fbe6e4;
+  --color-success: #2f7d4f;
+  --color-success-soft: #e1f1e7;
+  --color-muted-soft: #efeeec;
+  --navbar-bg: rgba(255, 255, 255, 0.92);
 
   /* Rounded, as the app is: tight on inputs and chips, soft on cards, full
      pills for buttons. Genuinely round things set 50%/999px themselves. */
@@ -117,11 +115,11 @@
   --radius-lg: 24px;
   --radius-pill: 999px;
 
-  /* Warm, low shadows - cards mostly state their edges with a border and a
+  /* Low shadows - cards mostly state their edges with a border and a
      tint; depth is for menus, sheets and anything hovered. */
-  --shadow-sm: 0 1px 2px rgba(74, 52, 28, 0.06);
-  --shadow-md: 0 6px 18px rgba(74, 52, 28, 0.08);
-  --shadow-lg: 0 18px 44px rgba(74, 52, 28, 0.16);
+  --shadow-sm: 0 1px 2px rgba(25, 23, 19, 0.06);
+  --shadow-md: 0 6px 18px rgba(25, 23, 19, 0.08);
+  --shadow-lg: 0 18px 44px rgba(25, 23, 19, 0.16);
 
   --container: 1120px;
   /* JetBrains Mono, self-hosted (see the @font-face rules above) - the same
@@ -148,31 +146,30 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    /* The app's dark palette: the same warm hues walked down a neutral ramp,
-       accents a step lighter so they hold up on the dark ground. */
-    --color-bg: #1b1917;
-    --color-surface: #25221f;
-    --color-surface-alt: #2e2b25;
-    --color-border: #3b3730;
-    --color-border-strong: #56503f;
-    --color-text: #f9f4ed;
-    --color-text-muted: #c0b6a5;
-    --color-text-faint: #a19786;
+    /* The app's dark palette: ink ground, the blue a step lighter. */
+    --color-bg: #191713;
+    --color-surface: #242220;
+    --color-surface-alt: #33302c;
+    --color-border: #2f2c28;
+    --color-border-strong: #48443e;
+    --color-text: #f6f5f3;
+    --color-text-muted: #b9b5ad;
+    --color-text-faint: #8f8b83;
 
-    --color-primary: #d67f48;
-    --color-primary-hover: #f6a06b;
-    --color-primary-deep: #ffc6a5;
-    --color-primary-soft: #3d2a1c;
-    --color-accent: #8fa073;
-    --color-accent-deep: #ccdbb2;
-    --color-accent-soft: #2f3626;
+    --color-primary: #2a86a8;
+    --color-primary-hover: #3a9bbd;
+    --color-primary-deep: #a9d9ea;
+    --color-primary-soft: #17323c;
+    --color-accent: #f6f5f3;
+    --color-accent-deep: #f6f5f3;
+    --color-accent-soft: #2b2926;
 
     --color-danger: #e5675c;
     --color-danger-soft: #3a211e;
-    --color-success: #8fa073;
-    --color-success-soft: #2f3626;
-    --color-muted-soft: #2e2b25;
-    --navbar-bg: rgba(27, 25, 23, 0.92);
+    --color-success: #6fbf8b;
+    --color-success-soft: #1d3326;
+    --color-muted-soft: #2b2926;
+    --navbar-bg: rgba(25, 23, 19, 0.92);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
@@ -183,31 +180,30 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* The app's dark palette: the same warm hues walked down a neutral ramp,
-     accents a step lighter so they hold up on the dark ground. */
-  --color-bg: #1b1917;
-  --color-surface: #25221f;
-  --color-surface-alt: #2e2b25;
-  --color-border: #3b3730;
-  --color-border-strong: #56503f;
-  --color-text: #f9f4ed;
-  --color-text-muted: #c0b6a5;
-  --color-text-faint: #a19786;
+  /* The app's dark palette: ink ground, the blue a step lighter. */
+  --color-bg: #191713;
+  --color-surface: #242220;
+  --color-surface-alt: #33302c;
+  --color-border: #2f2c28;
+  --color-border-strong: #48443e;
+  --color-text: #f6f5f3;
+  --color-text-muted: #b9b5ad;
+  --color-text-faint: #8f8b83;
 
-  --color-primary: #d67f48;
-  --color-primary-hover: #f6a06b;
-  --color-primary-deep: #ffc6a5;
-  --color-primary-soft: #3d2a1c;
-  --color-accent: #8fa073;
-  --color-accent-deep: #ccdbb2;
-  --color-accent-soft: #2f3626;
+  --color-primary: #2a86a8;
+  --color-primary-hover: #3a9bbd;
+  --color-primary-deep: #a9d9ea;
+  --color-primary-soft: #17323c;
+  --color-accent: #f6f5f3;
+  --color-accent-deep: #f6f5f3;
+  --color-accent-soft: #2b2926;
 
   --color-danger: #e5675c;
   --color-danger-soft: #3a211e;
-  --color-success: #8fa073;
-  --color-success-soft: #2f3626;
-  --color-muted-soft: #2e2b25;
-  --navbar-bg: rgba(27, 25, 23, 0.92);
+  --color-success: #6fbf8b;
+  --color-success-soft: #1d3326;
+  --color-muted-soft: #2b2926;
+  --navbar-bg: rgba(25, 23, 19, 0.92);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
@@ -664,6 +660,11 @@ img {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+  /* The shape is an SVG file (assets/icons/, set per icon in the icons:start
+     block below); the colour is whatever `color` is here. */
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
   /* Every icon reacts to interaction; the rules under "Icon animations"
      below decide how. The overshoot curve is what makes it read as a
      physical press rather than a fade. The global prefers-reduced-motion
@@ -671,6 +672,58 @@ img {
      asked for less movement. */
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* icons:start - written by tools/gen-icons.mjs, do not edit by hand */
+.icon[data-icon='home'] { --icon-outline: url('/assets/icons/home.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='film'] { --icon-outline: url('/assets/icons/film.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='plus'] { --icon-outline: url('/assets/icons/plus.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='grid'] { --icon-outline: url('/assets/icons/grid.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='user'] { --icon-outline: url('/assets/icons/user.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='moon'] { --icon-outline: url('/assets/icons/moon.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='sun'] { --icon-outline: url('/assets/icons/sun.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='x'] { --icon-outline: url('/assets/icons/x.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shield'] { --icon-outline: url('/assets/icons/shield.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shield-check'] { --icon-outline: url('/assets/icons/shield-check.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='folder'] { --icon-outline: url('/assets/icons/folder.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='globe'] { --icon-outline: url('/assets/icons/globe.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='users'] { --icon-outline: url('/assets/icons/users.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='external-link'] { --icon-outline: url('/assets/icons/external-link.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='arrow-left'] { --icon-outline: url('/assets/icons/arrow-left.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='trash'] { --icon-outline: url('/assets/icons/trash.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='eye'] { --icon-outline: url('/assets/icons/eye.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='pencil'] { --icon-outline: url('/assets/icons/pencil.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='search'] { --icon-outline: url('/assets/icons/search.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='smartphone'] { --icon-outline: url('/assets/icons/smartphone.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='gamepad'] { --icon-outline: url('/assets/icons/gamepad.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='palette'] { --icon-outline: url('/assets/icons/palette.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='package'] { --icon-outline: url('/assets/icons/package.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='message-circle'] { --icon-outline: url('/assets/icons/message-circle.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='send'] { --icon-outline: url('/assets/icons/send.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='heart'] { --icon-outline: url('/assets/icons/heart.svg'); --icon-filled: url('/assets/icons/heart-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='code'] { --icon-outline: url('/assets/icons/code.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bar-chart'] { --icon-outline: url('/assets/icons/bar-chart.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='download'] { --icon-outline: url('/assets/icons/download.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='rocket'] { --icon-outline: url('/assets/icons/rocket.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='flame'] { --icon-outline: url('/assets/icons/flame.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='star'] { --icon-outline: url('/assets/icons/star.svg'); --icon-filled: url('/assets/icons/star-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='award'] { --icon-outline: url('/assets/icons/award.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shopping-bag'] { --icon-outline: url('/assets/icons/shopping-bag.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='coin'] { --icon-outline: url('/assets/icons/coin.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='lock'] { --icon-outline: url('/assets/icons/lock.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='check'] { --icon-outline: url('/assets/icons/check.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='music'] { --icon-outline: url('/assets/icons/music.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='image'] { --icon-outline: url('/assets/icons/image.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='play'] { --icon-outline: url('/assets/icons/play.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='settings'] { --icon-outline: url('/assets/icons/settings.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='log-out'] { --icon-outline: url('/assets/icons/log-out.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bell'] { --icon-outline: url('/assets/icons/bell.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bookmark'] { --icon-outline: url('/assets/icons/bookmark.svg'); --icon-filled: url('/assets/icons/bookmark-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='flag'] { --icon-outline: url('/assets/icons/flag.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='share'] { --icon-outline: url('/assets/icons/share.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='pause'] { --icon-outline: url('/assets/icons/pause.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='volume-2'] { --icon-outline: url('/assets/icons/volume-2.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='volume-x'] { --icon-outline: url('/assets/icons/volume-x.svg'); --icon: var(--icon-outline); }
+/* icons:end */
 
 /* ---------- Icon animations ---------- */
 
@@ -2059,7 +2112,7 @@ tbody tr {
 }
 
 .like-btn.is-liked .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 .like-btn[disabled] {
@@ -2509,22 +2562,24 @@ body.has-bottom-nav .scroll-card {
    palette at the top of this file. */
 .scroll-card {
   color-scheme: dark;
-  --color-bg: #1b1917;
-  --color-surface: #25221f;
-  --color-surface-alt: #2e2b25;
-  --color-border: #3b3730;
-  --color-border-strong: #56503f;
-  --color-text: #f9f4ed;
-  --color-text-muted: #c0b6a5;
-  --color-text-faint: #a19786;
-  --color-primary: #d67f48;
-  --color-primary-hover: #f6a06b;
-  --color-primary-deep: #ffc6a5;
-  --color-primary-soft: #3d2a1c;
-  --color-accent: #8fa073;
-  --color-accent-deep: #ccdbb2;
-  --color-accent-soft: #2f3626;
-  --color-muted-soft: #2e2b25;
+  --color-bg: #191713;
+  --color-surface: #242220;
+  --color-surface-alt: #33302c;
+  --color-border: #2f2c28;
+  --color-border-strong: #48443e;
+  --color-text: #f6f5f3;
+  --color-text-muted: #b9b5ad;
+  --color-text-faint: #8f8b83;
+
+  --color-primary: #2a86a8;
+  --color-primary-hover: #3a9bbd;
+  --color-primary-deep: #a9d9ea;
+  --color-primary-soft: #17323c;
+  --color-accent: #f6f5f3;
+  --color-accent-deep: #f6f5f3;
+  --color-accent-soft: #2b2926;
+
+  --color-muted-soft: #2b2926;
   color: var(--color-text);
 }
 
@@ -2705,7 +2760,7 @@ body.has-bottom-nav .scroll-card {
 }
 
 .scroll-rail .like-btn.is-liked .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 /* Saved reads the same way liked does: the icon fills in rather than the
@@ -2715,7 +2770,7 @@ body.has-bottom-nav .scroll-card {
 }
 
 .scroll-rail .save-btn.is-saved .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
   animation: like-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -4755,7 +4810,7 @@ body.sheet-open .bottom-nav {
 }
 
 .btn.is-saved .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 /* ---------- Site-wide motion (js/animations.js) ----------
