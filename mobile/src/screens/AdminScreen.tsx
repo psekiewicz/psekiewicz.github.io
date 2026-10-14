@@ -24,8 +24,10 @@ import {
   unbanUser,
 } from '../data/admin';
 import {
+  Announcement,
   BODY_MAX,
   clearAnnouncements,
+  getActiveAnnouncement,
   publishAnnouncement,
   TITLE_MAX,
 } from '../data/announcements';
@@ -46,6 +48,9 @@ export function AdminScreen({ navigation }: any) {
   const [noticeVideo, setNoticeVideo] = useState('');
   const [noticeHours, setNoticeHours] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
+  // The notice users are seeing right now, if any - so it is plain whether one is out.
+  const [live, setLive] = useState<Announcement | null>(null);
+  const refreshLive = useCallback(async () => setLive(await getActiveAnnouncement()), []);
   // A hidden list stays hidden until you search: typing is a deliberate ask for
   // rows, so matches show, and clearing the box puts the list away again.
   const [hidden, setHidden] = useState({ projects: false, users: false });
@@ -87,6 +92,10 @@ export function AdminScreen({ navigation }: any) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (tab === 'notice') refreshLive();
+  }, [tab, refreshLive]);
 
   if (loading) return <Loading />;
 
@@ -224,6 +233,8 @@ export function AdminScreen({ navigation }: any) {
             setNoticeVideo('');
             setNoticeHours(null);
             setNotice('Notice sent. Users see it the next time they open the app.');
+            Alert.alert('Notice sent', `"${noticeTitle.trim()}" is live for everyone.`);
+            refreshLive();
           } catch (e: any) {
             setError(`${e.message} - notices need the announcements table from schema.sql.`);
           } finally {
@@ -239,6 +250,8 @@ export function AdminScreen({ navigation }: any) {
     try {
       await clearAnnouncements();
       setNotice('Notice withdrawn.');
+      Alert.alert('Notice withdrawn', 'Users will no longer see it.');
+      refreshLive();
     } catch (e: any) {
       setError(e.message);
     }
@@ -332,6 +345,44 @@ export function AdminScreen({ navigation }: any) {
 
       {tab === 'notice' ? (
         <View style={{ padding: space.lg, paddingTop: 0, gap: space.md }}>
+          <View
+            accessibilityRole="summary"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space.md,
+              padding: space.md,
+              borderRadius: radius.md,
+              borderWidth: 1.5,
+              borderColor: live ? colors.success : colors.border,
+              backgroundColor: live ? colors.successSoft : colors.surface,
+            }}
+          >
+            <View
+              style={{
+                paddingVertical: 3,
+                paddingHorizontal: space.sm,
+                borderRadius: radius.pill,
+                backgroundColor: live ? colors.success : colors.borderStrong,
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: live ? '#ffffff' : colors.text }}>
+                {live ? 'LIVE NOW' : 'NOT LIVE'}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: '700', fontSize: 13, color: colors.text }} numberOfLines={2}>
+                {live ? live.title : 'No notice is showing to users.'}
+              </Text>
+              {live ? (
+                <Text style={[typography.small, { color: colors.textMuted }]}>
+                  {live.expiresAt ? `Until ${new Date(live.expiresAt).toLocaleString()}` : 'Until you withdraw it'}
+                  {live.attachments.length ? ` · ${live.attachments.length} file${live.attachments.length === 1 ? '' : 's'}` : ''}
+                </Text>
+              ) : null}
+            </View>
+            {live ? <Button small label="Withdraw" variant="secondary" onPress={withdrawNotice} /> : null}
+          </View>
           <Text style={[typography.small, { color: colors.textMuted }]}>
             Shown once to every user as a popup, the next time they open the app or the site.
           </Text>
@@ -409,7 +460,6 @@ export function AdminScreen({ navigation }: any) {
             disabled={!noticeTitle.trim() || !noticeBody.trim()}
             onPress={confirmNotice}
           />
-          <Button label="Withdraw current notice" variant="secondary" onPress={withdrawNotice} />
         </View>
       ) : tab === 'projects' ? (
         <FlatList

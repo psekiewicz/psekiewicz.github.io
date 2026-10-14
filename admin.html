@@ -96,6 +96,7 @@
           <h2>Notice to everyone</h2>
           <p>Pops up once for every user, on the site and in the app.</p>
         </div>
+        <div id="notice-live" class="notice-live" role="status" aria-live="polite"></div>
         <form id="notice-form" style="display:grid;gap:12px;max-width:640px;margin-bottom:40px;">
           <input type="text" id="notice-title" maxlength="80" placeholder="Title" required />
           <textarea id="notice-body" maxlength="4000" rows="6" placeholder="Message" required></textarea>
@@ -109,8 +110,7 @@
           </label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <button class="btn btn-primary" type="submit" id="notice-send">Send to everyone</button>
-            <button class="btn btn-secondary" type="button" id="notice-withdraw">Withdraw current notice</button>
-            <span id="notice-status" role="status" style="font-size:0.85rem;color:var(--color-text-faint);"></span>
+            <span id="notice-status" class="notice-status" role="status"></span>
           </div>
         </form>
 
@@ -172,7 +172,8 @@
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
     import { adminListReports, adminCloseReports } from '/js/reports-data.js';
     import { icon } from '/js/icons.js';
-    import { publishAnnouncement, clearAnnouncements, uploadAnnouncementFile, discardUploads, FILES_MAX } from '/js/announcements-data.js';
+    import { publishAnnouncement, clearAnnouncements, uploadAnnouncementFile, discardUploads, getActiveAnnouncement, FILES_MAX } from '/js/announcements-data.js';
+    import { showToast } from '/js/toast.js';
     import { attachFormatToolbar } from '/js/format-toolbar.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -519,6 +520,42 @@
     const noticeForm = document.getElementById('notice-form');
     const noticeStatus = document.getElementById('notice-status');
     const noticeSend = document.getElementById('notice-send');
+    const noticeLive = document.getElementById('notice-live');
+
+    function setNoticeStatus(text, kind = '') {
+      noticeStatus.textContent = text;
+      noticeStatus.className = 'notice-status' + (kind ? ' is-' + kind : '');
+    }
+
+    // What users are seeing right now, so it is obvious whether a notice is out.
+    async function renderLive() {
+      const live = await getActiveAnnouncement();
+      if (!live) {
+        noticeLive.className = 'notice-live';
+        noticeLive.innerHTML = '<span class="notice-live-badge is-off">Not live</span><span class="notice-live-text">No notice is showing to users.</span>';
+        return;
+      }
+      const until = live.expiresAt ? 'until ' + new Date(live.expiresAt).toLocaleString() : 'until you withdraw it';
+      const files = live.attachments.length ? ' · ' + live.attachments.length + (live.attachments.length === 1 ? ' file' : ' files') : '';
+      noticeLive.className = 'notice-live is-live';
+      noticeLive.innerHTML =
+        '<span class="notice-live-badge">Live now</span>' +
+        '<span class="notice-live-text"><strong>' + escapeHtml(live.title) + '</strong><small>Showing ' + escapeHtml(until) + escapeHtml(files) + '</small></span>' +
+        '<button class="btn btn-secondary btn-sm" type="button" id="notice-withdraw">Withdraw</button>';
+      document.getElementById('notice-withdraw').addEventListener('click', withdraw);
+    }
+
+    async function withdraw() {
+      try {
+        await clearAnnouncements();
+        setNoticeStatus('Notice withdrawn.', 'ok');
+        showToast({ title: 'Notice withdrawn', body: 'Users will no longer see it.', iconName: 'check', variant: 'notice' });
+      } catch (err) {
+        setNoticeStatus(err.message, 'error');
+      }
+      renderLive();
+    }
+    renderLive();
     const noticeBar = attachFormatToolbar(document.getElementById('notice-body'));
     noticeForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -529,7 +566,7 @@
       const endRaw = document.getElementById('notice-expires').value;
       const expiresAt = endRaw ? new Date(endRaw) : null;
       if (expiresAt && !(expiresAt.getTime() > Date.now())) {
-        noticeStatus.textContent = 'The end time has to be in the future.';
+        setNoticeStatus('The end time has to be in the future.', 'error');
         return;
       }
       const when = expiresAt ? ' until ' + expiresAt.toLocaleString() : '';
@@ -537,7 +574,7 @@
 
       const files = [...document.getElementById('notice-files').files];
       if (files.length > FILES_MAX) {
-        noticeStatus.textContent = 'At most ' + FILES_MAX + ' files.';
+        setNoticeStatus('At most ' + FILES_MAX + ' files.', 'error');
         return;
       }
 
@@ -545,10 +582,10 @@
       const uploaded = [];
       try {
         for (const [i, file] of files.entries()) {
-          noticeStatus.textContent = 'Uploading ' + (i + 1) + ' of ' + files.length + '…';
+          setNoticeStatus('Uploading ' + (i + 1) + ' of ' + files.length + '…');
           uploaded.push(await uploadAnnouncementFile(currentAdminId, file));
         }
-        noticeStatus.textContent = 'Sending…';
+        setNoticeStatus('Sending…');
         await publishAnnouncement(currentAdminId, {
           title,
           body: document.getElementById('notice-body').value,
@@ -557,24 +594,18 @@
         });
         noticeForm.reset();
         noticeBar.reset();
-        noticeStatus.textContent = 'Sent. Users see it the next time they open the site or app.';
+        setNoticeStatus('Sent. Users see it the next time they open the site or app.', 'ok');
+        showToast({ title: 'Notice sent', body: title, iconName: 'check', variant: 'notice', duration: 8000 });
+        await renderLive();
+        noticeLive.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (err) {
         // The files went up before the publish failed: take them down again.
         await discardUploads(uploaded);
-        noticeStatus.textContent = err.message + ' - notices need the announcements table and bucket from schema.sql.';
+        setNoticeStatus(err.message + ' - notices need the announcements table and bucket from schema.sql.', 'error');
       } finally {
         noticeSend.disabled = false;
       }
     });
-    document.getElementById('notice-withdraw').addEventListener('click', async () => {
-      try {
-        await clearAnnouncements();
-        noticeStatus.textContent = 'Notice withdrawn.';
-      } catch (err) {
-        noticeStatus.textContent = err.message;
-      }
-    });
-
     projectSearchInput.addEventListener('input', renderTable);
     userSearchInput.addEventListener('input', renderUsersTable);
     bindToggle(document.getElementById('users-toggle'), 'users', renderUsersTable);
