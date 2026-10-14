@@ -197,20 +197,26 @@ export function ProfileScreen({ route, navigation }: any) {
   // the avatar hanging below it. The equipped background cosmetic still wears
   // it - which wrapper is used is the only thing that differs, per the
   // background being an image.
+  // The soft circle belongs to the plain band only. A picture brings its own
+  // sky, and the circle read as a smudge on it (the site drops it too).
+  const hasCosmeticBg = !!profile?.equippedBg && profile.equippedBg !== 'none';
+
   const headerContent = (
     <>
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -70,
-          right: -40,
-          width: 170,
-          height: 170,
-          borderRadius: radius.pill,
-          backgroundColor: 'rgba(31,122,153,0.34)',
-        }}
-      />
+      {hasCosmeticBg ? null : (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -70,
+            right: -40,
+            width: 170,
+            height: 170,
+            borderRadius: radius.pill,
+            backgroundColor: 'rgba(31,122,153,0.34)',
+          }}
+        />
+      )}
       {isSelf ? (
         <View
           style={{
@@ -278,7 +284,9 @@ export function ProfileScreen({ route, navigation }: any) {
         data={tab === 'posts' ? padRow(projects, tileColumns) : []}
         numColumns={tileColumns}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
-        keyExtractor={(item) => item.id}
+        // padRow adds null placeholders to fill the last row, so the key has to
+        // cope with them - an odd number of posts used to crash here.
+        keyExtractor={(item, index) => (item ? item.id : `pad-${index}`)}
         contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
         refreshControl={
           <RefreshControl
@@ -297,7 +305,7 @@ export function ProfileScreen({ route, navigation }: any) {
           <View>
             {/* The equipped background, drawn by CosmeticBackground so it is
                 the same picture the web draws. `none` falls through to Bloom's own terracotta band. */}
-            {profile?.equippedBg && profile.equippedBg !== 'none' ? (
+            {hasCosmeticBg ? (
               <CosmeticBackground itemId={profile.equippedBg} style={headerStyle}>
                 {headerContent}
               </CosmeticBackground>
