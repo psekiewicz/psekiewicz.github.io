@@ -79,8 +79,8 @@ function page(doc) {
   <link rel="stylesheet" href="/css/social.css" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#fdf7ea" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#1b1917" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#191713" media="(prefers-color-scheme: dark)" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 </head>
 <body>
