@@ -49,3 +49,12 @@ test('the lock carries its keyhole dot', () => {
   const svg = readFileSync(new URL('../assets/icons/lock.svg', import.meta.url), 'utf8');
   assert.match(svg, /M12 16h\.01/);
 });
+
+test('the shapes written for the app keep their attributes (a line needs its coordinates)', () => {
+  const src = readFileSync(new URL('../mobile/src/components/iconShapes.ts', import.meta.url), 'utf8');
+  assert.equal(/\{\s*\}/.test(src), false, 'no element is left without attributes');
+  for (const m of src.matchAll(/"line",\s*\{([^}]*)\}/g)) {
+    for (const key of ['x1', 'y1', 'x2', 'y2']) assert.ok(m[1].includes(`"${key}"`), `a line has ${key}`);
+  }
+  assert.match(src, /"lock":/);
+});
