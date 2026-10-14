@@ -41,6 +41,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A wedged Gradle daemon otherwise holds the runner for the 6h default.
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: mobile
@@ -162,6 +164,12 @@ jobs:
             echo "SHOWCASE_KEY_ALIAS=$key_alias"
             echo "SHOWCASE_KEY_PASSWORD=$key_password"
           } >> android/gradle.properties
+
+          # prebuild sets MaxMetaspaceSize=512m, which the release build
+          # outgrew once expo-updates joined: the daemon loops on
+          # `OutOfMemoryError: Metaspace` and never finishes. A later
+          # duplicate key wins, so override it here rather than in app.json.
+          echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g" >> android/gradle.properties
 
       # Everything from here is the release build, so it is main-only. See the
       # note at the top of the file.
