@@ -664,6 +664,11 @@ img {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+  /* The shape is an SVG file (assets/icons/, set per icon in the icons:start
+     block below); the colour is whatever `color` is here. */
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
   /* Every icon reacts to interaction; the rules under "Icon animations"
      below decide how. The overshoot curve is what makes it read as a
      physical press rather than a fade. The global prefers-reduced-motion
@@ -671,6 +676,58 @@ img {
      asked for less movement. */
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* icons:start - written by tools/gen-icons.mjs, do not edit by hand */
+.icon[data-icon='home'] { --icon-outline: url('/assets/icons/home.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='film'] { --icon-outline: url('/assets/icons/film.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='plus'] { --icon-outline: url('/assets/icons/plus.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='grid'] { --icon-outline: url('/assets/icons/grid.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='user'] { --icon-outline: url('/assets/icons/user.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='moon'] { --icon-outline: url('/assets/icons/moon.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='sun'] { --icon-outline: url('/assets/icons/sun.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='x'] { --icon-outline: url('/assets/icons/x.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shield'] { --icon-outline: url('/assets/icons/shield.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shield-check'] { --icon-outline: url('/assets/icons/shield-check.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='folder'] { --icon-outline: url('/assets/icons/folder.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='globe'] { --icon-outline: url('/assets/icons/globe.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='users'] { --icon-outline: url('/assets/icons/users.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='external-link'] { --icon-outline: url('/assets/icons/external-link.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='arrow-left'] { --icon-outline: url('/assets/icons/arrow-left.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='trash'] { --icon-outline: url('/assets/icons/trash.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='eye'] { --icon-outline: url('/assets/icons/eye.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='pencil'] { --icon-outline: url('/assets/icons/pencil.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='search'] { --icon-outline: url('/assets/icons/search.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='smartphone'] { --icon-outline: url('/assets/icons/smartphone.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='gamepad'] { --icon-outline: url('/assets/icons/gamepad.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='palette'] { --icon-outline: url('/assets/icons/palette.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='package'] { --icon-outline: url('/assets/icons/package.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='message-circle'] { --icon-outline: url('/assets/icons/message-circle.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='send'] { --icon-outline: url('/assets/icons/send.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='heart'] { --icon-outline: url('/assets/icons/heart.svg'); --icon-filled: url('/assets/icons/heart-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='code'] { --icon-outline: url('/assets/icons/code.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bar-chart'] { --icon-outline: url('/assets/icons/bar-chart.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='download'] { --icon-outline: url('/assets/icons/download.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='rocket'] { --icon-outline: url('/assets/icons/rocket.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='flame'] { --icon-outline: url('/assets/icons/flame.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='star'] { --icon-outline: url('/assets/icons/star.svg'); --icon-filled: url('/assets/icons/star-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='award'] { --icon-outline: url('/assets/icons/award.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='shopping-bag'] { --icon-outline: url('/assets/icons/shopping-bag.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='coin'] { --icon-outline: url('/assets/icons/coin.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='lock'] { --icon-outline: url('/assets/icons/lock.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='check'] { --icon-outline: url('/assets/icons/check.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='music'] { --icon-outline: url('/assets/icons/music.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='image'] { --icon-outline: url('/assets/icons/image.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='play'] { --icon-outline: url('/assets/icons/play.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='settings'] { --icon-outline: url('/assets/icons/settings.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='log-out'] { --icon-outline: url('/assets/icons/log-out.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bell'] { --icon-outline: url('/assets/icons/bell.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='bookmark'] { --icon-outline: url('/assets/icons/bookmark.svg'); --icon-filled: url('/assets/icons/bookmark-filled.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='flag'] { --icon-outline: url('/assets/icons/flag.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='share'] { --icon-outline: url('/assets/icons/share.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='pause'] { --icon-outline: url('/assets/icons/pause.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='volume-2'] { --icon-outline: url('/assets/icons/volume-2.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='volume-x'] { --icon-outline: url('/assets/icons/volume-x.svg'); --icon: var(--icon-outline); }
+/* icons:end */
 
 /* ---------- Icon animations ---------- */
 
@@ -2059,7 +2116,7 @@ tbody tr {
 }
 
 .like-btn.is-liked .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 .like-btn[disabled] {
@@ -2705,7 +2762,7 @@ body.has-bottom-nav .scroll-card {
 }
 
 .scroll-rail .like-btn.is-liked .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 /* Saved reads the same way liked does: the icon fills in rather than the
@@ -2715,7 +2772,7 @@ body.has-bottom-nav .scroll-card {
 }
 
 .scroll-rail .save-btn.is-saved .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
   animation: like-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -4755,7 +4812,7 @@ body.sheet-open .bottom-nav {
 }
 
 .btn.is-saved .icon {
-  fill: currentColor;
+  --icon: var(--icon-filled);
 }
 
 /* ---------- Site-wide motion (js/animations.js) ----------

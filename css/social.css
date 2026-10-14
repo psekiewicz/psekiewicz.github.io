@@ -1057,16 +1057,16 @@ textarea:focus {
   background: rgba(224, 36, 94, 0.08);
 }
 
-.post-action[data-action='like'][aria-pressed='true'] svg {
-  fill: currentColor;
+.post-action[data-action='like'][aria-pressed='true'] .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-action[data-action='save'][aria-pressed='true'] {
   color: var(--color-accent-deep);
 }
 
-.post-action[data-action='save'][aria-pressed='true'] svg {
-  fill: currentColor;
+.post-action[data-action='save'][aria-pressed='true'] .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-action-spacer {
@@ -1099,7 +1099,7 @@ textarea:focus {
   }
 }
 
-.post-action.is-popping svg {
+.post-action.is-popping .icon {
   animation: post-like-pop 0.3s ease;
 }
 
@@ -1653,8 +1653,8 @@ textarea:focus {
   background: rgba(224, 36, 94, 0.08);
 }
 
-.post-actions .like-btn.is-liked svg {
-  fill: currentColor;
+.post-actions .like-btn.is-liked .icon {
+  --icon: var(--icon-filled);
 }
 
 .post-actions .post-action[disabled] {
