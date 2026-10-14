@@ -1220,6 +1220,7 @@ textarea:focus {
 
 .rail-more {
   display: block;
+  color: var(--color-primary-hover);
   padding: 10px 18px 8px;
   font-size: 0.9rem;
   font-weight: 600;

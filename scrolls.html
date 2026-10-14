@@ -86,6 +86,7 @@
     import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, avatarHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { scrollHint } from '/js/scroll-hint.js';
     import { stripMarkdown } from '/js/markdown.js';
     import { icon } from '/js/icons.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
@@ -299,6 +300,31 @@
       `;
     }
 
+    // A post with no picture is its words, so show a real stretch of them
+    // rather than the one-line teaser a picture card gets.
+    function captionFor(project, textOnly) {
+      const body = stripMarkdown(project.description || '').replace(/\s+/g, ' ').trim();
+      if (!textOnly) return project.summary || body.slice(0, 140);
+      const text = body.length > (project.summary || '').length ? body : project.summary;
+      return text.length > 420 ? `${text.slice(0, 420).replace(/\s+\S*$/, '')}…` : text;
+    }
+
+    // A steady colour per entry, so a feed of text cards is told apart by more
+    // than the words and the same card keeps its colour on every visit.
+    function hueFor(id) {
+      let h = 0;
+      for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360;
+      return h;
+    }
+
+    function peekHtml(project, media) {
+      const { action, meta } = scrollHint(project, media);
+      return `<a class="scroll-peek" href="project.html?id=${encodeURIComponent(project.id)}">
+        <span class="scroll-peek-action">${escapeHtml(action)}</span>
+        ${meta.length ? `<span class="scroll-peek-meta">${escapeHtml(meta.join(' · '))}</span>` : ''}
+      </a>`;
+    }
+
     function scrollCard(project, profiles) {
       // The media itself is the card wherever it can be played; the image
       // is the fallback, and initials the fallback for that.
@@ -310,11 +336,21 @@
       // to load removes itself and the card falls back to them instead of
       // going blank.
       const initials = `<div class="scroll-empty-icon" style="position:absolute;inset:0 0 40% 0;display:flex;align-items:center;justify-content:center;">${escapeHtml(project.title.slice(0, 2).toUpperCase())}</div>`;
+      // Three kinds of card get three layouts, because a layout built around a
+      // picture with a caption on it leaves everything else looking empty: a
+      // post that is only words becomes a typographic card, and an audio
+      // post gets its artwork and player instead of a small bar on black.
+      const textOnly = !media && !hasImage;
+      const audioLike = Boolean(media && (media.kind === 'audio' || media.compact));
+      const art =
+        audioLike && cardImage
+          ? `<img class="scroll-audio-art" src="${escapeHtml(safeUrl(cardImage))}" alt="" onerror="this.remove()" />`
+          : '';
       const bg = media
-        ? `<div class="scroll-card-media">${mediaHtml(project.mediaUrl, { inline: true, typeHint: project.type })}</div>`
+        ? `<div class="scroll-card-media">${art}${mediaHtml(project.mediaUrl, { inline: true, typeHint: project.type })}</div>`
         : hasImage
         ? `${initials}<img class="scroll-card-bg" src="${escapeHtml(safeUrl(cardImage))}" alt="" onerror="this.closest('.scroll-card').classList.remove('has-image'); this.remove();" />`
-        : initials;
+        : '';
 
       const tags = project.tags.slice(0, 5).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
       const authorProfile = profiles.get(project.uid);
@@ -336,7 +372,7 @@
           : '';
 
       return `
-        <section class="scroll-card${hasImage || media ? ' has-image' : ''}${media ? ' has-media' : ''}" data-card-project-id="${escapeHtml(project.id)}">
+        <section class="scroll-card${hasImage || media ? ' has-image' : ''}${media ? ' has-media' : ''}${textOnly ? ' is-text' : ''}${audioLike ? ' is-audio' : ''}" style="--scroll-hue:${hueFor(project.id)}" data-card-project-id="${escapeHtml(project.id)}">
           ${bg}
           ${muteButton}
           <div class="scroll-content">
@@ -346,8 +382,9 @@
               ${authorLevels.get(project.uid) ? levelChipHtml(authorLevels.get(project.uid).level, 'sm') : ''}
             </a>
             <h2>${escapeHtml(project.title)}</h2>
-            <p>${escapeHtml(project.summary || stripMarkdown(project.description).slice(0, 140))}</p>
+            <p>${escapeHtml(captionFor(project, textOnly))}</p>
             <div class="tag-list">${typeBadgeHtml(project.type)}${tags}</div>
+            ${peekHtml(project, media)}
           </div>
           ${rail}
         </section>
