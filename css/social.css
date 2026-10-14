@@ -633,7 +633,10 @@ textarea:focus {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--color-bg);
+  /* Translucent like the top and bottom bars, so the feed shows through as it
+     scrolls under. */
+  background: var(--navbar-bg);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: 16px 4px 0;
   border-bottom: 1px solid var(--color-border);
@@ -1558,7 +1561,9 @@ textarea:focus {
   align-items: center;
   gap: 14px;
   padding: 12px 0;
-  background: var(--color-bg);
+  background: var(--navbar-bg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   font-size: 1.15rem;
 }
 
