@@ -278,7 +278,9 @@ export function ProfileScreen({ route, navigation }: any) {
         data={tab === 'posts' ? padRow(projects, tileColumns) : []}
         numColumns={tileColumns}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: gutter }}
-        keyExtractor={(item) => item.id}
+        // padRow adds null placeholders to fill the last row, so the key has to
+        // cope with them - an odd number of posts used to crash here.
+        keyExtractor={(item, index) => (item ? item.id : `pad-${index}`)}
         contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
         refreshControl={
           <RefreshControl
