@@ -68,3 +68,8 @@ test('timeAgo buckets recent timestamps into just now/minutes/hours/days', () =>
   assert.equal(timeAgo(new Date(now - 3 * 3_600_000).toISOString()), '3h ago');
   assert.equal(timeAgo(new Date(now - 2 * 86_400_000).toISOString()), '2d ago');
 });
+
+test('timeAgo shows older posts as an unambiguous day-month-year date', () => {
+  const old = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  assert.match(timeAgo(old), /^\d{1,2} [A-Z][a-z]{2} \d{4}$/);
+});

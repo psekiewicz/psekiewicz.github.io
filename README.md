@@ -10,7 +10,7 @@ GitHub Pages only serves static files - there's no server to run session logic, 
 
 ## One-time setup (required before login will work)
 
-The site is fully built, but it's pointed at a placeholder Supabase project. Until you complete these steps, register/login will fail.
+The site is fully built. The repo ships with the config of the live XOXD Supabase project; to run your own copy, complete these steps and swap in your own values (until then your copy talks to the XOXD project, not yours).
 
 1. **Create a Supabase project** - go to [supabase.com/dashboard](https://supabase.com/dashboard), click "New project" (the free tier is enough for this).
 2. **Create the database tables and security policies** - open the project's *SQL Editor*, paste in everything from [`schema.sql`](./schema.sql) in this repo, and click **Run**. This creates the `projects`, `profiles`, `follows`, `comments`, `likes`, and `project_views` tables and the RLS policies that actually enforce ownership (only you can edit/delete your projects), draft privacy (only you can see your unpublished projects), "you can only follow/unfollow as yourself", "anyone signed in can comment, but only the comment's author, the project's owner, or an admin can delete it", "anyone signed in can like/unlike as themselves", and "only a project's owner (or an admin) can read its raw view log" - it's not optional. The whole file is safe to re-run any time you pull an update that adds to it.
