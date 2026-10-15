@@ -14,7 +14,7 @@ import { Avatar } from './ui';
 
 // The conversation under a post, in the page rather than in a sheet - the way
 // the website's post page has it: a box to write in, then the comments. The
-// data handling is the same as CommentsSheet's, which Scrolls still uses.
+// data handling lives here only.
 
 type Props = {
   projectId: string;

@@ -8,7 +8,7 @@ const { scrollImageFor } = await import('../js/scroll-styles.js');
 
 const body = 'Intro\n\n![a chart](https://example.com/chart.png)\n\nMore text';
 
-test('Scrolls prefers its own image, then the cover, then the first picture in the post', () => {
+test('the full-screen card prefers its own image, then the cover, then the first picture in the post', () => {
   assert.equal(
     scrollImageFor({ scrollImageUrl: 'https://example.com/s.png', imageUrl: 'https://example.com/c.png', description: body }),
     'https://example.com/s.png',
@@ -20,7 +20,7 @@ test('Scrolls prefers its own image, then the cover, then the first picture in t
   assert.equal(scrollImageFor({ scrollImageUrl: '', imageUrl: '', description: body }), 'https://example.com/chart.png');
 });
 
-test('a post with no picture anywhere gets no Scrolls image, so the card falls back to initials', () => {
+test('a post with no picture anywhere gets no full-screen image, so the card falls back to its colour', () => {
   assert.equal(scrollImageFor({ scrollImageUrl: '', imageUrl: '', description: 'just words' }), '');
   assert.equal(scrollImageFor({ scrollImageUrl: '', imageUrl: '', description: '' }), '');
 });

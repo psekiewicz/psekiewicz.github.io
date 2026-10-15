@@ -63,6 +63,26 @@ export async function getPublishedProjects({ limit = FEED_PAGE_SIZE, before } = 
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Demos: published entries with somewhere to try them (a live URL), newest
+// first, keyset-paged the same way as the feed. A page is small because each
+// card is a full screen; demos.html asks for the next one while there are
+// still a few left to watch. Kept identical to mobile/src/data/projects.ts.
+export const DEMOS_PAGE_SIZE = 12;
+
+export async function getDemoProjects({ limit = DEMOS_PAGE_SIZE, before } = {}) {
+  let query = supabase
+    .from(TABLE)
+    .select('*')
+    .eq('published', true)
+    .neq('live_url', '')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (before) query = query.lt('created_at', before);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
+}
+
 // Row count only - `head: true` means Postgres never sends the rows
 // themselves, just the count PostgREST computes for pagination headers.
 export async function getPublishedProjectCount() {

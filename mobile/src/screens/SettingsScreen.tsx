@@ -144,7 +144,7 @@ export function SettingsScreen({ navigation }: any) {
     setResettingHistory(true);
     try {
       await clearSeenIds();
-      setNotice('Scrolls history cleared - already-seen entries can resurface again.');
+      setNotice('Feed history cleared - already-seen entries can resurface again.');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -275,13 +275,13 @@ export function SettingsScreen({ navigation }: any) {
       </View>
 
       <Card>
-        <Eyebrow>Scrolls</Eyebrow>
+        <Eyebrow>Feed</Eyebrow>
         <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
-          Scrolls remembers what you've already swiped past for a few days, so it doesn't repeat
-          itself. Clearing that lets everything come back up sooner.
+          The home feed remembers what you've already watched in Demos for a few days, so it
+          doesn't keep putting it first. Clearing that lets everything come back up sooner.
         </Text>
         <Button
-          label="Reset Scrolls history"
+          label="Reset feed history"
           variant="secondary"
           onPress={resetHistory}
           loading={resettingHistory}

@@ -86,6 +86,26 @@ export async function getPublishedProjects(
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Demos: published entries with somewhere to try them (a live URL), newest
+// first, keyset-paged like the feed. Kept identical to js/projects-data.js.
+export const DEMOS_PAGE_SIZE = 12;
+
+export async function getDemoProjects(
+  { limit = DEMOS_PAGE_SIZE, before }: { limit?: number; before?: string } = {}
+) {
+  let query = supabase
+    .from(TABLE)
+    .select('*')
+    .eq('published', true)
+    .neq('live_url', '')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (before) query = query.lt('created_at', before);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
+}
+
 export async function getPublishedProjectsByUser(uid: string) {
   const { data, error } = await supabase
     .from(TABLE)

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Project } from '../data/projects';
 
-// Ranking for the Scrolls feed, ported from js/feed-rank.js. Scores by
+// Ranking for the home feed, ported from js/feed-rank.js. Scores by
 // engagement, decays with age, personalises a little, and deliberately injects
 // randomness so the feed differs between visits.
 //
@@ -72,7 +72,7 @@ export function markSeen(projectId: string) {
   }
 }
 
-// Settings' "Reset Scrolls history" - lets already-seen entries surface
+// Settings' "Reset feed history" - lets already-seen entries surface
 // again immediately instead of waiting out the TTL above.
 export async function clearSeenIds() {
   seenCache = {};

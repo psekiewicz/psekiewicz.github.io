@@ -20,7 +20,7 @@ export async function isSaved(userId, projectId) {
 }
 
 // Which of these entries the user has saved - one round trip for a whole
-// feed, so the Scrolls rail can paint its filled/hollow state in one go.
+// feed, so a list of entries can paint its filled/hollow state in one go.
 export async function getSavedSet(userId, projectIds) {
   const uniqueIds = [...new Set(projectIds)].filter(Boolean);
   if (!userId || uniqueIds.length === 0) return new Set();

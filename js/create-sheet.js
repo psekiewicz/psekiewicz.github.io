@@ -68,14 +68,14 @@ function fieldsHtml() {
       </div>
 
       <details class="sheet-details">
-        <summary>${icon('film', { size: 15 })} Customize Scrolls page</summary>
-        <p class="hint">Scrolls shows your project full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it.</p>
+        <summary>${icon('rocket', { size: 15 })} Full-screen image</summary>
+        <p class="hint">Demos shows an entry with a live link full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it.</p>
         <div class="field">
-          <label for="sheet-scroll-image">Scrolls image URL</label>
+          <label for="sheet-scroll-image">Full-screen image URL</label>
           <input type="url" id="sheet-scroll-image" placeholder="https://… (portrait works best)" />
         </div>
         <div class="scroll-preview" id="sheet-scroll-preview">
-          <span class="scroll-preview-label">Scrolls preview</span>
+          <span class="scroll-preview-label">Full-screen preview</span>
         </div>
       </details>
 

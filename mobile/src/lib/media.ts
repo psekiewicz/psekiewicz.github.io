@@ -161,10 +161,26 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
 }
 
 /** YouTube publishes a still at a predictable path; nothing else here does. */
+// Clips uploaded here (lib/upload.ts, js/uploads-data.js) have a still saved
+// beside them as <name>.poster.webp. Kept identical to uploadedPosterFor in
+// js/media.js.
+const UPLOADED_CLIP = /\/storage\/v1\/object\/public\/uploads\/[^?#]+\.(mp4|webm)$/i;
+
+export function uploadedPosterFor(src: string) {
+  try {
+    const url = new URL(src);
+    if (!/^https?:$/.test(url.protocol) || !UPLOADED_CLIP.test(url.pathname)) return '';
+    return `${url.origin}${url.pathname.replace(/\.(mp4|webm)$/i, '.poster.webp')}`;
+  } catch {
+    return '';
+  }
+}
+
 export function posterFor(url: string) {
   const media = resolveMedia(url);
   if (!media) return null;
   if (media.kind === 'image') return media.url;
+  if (media.kind === 'video') return uploadedPosterFor(media.url) || null;
   if (media.kind === 'provider' && media.provider === 'youtube' && media.id) {
     return `https://i.ytimg.com/vi/${media.id}/hqdefault.jpg`;
   }

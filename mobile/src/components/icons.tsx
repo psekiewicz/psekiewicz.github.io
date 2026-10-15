@@ -21,7 +21,7 @@ export type IconName =
   | 'sun'
   | 'settings'
   | 'home'
-  | 'scrolls'
+  | 'demos'
   | 'plus'
   | 'back'
   | 'chevron-down'

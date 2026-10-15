@@ -1,4 +1,4 @@
-// Ranking for the Scrolls feed. Chronological order meant a good project
+// Ranking for the home feed. Chronological order meant a good project
 // was buried within a day and every visit showed the same thing in the same
 // order; this scores by engagement, decays with age, personalises a little,
 // and deliberately injects randomness so the feed differs between visits.

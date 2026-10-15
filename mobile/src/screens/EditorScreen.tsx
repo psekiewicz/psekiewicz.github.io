@@ -373,7 +373,7 @@ export function EditorScreen({ route, navigation }: any) {
   const [tags, setTags] = useState<string[]>([]);
   const [projectType, setProjectType] = useState('other');
   const [published, setPublished] = useState(false);
-  // Cover, scrolls image, live URL and repository URL. Opens automatically
+  // Cover, full-screen image, live URL and repository URL. Opens automatically
   // when editing an entry that already has one, so nothing is hidden from its
   // owner.
   const [showMore, setShowMore] = useState(false);
@@ -615,8 +615,8 @@ export function EditorScreen({ route, navigation }: any) {
               upload="cover"
             />
             <LinkRow
-              icon="scrolls"
-              label="Scrolls"
+              icon="demos"
+              label="Full-screen"
               value={scrollImageUrl}
               onChangeText={setScrollImageUrl}
               colors={colors}

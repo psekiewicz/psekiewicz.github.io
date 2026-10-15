@@ -24,7 +24,7 @@ import { radius } from '../theme/tokens';
 
 const ICONS: Record<string, IconName> = {
   Home: 'home',
-  Scrolls: 'scrolls',
+  Demos: 'demos',
   Dashboard: 'chart',
   Profile: 'user',
 };
@@ -34,13 +34,13 @@ export function BloomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { scale, onPressIn, onPressOut } = usePressScale(0.9);
 
-  // Scrolls is full-bleed dark in both themes, so the bar goes dark with it
+  // Demos is full-bleed dark in both themes, so the bar goes dark with it
   // rather than drawing a cream strip under a black video.
-  const onScrolls = state.routes[state.index]?.name === 'Scrolls';
-  const bg = onScrolls ? colors.scrollsBg : colors.bg;
-  const idle = onScrolls ? 'rgba(255,255,255,0.6)' : colors.textFaint;
-  const active = onScrolls ? '#ffffff' : colors.primary;
-  const line = onScrolls ? 'rgba(255,255,255,0.16)' : colors.border;
+  const onDemos = state.routes[state.index]?.name === 'Demos';
+  const bg = onDemos ? colors.feedBg : colors.bg;
+  const idle = onDemos ? 'rgba(255,255,255,0.6)' : colors.textFaint;
+  const active = onDemos ? '#ffffff' : colors.primary;
+  const line = onDemos ? 'rgba(255,255,255,0.16)' : colors.border;
 
   const go = (route: any, isFocused: boolean) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });

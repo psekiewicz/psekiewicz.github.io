@@ -17,6 +17,21 @@ const AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac)(\?.*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
 const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|svg|bmp)(\?.*)?$/i;
 
+// Clips uploaded here (js/uploads-data.js, mobile/src/lib/upload.ts) have a
+// still from their first moments saved beside them as <name>.poster.webp, so
+// a player can show a picture instead of a black box while the clip loads.
+// Kept identical to uploadedPosterFor in mobile/src/lib/media.ts.
+const UPLOADED_CLIP = /\/storage\/v1\/object\/public\/uploads\/[^?#]+\.(mp4|webm)$/i;
+
+export function uploadedPosterFor(src) {
+  const url = parseUrl(src);
+  if (!url || !UPLOADED_CLIP.test(url.pathname)) return '';
+  url.pathname = url.pathname.replace(/\.(mp4|webm)$/i, '.poster.webp');
+  url.search = '';
+  url.hash = '';
+  return url.href;
+}
+
 // Only ids that look like ids - keeps anything odd out of the rebuilt URL.
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -103,7 +118,7 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   if (media.kind === 'iframe') {
     // In the feed, YouTube/Vimeo embeds are "video" the same way a plain
     // <video> is - they should autoplay muted and be scroll-controlled by
-    // setupMediaPlayback (scrolls.html), via each provider's postMessage
+    // the feed (demos.html), via each provider's postMessage
     // API (see controlEmbeddedVideo below). `compact` marks the audio-shaped
     // embeds (Spotify, SoundCloud), which stay tap-to-play like native
     // audio and are left alone here.
@@ -128,9 +143,10 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   }
 
   if (media.kind === 'video') {
+    const poster = uploadedPosterFor(media.src);
     return `<div class="media-frame"><video src="${escapeHtml(media.src)}" ${
       inline ? 'muted loop playsinline' : 'controls playsinline'
-    } preload="metadata"></video></div>`;
+    }${poster ? ` poster="${escapeHtml(poster)}"` : ''} preload="metadata"></video></div>`;
   }
 
   if (media.kind === 'audio') {
@@ -168,7 +184,7 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
 }
 
 // Each provider's minimal remote-control protocol for the commands
-// setupMediaPlayback (scrolls.html) needs - play/pause on scroll, mute/
+// demos.html needs - play/pause on scroll, mute/
 // unmute from the same button that drives a native <video>. Both are
 // undocumented-but-stable postMessage APIs the provider's own embed page
 // listens for; there's no script to load, just messages to send.
