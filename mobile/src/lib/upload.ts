@@ -1,6 +1,6 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { Video } from 'react-native-compressor';
+import { createVideoThumbnail, Video } from 'react-native-compressor';
 
 import { supabase } from './supabase';
 
@@ -57,7 +57,7 @@ export function formatBytes(bytes: number) {
 }
 
 type Stage = (stage: 'compress' | 'upload', progress?: number) => void;
-type Prepared = { bytes: ArrayBuffer; type: string };
+type Prepared = { bytes: ArrayBuffer; type: string; uri: string };
 
 const readBytes = async (uri: string) => (await fetch(uri)).arrayBuffer();
 
@@ -69,7 +69,7 @@ async function preparePicture(asset: ImagePicker.ImagePickerAsset, kind: UploadK
     if (bytes.byteLength > GIF_MAX_BYTES) {
       throw new Error(`GIFs go up as they are, so they have to be under ${formatBytes(GIF_MAX_BYTES)}.`);
     }
-    return { bytes, type: 'image/gif' };
+    return { bytes, type: 'image/gif', uri: asset.uri };
   }
   const { width, height } = fitWithin(asset.width, asset.height, IMAGE_MAX_SIDE[kind]);
   const context = ImageManipulator.manipulate(asset.uri);
@@ -80,9 +80,9 @@ async function preparePicture(asset: ImagePicker.ImagePickerAsset, kind: UploadK
 
   const keepable = ['image/jpeg', 'image/png', 'image/webp'].includes(original);
   if (keepable && width === asset.width && asset.fileSize && asset.fileSize <= bytes.byteLength) {
-    return { bytes: await readBytes(asset.uri), type: original };
+    return { bytes: await readBytes(asset.uri), type: original, uri: asset.uri };
   }
-  return { bytes, type: 'image/webp' };
+  return { bytes, type: 'image/webp', uri: saved.uri };
 }
 
 async function prepareClip(asset: ImagePicker.ImagePickerAsset, onStage?: Stage): Promise<Prepared> {
@@ -106,9 +106,22 @@ async function prepareClip(asset: ImagePicker.ImagePickerAsset, onStage?: Stage)
   const original = (asset.mimeType || '').toLowerCase();
   const fits = Math.max(asset.width, asset.height) <= VIDEO_LIMITS.maxSide;
   if (['video/mp4', 'video/webm'].includes(original) && fits && asset.fileSize && asset.fileSize <= bytes.byteLength) {
-    return { bytes: await readBytes(asset.uri), type: original };
+    return { bytes: await readBytes(asset.uri), type: original, uri: asset.uri };
   }
-  return { bytes, type: 'video/mp4' };
+  return { bytes, type: 'video/mp4', uri };
+}
+
+// A still for a clip, saved beside it as <name>.poster.webp so players can
+// show a picture while it loads (uploadedPosterFor in lib/media.ts). The same
+// size as the web's: no more than 720 px, WebP.
+async function posterBytes(clipUri: string) {
+  const thumb = await createVideoThumbnail(clipUri);
+  const uri = thumb.path.startsWith('file://') ? thumb.path : `file://${thumb.path}`;
+  const { width, height } = fitWithin(thumb.width, thumb.height, 720);
+  const context = ImageManipulator.manipulate(uri);
+  if (width !== thumb.width) context.resize({ width, height });
+  const saved = await (await context.renderAsync()).saveAsync({ compress: 0.78, format: SaveFormat.WEBP });
+  return readBytes(saved.uri);
 }
 
 export type UploadResult = { url: string; size: number; originalSize: number };
@@ -131,7 +144,7 @@ export async function pickAndUpload(kind: UploadKind, onStage?: Stage): Promise<
   const asset = picked.assets[0];
 
   onStage?.('compress', 0);
-  const { bytes, type } =
+  const { bytes, type, uri } =
     asset.type === 'video' ? await prepareClip(asset, onStage) : await preparePicture(asset, kind);
   if (bytes.byteLength > UPLOAD_MAX_BYTES) throw new Error('Even compressed, this is too big to upload.');
 
@@ -152,5 +165,19 @@ export async function pickAndUpload(kind: UploadKind, onStage?: Stage): Promise<
     );
   }
   const url = supabase.storage.from('uploads').getPublicUrl(path).data.publicUrl;
+
+  // Not worth failing the upload over: without it the player starts on black.
+  if (type.startsWith('video/')) {
+    try {
+      await supabase.storage
+        .from('uploads')
+        .upload(path.replace(/\.[^./]+$/, '.poster.webp'), await posterBytes(uri), {
+          contentType: 'image/webp',
+          cacheControl: '31536000',
+        });
+    } catch {
+      // No poster, then.
+    }
+  }
   return { url, size: bytes.byteLength, originalSize: asset.fileSize || bytes.byteLength };
 }

@@ -60,7 +60,7 @@ const TERMS: LegalDocument = {
       heading: 'What you post stays yours',
       body: [
         'You keep every right you already had in what you publish on XOXD. Nothing here transfers ownership.',
-        `You do give ${OPERATOR} permission to host, store, copy and display what you publish, so that XOXD can do the thing you asked it to do: show your work to other people, in feeds, on your profile, in search, and in the Scrolls feed. That permission is limited to running and promoting XOXD itself, it earns us nothing on its own, and it ends for new displays when you delete the entry or your account.`,
+        `You do give ${OPERATOR} permission to host, store, copy and display what you publish, so that XOXD can do the thing you asked it to do: show your work to other people, in feeds, on your profile, in search, and in Demos. That permission is limited to running and promoting XOXD itself, it earns us nothing on its own, and it ends for new displays when you delete the entry or your account.`,
         'You promise that what you publish is yours to publish - that you made it, or have permission for it - and that showing it on XOXD breaks no law and no one else’s rights.',
       ],
     },

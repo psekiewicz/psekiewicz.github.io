@@ -147,7 +147,7 @@ const APP_ICONS = {
   sun: 'sun',
   settings: 'settings-2',
   home: 'house',
-  scrolls: 'film',
+  demos: 'rocket',
   plus: 'plus',
   back: 'arrow-left',
   'chevron-down': 'chevron-down',

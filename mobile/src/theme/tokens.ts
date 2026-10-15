@@ -35,9 +35,9 @@ export const lightColors = {
   // White, for type and icons sitting on an accent fill.
   onAccent: '#ffffff',
 
-  // Scrolls is full-bleed dark in both themes - a feed of media reads better
+  // Demos is full-bleed dark in both themes - a feed of media reads better
   // on black.
-  scrollsBg: '#191713',
+  feedBg: '#191713',
 
   danger: '#b3261e',
   dangerSoft: '#fbe6e4',
@@ -75,7 +75,7 @@ export const darkColors: typeof lightColors = {
 
   onAccent: '#ffffff',
 
-  scrollsBg: '#191713',
+  feedBg: '#191713',
 
   danger: '#e5675c',
   dangerSoft: '#3a211e',

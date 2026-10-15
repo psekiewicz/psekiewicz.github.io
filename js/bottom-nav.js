@@ -58,9 +58,9 @@ function navHtml(snapshot) {
       <span class="bottom-nav-icon">${icon('home', { size: 20 })}</span>
       <span>Home</span>
     </a>
-    <a class="bottom-nav-item${isActive('scrolls')}" href="/scrolls">
-      <span class="bottom-nav-icon">${icon('film', { size: 20 })}</span>
-      <span>Scrolls</span>
+    <a class="bottom-nav-item${isActive('demos')}" href="/demos">
+      <span class="bottom-nav-icon">${icon('rocket', { size: 20 })}</span>
+      <span>Demos</span>
     </a>
     ${
       snapshot

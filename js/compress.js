@@ -381,6 +381,40 @@ export async function compressVideo(file, { limits = VIDEO_LIMITS, onProgress } 
   }
 }
 
+// A still for a clip, to show while it loads: a frame from half a second in
+// (the very first is often black), at no more than 720 px, as WebP (JPEG
+// where the browser can't write WebP). Saved beside the clip as
+// <name>.poster.webp - see uploadedPosterFor in js/media.js.
+export async function videoPoster(blob, { maxSide = 720, quality = 0.78 } = {}) {
+  const url = URL.createObjectURL(blob);
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.src = url;
+  try {
+    await once(video, 'loadeddata');
+    const at = Math.min(0.5, (video.duration || 1) / 2);
+    if (at > 0) {
+      video.currentTime = at;
+      await once(video, 'seeked');
+    }
+    const { width, height } = fitWithin(video.videoWidth, video.videoHeight, maxSide);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+    let still = await canvasToBlob(canvas, 'image/webp', quality);
+    if (!still || still.type !== 'image/webp') still = await canvasToBlob(canvas, 'image/jpeg', quality);
+    if (!still) throw new Error('Could not draw a poster.');
+    return still;
+  } finally {
+    video.removeAttribute('src');
+    video.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
 // Picks the right one for a file: pictures by preset, clips by the limits.
 // Anything else is returned untouched.
 export async function compressFile(file, { preset = IMAGE_PRESETS.cover, limits = VIDEO_LIMITS, onProgress } = {}) {

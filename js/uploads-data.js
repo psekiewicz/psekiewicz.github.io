@@ -1,5 +1,5 @@
 import { supabase } from './supabase-init.js';
-import { compressFile, extensionFor, baseType, IMAGE_PRESETS } from './compress.js';
+import { compressFile, extensionFor, baseType, videoPoster, IMAGE_PRESETS } from './compress.js';
 
 // People's own pictures and demo clips, compressed on this device and put in
 // the public `uploads` bucket (see schema.sql). What comes back is the public
@@ -48,5 +48,20 @@ export async function uploadMedia(file, { kind = 'cover', onStage } = {}) {
       : error.message);
   }
   const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+
+  // A clip gets a still saved beside it (<name>.poster.webp), which players
+  // show while it loads - see uploadedPosterFor in js/media.js. Not worth
+  // failing the upload over: without it the player just starts on black.
+  if (outType.startsWith('video/')) {
+    try {
+      const still = await videoPoster(blob);
+      await supabase.storage.from(BUCKET).upload(path.replace(/\.[^./]+$/, '.poster.webp'), still, {
+        contentType: baseType(still.type),
+        cacheControl: '31536000',
+      });
+    } catch {
+      // No poster, then.
+    }
+  }
   return { url, path, size: blob.size, originalSize: file.size };
 }

@@ -38,7 +38,7 @@
       <div class="nav-links">
         <a class="nav-link" href="/index.html"><i class="icon" data-icon="home" style="width:22px;height:22px" aria-hidden="true"></i><span>Home</span></a>
         <a class="nav-link" href="/projects.html"><i class="icon" data-icon="search" style="width:22px;height:22px" aria-hidden="true"></i><span>Explore</span></a>
-        <a class="nav-link" href="/scrolls"><i class="icon" data-icon="film" style="width:22px;height:22px" aria-hidden="true"></i><span>Scrolls</span></a>
+        <a class="nav-link" href="/demos"><i class="icon" data-icon="rocket" style="width:22px;height:22px" aria-hidden="true"></i><span>Demos</span></a>
         <a class="nav-link" href="/leaderboard.html"><i class="icon" data-icon="award" style="width:22px;height:22px" aria-hidden="true"></i><span>Leaderboard</span></a>
         <a class="nav-link" href="/shop"><i class="icon" data-icon="shopping-bag" style="width:22px;height:22px" aria-hidden="true"></i><span>Shop</span></a>
         <a class="nav-link" href="/dashboard.html"><i class="icon" data-icon="grid" style="width:22px;height:22px" aria-hidden="true"></i><span>Dashboard</span></a>
@@ -179,13 +179,13 @@
           <div class="hint">Comma-separated, up to 10 tags.</div>
         </div>
         <details class="sheet-details">
-          <summary>Customize Scrolls page</summary>
-          <p class="hint">Scrolls shows your project full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it.</p>
+          <summary>Full-screen image</summary>
+          <p class="hint">Demos shows an entry with a live link full-screen and portrait, where a wide thumbnail usually crops badly. Set a taller image just for it.</p>
           <div class="field">
-            <label for="scrollImageUrl">Scrolls image URL</label>
+            <label for="scrollImageUrl">Full-screen image URL</label>
             <input type="url" id="scrollImageUrl" placeholder="https://… (portrait works best)" />
           </div>
-          <div class="scroll-preview" id="scroll-preview"><span class="scroll-preview-label">Scrolls preview</span></div>
+          <div class="scroll-preview" id="scroll-preview"><span class="scroll-preview-label">Full-screen preview</span></div>
         </details>
 
         <div class="field checkbox-field">
@@ -263,7 +263,7 @@
     async function loadSaved() {
       const saved = await getSavedProjects(currentUser.id);
       if (saved.length === 0) {
-        savedRegion.innerHTML = `<div class="empty-state"><h3>Nothing saved yet</h3><p>Hit Save on anything you want to come back to.</p><a class="btn btn-secondary" href="/scrolls">Open Scrolls</a></div>`;
+        savedRegion.innerHTML = `<div class="empty-state"><h3>Nothing saved yet</h3><p>Hit Save on anything you want to come back to.</p><a class="btn btn-secondary" href="/projects.html">Explore projects</a></div>`;
         return;
       }
       savedRegion.innerHTML = `
@@ -330,7 +330,7 @@
         document.getElementById('published').checked = project.published;
       }
 
-      // form.reset() above wipes the Scrolls fields too, so the preview has
+      // form.reset() above wipes the full-screen image too, so the preview has
       // to be recomputed whether we're editing or starting fresh.
       updateScrollPreview();
       modal.classList.add('is-open');

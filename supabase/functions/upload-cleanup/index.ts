@@ -73,6 +73,11 @@ async function referencedPaths(admin: Admin) {
       if (!data || data.length < PAGE) break;
     }
   }
+  // A clip's poster (<name>.poster.webp, see uploadedPosterFor in
+  // js/media.js) is never linked anywhere itself; it lives as long as its clip.
+  for (const path of [...found]) {
+    if (/\.(mp4|webm)$/i.test(path)) found.add(path.replace(/\.(mp4|webm)$/i, '.poster.webp'));
+  }
   return found;
 }
 

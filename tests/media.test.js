@@ -4,7 +4,7 @@ import { installWindow } from './helpers/browser-env.js';
 
 installWindow('https://example.com');
 
-const { parseMedia, canEmbed, mediaHtml } = await import('../js/media.js');
+const { parseMedia, canEmbed, mediaHtml, uploadedPosterFor } = await import('../js/media.js');
 
 test('parseMedia recognises a YouTube watch URL', () => {
   const media = parseMedia('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
@@ -78,4 +78,13 @@ test('mediaHtml renders inline video as muted/loop instead of controls', () => {
 
 test('mediaHtml returns an empty string for unrecognised media', () => {
   assert.equal(mediaHtml('https://example.com/whatever'), '');
+});
+
+test('an uploaded clip points at the poster saved beside it; other videos have none', () => {
+  const clip = 'https://x.supabase.co/storage/v1/object/public/uploads/u1/171-abc.mp4';
+  assert.equal(uploadedPosterFor(clip), 'https://x.supabase.co/storage/v1/object/public/uploads/u1/171-abc.poster.webp');
+  assert.equal(uploadedPosterFor(clip.replace('.mp4', '.webm') + '?t=3'), 'https://x.supabase.co/storage/v1/object/public/uploads/u1/171-abc.poster.webp');
+  assert.equal(uploadedPosterFor('https://example.com/clip.mp4'), '');
+  assert.match(mediaHtml(clip, { inline: true }), /poster="[^"]+\.poster\.webp"/);
+  assert.doesNotMatch(mediaHtml('https://example.com/clip.mp4', { inline: true }), /poster=/);
 });

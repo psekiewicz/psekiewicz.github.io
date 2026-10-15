@@ -54,7 +54,7 @@ export function column(max: number = MAX_CONTENT_WIDTH) {
   return { width: '100%' as const, maxWidth: max, alignSelf: 'center' as const };
 }
 
-// Scrolls is a portrait, full-bleed feed - the shape of a phone held upright.
+// Demos is a portrait, full-bleed feed - the shape of a phone held upright.
 // Stretched over a tablet it is mostly empty space around a tall video, so it
 // is pinned to a phone-width column and centred, which is exactly what the
 // site does with it on a desktop.

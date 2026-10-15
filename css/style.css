@@ -765,16 +765,6 @@ img {
   transform: rotate(90deg);
 }
 
-/* Scrolls rail: the whole control pops, since the icons there are the
-   primary controls rather than decoration. */
-.scroll-rail-btn:hover .scroll-rail-icon .icon {
-  transform: scale(1.18);
-}
-
-.scroll-rail-btn:active .scroll-rail-icon .icon {
-  transform: scale(0.85);
-}
-
 /* The bell nudges rather than spins - it's a notification, not a toy. */
 .notif-bell:hover .icon {
   animation: bell-swing 0.6s ease;
@@ -2043,7 +2033,7 @@ tbody tr {
 }
 
 /* ---------- Engagement bar (likes, edit) ---------- */
-/* Six controls (like, Scrolls, save, share, edit, report) do not fit on a
+/* Six controls (like, Demos, save, share, edit, report) do not fit on a
    phone in one row, and without wrapping the last one - Report - simply
    left the screen and took the whole page's horizontal scroll with it.
    Wrapping is the fix; the row-gap keeps the second line from touching
@@ -2125,6 +2115,79 @@ tbody tr {
 .hint {
   font-size: 0.85rem;
   color: var(--color-text-faint);
+}
+
+/* ---------- Demos (demos.html) ----------
+   The full-screen .scroll-card, one per entry with a live link. The container takes the
+   visible height (dvh, with vh for older browsers): on a phone 100vh counts
+   the address bar too, and snapped cards would sit under it. Each card is
+   the container's height rather than its own vh sum, so the two never drift. */
+.demos-container {
+  height: calc(100vh - 68px);
+  height: calc(100dvh - 68px);
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+body.has-bottom-nav .demos-container {
+  height: calc(100vh - 68px - 66px);
+  height: calc(100dvh - 68px - 66px);
+}
+
+.demos-container > .demo-card,
+body.has-bottom-nav .demos-container > .demo-card {
+  height: 100%;
+}
+
+.demo-media {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+.demo-media img,
+.demo-media video,
+.demo-media .demo-embed,
+.demo-media iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* A cover picture fills the card; a clip and its own poster frame are shown
+   whole, so the poster lines up exactly with the first frame that replaces it. */
+.demo-poster {
+  object-fit: cover;
+  transition: opacity 0.25s ease;
+}
+
+.demo-poster.is-frame,
+.demo-video {
+  object-fit: contain;
+}
+
+.demo-card.has-started .demo-poster {
+  opacity: 0;
+}
+
+.demo-media .media-frame {
+  position: absolute;
+  inset: 0;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.demo-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ---------- Upload button under a link field (js/upload-field.js) ---------- */
@@ -2551,7 +2614,7 @@ tbody tr {
   }
 }
 
-/* ---------- Rolls (swipeable project feed) ---------- */
+/* ---------- Full-screen card feed (demos.html) ---------- */
 .scrolls-container {
   height: calc(100vh - 68px);
   overflow-y: auto;
@@ -2607,14 +2670,6 @@ body.has-bottom-nav .scroll-card {
   color: var(--color-text);
 }
 
-.scroll-card-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .scroll-card.has-image::after {
   content: '';
   position: absolute;
@@ -2660,156 +2715,6 @@ body.has-bottom-nav .scroll-card {
   border: 2px solid rgba(255, 255, 255, 0.85);
 }
 
-.scroll-empty-icon {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--color-primary);
-}
-
-/* ---------- Scrolls right-side action rail (YT Shorts style) ---------- */
-.scroll-rail {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 0 14px calc(20px + env(safe-area-inset-bottom, 0px));
-  flex-shrink: 0;
-}
-
-.scroll-card.has-image .scroll-rail {
-  color: #fff;
-}
-
-.scroll-rail-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.scroll-rail-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.scroll-card:not(.has-image) .scroll-rail-icon {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.scroll-rail-count {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Like feedback (scrolls.html): a quick pop on the rail heart for any
-   like/unlike, and a bigger classic double-tap burst over the card - the
-   deliberate tap and the double-tap gesture get replies sized to match. */
-@keyframes scroll-rail-pop {
-  35% {
-    transform: scale(1.35);
-  }
-}
-
-.scroll-rail-icon.is-popping {
-  animation: scroll-rail-pop 0.35s ease;
-}
-
-.scroll-like-burst {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.35));
-  opacity: 0;
-  pointer-events: none;
-}
-
-.scroll-like-burst.is-active {
-  animation: scroll-heart-burst 0.7s cubic-bezier(0.2, 1.6, 0.4, 1);
-}
-
-@keyframes scroll-heart-burst {
-  0% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-  55% {
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1);
-  }
-}
-
-/* The one-shot entrance flourish a card's caption gets the moment it
-   becomes the active one (see the mediaObserver callback) - content stays
-   fully visible the rest of the time, so there's nothing to hide on a
-   client too slow to run this. Reuses .card's own fade-in-up keyframe
-   rather than redefining the same fade+rise. */
-.scroll-content.is-entering {
-  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.scroll-card:not(.has-image) .scroll-rail-count {
-  text-shadow: none;
-  color: var(--color-text-muted);
-}
-
-.scroll-rail .like-btn.is-liked .scroll-rail-icon {
-  color: #ef4444;
-}
-
-.scroll-rail .like-btn.is-liked .icon {
-  --icon: var(--icon-filled);
-}
-
-/* Saved reads the same way liked does: the icon fills in rather than the
-   button changing shape, so the rail doesn't shift under your thumb. */
-.scroll-rail .save-btn.is-saved .scroll-rail-icon {
-  color: var(--color-primary);
-}
-
-.scroll-rail .save-btn.is-saved .icon {
-  --icon: var(--icon-filled);
-  animation: like-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.scroll-rail-avatar-img {
-  width: 44px;
-  height: 44px;
-  font-size: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  margin-bottom: 2px;
-}
-
-.scroll-card:not(.has-image) .scroll-rail-avatar-img {
-  border-color: var(--color-border);
-}
-
 /* Full-bleed suits a phone screen; stretched across a desktop window it
    turns a portrait video into a sliver lost in a sea of black letterboxing.
    YouTube's own desktop Shorts player solves this the same way: cap the
@@ -2826,57 +2731,6 @@ body.has-bottom-nav .scroll-card {
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
   }
-}
-
-/* ---------- Comments drawer (used on scrolls.html) ---------- */
-.comments-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 12, 18, 0.55);
-  z-index: 300;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
-}
-
-.comments-drawer-overlay.is-open {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.25s ease;
-}
-
-.comments-drawer {
-  background: var(--color-surface);
-  width: 100%;
-  max-width: 620px;
-  max-height: 78vh;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.comments-drawer-overlay.is-open .comments-drawer {
-  transform: translateY(0);
-}
-
-.comments-drawer-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.comments-drawer-body {
-  padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  overflow-y: auto;
 }
 
 /* ---------- Profile page ---------- */
@@ -3126,63 +2980,6 @@ body.has-bottom-nav .scroll-card {
   display: block;
 }
 
-/* In the feed the media fills the card behind the text overlay, so the
-   per-embed margins and rounding have to go. container-type lets the video
-   crop below report the card's real pixel size via cqw/cqh - vw/vh would
-   be wrong here, since the desktop breakpoint caps the card at 460px
-   instead of the full viewport. */
-.scroll-card-media {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  container-type: size;
-}
-
-.scroll-card-media .media-frame,
-.scroll-card-media .media-image,
-.scroll-card-media .media-audio {
-  margin: 0;
-  border-radius: 0;
-  width: 100%;
-}
-
-.scroll-card-media .media-frame:not(.is-compact) {
-  height: 100%;
-  aspect-ratio: auto;
-  overflow: hidden;
-}
-
-/* A native <video> can be any source aspect ratio, so object-fit does the
-   cropping - it fills the card and clips the overflow, same idea as a CSS
-   background-size: cover. */
-.scroll-card-media .media-frame:not(.is-compact) video {
-  object-fit: cover;
-}
-
-/* An embedded YouTube/Vimeo player always presents as a 16:9 canvas
-   regardless of the source video's real shape, and object-fit has no
-   effect on what a cross-origin iframe draws inside itself - so instead
-   the iframe is oversized by exactly the 16:9 math to guarantee it covers
-   the card, centred, and the wrapper's overflow:hidden above clips it back
-   down to size. */
-.scroll-card-media .media-frame:not(.is-compact) iframe[data-video-provider] {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100cqw;
-  height: 100cqh;
-  min-width: 177.78cqh;
-  min-height: 56.25cqw;
-  transform: translate(-50%, -50%);
-}
-
-.scroll-card-media .media-image img {
-  max-height: 100vh;
-  object-fit: contain;
-}
-
 /* Sits above the video itself (not in the action rail - it's a playback
    setting, not a social action) so it reads as part of the video, not
    part of the like/comment/save stack. */
@@ -3218,17 +3015,6 @@ body.has-bottom-nav .scroll-card {
 
 .scroll-mute-btn.is-muted .mute-icon-off {
   display: inline-block;
-}
-
-/* Card text sits above the player, but the player still has to be
-   clickable - so only the text block blocks pointer events. */
-.scroll-card.has-media .scroll-content {
-  pointer-events: none;
-}
-
-.scroll-card.has-media .scroll-content a,
-.scroll-card.has-media .scroll-content button {
-  pointer-events: auto;
 }
 
 /* The caption sits on someone else's picture, which can be any brightness -
@@ -3278,59 +3064,6 @@ body.has-bottom-nav .scroll-card {
   font-size: 1.05rem;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.86);
-}
-
-/* Audio: the artwork above the player, on a colour taken from the entry,
-   instead of a small bar floating in black. */
-.scroll-card.is-audio {
-  background: linear-gradient(160deg, hsl(var(--scroll-hue) 38% 21%), hsl(calc(var(--scroll-hue) + 40) 42% 9%));
-}
-
-.scroll-card.is-audio .scroll-card-media {
-  flex-direction: column;
-  gap: 18px;
-  padding: 0 76px 170px 24px;
-  box-sizing: border-box;
-}
-
-.scroll-audio-art {
-  width: min(100%, 260px);
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 18px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-
-/* The line under a Scrolls caption that says what opening the card gives you. */
-.scroll-peek {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  margin-top: 10px;
-  padding: 6px 10px 6px 6px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  color: #fff;
-  font-size: 0.8rem;
-  text-decoration: none;
-}
-
-.scroll-peek-action {
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #fff;
-  color: #191713;
-  font-weight: 700;
-}
-
-.scroll-peek-meta {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ---------- Create bottom sheet + rotating add button ---------- */
@@ -3475,7 +3208,7 @@ body.sheet-open .bottom-nav {
   margin-bottom: 10px;
 }
 
-/* ---------- Scrolls appearance presets ---------- */
+/* ---------- Full-screen image preview (project editor) ---------- */
 .scroll-preview {
   height: 120px;
   border-radius: var(--radius-sm);

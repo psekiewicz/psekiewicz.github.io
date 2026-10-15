@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { getAccountAge, needsBirthDate } from '../data/age';
 import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { DemosScreen } from '../screens/DemosScreen';
 import { EditorScreen } from '../screens/EditorScreen';
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
@@ -25,7 +26,6 @@ import { LegalScreen } from '../screens/LegalScreen';
 import { ProjectDetailScreen } from '../screens/ProjectDetailScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { SavedScreen } from '../screens/SavedScreen';
-import { ScrollsScreen } from '../screens/ScrollsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ShopScreen } from '../screens/ShopScreen';
 import { useTheme } from '../theme/ThemeProvider';
@@ -34,7 +34,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // The same five tabs the web build's bottom bar carries on narrow screens:
-// Home / Scrolls / Add / Dashboard / Profile.
+// Home / Demos / Add / Dashboard / Profile.
 function Tabs() {
   return (
     <Tab.Navigator
@@ -48,7 +48,7 @@ function Tabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Scrolls" component={ScrollsScreen} />
+      <Tab.Screen name="Demos" component={DemosScreen} />
       {/* No Add tab. The add button pushes the `Editor` stack screen, which is
           the same screen editing and the share sheet already opened - one add
           screen rather than two that looked different, and the tab was the

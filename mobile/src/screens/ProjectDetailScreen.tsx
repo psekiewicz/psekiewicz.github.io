@@ -316,18 +316,19 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               accessibilityLabel={liked ? 'Unlike' : 'Like'}
             />
             <PostAction icon="share" onPress={share} accessibilityLabel="Share" />
-            {project.published ? (
-              // The site's post page links an entry to its own card in the
-              // feed; a draft has no card to land on, so it has no link.
+            {project.published && project.liveUrl ? (
+              // An entry with a live link has a card in Demos, the way the
+              // site's post page links to demos#<id>; a draft, or an entry
+              // with nothing to try, has no card to land on.
               <PostAction
-                icon="scrolls"
+                icon="demos"
                 onPress={() =>
                   navigation.navigate('Tabs', {
-                    screen: 'Scrolls',
+                    screen: 'Demos',
                     params: { projectId: project.id },
                   })
                 }
-                accessibilityLabel="Open in Scrolls"
+                accessibilityLabel="Open in Demos"
               />
             ) : null}
             <PostAction

@@ -148,11 +148,9 @@ never switched on: with no rows in `push_tokens` it does nothing.
 Everything interactive - buttons, cards, chips, list rows, the tab bar, the
 startup screen - is animated via `lib/motion.ts` and `MotionProvider`, which
 also reads the OS's reduce-motion accessibility setting by default. Settings
-→ Animations overrides that per-device (On/Off/System). One thing stays
-static regardless: the animated shop cosmetics in Scrolls (see below) - a
-one-shot UI animation and a continuous per-frame CSS-style keyframe running
-on every visible avatar in a scrolling feed are different costs, and that
-tradeoff hasn't changed.
+→ Animations overrides that per-device (On/Off/System), and the animated shop
+cosmetics (backgrounds, frames, nickname fills) follow it too: with animations
+off they hold their first frame.
 
 The `data/` modules are deliberately near-identical to their web counterparts,
 down to the comments, so a change to one has an obvious counterpart in the
