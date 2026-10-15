@@ -17,10 +17,14 @@ import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
 
+// 'post' and 'update' come from people you follow (see "Telling followers"
+// in schema.sql). Same words as the site's bell (js/notifications-ui.js).
 const COPY: Record<string, { icon: any; verb: string }> = {
   like: { icon: 'heart', verb: 'liked' },
   comment: { icon: 'message-circle', verb: 'commented on' },
   follow: { icon: 'user-plus', verb: 'started following you' },
+  post: { icon: 'plus-square', verb: 'published' },
+  update: { icon: 'git-commit', verb: 'posted an update to' },
 };
 
 export function NotificationsScreen({ navigation }: any) {
@@ -84,7 +88,7 @@ export function NotificationsScreen({ navigation }: any) {
       }
       renderItem={({ item }) => {
         const actor = actors.get(item.actorId);
-        const copy = COPY[item.type] || { icon: 'bell', verb: item.type };
+        const copy = COPY[item.type] || { icon: 'bell', verb: 'did something with' };
         const title = item.projectId ? titles.get(item.projectId) : null;
 
         return (

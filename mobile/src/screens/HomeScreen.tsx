@@ -13,6 +13,7 @@ import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { DISCOVER_POOL, getPublishedProjects, Project } from '../data/projects';
 import { getSavedSet } from '../data/saves';
+import { getLatestUpdates, ProjectUpdate } from '../data/updates';
 import { loadSeenIds, rankFeed } from '../lib/feedRank';
 import { getLevelsForUsers } from '../lib/levels';
 import { usePostActions } from '../lib/usePostActions';
@@ -46,6 +47,7 @@ export function HomeScreen({ navigation }: any) {
   const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
   const [levels, setLevels] = useState<Map<string, any>>(new Map());
   const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
+  const [latestUpdates, setLatestUpdates] = useState<Map<string, ProjectUpdate>>(new Map());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [ranked, setRanked] = useState<Project[]>([]);
   const [unread, setUnread] = useState(0);
@@ -68,11 +70,13 @@ export function HomeScreen({ navigation }: any) {
 
       // Everything a page of posts needs, batched - one query per post is what
       // made the gallery the slowest thing on the site.
-      const [profileMap, levelMap, likes, comments, likedSet, savedSet, follows, seen] = await Promise.all([
+      const [profileMap, levelMap, likes, comments, updates, likedSet, savedSet, follows, seen] = await Promise.all([
         getProfilesByIds(uids).catch(() => new Map()),
         getLevelsForUsers(uids).catch(() => new Map()),
         getLikeCounts(ids).catch(() => new Map()),
         getCommentCounts(ids).catch(() => new Map()),
+        // Absent until schema.sql has added project_updates; posts just omit the line.
+        getLatestUpdates(ids).catch(() => new Map<string, ProjectUpdate>()),
         getLikedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
         getSavedSet(user?.id ?? null, ids).catch(() => new Set<string>()),
         getFollowingIds(user?.id ?? null).catch(() => new Set<string>()),
@@ -83,6 +87,7 @@ export function HomeScreen({ navigation }: any) {
       setLevels(levelMap);
       setLikeCounts(likes);
       setCommentCounts(comments);
+      setLatestUpdates(updates);
       setLiked(likedSet);
       setSaved(savedSet);
       setFollowingIds(follows);
@@ -216,6 +221,7 @@ export function HomeScreen({ navigation }: any) {
               project={item}
               author={authors.get(item.uid)}
               level={levels.get(item.uid)?.level}
+              latestUpdate={latestUpdates.get(item.id) || null}
               likeCount={actions.likeCounts.get(item.id) || 0}
               commentCount={commentCounts.get(item.id) || 0}
               liked={actions.liked.has(item.id)}

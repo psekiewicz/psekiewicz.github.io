@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
 import { followUser, getFollowingIds, unfollowUser } from '../data/follows';
 import { getLikeCounts } from '../data/likes';
-import { getAllProfiles, getProfilesByIds, Profile } from '../data/profiles';
+import { getProfilesByIds, Profile, searchProfiles } from '../data/profiles';
 import { getTopByXp } from '../data/reputation';
 import { DISCOVER_POOL, getPublishedProjects, Project } from '../data/projects';
 import { useCardColumns, column, MAX_PAGE_WIDTH } from '../lib/layout';
@@ -50,12 +50,12 @@ export function ExploreScreen({ navigation, route }: any) {
   useEffect(() => {
     (async () => {
       try {
-        const [rows, people] = await Promise.all([
-          getPublishedProjects({ limit: DISCOVER_POOL }),
-          getAllProfiles().catch(() => []),
-        ]);
+        const rows = await getPublishedProjects({ limit: DISCOVER_POOL });
         setProjects(rows);
-        setProfiles(people);
+        // The authors of what is on screen, by id - not a list of every
+        // account that happened to include them.
+        const authors = await getProfilesByIds(rows.map((p) => p.uid)).catch(() => new Map<string, Profile>());
+        setProfiles([...authors.values()]);
         const ids = rows.map((p) => p.id);
         const [likes, comments] = await Promise.all([
           getLikeCounts(ids).catch(() => new Map()),
@@ -133,10 +133,30 @@ export function ExploreScreen({ navigation, route }: any) {
   const q = query.trim().toLowerCase();
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
 
-  const people = useMemo(
-    () => (q ? profiles.filter((p) => p.displayName.toLowerCase().includes(q)).slice(0, 12) : []),
-    [profiles, q]
-  );
+  // People are searched on the server, so anybody can be found - this used to
+  // filter the 200 oldest accounts. A short pause lets the typing settle, and
+  // a reply that arrives after the query has moved on is dropped.
+  const [people, setPeople] = useState<Profile[]>([]);
+  useEffect(() => {
+    if (!q) {
+      setPeople([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      searchProfiles(q, 12)
+        .then((found) => {
+          if (!cancelled) setPeople(found);
+        })
+        .catch(() => {
+          if (!cancelled) setPeople([]);
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [q]);
 
   const posts = useMemo(
     () =>

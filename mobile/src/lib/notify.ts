@@ -31,6 +31,8 @@ const VERBS: Record<string, string> = {
   like: 'liked',
   comment: 'commented on',
   follow: 'started following you',
+  post: 'published',
+  update: 'posted an update to',
 };
 
 // Shown even when the app is in front: without a handler Android delivers a
@@ -58,7 +60,7 @@ TaskManager.defineTask(TASK, async () => {
 async function ensureChannel() {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Likes, comments and follows',
+    name: 'Likes, comments, follows and new work',
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
@@ -99,7 +101,7 @@ export async function checkForNew() {
   for (const row of rows as any[]) {
     const name = actors.get(row.actor_id)?.displayName || 'Someone';
     const title = row.project_id ? titles.get(row.project_id) : null;
-    const verb = VERBS[row.type] || row.type;
+    const verb = VERBS[row.type] || 'did something with';
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'XOXD',

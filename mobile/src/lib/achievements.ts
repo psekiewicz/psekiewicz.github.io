@@ -31,12 +31,14 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'talked-about', label: 'Talked About', description: 'Other people left 25 or more comments on your entries.', icon: 'message-circle', reward: 80, check: (s) => s.commentsReceived >= 25 },
   { id: 'chatterbox', label: 'Chatterbox', description: 'Posted 25 or more comments.', icon: 'message-circle', reward: 70, check: (s) => s.totalComments >= 25 },
   { id: 'collector', label: 'Collector', description: 'Own 5 or more items from the shop.', icon: 'shopping-bag', reward: 70, check: (s) => s.ownedItemsCount >= 5 },
+  { id: 'maintainer', label: 'Maintainer', description: 'Posted updates to your projects on 5 or more different days.', icon: 'code', reward: 60, check: (s) => s.releases >= 5 },
   { id: 'builder', label: 'Builder', description: 'Published 5 or more projects.', icon: 'package', reward: 60, check: (s) => s.projectsPublished >= 5 },
   { id: 'trendsetter', label: 'Trendsetter', description: 'Equip a shop item in all three cosmetic slots at once.', icon: 'droplet', reward: 60, check: (s) => s.stylized },
   { id: 'veteran', label: 'Veteran', description: 'Been part of XOXD for a year.', icon: 'star', reward: 50, check: (s) => s.accountAgeDays >= 365 },
   { id: 'conversationalist', label: 'Conversationalist', description: 'Posted 10 or more comments.', icon: 'message-circle', reward: 40, check: (s) => s.totalComments >= 10 },
   { id: 'well-liked', label: 'Well Liked', description: 'Received 10 or more likes across your projects.', icon: 'heart', reward: 30, check: (s) => s.totalLikes >= 10 },
   { id: 'social-butterfly', label: 'Social Butterfly', description: 'Follow 10 or more people.', icon: 'send', reward: 25, check: (s) => s.followingCount >= 10 },
+  { id: 'shipper', label: 'Shipper', description: 'Published a project people can try or watch - a live link or a video.', icon: 'play', reward: 40, check: (s) => s.demoProjects >= 1 },
   { id: 'launched', label: 'Launched', description: 'Published your first project.', icon: 'flag', reward: 20, check: (s) => s.projectsPublished >= 1 },
   { id: 'all-set', label: 'All Set', description: 'Set both a bio and an avatar on your profile.', icon: 'check-circle', reward: 15, check: (s) => s.profileComplete },
 ];
@@ -55,6 +57,8 @@ export type UserStats = {
   profileComplete: boolean;
   stylized: boolean;
   ownedItemsCount: number;
+  releases: number;
+  demoProjects: number;
 };
 
 // Aggregates the stats every achievement check needs for one user. Every query
@@ -94,6 +98,8 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     profileComplete,
     stylized,
     ownedItemsCount: ownedItemIds.size,
+    releases: reputation.releases,
+    demoProjects: reputation.demoProjects,
   };
 }
 

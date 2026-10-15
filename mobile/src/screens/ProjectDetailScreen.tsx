@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { CommentsSection } from '../components/CommentsSection';
+import { UpdatesSection } from '../components/UpdatesSection';
 import { PostAction } from '../components/PostCard';
 import { Icon } from '../components/icons';
 import { ReportSheet } from '../components/ReportSheet';
@@ -352,6 +353,10 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               </Pressable>
             ) : null}
           </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 12, paddingTop: 12 }}>
+          <UpdatesSection projectId={projectId} ownerId={project.uid} />
         </View>
 
         <View style={{ padding: 12 }}>

@@ -37,24 +37,41 @@ export async function getProfile(userId: string) {
 
 // Batch-fetch avatars/names for a list of user ids (e.g. the authors of a page
 // of project cards) in one round trip instead of one query per card.
+// The ids of an `in` filter travel in the URL, and Supabase's gateway turns
+// a URL away somewhere past 600 of them (measured: 600 pass, 700 get a 400).
+// The leaderboard asks for up to 1000, so long lists go in slices of this
+// many, side by side. Same as js/profiles-data.js.
+const IDS_PER_REQUEST = 200;
+
 export async function getProfilesByIds(userIds: string[]) {
   const uniqueIds = [...new Set(userIds)].filter(Boolean);
   const map = new Map<string, Profile>();
-  if (uniqueIds.length === 0) return map;
-  const { data, error } = await supabase.from(TABLE).select('*').in('id', uniqueIds);
-  if (error) throw new Error(error.message);
-  data.forEach((row: any) => map.set(row.id, toPlainProfile(row)));
+  const slices: string[][] = [];
+  for (let i = 0; i < uniqueIds.length; i += IDS_PER_REQUEST) slices.push(uniqueIds.slice(i, i + IDS_PER_REQUEST));
+  const results = await Promise.all(slices.map((ids) => supabase.from(TABLE).select('*').in('id', ids)));
+  for (const { data, error } of results) {
+    if (error) throw new Error(error.message);
+    (data || []).forEach((row: any) => map.set(row.id, toPlainProfile(row)));
+  }
   return map;
 }
 
-export async function getAllProfiles(limit = 200) {
+// People whose display name contains `query`, for Explore's search. Asked of
+// the server, so anybody can be found: this used to filter the 200 oldest
+// accounts on the phone. Same as js/profiles-data.js.
+export async function searchProfiles(query: string, limit = 12) {
+  const q = String(query ?? '').trim();
+  if (!q) return [];
+  // The name is matched literally: % _ and \ would otherwise be wildcards.
+  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
-    .order('created_at', { ascending: true })
+    .ilike('display_name', pattern)
+    .order('display_name')
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data.map(toPlainProfile);
+  return (data || []).map(toPlainProfile);
 }
 
 export async function updateProfile(
