@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import pg from 'pg';
+import { parseAchievements, parseShopItems } from '../helpers/catalogs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ADMIN_URL = process.env.TEST_DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
@@ -874,4 +875,387 @@ itRls('releases add XP once per project per day and stop counting after twenty',
   const after = await xp();
   assert.equal(after.releases, 41);
   assert.equal(after.xp, base + 200);
+});
+
+// Back to the connection's own role (the superuser that makes fixtures),
+// after asUser()/asAnon() earlier in the same transaction.
+async function asSuperuser() {
+  await client.query('reset role');
+  await client.query("select set_config('request.jwt.claims', '', true)");
+}
+
+// --- uploads ------------------------------------------------------------
+
+itRls('a signed-in person can upload into their own folder, and only there', async () => {
+  const me = await makeUser();
+  const other = await makeUser();
+
+  await asUser(me);
+  await assert.doesNotReject(
+    client.query("insert into storage.objects (bucket_id, name, owner) values ('uploads', $1, $2)", [`${me}/one.webp`, me]),
+  );
+  await expectRejects(
+    () => client.query("insert into storage.objects (bucket_id, name, owner) values ('uploads', $1, $2)", [`${other}/x.webp`, me]),
+    /row-level security/,
+  );
+});
+
+itRls('uploads stop at 300 files a person', async () => {
+  const me = await makeUser();
+  await client.query(
+    "insert into storage.objects (bucket_id, name, owner) select 'uploads', $1 || '/' || g || '.webp', $1::uuid from generate_series(1, 299) g",
+    [me],
+  );
+
+  await asUser(me);
+  await assert.doesNotReject(
+    client.query("insert into storage.objects (bucket_id, name, owner) values ('uploads', $1, $2)", [`${me}/300.webp`, me]),
+  );
+  await expectRejects(
+    () => client.query("insert into storage.objects (bucket_id, name, owner) values ('uploads', $1, $2)", [`${me}/301.webp`, me]),
+    /row-level security/,
+  );
+});
+
+// The audio guide shares the project. Its select policy holds a subquery,
+// which used to make the uploads policy's own count recurse and fail every
+// insert into storage.objects for everyone.
+itRls("the audio guide's editors can change its bucket, and nobody else can", async () => {
+  const editor = await makeUser();
+  const user = await makeUser();
+  await client.query("insert into public.user_ranks (user_id, rank) values ($1, 'guide_editor')", [editor]);
+
+  await asUser(editor);
+  await assert.doesNotReject(
+    client.query("insert into storage.objects (bucket_id, name) values ('przewodnik', 'routes/a.json')"),
+  );
+  assert.equal((await client.query("select 1 from storage.objects where bucket_id = 'przewodnik'")).rowCount, 1);
+
+  await asUser(user);
+  await expectRejects(
+    () => client.query("insert into storage.objects (bucket_id, name) values ('przewodnik', 'routes/b.json')"),
+    /row-level security/,
+  );
+  assert.equal((await client.query("delete from storage.objects where bucket_id = 'przewodnik'")).rowCount, 0);
+  assert.equal((await client.query('select public.has_rank($1) as r', ['guide_editor'])).rows[0].r, false);
+});
+
+itRls('only an admin can grant or revoke a rank', async () => {
+  const admin = await makeUser({ admin: true });
+  const user = await makeUser();
+
+  await asUser(user);
+  await expectRejects(() => client.query("select public.admin_grant_rank($1, 'guide_editor')", [user]), /Admin access required/);
+
+  await asUser(admin);
+  await client.query("select public.admin_grant_rank($1, 'guide_editor')", [user]);
+  await asUser(user);
+  assert.equal((await client.query("select public.has_rank('guide_editor') as r")).rows[0].r, true);
+
+  await asUser(admin);
+  await client.query("select public.admin_revoke_rank($1, 'guide_editor')", [user]);
+  await asUser(user);
+  assert.equal((await client.query("select public.has_rank('guide_editor') as r")).rows[0].r, false);
+});
+
+// --- counters on the project row ----------------------------------------
+
+itRls('likes_count and comments_count follow the rows, and no client can set them', async () => {
+  const owner = await makeUser();
+  const fan = await makeUser();
+  const projectId = await makeProject(owner);
+  const counts = async () =>
+    (await client.query('select likes_count, comments_count from public.projects where id = $1', [projectId])).rows[0];
+
+  await asUser(fan);
+  await client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, fan]);
+  await client.query("insert into public.comments (project_id, user_id, body) values ($1, $2, 'a'), ($1, $2, 'b')", [projectId, fan]);
+  assert.deepEqual(await counts(), { likes_count: 1, comments_count: 2 });
+
+  await client.query('delete from public.likes where project_id = $1 and user_id = $2', [projectId, fan]);
+  await client.query("delete from public.comments where project_id = $1 and body = 'a'", [projectId]);
+  assert.deepEqual(await counts(), { likes_count: 0, comments_count: 1 });
+
+  await asUser(owner);
+  const { rows } = await client.query(
+    'update public.projects set likes_count = 999, comments_count = 999 where id = $1 returning likes_count, comments_count',
+    [projectId],
+  );
+  assert.deepEqual(rows[0], { likes_count: 0, comments_count: 1 });
+  const inserted = await client.query(
+    "insert into public.projects (user_id, title, likes_count, comments_count) values ($1, 'Fresh', 50, 50) returning likes_count, comments_count",
+    [owner],
+  );
+  assert.deepEqual(inserted.rows[0], { likes_count: 0, comments_count: 0 });
+});
+
+itRls('a like, a comment or a view is not an edit: updated_at stays put', async () => {
+  const owner = await makeUser();
+  const fan = await makeUser();
+  const projectId = await makeProject(owner);
+  const updatedAt = async () =>
+    (await client.query("select updated_at = '2020-01-01'::timestamptz as same from public.projects where id = $1", [projectId])).rows[0].same;
+  // Backdated with the trigger off, since the trigger owns this column.
+  await client.query('alter table public.projects disable trigger projects_set_updated_at');
+  await client.query("update public.projects set updated_at = '2020-01-01' where id = $1", [projectId]);
+  await client.query('alter table public.projects enable trigger projects_set_updated_at');
+
+  await asUser(fan);
+  await client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, fan]);
+  await client.query("insert into public.comments (project_id, user_id, body) values ($1, $2, 'hi')", [projectId, fan]);
+  await client.query('select public.log_project_view($1)', [projectId]);
+  assert.equal(await updatedAt(), true);
+
+  await asUser(owner);
+  await client.query("update public.projects set title = 'Edited' where id = $1", [projectId]);
+  assert.equal(await updatedAt(), false);
+});
+
+itRls('the latest update view shows the newest update per project, and hides drafts from others', async () => {
+  const owner = await makeUser();
+  const other = await makeUser();
+  const live = await makeProject(owner);
+  const draft = await makeProject(owner, { published: false });
+  await client.query(
+    "insert into public.project_updates (project_id, user_id, version, body, created_at) values ($1, $3, 'v1', 'old', now() - interval '2 days'), ($1, $3, 'v2', 'new', now()), ($2, $3, 'd1', 'secret', now())",
+    [live, draft, owner],
+  );
+
+  await asUser(other);
+  const { rows } = await client.query('select project_id, version from public.project_latest_updates where project_id = any($1)', [[live, draft]]);
+  assert.deepEqual(rows, [{ project_id: live, version: 'v2' }]);
+
+  await asUser(owner);
+  assert.equal((await client.query('select 1 from public.project_latest_updates where project_id = $1', [draft])).rowCount, 1);
+});
+
+// --- rate limits that undoing does not reset ----------------------------
+
+itRls('liking and unliking in a loop still runs into the rate limit', async () => {
+  const owner = await makeUser();
+  const me = await makeUser();
+  const projectId = await makeProject(owner);
+
+  await asUser(me);
+  for (let i = 0; i < 120; i++) {
+    await client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, me]);
+    await client.query('delete from public.likes where project_id = $1 and user_id = $2', [projectId, me]);
+  }
+  await expectRejects(
+    () => client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, me]),
+    /Slow down/,
+  );
+});
+
+itRls('following and unfollowing in a loop still runs into the rate limit', async () => {
+  const me = await makeUser();
+  const them = await makeUser();
+
+  await asUser(me);
+  for (let i = 0; i < 60; i++) {
+    await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [me, them]);
+    await client.query('delete from public.follows where follower_id = $1 and following_id = $2', [me, them]);
+  }
+  await expectRejects(
+    () => client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [me, them]),
+    /Slow down/,
+  );
+});
+
+itRls('nobody can read or write the rate limit log directly', async () => {
+  const me = await makeUser();
+  await asUser(me);
+  await expectRejects(() => client.query('select * from public.rate_limit_events'), /permission denied/);
+  await expectRejects(
+    () => client.query("insert into public.rate_limit_events (user_id, action) values ($1, 'likes')", [me]),
+    /permission denied/,
+  );
+});
+
+// --- signed-out views ---------------------------------------------------
+
+async function asAnonFrom(ip) {
+  await client.query('set local role anon');
+  await client.query("select set_config('request.jwt.claims', '', true)");
+  await client.query("select set_config('request.headers', $1, true)", [JSON.stringify(ip ? { 'x-forwarded-for': `${ip}, 10.0.0.1` } : {})]);
+}
+
+itRls('a signed-out address counts once per entry per 6 hours, and is never stored', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+  const view = async () => (await client.query('select public.log_project_view($1) as counted', [projectId])).rows[0].counted;
+
+  await asAnonFrom('203.0.113.7');
+  assert.equal(await view(), true);
+  assert.equal(await view(), false);
+  await asAnonFrom('203.0.113.8');
+  assert.equal(await view(), true);
+
+  await asSuperuser();
+  assert.equal((await client.query('select views_count from public.projects where id = $1', [projectId])).rows[0].views_count, 2);
+  const stored = await client.query("select 1 from public.anon_view_marks where encode(viewer_hash, 'escape') like '%203.0.113%'");
+  assert.equal(stored.rowCount, 0);
+  assert.equal((await client.query('select count(*)::int as n from public.anon_view_marks')).rows[0].n, 2);
+
+  // Six hours later the same address counts again.
+  await client.query("update public.anon_view_marks set created_at = now() - interval '7 hours'");
+  await asAnonFrom('203.0.113.7');
+  assert.equal(await view(), true);
+});
+
+itRls('at most 60 signed-out views per entry per hour count, however many addresses', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+
+  for (let i = 0; i < 65; i++) {
+    await asAnonFrom(`198.51.100.${i}`);
+    await client.query('select public.log_project_view($1)', [projectId]);
+  }
+  await asSuperuser();
+  assert.equal((await client.query('select views_count from public.projects where id = $1', [projectId])).rows[0].views_count, 60);
+});
+
+itRls('signed-out callers cannot read the view marks or the salts', async () => {
+  await asAnon();
+  await expectRejects(() => client.query('select * from public.anon_view_marks'), /permission denied/);
+  await expectRejects(() => client.query('select * from public.view_salts'), /permission denied/);
+});
+
+// --- telling followers --------------------------------------------------
+
+itRls('followers hear about a new entry once, and about a draft not at all', async () => {
+  const author = await makeUser();
+  const follower = await makeUser();
+  const stranger = await makeUser();
+  await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [follower, author]);
+  const posts = async (uid) =>
+    (await client.query("select project_id from public.notifications where user_id = $1 and type = 'post'", [uid])).rows;
+
+  await asUser(author);
+  const draft = (await client.query("insert into public.projects (user_id, title, published) values ($1, 'Draft', false) returning id", [author])).rows[0].id;
+  const live = (await client.query("insert into public.projects (user_id, title, published) values ($1, 'Live', true) returning id", [author])).rows[0].id;
+
+  await asSuperuser();
+  assert.deepEqual(await posts(follower), [{ project_id: live }]);
+  assert.deepEqual(await posts(stranger), []);
+  assert.deepEqual(await posts(author), []);
+
+  // Publishing the draft tells them; taking an entry down and up again does not.
+  await asUser(author);
+  await client.query('update public.projects set published = true where id = $1', [draft]);
+  await client.query('update public.projects set published = false where id = $1', [live]);
+  await client.query('update public.projects set published = true where id = $1', [live]);
+  await client.query("update public.projects set title = 'Live, edited', published = true where id = $1", [live]);
+
+  await asSuperuser();
+  const ids = (await posts(follower)).map((r) => r.project_id).sort();
+  assert.deepEqual(ids, [draft, live].sort());
+});
+
+itRls('followers hear about changelog updates, one unread per project', async () => {
+  const author = await makeUser();
+  const follower = await makeUser();
+  const projectId = await makeProject(author);
+  const draftId = await makeProject(author, { published: false });
+  await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [follower, author]);
+  const updates = async () =>
+    (await client.query("select project_id, read_at is null as unread from public.notifications where user_id = $1 and type = 'update'", [follower])).rows;
+
+  await asUser(author);
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'one'), ($1, $2, 'two')", [projectId, author]);
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'hidden')", [draftId, author]);
+  await asSuperuser();
+  assert.deepEqual(await updates(), [{ project_id: projectId, unread: true }]);
+
+  await client.query("update public.notifications set read_at = now() where user_id = $1 and type = 'update'", [follower]);
+  await asUser(author);
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'three')", [projectId, author]);
+  await asSuperuser();
+  assert.equal((await updates()).length, 2);
+});
+
+itRls('nobody can call the follower notification function directly', async () => {
+  const me = await makeUser();
+  await asUser(me);
+  await expectRejects(() => client.query("select public.notify_followers($1, 'post', null)", [me]), /permission denied/);
+});
+
+// --- reputation ---------------------------------------------------------
+
+itRls('every account has a reputation row, and an idle one is all zeros', async () => {
+  const idle = await makeUser();
+  const { rows } = await client.query('select * from public.user_reputation where user_id = $1', [idle]);
+  assert.equal(rows.length, 1);
+  const { user_id: _id, ...numbers } = rows[0];
+  assert.ok(Object.values(numbers).every((n) => n === 0));
+});
+
+itRls('reputation counts what other people did with published work only', async () => {
+  const author = await makeUser();
+  const fan = await makeUser();
+  const other = await makeUser();
+  const live = await makeProject(author);
+  const draft = await makeProject(author, { published: false });
+  await client.query('insert into public.likes (project_id, user_id) values ($1, $2), ($1, $3), ($4, $2)', [live, fan, other, draft]);
+  await client.query("insert into public.comments (project_id, user_id, body) values ($1, $2, 'x'), ($1, $3, 'mine')", [live, fan, author]);
+  await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [fan, author]);
+  await client.query('insert into public.project_views (project_id, viewer_id) values ($1, $2), ($1, $2), ($1, $3), ($1, null)', [live, fan, other]);
+
+  const { rows } = await client.query(
+    'select published_projects, unique_viewers, likes_received, comments_received, followers, xp, lifetime_points from public.user_reputation where user_id = $1',
+    [author],
+  );
+  assert.deepEqual(rows[0], {
+    published_projects: 1,
+    unique_viewers: 2,
+    likes_received: 2,
+    comments_received: 1,
+    followers: 1,
+    xp: 25 + 2 * 2 + 2 * 30 + 15 + 60,
+    lifetime_points: 2 + 2 * 5 + 3 + 10,
+  });
+
+  const top = await client.query('select user_id from public.user_reputation where xp > 0 and user_id = any($1)', [[author, fan, other]]);
+  assert.deepEqual(top.rows, [{ user_id: author }]);
+});
+
+// --- the catalogs the clients show vs. the tables that pay out -----------
+//
+// js/achievements.js and js/shop-items.js are display copies: the rewards,
+// thresholds and prices that count live in achievement_defs and
+// shop_item_defs. tests/parity.test.js holds the app's copies to the site's;
+// this holds the site's to the database.
+
+// Which metric each client-side stat stands for in achievement_metric().
+const METRIC_OF_STAT = {
+  projectsPublished: 'published_projects',
+  totalLikes: 'total_likes',
+  followerCount: 'follower_count',
+  followingCount: 'following_count',
+  totalComments: 'comment_count',
+  accountAgeDays: 'account_age_days',
+  uniqueViewers: 'unique_viewers',
+  commentsReceived: 'comments_received',
+  ownedItemsCount: 'owned_items_count',
+  stylized: 'stylized',
+  profileComplete: 'profile_complete',
+  releases: 'releases',
+  demoProjects: 'demo_projects',
+};
+
+itRls('every achievement the site shows pays what it says, for what it says', async () => {
+  const shown = parseAchievements(readFileSync(path.join(__dirname, '../../js/achievements.js'), 'utf8')).map((a) => {
+    const m = a.check.match(/^s\.(\w+)(?: >= (\d+))?$/);
+    assert.ok(m, `unexpected check for ${a.id}: ${a.check}`);
+    return { id: a.id, metric: METRIC_OF_STAT[m[1]], threshold: Number(m[2] ?? 1), reward: a.reward };
+  });
+  const { rows } = await client.query('select id, metric, threshold::int as threshold, reward from public.achievement_defs order by id');
+  assert.deepEqual(rows, [...shown].sort((a, b) => a.id.localeCompare(b.id)));
+});
+
+itRls('every item the shop lists is charged at the price it shows', async () => {
+  const listed = parseShopItems(readFileSync(path.join(__dirname, '../../js/shop-items.js'), 'utf8'));
+  const { rows } = await client.query('select id, price from public.shop_item_defs where id = any($1)', [listed.map((i) => i.id)]);
+  const charged = Object.fromEntries(rows.map((r) => [r.id, r.price]));
+  assert.deepEqual(charged, Object.fromEntries(listed.map((i) => [i.id, i.price])));
 });

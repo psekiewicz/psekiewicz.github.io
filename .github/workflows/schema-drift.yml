@@ -1,0 +1,65 @@
+name: Schema drift
+
+# Fails when the live database and schema.sql disagree (tools/schema-drift.mjs
+# lists each difference). It runs:
+#
+# - when schema.sql reaches main, so a change merged but not yet run in the
+#   SQL Editor shows up as a red check instead of a surprise;
+# - every morning, for the opposite case: something changed in the SQL Editor
+#   and never written into schema.sql;
+# - by hand, from the Actions tab.
+#
+# Not on pull requests: a branch that changes schema.sql differs from the live
+# database by design until it is merged and run.
+#
+# Needs the repository secret SUPABASE_DB_URL (see "Schema drift" in the
+# README for a login that can read the catalog and nothing else). Without it
+# the job says so and passes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'schema.sql'
+      - 'tools/schema-fingerprint.sql'
+      - 'tools/schema-drift.mjs'
+      - '.github/workflows/schema-drift.yml'
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Compare the database with schema.sql
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: node tools/schema-drift.mjs

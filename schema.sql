@@ -71,10 +71,21 @@ create index if not exists projects_user_id_idx on public.projects (user_id);
 create index if not exists projects_published_idx on public.projects (published);
 
 -- Keep updated_at current on every edit, server-side.
+--
+-- The dashboard and the admin table show it as "last updated", so only an
+-- edit moves it. The counters on the row (views, likes, comments) change on
+-- their own whenever somebody looks, likes or comments, and that is not the
+-- owner editing anything - it used to make every counted view read as an
+-- edit a minute ago.
 create or replace function public.set_updated_at()
 returns trigger as $$
 begin
-  new.updated_at = now();
+  if (to_jsonb(new) - array['views_count', 'likes_count', 'comments_count', 'updated_at'])
+     = (to_jsonb(old) - array['views_count', 'likes_count', 'comments_count', 'updated_at']) then
+    new.updated_at = old.updated_at;
+  else
+    new.updated_at = now();
+  end if;
   return new;
 end;
 $$ language plpgsql set search_path = public;
@@ -84,12 +95,14 @@ create trigger projects_set_updated_at
   before update on public.projects
   for each row execute function public.set_updated_at();
 
--- Same idea for projects. Two things a client must not set:
+-- Same idea for projects. Things a client must not set:
 --
 -- views_count - owners can legitimately update their own row, so nothing
--- stopped them writing views_count directly, and that number feeds XP,
--- level, leaderboard position and the Scrolls ranking. It is only ever
--- meant to move through log_project_view().
+-- stopped them writing views_count directly, and that number feeds the
+-- feed ranking. It is only ever meant to move through log_project_view().
+--
+-- likes_count, comments_count - the same: counters kept by the triggers in
+-- the "Like and comment counts" section below, never by the owner.
 --
 -- author_name - a denormalised copy of the owner's display name. It was
 -- whatever the client sent, so a project could be published under someone
@@ -102,8 +115,12 @@ begin
   if current_user in ('authenticated', 'anon') then
     if tg_op = 'UPDATE' then
       new.views_count := old.views_count;
+      new.likes_count := old.likes_count;
+      new.comments_count := old.comments_count;
     else
       new.views_count := 0;
+      new.likes_count := 0;
+      new.comments_count := 0;
     end if;
 
     select display_name into v_display_name from public.profiles where id = new.user_id;
@@ -126,32 +143,43 @@ alter table public.projects enable row level security;
 drop policy if exists "Published projects are publicly readable" on public.projects;
 create policy "Published projects are publicly readable"
   on public.projects for select
-  using (published = true or auth.uid() = user_id);
+  using (published = true or (select auth.uid()) = user_id);
 
 -- Signed-in users can only ever create projects owned by themselves.
 drop policy if exists "Users can create their own projects" on public.projects;
 create policy "Users can create their own projects"
   on public.projects for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 -- Only the owner can update their project, and cannot reassign ownership.
 drop policy if exists "Users can update their own projects" on public.projects;
 create policy "Users can update their own projects"
   on public.projects for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- Only the owner can delete their project.
 drop policy if exists "Users can delete their own projects" on public.projects;
 create policy "Users can delete their own projects"
   on public.projects for delete
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 
 -- The Scrolls card is a full-screen portrait, which a landscape thumbnail
 -- rarely suits, so a project can carry its own image just for that feed.
 -- Optional; empty falls back to the project's normal image.
 alter table public.projects add column if not exists scroll_image_url text not null default '';
+
+-- Nothing in this repository reads or writes this. It reached the live
+-- database without ever being committed (a preset background for the old
+-- Scrolls cards, by the look of the names) and every row holds ''. It is
+-- recorded so this file describes the database as it is; delete these lines
+-- together with `alter table public.projects drop column scroll_bg` when
+-- tidying up.
+alter table public.projects add column if not exists scroll_bg text not null default '';
+alter table public.projects drop constraint if exists projects_scroll_bg_check;
+alter table public.projects add constraint projects_scroll_bg_check
+  check (scroll_bg in ('', 'dusk', 'ocean', 'forest', 'ember', 'violet'));
 
 
 -- ============================================================
@@ -181,13 +209,13 @@ create policy "Profiles are publicly readable"
 drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile"
   on public.profiles for insert
-  with check (auth.uid() = id);
+  with check ((select auth.uid()) = id);
 
 drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 -- Auto-create a profile row the moment someone signs up, seeded from the
 -- display name passed to signUp(). Runs with elevated privileges because
@@ -243,13 +271,13 @@ create policy "Follows are publicly readable"
 drop policy if exists "Users can follow as themselves" on public.follows;
 create policy "Users can follow as themselves"
   on public.follows for insert
-  with check (auth.uid() = follower_id);
+  with check ((select auth.uid()) = follower_id);
 
 -- You can only ever remove your own follow row.
 drop policy if exists "Users can unfollow as themselves" on public.follows;
 create policy "Users can unfollow as themselves"
   on public.follows for delete
-  using (auth.uid() = follower_id);
+  using ((select auth.uid()) = follower_id);
 
 
 -- ============================================================
@@ -299,19 +327,19 @@ create trigger profiles_guard_is_admin
 drop policy if exists "Admins can read all projects" on public.projects;
 create policy "Admins can read all projects"
   on public.projects for select
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true));
 
 -- Admins can unpublish or edit any project (moderation).
 drop policy if exists "Admins can update any project" on public.projects;
 create policy "Admins can update any project"
   on public.projects for update
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true));
 
 -- Admins can delete any project (moderation).
 drop policy if exists "Admins can delete any project" on public.projects;
 create policy "Admins can delete any project"
   on public.projects for delete
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true));
 
 -- Lists every account for the admin panel's Users tab, including each
 -- user's email and ban status - neither of which live in `profiles`
@@ -425,7 +453,7 @@ drop policy if exists "Signed-in users can comment on visible projects" on publi
 create policy "Signed-in users can comment on visible projects"
   on public.comments for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and exists (select 1 from public.projects p where p.id = project_id)
   );
 
@@ -435,9 +463,9 @@ drop policy if exists "Comment author, project owner, or admin can delete" on pu
 create policy "Comment author, project owner, or admin can delete"
   on public.comments for delete
   using (
-    auth.uid() = user_id
-    or exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
-    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
+    (select auth.uid()) = user_id
+    or exists (select 1 from public.projects p where p.id = project_id and p.user_id = (select auth.uid()))
+    or exists (select 1 from public.profiles pr where pr.id = (select auth.uid()) and pr.is_admin = true)
   );
 
 -- ============================================================
@@ -469,8 +497,8 @@ drop policy if exists "Signed-in users can like as themselves" on public.likes;
 create policy "Signed-in users can like as themselves"
   on public.likes for insert
   with check (
-    auth.uid() = user_id
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+    (select auth.uid()) = user_id
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> (select auth.uid()))
   );
 
 delete from public.likes l
@@ -480,7 +508,75 @@ where p.id = l.project_id and p.user_id = l.user_id;
 drop policy if exists "Users can remove their own like" on public.likes;
 create policy "Users can remove their own like"
   on public.likes for delete
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
+
+
+-- ============================================================
+-- Like and comment counts, kept on the project row.
+--
+-- Pages used to count by fetching every like and comment row for a page of
+-- entries and tallying them in the browser. PostgREST returns at most 1000
+-- rows, unordered, so past that the tallies came out short - for whichever
+-- entries the cut happened to land on - and the feed ranking ran on wrong
+-- numbers without anything saying so. Now each insert or delete moves a
+-- counter on the project, and a page reads one row per entry.
+--
+-- security definer because the person liking is not the project's owner,
+-- so their own rights could never update the row. The counters are pinned
+-- against client writes by guard_project_client_writes() above, and
+-- set_updated_at() does not treat them moving as an edit.
+-- ============================================================
+
+alter table public.projects add column if not exists likes_count integer not null default 0;
+alter table public.projects add column if not exists comments_count integer not null default 0;
+
+create or replace function public.count_project_reactions()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_project uuid := case when tg_op = 'INSERT' then new.project_id else old.project_id end;
+  v_delta integer := case when tg_op = 'INSERT' then 1 else -1 end;
+begin
+  -- A project being deleted takes its likes and comments with it; by then
+  -- its row is already gone and these simply match nothing.
+  if tg_table_name = 'likes' then
+    update public.projects set likes_count = greatest(0, likes_count + v_delta) where id = v_project;
+  else
+    update public.projects set comments_count = greatest(0, comments_count + v_delta) where id = v_project;
+  end if;
+  return null;
+end;
+$$;
+
+revoke execute on function public.count_project_reactions() from public, anon, authenticated;
+
+drop trigger if exists likes_count_reactions on public.likes;
+create trigger likes_count_reactions
+  after insert or delete on public.likes
+  for each row execute function public.count_project_reactions();
+
+drop trigger if exists comments_count_reactions on public.comments;
+create trigger comments_count_reactions
+  after insert or delete on public.comments
+  for each row execute function public.count_project_reactions();
+
+-- Brings every counter in line with the rows behind it: the first time
+-- this runs, and again on any re-run, so a counter that has drifted for any
+-- reason is put right by running the file. Rows already correct are left
+-- alone.
+update public.projects p
+set likes_count = c.likes, comments_count = c.comments
+from (
+  select pr.id,
+         (select count(*) from public.likes l where l.project_id = pr.id)::integer as likes,
+         (select count(*) from public.comments cm where cm.project_id = pr.id)::integer as comments
+  from public.projects pr
+) c
+where c.id = p.id
+  and (p.likes_count, p.comments_count) is distinct from (c.likes, c.comments);
 
 
 -- ============================================================
@@ -527,6 +623,69 @@ drop policy if exists "Project owner or admin can read the view log" on public.p
 -- return type can't be changed by `create or replace`.
 drop function if exists public.log_project_view(uuid);
 
+-- ---------------------------------------------------------------
+-- Signed-out views
+--
+-- A signed-out visitor has no id, so for a long time every call from one
+-- counted: anyone holding the public anon key could call
+-- log_project_view() in a loop, and every call added a row here for good.
+-- On the free tier's 500 MB that was a way to fill the database, and since
+-- views divide the feed's reaction rate (js/feed-rank.js) and switch off
+-- its boost for new entries at 40, pumping someone else's entry was a way
+-- to push it down the feed.
+--
+-- Two things now bound it:
+--
+--   - The same address counts once per entry per 6 hours, the way a
+--     signed-in viewer does. The address itself is never stored: it is
+--     hashed together with a random salt that changes every day, kept 6
+--     hours to answer "seen already?", then deleted. Without the day's
+--     salt - which is deleted too - a hash cannot be turned back into an
+--     address.
+--   - However many addresses there are, at most 60 signed-out views per
+--     entry per hour count.
+-- ---------------------------------------------------------------
+
+create table if not exists public.view_salts (
+  day date primary key,
+  salt bytea not null
+);
+
+create table if not exists public.anon_view_marks (
+  project_id uuid not null references public.projects (id) on delete cascade,
+  viewer_hash bytea not null,
+  created_at timestamptz not null default now(),
+  primary key (project_id, viewer_hash)
+);
+
+create index if not exists anon_view_marks_created_idx on public.anon_view_marks (created_at);
+
+-- Only log_project_view() touches either, as their owner.
+alter table public.view_salts enable row level security;
+alter table public.anon_view_marks enable row level security;
+revoke all on public.view_salts from anon, authenticated;
+revoke all on public.anon_view_marks from anon, authenticated;
+
+-- The caller's address as Supabase's gateway reports it: Cloudflare's
+-- header first, since a client cannot set it through Cloudflare, then the
+-- first X-Forwarded-For entry. Null outside an API request (the SQL Editor,
+-- the tests), which simply skips the per-address check.
+create or replace function public.request_ip()
+returns text
+language sql
+stable
+set search_path = public
+as $$
+  select nullif(btrim(coalesce(
+    h ->> 'cf-connecting-ip',
+    split_part(h ->> 'x-forwarded-for', ',', 1),
+    h ->> 'x-real-ip'
+  )), '')
+  from (select nullif(current_setting('request.headers', true), '')::json as h) headers;
+$$;
+
+revoke execute on function public.request_ip() from public, anon, authenticated;
+
 create or replace function public.log_project_view(p_project_id uuid)
 returns boolean
 language plpgsql
@@ -536,6 +695,9 @@ as $$
 declare
   v_owner uuid;
   v_uid uuid := auth.uid();
+  v_ip text;
+  v_salt bytea;
+  v_hash bytea;
 begin
   select user_id into v_owner from public.projects where id = p_project_id;
   if v_owner is null then
@@ -548,14 +710,40 @@ begin
     return false;
   end if;
 
-  -- One view per signed-in viewer per 6h. Signed-out visitors can't be
-  -- deduplicated, so they still count towards the public number and
-  -- towards nothing else.
+  -- One view per signed-in viewer per 6h.
   if v_uid is not null and exists (
     select 1 from public.project_views
     where project_id = p_project_id and viewer_id = v_uid and created_at > now() - interval '6 hours'
   ) then
     return false;
+  end if;
+
+  -- Signed out: see "Signed-out views" above.
+  if v_uid is null then
+    if (
+      select count(*) from public.project_views
+      where project_id = p_project_id and viewer_id is null and created_at > now() - interval '1 hour'
+    ) >= 60 then
+      return false;
+    end if;
+
+    v_ip := public.request_ip();
+    if v_ip is not null then
+      insert into public.view_salts (day, salt)
+      values (current_date, uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid()))
+      on conflict (day) do nothing;
+      select salt into v_salt from public.view_salts where day = current_date;
+      delete from public.view_salts where day < current_date;
+
+      v_hash := sha256(v_salt || convert_to(v_ip, 'UTF8'));
+      delete from public.anon_view_marks where created_at <= now() - interval '6 hours';
+      insert into public.anon_view_marks (project_id, viewer_hash)
+      values (p_project_id, v_hash)
+      on conflict (project_id, viewer_hash) do nothing;
+      if not found then
+        return false;
+      end if;
+    end if;
   end if;
 
   insert into public.project_views (project_id, viewer_id) values (p_project_id, v_uid);
@@ -794,7 +982,9 @@ begin
     raise exception 'Unknown achievement: %', p_achievement_id;
   end if;
 
-  if public.achievement_metric(v_uid, v_def.metric) < v_def.threshold then
+  -- coalesce: a metric with nothing to measure is nothing earned. Without
+  -- it a NULL would fail the comparison and pass the check.
+  if coalesce(public.achievement_metric(v_uid, v_def.metric), 0) < v_def.threshold then
     raise exception 'Achievement not yet earned';
   end if;
 
@@ -838,7 +1028,7 @@ begin
   -- behind it is gone (the project was deleted, likes were withdrawn) -
   -- it was verified server-side when it was recorded, and achievements are
   -- permanent. Only a first-time claim has to prove eligibility now.
-  if not v_recorded and public.achievement_metric(v_uid, v_def.metric) < v_def.threshold then
+  if not v_recorded and coalesce(public.achievement_metric(v_uid, v_def.metric), 0) < v_def.threshold then
     raise exception 'Achievement not yet earned';
   end if;
 
@@ -1226,109 +1416,48 @@ create table if not exists public.notifications (
 
 create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
 
+-- 'post' and 'update' tell followers that someone they follow published an
+-- entry or posted to a project's changelog (see "Telling followers" below).
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications add constraint notifications_type_check
+  check (type in ('follow', 'like', 'comment', 'post', 'update'));
+
 alter table public.notifications enable row level security;
 
 drop policy if exists "Users can read their own notifications" on public.notifications;
 create policy "Users can read their own notifications"
   on public.notifications for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- Marking as read is the only update anyone needs; a user can only ever
 -- touch rows addressed to them, which nobody else can even see.
 drop policy if exists "Users can update their own notifications" on public.notifications;
 create policy "Users can update their own notifications"
   on public.notifications for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can delete their own notifications" on public.notifications;
 create policy "Users can delete their own notifications"
   on public.notifications for delete
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- No insert policy at all - see the note above; the triggers below are the
 -- only writers.
 
 -- ============================================================
--- Push tokens - one row per device that's granted notification
--- permission (see mobile/src/lib/push.ts), so add_notification() below
--- can reach someone who isn't looking at the app right now. Nothing
--- ever reads these except send_push() itself.
+-- Push tokens - removed.
+--
+-- Phones used to register an Expo push token here, and add_notification()
+-- below handed every notification to Expo's relay through send_push(). No
+-- released app has registered one since 14 September: the app now asks for
+-- its own notifications (mobile/src/lib/notify.ts), so nothing here talks to
+-- a push service any more. The live database dropped both first; these keep
+-- a database built from this file the same.
 -- ============================================================
 
-create table if not exists public.push_tokens (
-  user_id uuid not null references auth.users (id) on delete cascade,
-  token text not null,
-  created_at timestamptz not null default now(),
-  primary key (user_id, token)
-);
-
-alter table public.push_tokens enable row level security;
-
-drop policy if exists "Users can register their own push token" on public.push_tokens;
-create policy "Users can register their own push token"
-  on public.push_tokens for insert
-  with check (auth.uid() = user_id);
-
-drop policy if exists "Users can remove their own push token" on public.push_tokens;
-create policy "Users can remove their own push token"
-  on public.push_tokens for delete
-  using (auth.uid() = user_id);
-
--- Deliberately no select policy - a token is only ever read from inside
--- send_push() below, a security definer function that (like every other
--- trigger in this file) runs as the table owner and isn't subject to RLS.
-
--- pg_net is Supabase's own extension for firing HTTP requests from
--- Postgres (the same mechanism behind Database Webhooks), pre-installed
--- on every real Supabase project - this is what lets a push go out with
--- no server to host and no Edge Function to deploy. Wrapped so this file
--- still runs everywhere else it's expected to (a plain local Postgres,
--- for instance, testing the RLS policies above) - push notifications
--- just don't go out there.
-do $$
-begin
-  execute 'create extension if not exists pg_net with schema extensions';
-exception when others then
-  raise notice 'pg_net not available - push notifications are disabled (see send_push() below)';
-end
-$$;
-
--- One HTTP call to Expo's push relay per notified user, covering every
--- device they've registered. net.http_post is normally fire-and-forget -
--- it queues the request on a background worker and returns immediately -
--- but the whole call is still wrapped, because the notification this is
--- attached to (a like, a comment, a follow) is the real action and must
--- never fail just because pg_net is missing, misconfigured, or Expo's
--- relay is down.
-create or replace function public.send_push(p_user_id uuid, p_title text, p_body text, p_data jsonb default '{}'::jsonb)
-returns void
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  v_tokens text[];
-begin
-  select array_agg(token) into v_tokens from public.push_tokens where user_id = p_user_id;
-  if v_tokens is null or array_length(v_tokens, 1) = 0 then
-    return;
-  end if;
-
-  begin
-    perform net.http_post(
-      url := 'https://exp.host/--/api/v2/push/send',
-      headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb,
-      body := (
-        select jsonb_agg(jsonb_build_object('to', t, 'title', p_title, 'body', p_body, 'data', p_data))
-        from unnest(v_tokens) as t
-      )
-    );
-  exception when others then
-    null;
-  end;
-end;
-$$;
+drop function if exists public.send_push(uuid, text, text, jsonb);
+drop table if exists public.push_tokens;
 
 -- Skips when the same person already has an unread notification of the
 -- same kind about the same thing. Without this, unliking and re-liking (or
@@ -1344,10 +1473,6 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  v_actor_name text;
-  v_project_title text;
-  v_body text;
 begin
   if p_user_id is null or p_actor_id is null or p_user_id = p_actor_id then
     return;
@@ -1366,22 +1491,6 @@ begin
 
   insert into public.notifications (user_id, actor_id, type, project_id)
   values (p_user_id, p_actor_id, p_type, p_project_id);
-
-  select display_name into v_actor_name from public.profiles where id = p_actor_id;
-  v_actor_name := coalesce(nullif(v_actor_name, ''), 'Someone');
-
-  if p_project_id is not null then
-    select title into v_project_title from public.projects where id = p_project_id;
-  end if;
-
-  v_body := case p_type
-    when 'follow' then v_actor_name || ' followed you.'
-    when 'like' then v_actor_name || ' liked ' || coalesce(v_project_title, 'your project') || '.'
-    when 'comment' then v_actor_name || ' commented on ' || coalesce(v_project_title, 'your project') || '.'
-    else v_actor_name || ' did something.'
-  end;
-
-  perform public.send_push(p_user_id, 'XOXD', v_body, jsonb_build_object('type', p_type, 'projectId', p_project_id));
 end;
 $$;
 
@@ -1488,17 +1597,110 @@ drop policy if exists "Owners can post updates to their projects" on public.proj
 create policy "Owners can post updates to their projects"
   on public.project_updates for insert
   with check (
-    auth.uid() = user_id
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+    (select auth.uid()) = user_id
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = (select auth.uid()))
   );
 
 drop policy if exists "Update author or admin can delete" on public.project_updates;
 create policy "Update author or admin can delete"
   on public.project_updates for delete
   using (
-    auth.uid() = user_id
-    or exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true)
+    (select auth.uid()) = user_id
+    or exists (select 1 from public.profiles pr where pr.id = (select auth.uid()) and pr.is_admin = true)
   );
+
+-- The newest update of each project, for a page of cards: "v0.3 - 2d ago".
+-- Cards used to fetch every update of every entry on the page and keep the
+-- first per project, which grows with each project's history and stops at
+-- PostgREST's 1000-row cap. security_invoker, so the policies on
+-- project_updates above decide what each caller sees, exactly as before.
+create or replace view public.project_latest_updates
+with (security_invoker = true) as
+select distinct on (project_id) id, project_id, user_id, version, body, created_at
+from public.project_updates
+order by project_id, created_at desc;
+
+grant select on public.project_latest_updates to anon, authenticated;
+
+
+-- ============================================================
+-- Telling followers
+--
+-- Following someone used to change what you saw only if you went looking:
+-- the person followed was told, and the follower never heard from them
+-- again. Now, when someone you follow publishes an entry or posts to a
+-- project's changelog, it arrives in your notifications like a like does.
+--
+--   'post'   - once per entry, the first time it is published. Taking it
+--              down and putting it back up does not tell anyone twice.
+--   'update' - each changelog post, but no more than one unread per
+--              project: five updates in an afternoon are one notification.
+--
+-- Written by triggers, like every other notification, so no client can
+-- address one to anybody.
+-- ============================================================
+
+create or replace function public.notify_followers(p_actor uuid, p_type text, p_project uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.notifications (user_id, actor_id, type, project_id)
+  select f.follower_id, p_actor, p_type, p_project
+  from public.follows f
+  where f.following_id = p_actor
+    and not exists (
+      select 1 from public.notifications n
+      where n.user_id = f.follower_id
+        and n.type = p_type
+        and n.project_id = p_project
+        and (p_type = 'post' or n.read_at is null)
+    );
+end;
+$$;
+
+revoke execute on function public.notify_followers(uuid, text, uuid) from public, anon, authenticated;
+
+create or replace function public.notify_followers_on_publish()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.published and (tg_op = 'INSERT' or not old.published) then
+    perform public.notify_followers(new.user_id, 'post', new.id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists projects_notify_followers on public.projects;
+create trigger projects_notify_followers
+  after insert or update of published on public.projects
+  for each row execute function public.notify_followers_on_publish();
+
+create or replace function public.notify_followers_on_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- A draft's changelog is nobody else's business yet.
+  if exists (select 1 from public.projects p where p.id = new.project_id and p.published) then
+    perform public.notify_followers(new.user_id, 'update', new.project_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists project_updates_notify_followers on public.project_updates;
+create trigger project_updates_notify_followers
+  after insert on public.project_updates
+  for each row execute function public.notify_followers_on_update();
 
 -- ============================================================
 -- Reputation & earnings
@@ -1543,73 +1745,86 @@ create policy "Update author or admin can delete"
 -- expose publicly - it's what draws the leaderboard and every level chip.
 -- ============================================================
 
+-- One row per account. Shaped for the way it is asked, which is three ways:
+-- one account (collect_earnings() on every page, a profile, a dashboard), a
+-- page of authors (`user_id in (...)` for every level chip on a feed), and
+-- everyone (`xp > 0 order by xp` for the leaderboard and the home page's
+-- "who to follow").
+--
+-- It used to total each table for everybody first and join the totals to
+-- profiles. Postgres narrows that to one account when asked for one, but
+-- not to a list, so a page of 40 authors and the top 20 both totalled the
+-- whole database. Now:
+--
+--   - each account's numbers come from its own published entries (likes,
+--     comments and releases counted per entry, through the indexes), so a
+--     list costs the people on it;
+--   - an account with no published entry and no follower cannot have
+--     anything to count - every number is 0 - and is a row of zeros in a
+--     branch of its own. Asking for `xp > 0` drops that branch before it
+--     runs, so the leaderboard only works through accounts that can be on
+--     it.
+--
+-- Same columns and same numbers as before: on synthetic data (20,000
+-- accounts, 300,000 views) every row matched, a page of 40 authors went
+-- from 230 ms to 42, and the top 20 from 315 ms to 142.
 create or replace view public.user_reputation as
-with pub as (
-  select id, user_id, views_count from public.projects where published = true
-),
-totals as (
-  select user_id, count(*) as published_projects, coalesce(sum(views_count), 0) as total_views
-  from pub group by user_id
-),
-viewers as (
-  select pub.user_id, count(distinct v.viewer_id) as unique_viewers
-  from pub join public.project_views v on v.project_id = pub.id
-  where v.viewer_id is not null
-  group by pub.user_id
-),
-liked as (
-  select pub.user_id, count(*) as likes_received
-  from pub join public.likes l on l.project_id = pub.id
-  group by pub.user_id
-),
-commented as (
-  select pub.user_id, count(*) as comments_received
-  from pub join public.comments c on c.project_id = pub.id and c.user_id <> pub.user_id
-  group by pub.user_id
-),
-followed as (
-  select following_id as user_id, count(*) as followers
-  from public.follows group by following_id
-),
-released as (
-  select pub.user_id, count(distinct (u.project_id, u.created_at::date)) as releases
-  from pub join public.project_updates u on u.project_id = pub.id
-  group by pub.user_id
-),
-demoed as (
-  select user_id, count(*) as demo_projects
-  from public.projects
-  where published = true and (live_url <> '' or media_url <> '')
-  group by user_id
-)
 select
   p.id as user_id,
-  coalesce(t.published_projects, 0)::integer as published_projects,
-  coalesce(t.total_views, 0)::integer as total_views,
-  coalesce(vw.unique_viewers, 0)::integer as unique_viewers,
-  coalesce(lk.likes_received, 0)::integer as likes_received,
-  coalesce(cm.comments_received, 0)::integer as comments_received,
-  coalesce(fl.followers, 0)::integer as followers,
-  (least(coalesce(t.published_projects, 0), 20) * 25
-    + least(coalesce(rl.releases, 0), 20) * 10
-    + coalesce(vw.unique_viewers, 0) * 2
-    + coalesce(lk.likes_received, 0) * 30
-    + coalesce(cm.comments_received, 0) * 15
-    + coalesce(fl.followers, 0) * 60)::integer as xp,
-  (coalesce(vw.unique_viewers, 0) * 1
-    + coalesce(lk.likes_received, 0) * 5
-    + coalesce(cm.comments_received, 0) * 3
-    + coalesce(fl.followers, 0) * 10)::integer as lifetime_points,
-  coalesce(rl.releases, 0)::integer as releases,
-  coalesce(dm.demo_projects, 0)::integer as demo_projects
+  t.published_projects,
+  t.total_views,
+  vw.unique_viewers,
+  t.likes_received,
+  t.comments_received,
+  fl.followers,
+  (least(t.published_projects, 20) * 25
+    + least(t.releases, 20) * 10
+    + vw.unique_viewers * 2
+    + t.likes_received * 30
+    + t.comments_received * 15
+    + fl.followers * 60)::integer as xp,
+  (vw.unique_viewers * 1
+    + t.likes_received * 5
+    + t.comments_received * 3
+    + fl.followers * 10)::integer as lifetime_points,
+  t.releases,
+  t.demo_projects
 from public.profiles p
-left join totals t on t.user_id = p.id
-left join viewers vw on vw.user_id = p.id
-left join liked lk on lk.user_id = p.id
-left join commented cm on cm.user_id = p.id
-left join followed fl on fl.user_id = p.id
-left join released rl on rl.user_id = p.id
-left join demoed dm on dm.user_id = p.id;
+cross join lateral (
+  select count(*)::integer as published_projects,
+         coalesce(sum(pr.views_count), 0)::integer as total_views,
+         (count(*) filter (where pr.live_url <> '' or pr.media_url <> ''))::integer as demo_projects,
+         coalesce(sum((select count(*) from public.likes l where l.project_id = pr.id)), 0)::integer as likes_received,
+         coalesce(sum((
+           select count(*) from public.comments c
+           where c.project_id = pr.id and c.user_id <> pr.user_id
+         )), 0)::integer as comments_received,
+         -- A release is a day with an update on it, per entry.
+         coalesce(sum((
+           select count(distinct u.created_at::date) from public.project_updates u
+           where u.project_id = pr.id
+         )), 0)::integer as releases
+  from public.projects pr
+  where pr.user_id = p.id and pr.published = true
+) t
+cross join lateral (
+  select count(distinct v.viewer_id)::integer as unique_viewers
+  from public.projects pr
+  join public.project_views v on v.project_id = pr.id
+  where pr.user_id = p.id and pr.published = true and v.viewer_id is not null
+) vw
+cross join lateral (
+  select count(*)::integer as followers from public.follows f where f.following_id = p.id
+) fl
+where exists (select 1 from public.projects pr where pr.user_id = p.id and pr.published = true)
+   or exists (select 1 from public.follows f where f.following_id = p.id)
+
+union all
+
+select p.id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+from public.profiles p
+where not exists (select 1 from public.projects pr where pr.user_id = p.id and pr.published = true)
+  and not exists (select 1 from public.follows f where f.following_id = p.id);
 
 grant select on public.user_reputation to anon, authenticated;
 
@@ -1691,20 +1906,20 @@ alter table public.saves enable row level security;
 drop policy if exists "Users can read their own saves" on public.saves;
 create policy "Users can read their own saves"
   on public.saves for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can save as themselves" on public.saves;
 create policy "Users can save as themselves"
   on public.saves for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and exists (select 1 from public.projects p where p.id = project_id)
   );
 
 drop policy if exists "Users can remove their own saves" on public.saves;
 create policy "Users can remove their own saves"
   on public.saves for delete
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- Supabase grants these to new tables in `public` by default, so this is
 -- belt and braces - but a database where that default isn't in place
@@ -1747,20 +1962,20 @@ drop policy if exists "Signed-in users can report as themselves" on public.repor
 create policy "Signed-in users can report as themselves"
   on public.reports for insert
   with check (
-    auth.uid() = reporter_id
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+    (select auth.uid()) = reporter_id
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> (select auth.uid()))
   );
 
 drop policy if exists "Admins can read reports" on public.reports;
 create policy "Admins can read reports"
   on public.reports for select
-  using (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
+  using (exists (select 1 from public.profiles pr where pr.id = (select auth.uid()) and pr.is_admin = true));
 
 drop policy if exists "Admins can update reports" on public.reports;
 create policy "Admins can update reports"
   on public.reports for update
-  using (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true))
-  with check (exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.is_admin = true));
+  using (exists (select 1 from public.profiles pr where pr.id = (select auth.uid()) and pr.is_admin = true))
+  with check (exists (select 1 from public.profiles pr where pr.id = (select auth.uid()) and pr.is_admin = true));
 
 -- Table-level access; the policies above decide the rows. select/update
 -- are granted to every signed-in account on purpose - without a matching
@@ -1855,48 +2070,78 @@ grant execute on function public.admin_close_reports(uuid, text) to authenticate
 -- loop does.
 -- ============================================================
 
--- Counting has to bypass RLS: `reports` has no select policy for ordinary
--- users at all, so a count run as the caller would come back 0 and the
--- limit would never fire. This is `security definer` for that reason and
--- nothing else - the table/column pair is checked against a fixed list
--- and the actor is always auth.uid(), so calling it directly tells you
--- only how many of your own rows you just wrote.
-create or replace function public.rate_limit_count(p_table text, p_column text, p_window interval)
-returns integer
+-- Each limit counts attempts, not surviving rows. Counting rows newer than
+-- the window - how this first worked - let anything that can be undone go
+-- on for ever: like and unlike, follow and unfollow, comment and delete,
+-- and the count never moved. Every insert the limit lets through now
+-- leaves an event here, and deleting the row it belonged to leaves the
+-- event where it is. A rejected insert rolls back with its event, so only
+-- things that happened count.
+--
+-- Nobody reads or writes this table from a client; only rate_limit_take()
+-- below does, as its owner.
+create table if not exists public.rate_limit_events (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  action text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists rate_limit_events_lookup_idx
+  on public.rate_limit_events (user_id, action, created_at);
+
+alter table public.rate_limit_events enable row level security;
+revoke all on public.rate_limit_events from anon, authenticated;
+
+-- Counting rows that still exist is what this replaced.
+drop function if exists public.rate_limit_count(text, text, interval);
+
+-- Takes one go at an action if there is room for it in the window: true
+-- and an event recorded, or false and nothing recorded. security definer
+-- because no client can read or write the events. The actor is always
+-- auth.uid(), so calling it directly only ever spends your own allowance.
+create or replace function public.rate_limit_take(p_action text, p_limit integer, p_window interval)
+returns boolean
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
+  v_uid uuid := auth.uid();
   v_count integer;
 begin
-  if (p_table, p_column) not in (
-    ('comments', 'user_id'),
-    ('projects', 'user_id'),
-    ('likes', 'user_id'),
-    ('follows', 'follower_id'),
-    ('reports', 'reporter_id'),
-    ('saves', 'user_id'),
-    ('project_updates', 'user_id')
-  ) then
-    raise exception 'Not a rate-limited table: %.%', p_table, p_column;
+  if p_action not in ('comments', 'projects', 'likes', 'follows', 'reports', 'project_updates') then
+    raise exception 'Not a rate-limited action: %', p_action;
   end if;
 
-  if auth.uid() is null then
-    return 0;
+  if v_uid is null then
+    return true;
   end if;
 
-  execute format(
-    'select count(*) from public.%I where %I = $1 and created_at > now() - $2',
-    p_table,
-    p_column
-  )
-  into v_count
-  using auth.uid(), p_window;
+  -- One person's attempts at one action take turns, so two inserts fired at
+  -- the same moment cannot both see the last free slot.
+  perform pg_advisory_xact_lock(hashtextextended(v_uid::text || ':' || p_action, 0));
 
-  return v_count;
+  select count(*) into v_count
+  from public.rate_limit_events
+  where user_id = v_uid and action = p_action and created_at > now() - p_window;
+
+  if v_count >= p_limit then
+    return false;
+  end if;
+
+  insert into public.rate_limit_events (user_id, action) values (v_uid, p_action);
+
+  -- Events older than the window can never count again.
+  delete from public.rate_limit_events
+  where user_id = v_uid and action = p_action and created_at <= now() - p_window;
+
+  return true;
 end;
 $$;
+
+revoke execute on function public.rate_limit_take(text, integer, interval) from public, anon;
+grant execute on function public.rate_limit_take(text, integer, interval) to authenticated;
 
 -- Deliberately NOT security definer, and this is the whole point: inside a
 -- definer function current_user is the function's owner, so a check for
@@ -1905,10 +2150,10 @@ $$;
 -- accepted 25 comments against a limit of 20. The counting is delegated to
 -- the definer helper above; the role check stays out here where the role
 -- is still real.
+--
+-- Trigger arguments: the limit, then the window.
 create or replace function public.enforce_rate_limit()
 returns trigger as $$
-declare
-  v_count integer;
 begin
   if current_user not in ('authenticated', 'anon') then
     return new;
@@ -1918,9 +2163,7 @@ begin
     return new;
   end if;
 
-  v_count := public.rate_limit_count(tg_table_name, tg_argv[2], tg_argv[1]::interval);
-
-  if v_count >= tg_argv[0]::integer then
+  if not public.rate_limit_take(tg_table_name, tg_argv[0]::integer, tg_argv[1]::interval) then
     raise exception 'Slow down - too many in a short time. Try again later.';
   end if;
 
@@ -1931,27 +2174,27 @@ $$ language plpgsql set search_path = public;
 drop trigger if exists comments_rate_limit on public.comments;
 create trigger comments_rate_limit
   before insert on public.comments
-  for each row execute function public.enforce_rate_limit('20', '1 hour', 'user_id');
+  for each row execute function public.enforce_rate_limit('20', '1 hour');
 
 drop trigger if exists projects_rate_limit on public.projects;
 create trigger projects_rate_limit
   before insert on public.projects
-  for each row execute function public.enforce_rate_limit('15', '1 hour', 'user_id');
+  for each row execute function public.enforce_rate_limit('15', '1 hour');
 
 drop trigger if exists likes_rate_limit on public.likes;
 create trigger likes_rate_limit
   before insert on public.likes
-  for each row execute function public.enforce_rate_limit('120', '1 hour', 'user_id');
+  for each row execute function public.enforce_rate_limit('120', '1 hour');
 
 drop trigger if exists follows_rate_limit on public.follows;
 create trigger follows_rate_limit
   before insert on public.follows
-  for each row execute function public.enforce_rate_limit('60', '1 hour', 'follower_id');
+  for each row execute function public.enforce_rate_limit('60', '1 hour');
 
 drop trigger if exists reports_rate_limit on public.reports;
 create trigger reports_rate_limit
   before insert on public.reports
-  for each row execute function public.enforce_rate_limit('20', '1 hour', 'reporter_id');
+  for each row execute function public.enforce_rate_limit('20', '1 hour');
 
 
 -- ---------------------------------------------------------------
@@ -2062,7 +2305,7 @@ alter table public.account_ages enable row level security;
 drop policy if exists "You can read your own age" on public.account_ages;
 create policy "You can read your own age"
   on public.account_ages for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- Whole years old today. Null in, null out.
 --
@@ -2268,18 +2511,18 @@ create index if not exists parental_consents_token_idx
 drop policy if exists "Users can create their own projects" on public.projects;
 create policy "Users can create their own projects"
   on public.projects for insert
-  with check (auth.uid() = user_id and public.consent_ok());
+  with check ((select auth.uid()) = user_id and public.consent_ok());
 
 drop policy if exists "Users can follow as themselves" on public.follows;
 create policy "Users can follow as themselves"
   on public.follows for insert
-  with check (auth.uid() = follower_id and public.consent_ok());
+  with check ((select auth.uid()) = follower_id and public.consent_ok());
 
 drop policy if exists "Signed-in users can comment on visible projects" on public.comments;
 create policy "Signed-in users can comment on visible projects"
   on public.comments for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id)
   );
@@ -2288,16 +2531,16 @@ drop policy if exists "Signed-in users can like as themselves" on public.likes;
 create policy "Signed-in users can like as themselves"
   on public.likes for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and public.consent_ok()
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> (select auth.uid()))
   );
 
 drop policy if exists "Users can save as themselves" on public.saves;
 create policy "Users can save as themselves"
   on public.saves for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and public.consent_ok()
     and exists (select 1 from public.projects p where p.id = project_id)
   );
@@ -2306,9 +2549,9 @@ drop policy if exists "Signed-in users can report as themselves" on public.repor
 create policy "Signed-in users can report as themselves"
   on public.reports for insert
   with check (
-    auth.uid() = reporter_id
+    (select auth.uid()) = reporter_id
     and public.consent_ok()
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id <> (select auth.uid()))
   );
 
 -- ---------------------------------------------------------------------------
@@ -2339,26 +2582,26 @@ create policy "Anyone can read active announcements"
   on public.announcements for select
   using (
     (active = true and (expires_at is null or expires_at > now()))
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true)
   );
 
 drop policy if exists "Admins can publish announcements" on public.announcements;
 create policy "Admins can publish announcements"
   on public.announcements for insert
   with check (
-    created_by = auth.uid()
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    created_by = (select auth.uid())
+    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true)
   );
 
 drop policy if exists "Admins can edit announcements" on public.announcements;
 create policy "Admins can edit announcements"
   on public.announcements for update
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true));
 
 drop policy if exists "Admins can delete announcements" on public.announcements;
 create policy "Admins can delete announcements"
   on public.announcements for delete
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true));
 
 -- For a database that already has the first version of the table above.
 alter table public.announcements add column if not exists attachments jsonb not null default '[]'::jsonb check (jsonb_typeof(attachments) = 'array');
@@ -2385,7 +2628,7 @@ create policy "Admins can upload announcement media"
   on storage.objects for insert
   with check (
     bucket_id = 'announcements'
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true)
   );
 
 drop policy if exists "Admins can replace announcement media" on storage.objects;
@@ -2393,7 +2636,7 @@ create policy "Admins can replace announcement media"
   on storage.objects for update
   using (
     bucket_id = 'announcements'
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true)
   );
 
 drop policy if exists "Admins can remove announcement media" on storage.objects;
@@ -2401,7 +2644,7 @@ create policy "Admins can remove announcement media"
   on storage.objects for delete
   using (
     bucket_id = 'announcements'
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin = true)
   );
 
 -- ============================================================
@@ -2411,9 +2654,9 @@ drop policy if exists "Owners can post updates to their projects" on public.proj
 create policy "Owners can post updates to their projects"
   on public.project_updates for insert
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and public.consent_ok()
-    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = auth.uid())
+    and exists (select 1 from public.projects p where p.id = project_id and p.user_id = (select auth.uid()))
   );
 
 drop trigger if exists project_updates_pin_created_at on public.project_updates;
@@ -2424,7 +2667,7 @@ create trigger project_updates_pin_created_at
 drop trigger if exists project_updates_rate_limit on public.project_updates;
 create trigger project_updates_rate_limit
   before insert on public.project_updates
-  for each row execute function public.enforce_rate_limit('10', '1 hour', 'user_id');
+  for each row execute function public.enforce_rate_limit('10', '1 hour');
 
 -- ============================================================
 -- Uploads: pictures and demo clips people add to their posts and profile
@@ -2453,26 +2696,48 @@ on conflict (id) do update
 -- Files live in <user id>/<name>. A person writes only into their own folder,
 -- has room for 300 files, and cannot overwrite (no update policy): a new
 -- picture is a new file, so a link already in a post never changes under it.
+--
+-- The 300 are counted by a function, not by a subquery in the policy. A
+-- policy on storage.objects that reads storage.objects makes Postgres apply
+-- the table's select policies inside it, and as soon as any of those holds a
+-- subquery of its own - the audio guide's below does - every insert into the
+-- table fails with "infinite recursion detected in policy". That is what
+-- stopped every upload, on the site, in the app and in the guide, from the
+-- day the two first met. A function is planned on its own, so it never
+-- nests.
+create or replace function public.my_upload_count()
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer from storage.objects o
+  where o.bucket_id = 'uploads' and split_part(o.name, '/', 1) = (select auth.uid())::text;
+$$;
+
+revoke execute on function public.my_upload_count() from public, anon;
+grant execute on function public.my_upload_count() to authenticated;
+
 drop policy if exists "People upload into their own folder" on storage.objects;
 create policy "People upload into their own folder"
   on storage.objects for insert
   with check (
     bucket_id = 'uploads'
-    and split_part(name, '/', 1) = auth.uid()::text
+    and split_part(name, '/', 1) = (select auth.uid())::text
     and public.consent_ok()
-    and (select count(*) from storage.objects o
-         where o.bucket_id = 'uploads' and split_part(o.name, '/', 1) = auth.uid()::text) < 300
+    and public.my_upload_count() < 300
   );
 
 drop policy if exists "People see their own uploads" on storage.objects;
 create policy "People see their own uploads"
   on storage.objects for select
-  using (bucket_id = 'uploads' and split_part(name, '/', 1) = auth.uid()::text);
+  using (bucket_id = 'uploads' and split_part(name, '/', 1) = (select auth.uid())::text);
 
 drop policy if exists "People remove their own uploads" on storage.objects;
 create policy "People remove their own uploads"
   on storage.objects for delete
-  using (bucket_id = 'uploads' and split_part(name, '/', 1) = auth.uid()::text);
+  using (bucket_id = 'uploads' and split_part(name, '/', 1) = (select auth.uid())::text);
 
 -- Which uploaded clips the weekly ffmpeg pass has already been through
 -- (.github/workflows/media-optimize.yml, tools/media-optimize.mjs). Clips are
@@ -2489,3 +2754,142 @@ create table if not exists public.media_optimized (
   processed_at timestamptz not null default now()
 );
 alter table public.media_optimized enable row level security;
+
+-- ============================================================
+-- The audio guide (Audioprzewodnik, Wczasy Bez Kasy)
+--
+-- A separate app shares this Supabase project; przewodnik/ on this site is
+-- its privacy policy. It keeps its content in the `przewodnik` bucket, and
+-- accounts holding the guide_editor rank may change that content. Nothing
+-- in XOXD reads any of this. It is here so this file describes the whole
+-- database and tools/schema-drift.mjs has nothing to explain away: change
+-- the guide's objects here, in the same shape, or the drift check fails.
+-- ============================================================
+
+create table if not exists public.user_ranks (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  rank text not null check (rank = 'guide_editor'),
+  granted_by uuid references auth.users (id) on delete set null,
+  granted_at timestamptz not null default now(),
+  primary key (user_id, rank)
+);
+
+alter table public.user_ranks enable row level security;
+revoke all on public.user_ranks from anon, authenticated;
+grant select on public.user_ranks to authenticated;
+
+drop policy if exists "Users can see their own ranks" on public.user_ranks;
+create policy "Users can see their own ranks"
+  on public.user_ranks for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "Admins can see all ranks" on public.user_ranks;
+create policy "Admins can see all ranks"
+  on public.user_ranks for select
+  to authenticated
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin));
+
+create or replace function public.has_rank(p_rank text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.user_ranks r
+    where r.user_id = (select auth.uid()) and r.rank = p_rank
+  );
+$$;
+
+create or replace function public.admin_grant_rank(p_user uuid, p_rank text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin) then
+    raise exception 'Admin access required';
+  end if;
+  insert into public.user_ranks (user_id, rank, granted_by)
+  values (p_user, p_rank, (select auth.uid()))
+  on conflict (user_id, rank) do nothing;
+end;
+$$;
+
+create or replace function public.admin_revoke_rank(p_user uuid, p_rank text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin) then
+    raise exception 'Admin access required';
+  end if;
+  delete from public.user_ranks where user_id = p_user and rank = p_rank;
+end;
+$$;
+
+revoke execute on function public.has_rank(text) from public, anon;
+revoke execute on function public.admin_grant_rank(uuid, text) from public, anon;
+revoke execute on function public.admin_revoke_rank(uuid, text) from public, anon;
+grant execute on function public.has_rank(text) to authenticated;
+grant execute on function public.admin_grant_rank(uuid, text) to authenticated;
+grant execute on function public.admin_revoke_rank(uuid, text) to authenticated;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('przewodnik', 'przewodnik', true, 52428800,
+        array['application/json', 'image/jpeg', 'image/png', 'audio/mpeg'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Guide editors can list przewodnik" on storage.objects;
+create policy "Guide editors can list przewodnik"
+  on storage.objects for select
+  to authenticated
+  using (bucket_id = 'przewodnik' and (select public.has_rank('guide_editor')));
+
+drop policy if exists "Guide editors can upload to przewodnik" on storage.objects;
+create policy "Guide editors can upload to przewodnik"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'przewodnik' and (select public.has_rank('guide_editor')));
+
+drop policy if exists "Guide editors can replace in przewodnik" on storage.objects;
+create policy "Guide editors can replace in przewodnik"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'przewodnik' and (select public.has_rank('guide_editor')))
+  with check (bucket_id = 'przewodnik' and (select public.has_rank('guide_editor')));
+
+drop policy if exists "Guide editors can delete from przewodnik" on storage.objects;
+create policy "Guide editors can delete from przewodnik"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'przewodnik' and (select public.has_rank('guide_editor')));
+
+
+-- ============================================================
+-- Indexes for foreign keys
+--
+-- Postgres indexes the referenced side of a foreign key, never the
+-- referencing one. Without these, deleting an account or a project scans
+-- each table below for rows pointing at it, and so does every lookup by
+-- these columns (your own comments for an achievement, for instance).
+-- ============================================================
+
+create index if not exists announcements_created_by_idx on public.announcements (created_by);
+create index if not exists comments_user_id_idx on public.comments (user_id);
+create index if not exists likes_user_id_idx on public.likes (user_id);
+create index if not exists notifications_actor_id_idx on public.notifications (actor_id);
+create index if not exists notifications_project_id_idx on public.notifications (project_id);
+create index if not exists project_updates_user_id_idx on public.project_updates (user_id);
+create index if not exists project_views_viewer_id_idx on public.project_views (viewer_id);
+create index if not exists reports_reporter_id_idx on public.reports (reporter_id);
+create index if not exists saves_project_id_idx on public.saves (project_id);
+create index if not exists shop_bundle_items_item_id_idx on public.shop_bundle_items (item_id);
+create index if not exists user_ranks_granted_by_idx on public.user_ranks (granted_by);
