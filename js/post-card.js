@@ -33,7 +33,32 @@ function coverFor(project) {
   return safeUrl(firstImage(project.description));
 }
 
-export function postHtml(project, { author, level, likeCount = 0, commentCount = 0, liked = false, saved = false } = {}) {
+// What a project lets you do with the thing itself: try it, read its source,
+// and see that it is still being worked on. These are the reasons to open a
+// project, so they sit on the post rather than behind a click - a feed of
+// pictures and captions says nothing about whether there is anything to try.
+// Empty when the project has none of them, so a plain post stays plain.
+export function postBuildHtml(project, latestUpdate) {
+  const live = safeUrl(project.liveUrl);
+  const repo = safeUrl(project.repoUrl);
+  if (!live && !repo && !latestUpdate) return '';
+  const href = `/project.html?id=${encodeURIComponent(project.id)}`;
+  return `
+    <div class="post-build">
+      ${live ? `<a class="btn btn-primary btn-sm" href="${escapeHtml(live)}" target="_blank" rel="noopener noreferrer">${icon('external-link', { size: 14 })} Try it</a>` : ''}
+      ${repo ? `<a class="btn btn-secondary btn-sm" href="${escapeHtml(repo)}" target="_blank" rel="noopener noreferrer">${icon('code', { size: 14 })} Source</a>` : ''}
+      ${
+        latestUpdate
+          ? `<a class="post-build-update" href="${href}#updates">
+               <span class="update-version">${escapeHtml(latestUpdate.version || 'Update')}</span>
+               <time datetime="${escapeHtml(latestUpdate.createdAt)}">${timeAgo(latestUpdate.createdAt)}</time>
+             </a>`
+          : ''
+      }
+    </div>`;
+}
+
+export function postHtml(project, { author, level, likeCount = 0, commentCount = 0, liked = false, saved = false, latestUpdate = null } = {}) {
   const href = `/project.html?id=${encodeURIComponent(project.id)}`;
   const profileHref = `/profile.html?user=${encodeURIComponent(project.uid)}`;
   const type = PROJECT_TYPES[project.type] ? project.type : 'other';
@@ -86,6 +111,7 @@ export function postHtml(project, { author, level, likeCount = 0, commentCount =
                </a>`
             : ''
         }
+        ${postBuildHtml(project, latestUpdate)}
         <footer class="post-actions">
           <a class="post-action" href="${href}#comments" aria-label="${commentCount === 1 ? '1 comment' : `${commentCount} comments`}">
             ${icon('message-circle', { size: 18 })}${commentCount ? `<span>${commentCount}</span>` : ''}

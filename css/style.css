@@ -86,7 +86,7 @@
   --color-border-strong: #d6d4cf;
   --color-text: #191713;
   --color-text-muted: #5c5952;
-  --color-text-faint: #8a867e;
+  --color-text-faint: #6f6b64;
 
   --color-primary: #1f7a99;
   --color-primary-hover: #196681;
@@ -154,7 +154,7 @@
     --color-border-strong: #48443e;
     --color-text: #f6f5f3;
     --color-text-muted: #b9b5ad;
-    --color-text-faint: #8f8b83;
+    --color-text-faint: #9c988f;
 
     --color-primary: #2a86a8;
     --color-primary-hover: #3a9bbd;
@@ -188,7 +188,7 @@
   --color-border-strong: #48443e;
   --color-text: #f6f5f3;
   --color-text-muted: #b9b5ad;
-  --color-text-faint: #8f8b83;
+  --color-text-faint: #9c988f;
 
   --color-primary: #2a86a8;
   --color-primary-hover: #3a9bbd;
@@ -2569,7 +2569,7 @@ body.has-bottom-nav .scroll-card {
   --color-border-strong: #48443e;
   --color-text: #f6f5f3;
   --color-text-muted: #b9b5ad;
-  --color-text-faint: #8f8b83;
+  --color-text-faint: #9c988f;
 
   --color-primary: #2a86a8;
   --color-primary-hover: #3a9bbd;
@@ -2595,7 +2595,7 @@ body.has-bottom-nav .scroll-card {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 45%, transparent 75%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.78) 30%, rgba(0, 0, 0, 0.4) 55%, transparent 80%);
 }
 
 .scroll-content {
@@ -3205,6 +3205,108 @@ body.has-bottom-nav .scroll-card {
 .scroll-card.has-media .scroll-content a,
 .scroll-card.has-media .scroll-content button {
   pointer-events: auto;
+}
+
+/* The caption sits on someone else's picture, which can be any brightness -
+   a pale or yellow image left white type unreadable. The scrim above does
+   most of it; the shadow and the tag chips cover what it cannot. */
+.scroll-card.has-image .scroll-content h2,
+.scroll-card.has-image .scroll-content p,
+.scroll-card.has-image .scroll-content .scroll-author {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 14px rgba(0, 0, 0, 0.5);
+}
+
+.scroll-card.has-image .scroll-content p {
+  color: #fff;
+}
+
+.scroll-card.has-image .scroll-content .tag,
+.scroll-card.has-image .scroll-content .type-badge {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+/* A card that is only words: a typographic page, not a black card with two
+   letters on it. The colour comes from the entry (--scroll-hue). */
+.scroll-card.is-text {
+  align-items: center;
+  background: linear-gradient(160deg, hsl(var(--scroll-hue) 38% 21%), hsl(calc(var(--scroll-hue) + 40) 42% 9%));
+}
+
+.scroll-card.is-text .scroll-content {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.scroll-card.is-text .scroll-content h2 {
+  margin: 14px 0 12px;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.scroll-card.is-text .scroll-content p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 11;
+  overflow: hidden;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+/* Audio: the artwork above the player, on a colour taken from the entry,
+   instead of a small bar floating in black. */
+.scroll-card.is-audio {
+  background: linear-gradient(160deg, hsl(var(--scroll-hue) 38% 21%), hsl(calc(var(--scroll-hue) + 40) 42% 9%));
+}
+
+.scroll-card.is-audio .scroll-card-media {
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 76px 170px 24px;
+  box-sizing: border-box;
+}
+
+.scroll-audio-art {
+  width: min(100%, 260px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* The line under a Scrolls caption that says what opening the card gives you. */
+.scroll-peek {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.scroll-peek-action {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: #191713;
+  font-weight: 700;
+}
+
+.scroll-peek-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- Create bottom sheet + rotating add button ---------- */

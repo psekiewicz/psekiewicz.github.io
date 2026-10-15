@@ -786,3 +786,92 @@ itRls('only an admin can add, replace or remove files in the announcements bucke
   assert.equal((await client.query("update storage.objects set name = 'u/y.bin' where bucket_id = 'announcements'")).rowCount, 0);
   assert.equal((await client.query("delete from storage.objects where bucket_id = 'announcements'")).rowCount, 0);
 });
+
+// --- project updates ---------------------------------------------------
+
+itRls("only a project's owner can post an update to it, and only as themselves", async () => {
+  const owner = await makeUser();
+  const other = await makeUser();
+  const projectId = await makeProject(owner);
+
+  await asUser(owner);
+  await assert.doesNotReject(
+    client.query("insert into public.project_updates (project_id, user_id, version, body) values ($1, $2, 'v1', 'first')", [projectId, owner]),
+  );
+
+  await asUser(other);
+  await expectRejects(
+    () => client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'mine')", [projectId, other]),
+    /row-level security/,
+    'someone else posted on a project that is not theirs',
+  );
+  await expectRejects(
+    () => client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'as owner')", [projectId, owner]),
+    /row-level security/,
+    'someone posted an update as the owner',
+  );
+});
+
+itRls('updates are readable with their project, and a draft keeps its updates private', async () => {
+  const owner = await makeUser();
+  const published = await makeProject(owner, { published: true });
+  const draft = await makeProject(owner, { published: false });
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'a'), ($3, $2, 'b')", [published, owner, draft]);
+
+  await asAnon();
+  const { rows } = await client.query('select project_id from public.project_updates');
+  assert.deepEqual(rows.map((r) => r.project_id), [published]);
+});
+
+itRls('an update can be removed by its author or an admin, not by anyone else', async () => {
+  const owner = await makeUser();
+  const other = await makeUser();
+  const admin = await makeUser({ admin: true });
+  const projectId = await makeProject(owner);
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'x')", [projectId, owner]);
+
+  await asUser(other);
+  assert.equal((await client.query('delete from public.project_updates')).rowCount, 0);
+  await asUser(admin);
+  assert.equal((await client.query('delete from public.project_updates')).rowCount, 1);
+});
+
+itRls('an update is dated by the server and posting is rate limited', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+
+  await asUser(owner);
+  await client.query("insert into public.project_updates (project_id, user_id, body, created_at) values ($1, $2, 'old', '2020-01-01')", [projectId, owner]);
+  const { rows } = await client.query("select 1 from public.project_updates where created_at < '2021-01-01'");
+  assert.equal(rows.length, 0, 'a client chose the date of its own update');
+
+  for (let i = 0; i < 9; i++) {
+    await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'n')", [projectId, owner]);
+  }
+  await expectRejects(
+    () => client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'n')", [projectId, owner]),
+    /Slow down/,
+  );
+});
+
+itRls('releases add XP once per project per day and stop counting after twenty', async () => {
+  const owner = await makeUser();
+  const projectId = await makeProject(owner);
+  const xp = async () => (await client.query('select xp, releases from public.user_reputation where user_id = $1', [owner])).rows[0];
+  const base = (await xp()).xp;
+
+  // Three updates on one day are one release.
+  await client.query("insert into public.project_updates (project_id, user_id, body) values ($1, $2, 'a'), ($1, $2, 'b'), ($1, $2, 'c')", [projectId, owner]);
+  assert.deepEqual(await xp(), { xp: base + 10, releases: 1 });
+
+  // Forty more days: only the first twenty releases pay.
+  for (let d = 1; d <= 40; d++) {
+    await client.query(
+      "insert into public.project_updates (project_id, user_id, body, created_at) values ($1, $2, 'n', now() - ($3 || ' days')::interval)",
+      [projectId, owner, String(d)],
+    );
+  }
+  const after = await xp();
+  assert.equal(after.releases, 41);
+  assert.equal(after.xp, base + 200);
+});

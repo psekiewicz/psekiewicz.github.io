@@ -104,6 +104,14 @@ export const ACHIEVEMENTS = [
     check: (s) => s.ownedItemsCount >= 5,
   },
   {
+    id: 'maintainer',
+    label: 'Maintainer',
+    description: 'Posted updates to your projects on 5 or more different days.',
+    icon: 'code',
+    reward: 60,
+    check: (s) => s.releases >= 5,
+  },
+  {
     id: 'builder',
     label: 'Builder',
     description: 'Published 5 or more projects.',
@@ -150,6 +158,14 @@ export const ACHIEVEMENTS = [
     icon: 'send',
     reward: 25,
     check: (s) => s.followingCount >= 10,
+  },
+  {
+    id: 'shipper',
+    label: 'Shipper',
+    description: 'Published a project people can try or watch - a live link or a video.',
+    icon: 'play',
+    reward: 40,
+    check: (s) => s.demoProjects >= 1,
   },
   {
     id: 'launched',
@@ -202,6 +218,8 @@ export async function getUserStats(userId) {
     totalViews: reputation.totalViews,
     uniqueViewers: reputation.uniqueViewers,
     commentsReceived: reputation.commentsReceived,
+    releases: reputation.releases,
+    demoProjects: reputation.demoProjects,
     followerCount: reputation.followers,
     // The server's number, carried through untouched - see js/levels.js.
     xp: reputation.xp,

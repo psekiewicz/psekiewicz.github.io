@@ -1220,6 +1220,7 @@ textarea:focus {
 
 .rail-more {
   display: block;
+  color: var(--color-primary-hover);
   padding: 10px 18px 8px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -1670,6 +1671,108 @@ textarea:focus {
   .post-detail .post-actions .post-action > span:not(#like-count):not(#save-label) {
     display: none;
   }
+}
+
+/* The try-it / source / last-update row on a post. */
+.post-build {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 2px;
+}
+
+.post-build-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+  text-decoration: none;
+}
+
+/* A project's changelog, drawn like the comments beneath it but dated rather
+   than conversational. */
+.post-updates {
+  padding-top: 18px;
+}
+
+.post-updates .update-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 18px;
+}
+
+.post-updates .update-form input,
+.post-updates .update-form textarea {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.post-updates .update-form textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.post-updates .update-form .btn {
+  align-self: flex-end;
+}
+
+.post-updates .updates-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.post-updates .updates-list > .hint {
+  padding: 20px;
+  margin: 0;
+}
+
+.update {
+  padding: 14px 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.update:first-child {
+  border-top: none;
+}
+
+.update-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-faint);
+}
+
+.update-version {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-weight: 700;
+}
+
+.update-head .comment-delete {
+  margin-left: auto;
+}
+
+.update-body > :first-child {
+  margin-top: 0;
+}
+
+.update-body > :last-child {
+  margin-bottom: 0;
 }
 
 .post-comments {

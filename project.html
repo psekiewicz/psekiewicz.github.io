@@ -61,6 +61,7 @@
         <div class="post-skeleton" aria-hidden="true"></div>
       </div>
     </div>
+    <div id="updates-root"></div>
     <div id="comments-root"></div>
   </main>
 
@@ -96,6 +97,7 @@
     import { renderMarkdown } from '/js/markdown.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getComments, addComment, deleteComment } from '/js/comments-data.js';
+    import { getUpdates, addUpdate, deleteUpdate } from '/js/updates-data.js';
     import { refreshProgress } from '/js/progress-watch.js';
     import { isAdmin } from '/js/admin-data.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
@@ -116,6 +118,7 @@
 
     const root = document.getElementById('project-root');
     const commentsRoot = document.getElementById('comments-root');
+    const updatesRoot = document.getElementById('updates-root');
     const id = new URLSearchParams(window.location.search).get('id');
 
     let currentUser = null;
@@ -411,6 +414,93 @@
       `;
     }
 
+    // The project's changelog. A project is something being made, so what it
+    // has shipped and when is the first thing to read after the project itself.
+    // Only the owner sees the form; an admin can remove an entry.
+    function updateItemHtml(update, canDelete) {
+      return `
+        <article class="update" data-update-id="${escapeHtml(update.id)}">
+          <div class="update-head">
+            ${update.version ? `<span class="update-version">${escapeHtml(update.version)}</span>` : ''}
+            <time datetime="${escapeHtml(update.createdAt)}">${timeAgo(update.createdAt)}</time>
+            ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(update.id)}" aria-label="Delete update">${icon('trash', { size: 14 })}</button>` : ''}
+          </div>
+          <div class="update-body">${renderMarkdown(update.body)}</div>
+        </article>
+      `;
+    }
+
+    async function renderUpdates(project) {
+      let updates;
+      try {
+        updates = await getUpdates(project.id);
+      } catch {
+        // The changelog is an extra; the project and its comments still stand
+        // without it (and until schema.sql has been re-run there is no table).
+        updatesRoot.innerHTML = '';
+        return;
+      }
+      const isOwner = Boolean(currentUser && currentUser.id === project.uid);
+      if (!updates.length && !isOwner) {
+        updatesRoot.innerHTML = '';
+        return;
+      }
+
+      const form = isOwner
+        ? `
+          <form class="update-form" id="update-form">
+            <input id="update-version" type="text" maxlength="24" placeholder="Version (optional) - v0.3" aria-label="Version" />
+            <textarea id="update-body" placeholder="What changed? Fixed, added, shipped…" maxlength="2000" required></textarea>
+            <button class="btn btn-primary" type="submit">${icon('plus', { size: 15 })} Post update</button>
+          </form>
+        `
+        : '';
+      const list = updates.length
+        ? updates.map((u) => updateItemHtml(u, isOwner || currentUserIsAdmin)).join('')
+        : '<p class="hint">No updates yet - post the first one when something changes.</p>';
+
+      updatesRoot.innerHTML = `
+        <section class="post-page post-updates" id="updates">
+          <h2 class="explore-section-title">Updates · ${updates.length}</h2>
+          ${form}
+          <div class="updates-list">${list}</div>
+        </section>
+      `;
+
+      const updateForm = document.getElementById('update-form');
+      if (updateForm) {
+        updateForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const body = document.getElementById('update-body').value.trim();
+          if (!body) return;
+          const submitBtn = updateForm.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          try {
+            await addUpdate(project.id, currentUser.id, { version: document.getElementById('update-version').value, body });
+            refreshProgress();
+            await renderUpdates(project);
+          } catch (err) {
+            alert(err.message);
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
+      updatesRoot.querySelectorAll('.comment-delete').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this update?')) return;
+          btn.disabled = true;
+          try {
+            await deleteUpdate(btn.dataset.id);
+            await renderUpdates(project);
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
     async function renderComments(project) {
       commentsRoot.innerHTML = `<section class="section"><div class="container"><p>Loading comments…</p></div></section>`;
 
@@ -538,7 +628,10 @@
           }
         }
 
-        if (currentProject) renderComments(currentProject);
+        if (currentProject) {
+          renderUpdates(currentProject);
+          renderComments(currentProject);
+        }
       });
     }
   </script>
