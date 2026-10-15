@@ -101,7 +101,7 @@
           <input type="text" id="notice-title" maxlength="80" placeholder="Title" required />
           <textarea id="notice-body" maxlength="4000" rows="6" placeholder="Message" required></textarea>
           <label style="display:grid;gap:4px;font-size:0.85rem;color:var(--color-text-faint);">
-            Files (up to 5, 50 MB each; pictures, films, sound and anything else - deleted when the notice ends)
+            Files (up to 5, 50 MB each; pictures, films, sound and anything else - pictures and films up to 5 minutes are shrunk before upload; deleted when the notice ends)
             <input type="file" id="notice-files" multiple />
           </label>
           <label style="display:grid;gap:4px;font-size:0.85rem;color:var(--color-text-faint);">
@@ -581,9 +581,27 @@
       noticeSend.disabled = true;
       const uploaded = [];
       try {
+        // Pictures and films are shrunk here first (js/compress.js), the same
+        // way people's own uploads are; anything else - or anything this
+        // browser can't shrink - goes up as it is.
+        const { compressFile, asFile, IMAGE_PRESETS, VIDEO_LIMITS } = await import('/js/compress.js');
         for (const [i, file] of files.entries()) {
-          setNoticeStatus('Uploading ' + (i + 1) + ' of ' + files.length + '…');
-          uploaded.push(await uploadAnnouncementFile(currentAdminId, file));
+          const of = (i + 1) + ' of ' + files.length;
+          let body = file;
+          try {
+            body = asFile(
+              await compressFile(file, {
+                preset: IMAGE_PRESETS.attachment,
+                limits: { ...VIDEO_LIMITS, maxSeconds: 300 },
+                onProgress: (p) => setNoticeStatus('Shrinking ' + of + '… ' + Math.round(p * 100) + '% (keep this tab open)'),
+              }),
+              file
+            );
+          } catch {
+            body = file;
+          }
+          setNoticeStatus('Uploading ' + of + '…');
+          uploaded.push(await uploadAnnouncementFile(currentAdminId, body));
         }
         setNoticeStatus('Sending…');
         await publishAnnouncement(currentAdminId, {

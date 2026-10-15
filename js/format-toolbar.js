@@ -108,6 +108,7 @@ export function insertImage(value, start, end, url, caption = '') {
 const BUTTONS = [
   { action: 'heading', label: 'Heading', html: '<b>H</b>' },
   { action: 'bold', label: 'Bold (Ctrl+B)', html: '<b>B</b>' },
+  { action: 'upload', label: 'Upload a picture', html: () => icon('upload', { size: 15 }) },
   { action: 'image', label: 'Picture from a link', html: () => icon('image', { size: 15 }) },
   { action: 'link', label: 'Link (Ctrl+K)', html: () => icon('globe', { size: 15 }) },
   { action: 'bullets', label: 'Bulleted list', html: '•&thinsp;≡' },
@@ -159,6 +160,11 @@ export function attachFormatToolbar(textarea) {
   textarea.classList.add('fmt-textarea');
   textarea.before(bar);
   textarea.after(preview);
+  // Where an uploading picture says how it's getting on.
+  const uploadStatus = document.createElement('div');
+  uploadStatus.className = 'upload-status';
+  uploadStatus.setAttribute('aria-live', 'polite');
+  preview.after(uploadStatus);
 
   const apply = (result) => {
     if (!result) return;
@@ -194,6 +200,20 @@ export function attachFormatToolbar(textarea) {
         const caption = window.prompt('Caption (optional)', '') || '';
         return apply(insertImage(value, s, e, url, caption));
       }
+      case 'upload':
+        // Loaded on first use: the upload code pulls in the Supabase client,
+        // which the pure editing functions above (and their tests) don't need.
+        import('./upload-field.js')
+          .then(({ pickAndUpload }) =>
+            pickAndUpload({ kind: 'inline', onStatus: (text) => (uploadStatus.textContent = text) })
+          )
+          .then((url) => {
+            if (!url) return;
+            const caption = window.prompt('Caption (optional)', '') || '';
+            apply(insertImage(textarea.value, textarea.selectionStart, textarea.selectionEnd, url, caption));
+          })
+          .catch((err) => window.alert(err.message || 'Upload failed.'));
+        return undefined;
       default:
         return undefined;
     }

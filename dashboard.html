@@ -212,6 +212,7 @@
     import { icon } from '/js/icons.js';
     import { parseMedia } from '/js/media.js';
     import { attachFormatToolbar } from '/js/format-toolbar.js';
+    import { attachUpload } from '/js/upload-field.js';
     import { getSavedProjects, unsaveProject } from '/js/saves-data.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -227,6 +228,12 @@
     ['scrollImageUrl', 'imageUrl'].forEach((id) =>
       document.getElementById(id).addEventListener('input', updateScrollPreview)
     );
+
+    // Each link field can also take a file from this device, compressed
+    // before it goes up (js/compress.js).
+    attachUpload(document.getElementById('mediaUrl'), { kind: 'media', label: 'Upload a picture or clip' });
+    attachUpload(document.getElementById('imageUrl'), { kind: 'cover' });
+    attachUpload(document.getElementById('scrollImageUrl'), { kind: 'scroll' });
 
     const mediaInput = document.getElementById('mediaUrl');
     const mediaHint = document.getElementById('mediaUrl-hint');

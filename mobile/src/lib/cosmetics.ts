@@ -6,12 +6,13 @@ import { RETIRED_ALIASES, SHOP_ITEMS } from './shopItems';
 // same pictures the web draws (assets/shop/, rendered by
 // tools/gen-shop-art.py) - fetched from the site rather than bundled, the way
 // avatar photos already are, so the app doesn't ship a second copy of the art.
-// Animated ones are animated WebP, which expo-image plays.
+// Animated ones are animated WebP, which expo-image plays (and holds on the
+// first frame when animations are off).
 //
-// What can't come across is the nickname fill: the web paints a picture
-// through the glyphs, and React Native has no way to do that without a
-// masking layer the app doesn't carry. A nickname keeps a solid colour taken
-// from its picture, plus a shadow where the web has one.
+// Nicknames are filled with their picture too, the way the web clips it to
+// the glyphs: DisplayName masks the image with the text (MaskedView). The
+// solid colours in NAME_STYLES are what shows while the picture loads, and
+// the whole style for the effects that have no picture.
 //
 // An id that is no longer sold (RETIRED_ALIASES) is drawn as its replacement.
 
@@ -63,9 +64,23 @@ export function frameFor(itemId: string | null | undefined): Frame | null {
   };
 }
 
+// The nickname effects that are a picture - the same list as the
+// .shop-name-* rules with a background in css/style.css. Small Caps is left
+// out on purpose: its picture is only ink (paper in the dark theme), which the
+// theme's own text colour already is, and Oxygene 1 is a typeface.
+const NAME_PICTURES = new Set([
+  'name-gradient',
+  'name-terminal',
+  'name-woof',
+  'name-tropic',
+  'name-ice',
+  'name-gold',
+  'name-glitch',
+]);
+
 export function nameImage(itemId: string | null | undefined): string | null {
   const id = resolveId(itemId);
-  return id && id.startsWith('name-') && isKnown(id) ? `${ASSET_BASE}/name/${id}.webp` : null;
+  return id && NAME_PICTURES.has(id) ? `${ASSET_BASE}/name/${id}.webp` : null;
 }
 
 export const NAME_STYLES: Record<string, TextStyle> = {

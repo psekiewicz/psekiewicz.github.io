@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
@@ -13,9 +14,10 @@ import {
 } from 'react-native';
 import { Text, TextInput } from './Text';
 
-import { frameFor, nameStyle } from '../lib/cosmetics';
+import { frameFor, nameImage, nameStyle } from '../lib/cosmetics';
 import { usePressScale } from '../lib/motion';
 import { initials, timeAgo, typeMeta } from '../lib/utils';
+import { useMotion } from '../theme/MotionProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -279,6 +281,7 @@ export function Chip({ label, active, onPress, icon }: any) {
 
 export function Avatar({ url, name, size = 40, ring }: any) {
   const { colors } = useTheme();
+  const { enabled: motion } = useMotion();
   const frame = ring ? frameFor(ring) : null;
 
   const inner = url ? (
@@ -327,22 +330,65 @@ export function Avatar({ url, name, size = 40, ring }: any) {
           height: frame.box.height * size,
         }}
         contentFit="fill"
+        autoplay={motion}
       />
     </View>
   );
 }
 
+// Style keys that place the name in its row rather than draw its letters. A
+// picture fill puts the text inside a MaskedView, so these move to that box.
+const BOX_STYLE = /^(margin|flex|alignSelf|width|minWidth|maxWidth|position|top|left|right|bottom|zIndex)/;
+
 // The display name, wearing whichever nickname effect the account has equipped.
+//
+// A picture effect is the picture seen through the letters, as on the web: an
+// invisible copy of the text sizes the box, the picture is stretched over it
+// and the same text, drawn opaque, masks it. The effect's solid colour sits
+// under the picture so the name never blanks out while the image loads.
 export function DisplayName({ name, effect, style, numberOfLines = 1 }: any) {
   const { colors } = useTheme();
+  const { enabled: motion } = useMotion();
   const cosmetic = effect ? nameStyle(effect) : null;
-  return (
-    <Text
-      numberOfLines={numberOfLines}
-      style={[{ color: colors.text, fontWeight: '700', fontSize: 14 }, style, cosmetic as TextStyle]}
-    >
+  const picture = effect ? nameImage(effect) : null;
+  const textStyle = [
+    { color: colors.text, fontWeight: '700' as const, fontSize: 14 },
+    style,
+    cosmetic as TextStyle,
+  ];
+
+  if (!picture) {
+    return (
+      <Text numberOfLines={numberOfLines} style={textStyle}>
+        {name}
+      </Text>
+    );
+  }
+
+  const box: Record<string, any> = {};
+  const glyphs: Record<string, any> = {};
+  for (const [key, value] of Object.entries(StyleSheet.flatten(textStyle) || {})) {
+    // A text shadow would widen the mask into a smudge of picture.
+    if (key.startsWith('textShadow')) continue;
+    (BOX_STYLE.test(key) ? box : glyphs)[key] = value;
+  }
+  const label = (extra: TextStyle) => (
+    <Text numberOfLines={numberOfLines} style={[glyphs, extra]}>
       {name}
     </Text>
+  );
+
+  return (
+    <MaskedView style={box} maskElement={label({ color: '#000' })}>
+      {label({ opacity: 0 })}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: cosmetic?.color || colors.text }]} />
+      <Image
+        source={{ uri: picture }}
+        style={StyleSheet.absoluteFill}
+        contentFit="fill"
+        autoplay={motion}
+      />
+    </MaskedView>
   );
 }
 

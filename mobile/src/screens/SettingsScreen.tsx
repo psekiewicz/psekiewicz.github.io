@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
+import { UploadButton } from '../components/UploadButton';
 
 import {
   Body,
@@ -194,6 +195,9 @@ export function SettingsScreen({ navigation }: any) {
             onChangeText={setAvatarUrl}
             placeholder="https://…"
           />
+          <View style={{ marginTop: -space.sm, marginBottom: space.md }}>
+            <UploadButton kind="avatar" onUploaded={setAvatarUrl} />
+          </View>
           <Button label="Save profile" onPress={saveProfile} loading={savingProfile} />
         </View>
       </View>

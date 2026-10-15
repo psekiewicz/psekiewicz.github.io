@@ -2425,3 +2425,67 @@ drop trigger if exists project_updates_rate_limit on public.project_updates;
 create trigger project_updates_rate_limit
   before insert on public.project_updates
   for each row execute function public.enforce_rate_limit('10', '1 hour', 'user_id');
+
+-- ============================================================
+-- Uploads: pictures and demo clips people add to their posts and profile
+-- ============================================================
+-- Every picture field (avatar, cover, Scrolls image, pictures in a post) and
+-- the media field still take a link; next to each there is now an Upload
+-- button that compresses the file on the device first (js/compress.js on the
+-- site, lib/compress.ts in the app) and puts it here. What ends up in the row
+-- is the file's public URL, so nothing that draws a post knows the difference.
+--
+-- Compression happens on the client because that is where the bytes start:
+-- a phone photo is 3-8 MB and a screen recording far more, and squeezing them
+-- before they leave saves the upload as well as the storage and egress. The
+-- server cannot check that it happened, so the bucket keeps its own ceiling:
+-- only these types, at most 25 MB a file, and a cap on files per person
+-- below. Files nothing refers to any more are removed by upload-cleanup
+-- (supabase/functions/upload-cleanup).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('uploads', 'uploads', true, 26214400,
+        array['image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Files live in <user id>/<name>. A person writes only into their own folder,
+-- has room for 300 files, and cannot overwrite (no update policy): a new
+-- picture is a new file, so a link already in a post never changes under it.
+drop policy if exists "People upload into their own folder" on storage.objects;
+create policy "People upload into their own folder"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'uploads'
+    and split_part(name, '/', 1) = auth.uid()::text
+    and public.consent_ok()
+    and (select count(*) from storage.objects o
+         where o.bucket_id = 'uploads' and split_part(o.name, '/', 1) = auth.uid()::text) < 300
+  );
+
+drop policy if exists "People see their own uploads" on storage.objects;
+create policy "People see their own uploads"
+  on storage.objects for select
+  using (bucket_id = 'uploads' and split_part(name, '/', 1) = auth.uid()::text);
+
+drop policy if exists "People remove their own uploads" on storage.objects;
+create policy "People remove their own uploads"
+  on storage.objects for delete
+  using (bucket_id = 'uploads' and split_part(name, '/', 1) = auth.uid()::text);
+
+-- Which uploaded clips the weekly ffmpeg pass has already been through
+-- (.github/workflows/media-optimize.yml, tools/media-optimize.mjs). Clips are
+-- compressed quickly on the device first; once a week every clip not listed
+-- here is encoded again, slowly and properly, and the file in the bucket is
+-- replaced in place when that comes out smaller - so links in posts stay the
+-- same. A row is written either way, so a clip is only ever tried once.
+-- Only the job (with the service key) reads or writes it: RLS on, no policies.
+create table if not exists public.media_optimized (
+  path text primary key,
+  original_size bigint not null,
+  optimized_size bigint not null,
+  replaced boolean not null,
+  processed_at timestamptz not null default now()
+);
+alter table public.media_optimized enable row level security;
