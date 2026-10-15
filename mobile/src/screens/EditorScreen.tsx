@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormatEditor } from '../components/FormatEditor';
 import { TopBar, TopBarButton } from '../components/TopBar';
+import { UploadButton } from '../components/UploadButton';
 import { Icon, IconName } from '../components/icons';
 import { Body, Button, Chip, ErrorNote, Heading, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +19,7 @@ import {
   updateProject,
 } from '../data/projects';
 import { posterFor, resolveMedia } from '../lib/media';
+import type { UploadKind } from '../lib/upload';
 import { normalizeTags, PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { Colors, gutter, radius, space, typography } from '../theme/tokens';
@@ -161,6 +163,14 @@ function MediaSlot({
           onPress={onPaste}
           style={{ alignSelf: 'flex-start' }}
         />
+        <UploadButton
+          kind="media"
+          label="Upload a picture or clip"
+          onUploaded={(next) => {
+            onChange(next);
+            setEditing(false);
+          }}
+        />
       </View>
     );
   }
@@ -294,14 +304,17 @@ function LinkRow({
   value,
   onChangeText,
   colors,
+  upload,
 }: {
   icon: IconName;
   label: string;
   value: string;
   onChangeText: (v: string) => void;
   colors: Colors;
+  /** Picture fields also take a file from the phone, compressed first. */
+  upload?: UploadKind;
 }) {
-  return (
+  const row = (
     <View
       style={{
         flexDirection: 'row',
@@ -326,6 +339,15 @@ function LinkRow({
         keyboardType="url"
         style={{ flex: 1, fontSize: 12, color: colors.text, paddingVertical: 6 }}
       />
+    </View>
+  );
+  if (!upload) return row;
+  return (
+    <View>
+      {row}
+      <View style={{ paddingTop: space.xs, paddingLeft: 17 + space.md }}>
+        <UploadButton kind={upload} onUploaded={onChangeText} />
+      </View>
     </View>
   );
 }
@@ -590,6 +612,7 @@ export function EditorScreen({ route, navigation }: any) {
               value={imageUrl}
               onChangeText={setImageUrl}
               colors={colors}
+              upload="cover"
             />
             <LinkRow
               icon="scrolls"
@@ -597,6 +620,7 @@ export function EditorScreen({ route, navigation }: any) {
               value={scrollImageUrl}
               onChangeText={setScrollImageUrl}
               colors={colors}
+              upload="scroll"
             />
             <LinkRow
               icon="external"

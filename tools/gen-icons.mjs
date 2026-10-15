@@ -64,6 +64,7 @@ const NAMES = {
   check: 'check',
   music: 'music',
   image: 'image',
+  upload: 'upload',
   play: 'play',
   settings: 'settings',
   'log-out': 'log-out',

@@ -8,6 +8,7 @@ import {
   Body,
   Button,
   Card,
+  DisplayName,
   ErrorNote,
   Eyebrow,
   Heading,
@@ -18,7 +19,6 @@ import { useAuth } from '../context/AuthContext';
 import { getProfile } from '../data/profiles';
 import { equipItem, getOwnedItemIds, purchaseBundle, purchaseItem } from '../data/shop';
 import { CosmeticBackground } from '../components/CosmeticBackground';
-import { nameStyle } from '../lib/cosmetics';
 import {
   bundleMissingListPrice,
   bundlePriceFor,
@@ -68,9 +68,7 @@ function Swatch({
       {itemId.startsWith('border-') ? (
         <Avatar name="P" size={avatarSize} ring={itemId} />
       ) : (
-        <Text style={[{ fontWeight: '800', fontSize: size ? 13 : 16, color: colors.text }, nameStyle(itemId) as any]}>
-          Peter
-        </Text>
+        <DisplayName name="Peter" effect={itemId} style={{ fontWeight: '800', fontSize: size ? 13 : 16 }} />
       )}
       {children ? <View style={{ position: 'absolute' }}>{children}</View> : null}
     </View>

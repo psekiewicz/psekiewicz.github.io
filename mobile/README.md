@@ -191,11 +191,13 @@ link can never send the OS somewhere of its own choosing.
 
 **Shop cosmetics are the web's pictures.** Backgrounds and avatar frames are
 the same WebP files the site draws (`assets/shop/`, fetched from the site, not
-bundled), animated ones included - `expo-image` plays them. What does not carry
-over is the nickname fill: the web paints a picture through the glyphs, which
-React Native can't do without a masking layer, so a nickname takes a solid
-colour from its picture instead (`NAME_STYLES` in `lib/cosmetics.ts`). Items
-that are no longer sold are drawn as their replacement (`RETIRED_ALIASES`).
+bundled), animated ones included - `expo-image` plays them, and holds them on
+the first frame when animations are off (Settings, or the system's reduce
+motion). Nicknames get their picture too: `DisplayName` masks the image with
+the text through `@react-native-masked-view/masked-view`, the native
+counterpart of the web's `background-clip: text`; the solid colours in
+`NAME_STYLES` (`lib/cosmetics.ts`) show while it loads. Items that are no
+longer sold are drawn as their replacement (`RETIRED_ALIASES`).
 
 ## Things that need the Edge Function
 

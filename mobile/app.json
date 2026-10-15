@@ -2,7 +2,7 @@
   "expo": {
     "name": "XOXD",
     "slug": "showcase",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "orientation": "default",
     "scheme": "showcase",
     "userInterfaceStyle": "automatic",
@@ -25,6 +25,11 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "intentFilters": [
         {

@@ -150,8 +150,10 @@
     import { onAuthChange, loginUser, changePassword, updateDisplayNameMetadata, logoutUser } from '/js/auth.js';
     import { getProfile, updateProfile } from '/js/profiles-data.js';
     import { deleteAccount } from '/js/admin-data.js';
+    import { attachUpload } from '/js/upload-field.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
+    attachUpload(document.getElementById('avatarUrl'), { kind: 'avatar' });
 
     const settingsSection = document.getElementById('settings-section');
     const loadingRegion = document.getElementById('loading-region');

@@ -9,6 +9,7 @@ import { Colors, radius, space } from '../theme/tokens';
 import { RichText } from './RichText';
 import { Text, TextInput } from './Text';
 import { Button } from './ui';
+import { UploadButton } from './UploadButton';
 
 // The description box with a formatting bar: buttons that write the Markdown
 // lib/markdown.ts reads, a Write/Preview switch, and a small panel for links
@@ -218,6 +219,9 @@ export function FormatEditor({
             placeholderTextColor={colors.textFaint}
             style={field}
           />
+          {panel.kind === 'image' ? (
+            <UploadButton kind="inline" onUploaded={(url) => setPanel((p) => (p ? { ...p, url } : p))} />
+          ) : null}
           {panel.url.trim() && !panelUrl ? (
             <Text style={{ fontSize: 11, color: colors.danger }}>That needs to be a full http(s):// link.</Text>
           ) : null}

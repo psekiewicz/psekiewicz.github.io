@@ -713,6 +713,7 @@ img {
 .icon[data-icon='check'] { --icon-outline: url('/assets/icons/check.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='music'] { --icon-outline: url('/assets/icons/music.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='image'] { --icon-outline: url('/assets/icons/image.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='upload'] { --icon-outline: url('/assets/icons/upload.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='play'] { --icon-outline: url('/assets/icons/play.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='settings'] { --icon-outline: url('/assets/icons/settings.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='log-out'] { --icon-outline: url('/assets/icons/log-out.svg'); --icon: var(--icon-outline); }
@@ -2124,6 +2125,29 @@ tbody tr {
 .hint {
   font-size: 0.85rem;
   color: var(--color-text-faint);
+}
+
+/* ---------- Upload button under a link field (js/upload-field.js) ---------- */
+.upload-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 6px;
+}
+
+.upload-status {
+  font-size: 0.85rem;
+  color: var(--color-text-faint);
+  overflow-wrap: anywhere;
+}
+
+.upload-status:empty {
+  display: none;
+}
+
+.upload-status.is-error {
+  color: var(--color-danger);
 }
 
 /* ---------- Comments ---------- */

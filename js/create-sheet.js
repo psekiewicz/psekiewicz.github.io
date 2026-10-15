@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { showToast } from './toast.js';
 import { parseMedia } from './media.js';
 import { attachFormatToolbar } from './format-toolbar.js';
+import { attachUpload } from './upload-field.js';
 
 // Only local modules are imported statically. Anything that reaches
 // Supabase is pulled in when the form is actually submitted, so opening
@@ -160,6 +161,9 @@ function mount() {
   ['#sheet-scroll-image', '#sheet-image'].forEach((sel) =>
     sheet.querySelector(sel).addEventListener('input', updatePreview)
   );
+  attachUpload(sheet.querySelector('#sheet-media'), { kind: 'media', label: 'Upload a picture or clip' });
+  attachUpload(sheet.querySelector('#sheet-image'), { kind: 'cover' });
+  attachUpload(sheet.querySelector('#sheet-scroll-image'), { kind: 'scroll' });
   updatePreview();
 
   // Tells you straight away whether the link will actually play, rather

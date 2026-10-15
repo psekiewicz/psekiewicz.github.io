@@ -1,0 +1,49 @@
+name: Optimize uploaded clips
+
+# Once a week, encodes every uploaded clip that hasn't been through ffmpeg yet
+# (tools/media-optimize.mjs). Clips are compressed quickly on the device when
+# they're uploaded; this is the slow, proper second pass, and it replaces the
+# file in place only when it comes out smaller.
+#
+# Needs the repository secret SUPABASE_SERVICE_ROLE_KEY (Supabase dashboard >
+# Project Settings > API > service_role). The project URL is read from
+# js/supabase-config.js, like the keep-alive workflow does. Without the secret
+# the job skips itself with a warning.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch: {}
+
+concurrency:
+  group: media-optimize
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Encode clips
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::warning::No SUPABASE_SERVICE_ROLE_KEY secret set - skipping."
+            exit 0
+          fi
+          export SUPABASE_URL=$(grep -oP "url: '\K[^']+" js/supabase-config.js)
+          node tools/media-optimize.mjs

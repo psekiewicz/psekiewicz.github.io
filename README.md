@@ -57,6 +57,15 @@ Once deployed, the admin panel's Ban/Unban/Delete buttons and Settings' "Delete 
 
 **What a ban actually does:** it sets `banned_until` on the Supabase Auth user (native support, not something this app invented) and Supabase rejects new logins/token refreshes for that account until it passes. A banned user's *already-issued* access token can keep working until it next needs to refresh (typically within an hour), since revoking a live token isn't something Supabase's ban exposes - this matches how bans normally behave against JWT-based auth.
 
+### Uploads and compression (bucket, cleanup function, weekly ffmpeg)
+
+Every picture field (avatar, cover, Scrolls image, pictures in a post) and the media field still take a link, and each now also has an **Upload** button. The file is compressed on the device first and goes into the public `uploads` bucket; its URL is written into the field as if it had been pasted, so nothing that draws a post knows the difference.
+
+- **On the device** - pictures are redrawn at no more than the size they are shown at (512 px for an avatar, 1600-1920 px otherwise) and saved as WebP, which also drops the camera's metadata. Clips (up to 60 s) are re-encoded to H.264 MP4 at no more than 720p: on the site with WebCodecs at a constant quality ([`js/compress.js`](./js/compress.js), through Mediabunny, falling back to a MediaRecorder in browsers without WebCodecs), in the app with the phone's hardware encoder ([`mobile/src/lib/upload.ts`](./mobile/src/lib/upload.ts)). Announcement attachments in `admin.html` go through the same compression.
+- **The bucket** - `schema.sql` creates it with its own ceiling, since the server can't check that compression happened: pictures and MP4/WebM only, at most 25 MB a file, 300 files a person, each person writing only into their own folder.
+- **Cleanup** - files nothing refers to any more (a replaced picture, a deleted post, an upload whose form was never saved) are removed after a day by [`supabase/functions/upload-cleanup`](./supabase/functions/upload-cleanup/index.ts). Deploy it with `supabase functions deploy upload-cleanup --no-verify-jwt`, then run [`supabase/upload-cleanup.schedule.sql`](./supabase/upload-cleanup.schedule.sql) once (with your project ref filled in) to run it hourly.
+- **Weekly ffmpeg pass** - the device's encoder is fast but not thorough, so once a week [`.github/workflows/media-optimize.yml`](./.github/workflows/media-optimize.yml) runs [`tools/media-optimize.mjs`](./tools/media-optimize.mjs) on every clip not yet in `media_optimized`: x264 on a slow preset at CRF 26, replacing the file in place when it comes out smaller (links stay the same). Until then a clip is cached for a day only; afterwards for a year. It needs the repository secret `SUPABASE_SERVICE_ROLE_KEY`; without it the job skips itself. It can also be run by hand from the Actions tab.
+
 ## Features
 
 - **Real authentication** - Supabase Authentication handles registration, login, logout, and password reset ("Forgot your password?" on the login page).
@@ -205,6 +214,11 @@ assets/shop/             The shop artwork - bg/ (800x240 backgrounds), border/ (
 fonts/                   Self-hosted webfonts - JetBrains Mono (latin + latin-ext subsets) for the whole UI, plus Oxygene 1 for the shop's nickname effect of the same name (see the licensing note under "Legal / compliance")
 schema.sql              Table definitions + Row Level Security policies - run in the Supabase SQL Editor (see setup above)
 supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion - see "Real bans and account deletion" above
+supabase/functions/upload-cleanup/index.ts  Edge Function that deletes uploads nothing refers to - see "Uploads and compression" above
+js/compress.js            Compresses pictures (WebP) and clips (WebCodecs/MediaRecorder -> MP4) on the device before upload
+js/uploads-data.js        uploadMedia(): compress, then put the file in the uploads bucket and return its public URL
+js/upload-field.js        attachUpload(): the Upload button under a link field; pickAndUpload() for pictures inside a post
+tools/media-optimize.mjs  The weekly ffmpeg pass over uploaded clips (.github/workflows/media-optimize.yml)
 ```
 
 ## Data model
