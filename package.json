@@ -5,9 +5,11 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "test:rls": "node --test tests/integration/*.test.js",
-    "test:all": "npm test && npm run test:rls"
+    "test:smoke": "node --test tests/smoke/*.test.js",
+    "test:all": "npm test && npm run test:rls && npm run test:smoke"
   },
   "devDependencies": {
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "playwright-core": "1.56.1"
   }
 }
