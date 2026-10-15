@@ -96,7 +96,7 @@
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
     import { DISCOVER_POOL, getPublishedProjects } from '/js/projects-data.js';
-    import { getAllProfiles } from '/js/profiles-data.js';
+    import { getProfilesByIds, searchProfiles } from '/js/profiles-data.js';
     import { escapeHtml, avatarHtml, PROJECT_TYPES } from '/js/utils.js';
     import { getLikeCounts } from '/js/likes-data.js';
     import { getCommentCounts } from '/js/comments-data.js';
@@ -124,7 +124,6 @@
       type: PROJECT_TYPES[params.get('type')] ? params.get('type') : '',
       tag: params.get('tag') || '',
       projects: [],
-      profiles: [],
       profileMap: new Map(),
       likeCounts: new Map(),
       commentCounts: new Map(),
@@ -166,9 +165,18 @@
       );
     }
 
-    function renderPeople() {
-      const q = state.q.trim().toLowerCase();
-      const people = q ? state.profiles.filter((p) => p.displayName.toLowerCase().includes(q)).slice(0, 12) : [];
+    // People are searched on the server (searchProfiles), so anybody can be
+    // found. Only the newest answer is drawn: a slow reply to "al" must not
+    // land on top of the one for "alice".
+    let peopleQuery = null;
+    let peopleSeq = 0;
+    async function renderPeople() {
+      const q = state.q.trim();
+      if (q === peopleQuery) return;
+      peopleQuery = q;
+      const seq = ++peopleSeq;
+      const people = q ? await searchProfiles(q, 12).catch(() => []) : [];
+      if (seq !== peopleSeq) return;
       peopleResults.hidden = people.length === 0;
       peopleList.innerHTML = people
         .map(
@@ -237,13 +245,11 @@
         // Search, tags and type filters all run over what has been fetched, so
         // the pool is asked for explicitly. Past this many entries the oldest
         // drop out of search; searching server-side is the honest fix.
-        const [projects, profiles] = await Promise.all([
-          getPublishedProjects({ limit: DISCOVER_POOL }),
-          getAllProfiles().catch(() => []),
-        ]);
+        const projects = await getPublishedProjects({ limit: DISCOVER_POOL });
         state.projects = projects;
-        state.profiles = profiles;
-        state.profileMap = new Map(profiles.map((p) => [p.id, p]));
+        // The authors of what is on the page, by id - not a list of every
+        // account that happened to include them.
+        state.profileMap = await getProfilesByIds(projects.map((p) => p.uid)).catch(() => new Map());
         render();
         container.classList.add('is-settled');
 

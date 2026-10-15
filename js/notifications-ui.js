@@ -9,17 +9,24 @@ import { icon } from './icons.js';
 // which is hidden on mobile in favour of the bottom tab bar.
 let mounted = false;
 
+// 'post' and 'update' come from people you follow (see "Telling followers"
+// in schema.sql). Anything newer than this file reads as a plain "did
+// something with" rather than a blank.
 const VERB = {
   follow: 'started following you',
   like: 'liked',
   comment: 'commented on',
+  post: 'published',
+  update: 'posted an update to',
 };
 
 function notificationHref(notification) {
   if (notification.type === 'follow') {
     return `/profile.html?user=${encodeURIComponent(notification.actorId)}`;
   }
-  return notification.projectId ? `/project.html?id=${encodeURIComponent(notification.projectId)}` : '#';
+  if (!notification.projectId) return '#';
+  const href = `/project.html?id=${encodeURIComponent(notification.projectId)}`;
+  return notification.type === 'update' ? `${href}#updates` : href;
 }
 
 function itemHtml(notification, profiles, titles) {
@@ -31,7 +38,7 @@ function itemHtml(notification, profiles, titles) {
     <a class="notif-item${notification.read ? '' : ' is-unread'}" href="${notificationHref(notification)}">
       ${avatarHtml(actor ? actor.avatarUrl : '', name, 'avatar-sm')}
       <span class="notif-text">
-        <span><strong>${escapeHtml(name)}</strong> ${VERB[notification.type]}${
+        <span><strong>${escapeHtml(name)}</strong> ${VERB[notification.type] || 'did something with'}${
           subject ? ` <strong>${escapeHtml(subject)}</strong>` : ''
         }</span>
         <span class="notif-time">${timeAgo(notification.createdAt)}</span>
@@ -92,7 +99,7 @@ export function mountNotifications() {
     }
 
     if (notifications.length === 0) {
-      list.innerHTML = '<p class="hint">Nothing yet - likes, comments and new followers show up here.</p>';
+      list.innerHTML = '<p class="hint">Nothing yet - likes, comments, new followers and new work from people you follow show up here.</p>';
       return;
     }
 
