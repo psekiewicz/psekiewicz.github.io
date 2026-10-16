@@ -1,18 +1,19 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import type { Project } from '../data/projects';
+import type { ProjectUpdate } from '../data/updates';
 import { coverFor } from '../lib/media';
 import { stripMarkdown } from '../lib/markdown';
-import { formatCount, timeAgo, typeMeta } from '../lib/utils';
+import { formatCount, safeUrl, timeAgo, typeMeta } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
 import { Icon, IconName } from './icons';
 import { placeholderFor } from './ProjectCard';
 import { Text } from './Text';
-import { Avatar, DisplayName, LevelChip } from './ui';
+import { Avatar, Button, DisplayName, LevelChip } from './ui';
 
 // An entry drawn the way a timeline draws a post: the avatar down the left, one
 // column of content beside it, and a row of flat actions spread underneath.
@@ -29,6 +30,8 @@ type Props = {
     equippedNameEffect?: string;
   };
   level?: number;
+  /** The newest entry in the project's changelog, if it has one. */
+  latestUpdate?: ProjectUpdate | null;
   likeCount: number;
   commentCount: number;
   liked: boolean;
@@ -91,6 +94,7 @@ export function PostCard({
   project,
   author,
   level,
+  latestUpdate,
   likeCount,
   commentCount,
   liked,
@@ -112,6 +116,12 @@ export function PostCard({
   // this density would be a screenful of gradient saying nothing. What kind of
   // entry it is moves up beside the time instead.
   const showMedia = !!cover || PLAYABLE.has(type);
+  // What the project lets you do with the thing itself - try it, read its
+  // source - and that it is still being worked on. These are the reasons to
+  // open a project, so they sit on the post, as on the site (postBuildHtml in
+  // js/post-card.js). Nothing here when a project has none of them.
+  const live = safeUrl(project.liveUrl);
+  const repo = safeUrl(project.repoUrl);
 
   return (
     <Pressable
@@ -214,6 +224,27 @@ export function PostCard({
               >
                 <Icon name="play" size={17} color="#ffffff" fill="#ffffff" />
               </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {live || repo || latestUpdate ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 10 }}>
+            {live ? <Button small label="Try it" icon="external" onPress={() => Linking.openURL(live)} /> : null}
+            {repo ? <Button small variant="secondary" label="Source" onPress={() => Linking.openURL(repo)} /> : null}
+            {latestUpdate ? (
+              <Pressable
+                onPress={onPress}
+                hitSlop={6}
+                accessibilityRole="link"
+                accessibilityLabel={`Latest update ${latestUpdate.version || ''}, ${timeAgo(latestUpdate.createdAt)}`}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}
+              >
+                <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.primaryDeep }}>
+                  {latestUpdate.version || 'Update'}
+                </Text>
+                <Text style={{ fontSize: 12.5, color: colors.textFaint }}> · {timeAgo(latestUpdate.createdAt)}</Text>
+              </Pressable>
             ) : null}
           </View>
         ) : null}

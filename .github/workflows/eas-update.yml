@@ -4,10 +4,15 @@ name: Publish OTA update
 # APK installed, without a new build or a sideload. android.yml still produces
 # the APK/AAB; this only ships what changed in JS.
 #
-# An update reaches only builds with the same runtimeVersion, which app.json
-# pins to `expo.version`. So: bump `expo.version` whenever a change touches
-# native code (a new native dependency, a plugin, app.json native settings).
-# Otherwise installed apps would receive JS that expects native code they lack.
+# An update reaches only builds with the same runtimeVersion. app.json sets it
+# from a fingerprint of everything native - dependencies with native code,
+# config plugins, app.json's native settings - so a change that needs a new APK
+# changes it by itself, and installed apps never receive JS that expects
+# native code they lack. It used to be `expo.version`, which relied on someone
+# remembering to bump it; forgetting meant an update that crashed on launch.
+# mobile/fingerprint.config.js leaves out the version fields, because
+# android.yml stamps versionCode just before it builds and this job never sees
+# that number.
 #
 # Needs the repository secret EXPO_TOKEN (expo.dev > Account > Access tokens).
 

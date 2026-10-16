@@ -52,11 +52,25 @@ export async function deleteComment(commentId: string) {
   if (error) throw new Error(error.message);
 }
 
+// Comment counts for a page/feed of projects, from projects.comments_count
+// (kept by a trigger) - the same as getLikeCounts() in likes.ts.
 export async function getCommentCounts(projectIds: string[]) {
   const uniqueIds = [...new Set(projectIds)].filter(Boolean);
   const map = new Map<string, number>();
   if (uniqueIds.length === 0) return map;
-  const { data, error } = await supabase.from(TABLE).select('project_id').in('project_id', uniqueIds);
+  const { data, error } = await supabase.from('projects').select('id, comments_count').in('id', uniqueIds);
+  if (error && (error.code === '42703' || /comments_count/.test(error.message || ''))) {
+    return countCommentRows(uniqueIds);
+  }
+  if (error) throw new Error(error.message);
+  data.forEach((row: any) => map.set(row.id, row.comments_count || 0));
+  return map;
+}
+
+// Before schema.sql has added comments_count.
+async function countCommentRows(projectIds: string[]) {
+  const map = new Map<string, number>();
+  const { data, error } = await supabase.from(TABLE).select('project_id').in('project_id', projectIds);
   if (error) throw new Error(error.message);
   data.forEach((row: any) => map.set(row.project_id, (map.get(row.project_id) || 0) + 1));
   return map;

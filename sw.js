@@ -2,7 +2,7 @@
 // (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
 // connection - but never touches Supabase API/auth calls or any other
 // cross-origin request, so account state and project data always stay live.
-const CACHE_VERSION = 'showcase-shell-v43';
+const CACHE_VERSION = 'showcase-shell-v44';
 
 const PRECACHE_URLS = [
   '/',
@@ -101,21 +101,28 @@ self.addEventListener('fetch', (event) => {
   // the network untouched.
   if (url.origin !== self.location.origin) return;
 
-  // Everything same-origin goes network-first (bypassing the HTTP cache, not
-  // just the Cache Storage), with the cache only as the offline fallback.
+  // Everything same-origin goes network-first, with the cache only as the
+  // offline fallback.
   //
   // Stylesheets and scripts used to be stale-while-revalidate. Pages were
   // already network-first, so right after a deploy a visitor got the new HTML
   // with the previous CSS and JS - a new navbar drawn with the old styles -
   // until a second reload. Serving all of them from the network together is
   // the only way a page and its assets can't come from different deploys.
+  //
+  // "From the network" means asking the server every time, not downloading
+  // everything every time: `cache: 'no-cache'` makes the browser revalidate
+  // its copy with the ETag GitHub Pages sends, so a file that has not changed
+  // comes back as an empty 304. This used to be `no-store`, which skipped the
+  // HTTP cache altogether and fetched every stylesheet and module whole on
+  // every page - about 280 KB for Home, on every navigation.
   event.respondWith(networkFirst(request));
 });
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_VERSION);
   try {
-    const response = await fetch(request, { cache: 'no-store' });
+    const response = await fetch(request, { cache: 'no-cache' });
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch {

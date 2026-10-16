@@ -1,9 +1,11 @@
 # XOXD - Android app
 
 A real React Native app, not a WebView. Every screen is built from native
-Android views (`View`, `FlatList`, `TextInput`, ExoPlayer via `expo-video`);
-there is no `WebView` dependency anywhere in the tree, and nothing in here
-loads the website.
+Android views (`View`, `FlatList`, `TextInput`, ExoPlayer via `expo-video`),
+and nothing in here loads the website. The one WebView is
+`components/ProviderEmbed.tsx`, which plays a YouTube, Vimeo, Spotify or
+SoundCloud entry the only way those services allow: their own embed (see
+"What differs from the website" below).
 
 It talks to the **same Supabase project** the site does, so accounts, entries,
 likes, comments, follows, points and levels are shared: publish something in
@@ -102,6 +104,27 @@ Expo SDK, run `npx expo install --fix` locally to let Expo reconcile React
 Native and every `expo-*` package to versions its SDK actually expects, then
 commit the resulting `package.json` **and** `package-lock.json` together.
 
+## Over-the-air updates
+
+`.github/workflows/eas-update.yml` publishes the JavaScript part of every push
+to `main` through EAS Update, and installed apps pick it up on their next
+start. An update only reaches a build with the same runtime version, and
+`app.json` sets that from a **fingerprint** of everything native: dependencies
+with native code, config plugins, app.json's native settings. A change that
+needs a new APK changes the fingerprint on its own, so an update can never
+reach a build that lacks the native code it expects - which used to depend on
+remembering to bump `expo.version`.
+
+[`fingerprint.config.js`](fingerprint.config.js) leaves the version fields out
+of it: `android.yml` stamps `versionCode` with the run number just before it
+builds, which the update job never sees, and with it included no update would
+ever have matched an APK. Checked by building the fingerprint both ways - on a
+clean checkout, as `eas update` does, and after CI's prebuild and Gradle edits,
+as the build does - and comparing.
+
+Builds made before the switch report runtime version 1.2.0 and receive nothing
+new: install the next APK from the download page once, and updates flow again.
+
 ## Layout
 
 ```
@@ -109,13 +132,13 @@ src/
   data/        one module per table - direct ports of the site's js/*-data.js
   lib/         shared logic: levels, feed ranking, achievements, shop catalog,
                cosmetics, media resolution, motion.ts (shared animations),
-               push.ts (push token registration)
+               notify.ts (the background notification check)
   screens/     one per screen
   components/  ui.tsx (the design system), Text (JetBrains Mono for every Text
                and TextInput), TopBar (the slim bar over every feed screen),
                PostCard / PostTile (timeline posts and grid tiles),
-               FeedTabs, CommentsSection, CommentsSheet,
-               SplashReveal (the startup animation)
+               FeedTabs, CommentsSection, UpdatesSection (a project's
+               changelog), SplashReveal (the startup animation)
   theme/       the site's CSS custom properties, transcribed, plus
                MotionProvider (Settings' animations on/off/system toggle)
   context/     AuthContext - session, profile, and the cold-start gate
@@ -125,7 +148,7 @@ plugins/       Expo config plugins - build-time edits to the generated
 
 ## Notifications
 
-A like, comment or follow shows up as a phone notification (Settings →
+A like, comment or follow - or new work from someone you follow - shows up as a phone notification (Settings →
 Notifications → Enable), even when the app is closed - but it can arrive late,
 and that is deliberate.
 
@@ -179,13 +202,14 @@ a **Paste from clipboard** button for links you have merely copied.
 Two things could not carry over as-is. Both are visible decisions rather
 than omissions:
 
-**Third-party media doesn't play in-app.** A direct `.mp4`/`.mp3`/`.jpg` URL
-plays in a real Android player. YouTube, Vimeo, Spotify and SoundCloud expose
-no playable stream - the only in-app way to play them is their iframe embed,
-which means a WebView. Rather than smuggle one in, `lib/media.ts` resolves the
-canonical link and hands it to Android, which opens the official app if it's
-installed. The host allowlist from `js/media.js` is kept, so a user-supplied
-link can never send the OS somewhere of its own choosing.
+**Third-party players run in their own embed.** A direct `.mp4`/`.mp3`/`.jpg`
+URL plays in a real Android player. YouTube, Vimeo, Spotify and SoundCloud
+expose no playable stream - the only in-app way to play them is their iframe
+embed, so `components/ProviderEmbed.tsx` hosts that iframe in a WebView, on a
+page given the site's origin so the providers treat it as the site. The host
+allowlist from `js/media.js` is kept in `lib/media.ts`: the id is extracted and
+the embed URL rebuilt, so a user-supplied link never becomes the iframe's
+address.
 
 **Shop cosmetics are the web's pictures.** Backgrounds and avatar frames are
 the same WebP files the site draws (`assets/shop/`, fetched from the site, not

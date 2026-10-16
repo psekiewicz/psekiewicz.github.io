@@ -62,11 +62,16 @@ export async function getFollowingCount(userId) {
   return count || 0;
 }
 
+// In slices, like getProfilesByIds() in profiles-data.js: someone with a
+// thousand followers would otherwise ask for a URL the gateway refuses.
 async function profilesForIds(ids) {
-  if (ids.length === 0) return [];
-  const { data, error } = await supabase.from('profiles').select('*').in('id', ids);
-  if (error) throw new Error(error.message);
-  return data.map(toPlainProfile);
+  const slices = [];
+  for (let i = 0; i < ids.length; i += 200) slices.push(ids.slice(i, i + 200));
+  const results = await Promise.all(slices.map((slice) => supabase.from('profiles').select('*').in('id', slice)));
+  return results.flatMap(({ data, error }) => {
+    if (error) throw new Error(error.message);
+    return data.map(toPlainProfile);
+  });
 }
 
 export async function getFollowers(userId) {

@@ -23,28 +23,41 @@ export async function getProfile(userId) {
   return toPlainProfile(data);
 }
 
+// The ids of an `in` filter travel in the URL, and Supabase's gateway turns
+// a URL away somewhere past 600 of them (measured: 600 pass, 700 get a 400).
+// A page of cards never comes near that; a leaderboard of 1000 does, so long
+// lists go in slices of this many, side by side.
+const IDS_PER_REQUEST = 200;
+
 // Batch-fetch avatars/names for a list of user ids (e.g. the authors of a
-// page of project cards) in one round trip instead of one query per card.
-// Returns a Map keyed by user id.
+// page of project cards) instead of one query per card. Returns a Map keyed
+// by user id.
 export async function getProfilesByIds(userIds) {
   const uniqueIds = [...new Set(userIds)].filter(Boolean);
   const map = new Map();
-  if (uniqueIds.length === 0) return map;
-  const { data, error } = await supabase.from(TABLE).select('*').in('id', uniqueIds);
-  if (error) throw new Error(error.message);
-  data.forEach((row) => map.set(row.id, toPlainProfile(row)));
+  const slices = [];
+  for (let i = 0; i < uniqueIds.length; i += IDS_PER_REQUEST) slices.push(uniqueIds.slice(i, i + IDS_PER_REQUEST));
+  const results = await Promise.all(slices.map((ids) => supabase.from(TABLE).select('*').in('id', ids)));
+  for (const { data, error } of results) {
+    if (error) throw new Error(error.message);
+    data.forEach((row) => map.set(row.id, toPlainProfile(row)));
+  }
   return map;
 }
 
-// Every profile, for the leaderboard. Capped rather than unbounded because
-// the caller then computes a level for each one, and that work grows with
-// the number of accounts - the cap is what keeps a busy site from turning
-// one page load into a table scan of everything.
-export async function getAllProfiles(limit = 200) {
+// People whose display name contains `query`, for Explore's search. Asked of
+// the server, so anybody can be found: this used to filter the 200 oldest
+// accounts in the browser, and nobody who joined after them ever turned up.
+export async function searchProfiles(query, limit = 12) {
+  const q = String(query ?? '').trim();
+  if (!q) return [];
+  // The name is matched literally: % _ and \ would otherwise be wildcards.
+  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
-    .order('created_at', { ascending: true })
+    .ilike('display_name', pattern)
+    .order('display_name')
     .limit(limit);
   if (error) throw new Error(error.message);
   return data.map(toPlainProfile);

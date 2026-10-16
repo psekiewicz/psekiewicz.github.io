@@ -90,8 +90,9 @@
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
     import { getFollowingIds, followUser, unfollowUser } from '/js/follows-data.js';
-    import { getAllProfiles } from '/js/profiles-data.js';
-    import { getLevelsForUsers, levelChipHtml } from '/js/levels.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
+    import { getTopByXp } from '/js/reputation-data.js';
+    import { levelFromXp, levelChipHtml } from '/js/levels.js';
     import { effectClass } from '/js/shop-items.js';
     import { escapeHtml, avatarHtml } from '/js/utils.js';
 
@@ -100,6 +101,8 @@
     const root = document.getElementById('leaderboard-root');
     const searchInput = document.getElementById('people-search');
     const TOP_N = 50;
+    // Ranked by the server and searchable within, the same pool the app uses.
+    const POOL = 1000;
 
     let ranked = [];
     let currentUser = null;
@@ -183,33 +186,29 @@
     });
 
     (async () => {
-      let profiles;
+      // The order comes from the server. This used to take the 200 oldest
+      // accounts and sort those, so anybody who signed up after the 200th
+      // could never appear here however much XP they had.
+      let top;
       try {
-        profiles = await getAllProfiles();
+        top = await getTopByXp(POOL);
       } catch (err) {
         root.innerHTML = `<p>Could not load the leaderboard: ${escapeHtml(err.message)}</p>`;
         return;
       }
 
-      if (profiles.length === 0) {
-        root.innerHTML = `<div class="empty-state"><h3>Nobody here yet</h3><p>Be the first to publish something.</p><a class="btn btn-primary" href="register.html">Create free account</a></div>`;
-        return;
-      }
-
-      const [levels, user] = await Promise.all([
-        getLevelsForUsers(profiles.map((p) => p.id)).catch(() => new Map()),
+      const [profiles, user] = await Promise.all([
+        getProfilesByIds(top.map((r) => r.userId)).catch(() => new Map()),
         getCurrentUser().catch(() => null),
       ]);
       currentUser = user;
       if (user) followingIds = await getFollowingIds(user.id).catch(() => new Set());
 
-      ranked = profiles
-        .map((profile) => ({ profile, level: levels.get(profile.id) }))
-        .filter((entry) => entry.level)
-        // Accounts that have never done anything would otherwise pad the
-        // table with a wall of identical Lv 1 / 0 XP rows.
-        .filter((entry) => entry.level.xp > 0)
-        .sort((a, b) => b.level.xp - a.level.xp);
+      // getTopByXp only returns accounts with XP, so nobody pads the table
+      // with a wall of identical Lv 1 / 0 XP rows.
+      ranked = top
+        .map((r) => ({ profile: profiles.get(r.userId), level: levelFromXp(r.xp) }))
+        .filter((entry) => entry.profile);
 
       if (ranked.length === 0) {
         root.innerHTML = `<div class="empty-state"><h3>No XP earned yet</h3><p>XP comes from other people finding your work - publish something and share it.</p></div>`;

@@ -665,6 +665,7 @@ function achievementIcon(name: string): IconName {
     'shopping-bag': 'bookmark',
     grid: 'image',
     eye: 'search',
+    play: 'play',
   };
   return map[name] || 'star';
 }

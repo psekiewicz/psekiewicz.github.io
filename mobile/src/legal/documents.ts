@@ -1,21 +1,21 @@
 // The legal documents, held as data so one copy feeds every screen that shows
 // them and nothing drifts between the app and the website.
 //
-// IMPORTANT, BEFORE RELEASE: the three constants below are placeholders. They
-// are deliberately obvious rather than invented, because a privacy policy that
-// names the wrong controller, or gives an address nobody reads, is worse than
-// one that admits it is unfinished. Fill them in, and have the result read by
-// somebody qualified - none of this was written by a lawyer.
+// The three constants below name who runs XOXD, where requests go and whose
+// law applies - the privacy policy is required to say the first two. The
+// contact address is a personal one until XOXD has its own; changing it here
+// and re-running tools/build-legal.mjs updates the app and the site together.
+// None of this was written by a lawyer; have it read by somebody qualified.
 
 /** The person or company that runs XOXD and answers for the data in it. */
-export const OPERATOR = '[OPERATOR NAME]';
+export const OPERATOR = 'Piotr Sękiewicz';
 /** Where privacy requests, reports and appeals actually arrive. */
-export const CONTACT_EMAIL = '[CONTACT EMAIL]';
+export const CONTACT_EMAIL = 'peter.sekiewicz@gmail.com';
 /** Whose courts and law govern the terms. */
-export const JURISDICTION = '[COUNTRY]';
+export const JURISDICTION = 'Poland';
 
 /** The date the wording last changed. Bump it when the wording changes. */
-export const LEGAL_UPDATED = '26 September 2026';
+export const LEGAL_UPDATED = '16 October 2026';
 
 /** The youngest an account holder may be, matching the check at sign-up. */
 export const MINIMUM_AGE = 13;
@@ -147,8 +147,8 @@ const PRIVACY: LegalDocument = {
         'Your profile. A display name, a short bio, and an avatar, which is a link to an image you already have somewhere else rather than a file you upload to us.',
         'Your date of birth. Held so we know whether an account belongs to someone under 16, which decides whether a parent has to agree to it before the account can publish anything. It is never shown on your profile, no other user can read it, and it is stored apart from the public profile for that reason. Where a parent has to agree, we keep their email address and when they confirmed, as the record of who agreed; it is deleted with the account.',
         'What you publish and do. Entries, their titles, descriptions, tags and links; comments; likes; who you follow; what you save to your private shelf; and any reports you file.',
-        'How entries are read. XOXD counts a view when an entry is opened. A view records which entry, when, and - if you were signed in - which account, so the same person is not counted twice. XOXD does not record your IP address in its own database, and uses no analytics or advertising services. The services that carry the traffic (listed below) keep short-lived server logs, which include IP addresses, as any web server does.',
-        'Notifications. If you turn notifications on in the app, your phone checks XOXD for new likes, comments and follows in the background, about every 15 minutes, and shows them itself. Nothing is registered with a push service, and turning notifications off stops the checks.',
+        'How entries are read. XOXD counts a view when an entry is opened. A view records which entry, when, and - if you were signed in - which account, so the same person is not counted twice. If you were not signed in, your IP address is used for the same purpose, without being stored: it is turned into a one-way code, mixed with a random key that changes every day and is then deleted, and that code is kept for 6 hours to recognise a second visit to the same entry, then deleted. XOXD uses no analytics or advertising services. The services that carry the traffic (listed below) keep short-lived server logs, which include IP addresses, as any web server does.',
+        'Notifications. When someone likes, comments on or follows your work, or someone you follow publishes an entry or posts an update, a notification for you is stored with XOXD; only you can read it. If you turn notifications on in the app, your phone checks for new ones in the background, about every 15 minutes, and shows them itself. Nothing is registered with a push service, and turning notifications off stops the checks.',
         'Settings on your device. Your theme and motion preferences, the tab you last used and similar conveniences are kept on the device itself and are never sent to us.',
       ],
     },
