@@ -2096,11 +2096,23 @@ revoke all on public.rate_limit_events from anon, authenticated;
 -- Counting rows that still exist is what this replaced.
 drop function if exists public.rate_limit_count(text, text, interval);
 
+-- The first version of the helper below took the limit and the window from
+-- its caller, and signed-in users can call it straight through the API. A
+-- window of zero made it delete every event the caller had, so anyone could
+-- start their limits again from nothing whenever they liked.
+drop function if exists public.rate_limit_take(text, integer, interval);
+
 -- Takes one go at an action if there is room for it in the window: true
 -- and an event recorded, or false and nothing recorded. security definer
--- because no client can read or write the events. The actor is always
--- auth.uid(), so calling it directly only ever spends your own allowance.
-create or replace function public.rate_limit_take(p_action text, p_limit integer, p_window interval)
+-- because no client can read or write the events.
+--
+-- The numbers live in here rather than in the triggers' arguments, because
+-- signed-in users can call this directly: the trigger below runs as them,
+-- so they need EXECUTE on it. Nothing a caller passes may change what it
+-- counts or what it deletes. All they choose is the action, and the actor
+-- is always auth.uid(), so a direct call does exactly what one more insert
+-- would - spends one of the caller's own goes.
+create or replace function public.rate_limit_take(p_action text)
 returns boolean
 language plpgsql
 security definer
@@ -2108,9 +2120,20 @@ set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
+  v_window constant interval := interval '1 hour';
+  v_limit integer;
   v_count integer;
 begin
-  if p_action not in ('comments', 'projects', 'likes', 'follows', 'reports', 'project_updates') then
+  v_limit := case p_action
+    when 'comments' then 20
+    when 'projects' then 15
+    when 'likes' then 120
+    when 'follows' then 60
+    when 'reports' then 20
+    when 'project_updates' then 10
+  end;
+
+  if v_limit is null then
     raise exception 'Not a rate-limited action: %', p_action;
   end if;
 
@@ -2124,9 +2147,9 @@ begin
 
   select count(*) into v_count
   from public.rate_limit_events
-  where user_id = v_uid and action = p_action and created_at > now() - p_window;
+  where user_id = v_uid and action = p_action and created_at > now() - v_window;
 
-  if v_count >= p_limit then
+  if v_count >= v_limit then
     return false;
   end if;
 
@@ -2134,14 +2157,14 @@ begin
 
   -- Events older than the window can never count again.
   delete from public.rate_limit_events
-  where user_id = v_uid and action = p_action and created_at <= now() - p_window;
+  where user_id = v_uid and action = p_action and created_at <= now() - v_window;
 
   return true;
 end;
 $$;
 
-revoke execute on function public.rate_limit_take(text, integer, interval) from public, anon;
-grant execute on function public.rate_limit_take(text, integer, interval) to authenticated;
+revoke execute on function public.rate_limit_take(text) from public, anon;
+grant execute on function public.rate_limit_take(text) to authenticated;
 
 -- Deliberately NOT security definer, and this is the whole point: inside a
 -- definer function current_user is the function's owner, so a check for
@@ -2149,9 +2172,8 @@ grant execute on function public.rate_limit_take(text, integer, interval) to aut
 -- fires. The first version of this file made exactly that mistake and
 -- accepted 25 comments against a limit of 20. The counting is delegated to
 -- the definer helper above; the role check stays out here where the role
--- is still real.
---
--- Trigger arguments: the limit, then the window.
+-- is still real. The table's name is the action; the numbers are in
+-- rate_limit_take().
 create or replace function public.enforce_rate_limit()
 returns trigger as $$
 begin
@@ -2163,7 +2185,7 @@ begin
     return new;
   end if;
 
-  if not public.rate_limit_take(tg_table_name, tg_argv[0]::integer, tg_argv[1]::interval) then
+  if not public.rate_limit_take(tg_table_name) then
     raise exception 'Slow down - too many in a short time. Try again later.';
   end if;
 
@@ -2174,27 +2196,27 @@ $$ language plpgsql set search_path = public;
 drop trigger if exists comments_rate_limit on public.comments;
 create trigger comments_rate_limit
   before insert on public.comments
-  for each row execute function public.enforce_rate_limit('20', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 drop trigger if exists projects_rate_limit on public.projects;
 create trigger projects_rate_limit
   before insert on public.projects
-  for each row execute function public.enforce_rate_limit('15', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 drop trigger if exists likes_rate_limit on public.likes;
 create trigger likes_rate_limit
   before insert on public.likes
-  for each row execute function public.enforce_rate_limit('120', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 drop trigger if exists follows_rate_limit on public.follows;
 create trigger follows_rate_limit
   before insert on public.follows
-  for each row execute function public.enforce_rate_limit('60', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 drop trigger if exists reports_rate_limit on public.reports;
 create trigger reports_rate_limit
   before insert on public.reports
-  for each row execute function public.enforce_rate_limit('20', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 
 -- ---------------------------------------------------------------
@@ -2667,7 +2689,7 @@ create trigger project_updates_pin_created_at
 drop trigger if exists project_updates_rate_limit on public.project_updates;
 create trigger project_updates_rate_limit
   before insert on public.project_updates
-  for each row execute function public.enforce_rate_limit('10', '1 hour');
+  for each row execute function public.enforce_rate_limit();
 
 -- ============================================================
 -- Uploads: pictures and demo clips people add to their posts and profile

@@ -1062,6 +1062,30 @@ itRls('following and unfollowing in a loop still runs into the rate limit', asyn
   );
 });
 
+itRls('calling the rate limit helper directly cannot reset it', async () => {
+  const owner = await makeUser();
+  const me = await makeUser();
+  const projectId = await makeProject(owner);
+
+  await asUser(me);
+  for (let i = 0; i < 120; i++) {
+    await client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, me]);
+    await client.query('delete from public.likes where project_id = $1 and user_id = $2', [projectId, me]);
+  }
+  // The first version took the window from its caller, and a window of zero
+  // deleted every event the caller had. All a caller passes now is the
+  // action, and at the limit a direct call is refused like an insert.
+  await expectRejects(
+    () => client.query("select public.rate_limit_take('likes', 100000, interval '0 seconds')"),
+    /does not exist/,
+  );
+  assert.equal((await client.query("select public.rate_limit_take('likes') as ok")).rows[0].ok, false);
+  await expectRejects(
+    () => client.query('insert into public.likes (project_id, user_id) values ($1, $2)', [projectId, me]),
+    /Slow down/,
+  );
+});
+
 itRls('nobody can read or write the rate limit log directly', async () => {
   const me = await makeUser();
   await asUser(me);
