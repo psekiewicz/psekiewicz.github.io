@@ -8,14 +8,14 @@
 // None of this was written by a lawyer; have it read by somebody qualified.
 
 /** The person or company that runs XOXD and answers for the data in it. */
-export const OPERATOR = 'Peter Sekiewicz';
+export const OPERATOR = 'Piotr Sękiewicz';
 /** Where privacy requests, reports and appeals actually arrive. */
 export const CONTACT_EMAIL = 'peter.sekiewicz@gmail.com';
 /** Whose courts and law govern the terms. */
 export const JURISDICTION = 'Poland';
 
 /** The date the wording last changed. Bump it when the wording changes. */
-export const LEGAL_UPDATED = '15 October 2026';
+export const LEGAL_UPDATED = '16 October 2026';
 
 /** The youngest an account holder may be, matching the check at sign-up. */
 export const MINIMUM_AGE = 13;
