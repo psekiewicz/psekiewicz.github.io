@@ -30,11 +30,6 @@ export function needsBirthDate(age) {
   return !age || !age.birthDate;
 }
 
-/** Whether a 13-15 year old is still waiting on a parent. */
-export function awaitingParent(age) {
-  return Boolean(age && age.birthDate && age.consentState === 'pending');
-}
-
 /**
  * Fills the date in. The server decides what it means and refuses a second
  * attempt, so the returned state is the server's answer rather than ours.

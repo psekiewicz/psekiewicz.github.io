@@ -38,10 +38,6 @@ export function levelFromXp(xp: number): LevelInfo {
   };
 }
 
-export function levelFromStats(stats: { xp?: number } | null) {
-  return levelFromXp(stats ? stats.xp || 0 : 0);
-}
-
 // Levels for a whole page of authors in a single query. The reputation module
 // is imported lazily so card rendering stays free of the Supabase client.
 export async function getLevelsForUsers(userIds: string[]) {

@@ -46,13 +46,6 @@ export async function resetPassword(email: string) {
   if (error) throw new Error(friendlyError(error));
 }
 
-export async function getCurrentUser() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
 // Keeps auth.user_metadata.display_name in sync with the profiles table, which
 // is the source of truth for display name everywhere else.
 export async function updateDisplayNameMetadata(displayName: string) {

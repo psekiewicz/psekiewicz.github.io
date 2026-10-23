@@ -61,11 +61,6 @@ export async function getAchievementRecords(userId: string) {
   };
 }
 
-export const EMPTY_ACHIEVEMENT_RECORDS = {
-  unlocked: new Set<string>(),
-  claimed: new Set<string>(),
-};
-
 // Marks an achievement as permanently earned without paying anything out.
 // Eligibility is re-checked server-side.
 export async function recordAchievementUnlock(achievementId: string) {

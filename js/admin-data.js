@@ -8,12 +8,6 @@ export async function isAdmin(userId) {
   return Boolean(data && data.is_admin);
 }
 
-export async function getUserCount() {
-  const { count, error } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-  if (error) throw new Error(error.message);
-  return count || 0;
-}
-
 // Every account, including email and real ban status - only returns
 // anything for admins (see admin_list_users() in schema.sql).
 export async function listUsersForAdmin() {

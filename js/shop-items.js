@@ -144,10 +144,6 @@ export const SHOP_BUNDLES = [
   },
 ];
 
-export function findBundle(bundleId) {
-  return SHOP_BUNDLES.find((bundle) => bundle.id === bundleId) || null;
-}
-
 // What the three items would cost bought separately - the number a set's
 // price is compared against.
 export function bundleListPrice(bundle) {

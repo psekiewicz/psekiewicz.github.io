@@ -155,10 +155,6 @@ export function findItem(itemId: string) {
   return SHOP_ITEMS.find((item) => item.id === itemId) || null;
 }
 
-export function findBundle(bundleId: string) {
-  return SHOP_BUNDLES.find((bundle) => bundle.id === bundleId) || null;
-}
-
 export function itemsByCategory(category: string) {
   return SHOP_ITEMS.filter((item) => item.category === category);
 }
