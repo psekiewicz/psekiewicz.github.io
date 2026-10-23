@@ -88,3 +88,38 @@ test('an uploaded clip points at the poster saved beside it; other videos have n
   assert.match(mediaHtml(clip, { inline: true }), /poster="[^"]+\.poster\.webp"/);
   assert.doesNotMatch(mediaHtml('https://example.com/clip.mp4', { inline: true }), /poster=/);
 });
+
+// Forms that used to come back as "can't play this link" on the site - most
+// of them played in the app, which was the "works only sometimes" report.
+test('parseMedia understands the other forms of YouTube links', () => {
+  for (const url of [
+    'https://www.youtube.com/live/dQw4w9WgXcQ?si=x',
+    'https://music.youtube.com/watch?v=dQw4w9WgXcQ',
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+  ]) {
+    assert.equal(parseMedia(url)?.embedUrl, 'https://www.youtube.com/embed/dQw4w9WgXcQ', url);
+  }
+});
+
+test('parseMedia keeps the hash an unlisted Vimeo video needs', () => {
+  assert.equal(parseMedia('https://vimeo.com/76979871/abcdef1234').embedUrl, 'https://player.vimeo.com/video/76979871?h=abcdef1234');
+  assert.equal(parseMedia('https://player.vimeo.com/video/76979871?h=abcdef1234').embedUrl, 'https://player.vimeo.com/video/76979871?h=abcdef1234');
+});
+
+test('parseMedia reads localised Spotify links and mobile SoundCloud ones', () => {
+  assert.equal(
+    parseMedia('https://open.spotify.com/intl-pl/track/4uLU6hMCjMI75M1A2tKUQC').embedUrl,
+    'https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC'
+  );
+  assert.match(parseMedia('https://m.soundcloud.com/artist/track').embedUrl, /url=https%3A%2F%2Fsoundcloud\.com%2Fartist%2Ftrack/);
+});
+
+test('a link pasted without https:// still plays, and is saved with it', async () => {
+  const { withScheme } = await import('../js/media.js');
+  assert.equal(parseMedia('youtu.be/dQw4w9WgXcQ')?.provider, 'YouTube');
+  assert.equal(parseMedia('www.example.com/clip.m4v')?.kind, 'video');
+  assert.equal(withScheme(' youtu.be/abc '), 'https://youtu.be/abc');
+  assert.equal(withScheme('https://youtu.be/abc'), 'https://youtu.be/abc');
+  assert.equal(withScheme('not a link'), 'not a link');
+  assert.equal(withScheme('javascript:alert(1)'), 'javascript:alert(1)');
+});

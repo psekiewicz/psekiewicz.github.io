@@ -1,7 +1,7 @@
 import { PROJECT_TYPE_OPTIONS, escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
-import { parseMedia } from './media.js';
+import { parseMedia, withScheme } from './media.js';
 import { attachFormatToolbar } from './format-toolbar.js';
 import { attachUpload } from './upload-field.js';
 
@@ -213,7 +213,7 @@ function mount() {
       const id = await createProject(user.id, displayNameOf(user), {
         title,
         summary: sheet.querySelector('#sheet-summary').value.trim(),
-        mediaUrl: sheet.querySelector('#sheet-media').value.trim(),
+        mediaUrl: withScheme(sheet.querySelector('#sheet-media').value),
         description: sheet.querySelector('#sheet-description').value.trim(),
         imageUrl: sheet.querySelector('#sheet-image').value.trim(),
         tags: sheet

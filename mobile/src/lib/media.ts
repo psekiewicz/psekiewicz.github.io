@@ -46,9 +46,25 @@ export type Media =
   | { kind: 'link'; url: string }
   | null;
 
+// Which forms of each provider's links are understood is kept identical to
+// parseMedia in js/media.js - they used to differ, so a link that played in the
+// app showed as a bare link on the site and the other way round.
 const VIDEO_EXT = /\.(mp4|m4v|webm|mov)(\?|#|$)/i;
 const AUDIO_EXT = /\.(mp3|m4a|aac|wav|ogg|flac)(\?|#|$)/i;
-const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|#|$)/i;
+const IMAGE_EXT = /\.(png|jpe?g|jfif|gif|webp|avif|bmp|svg)(\?|#|$)/i;
+
+const YOUTUBE_HOSTS = ['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'];
+
+/**
+ * A link typed or copied without its scheme - "youtu.be/abc",
+ * "www.youtube.com/watch?v=abc" - gets https:// in front. Same as withScheme
+ * in js/media.js.
+ */
+export function withScheme(raw: string) {
+  const value = String(raw ?? '').trim();
+  if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value)) return value;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(?=[/?#]|$)/i.test(value) ? `https://${value}` : value;
+}
 
 function hostOf(url: string) {
   try {
@@ -63,9 +79,9 @@ function youtubeId(url: string) {
     const u = new URL(url);
     const host = hostOf(url);
     if (host === 'youtu.be') return u.pathname.slice(1).split('/')[0] || '';
-    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+    if (YOUTUBE_HOSTS.includes(host)) {
       if (u.pathname === '/watch') return u.searchParams.get('v') || '';
-      const shorts = u.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]+)/);
+      const shorts = u.pathname.match(/^\/(?:shorts|embed|live|v)\/([\w-]+)/);
       if (shorts) return shorts[1];
     }
   } catch {
@@ -75,7 +91,7 @@ function youtubeId(url: string) {
 }
 
 export function resolveMedia(rawUrl: string, declaredType?: string): Media {
-  const url = safeUrl(rawUrl);
+  const url = safeUrl(withScheme(rawUrl));
   if (!url) return null;
 
   const host = hostOf(url);
@@ -103,15 +119,23 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
   }
 
   if (host === 'vimeo.com' || host === 'player.vimeo.com') {
-    const id = (url.match(/vimeo\.com\/(?:video\/)?(\d+)/) || [])[1];
+    // vimeo.com/ID, vimeo.com/channels/x/ID, player.vimeo.com/video/ID - and an
+    // unlisted video's vimeo.com/ID/HASH or ?h=HASH. Without the hash an
+    // unlisted video does not play, so it travels into the embed.
+    const u = new URL(url);
+    const parts = u.pathname.split('/').filter(Boolean);
+    const at = parts.findIndex((p) => /^\d+$/.test(p));
+    const id = at === -1 ? '' : parts[at];
+    const rawHash = u.searchParams.get('h') || (/^[0-9a-f]{6,}$/i.test(parts[at + 1] || '') ? parts[at + 1] : '');
+    const hash = /^[0-9a-f]{6,64}$/i.test(rawHash) ? rawHash : '';
     if (id) {
       return {
         kind: 'provider',
         provider: 'vimeo',
         label: 'Open in Vimeo',
-        url: `https://vimeo.com/${id}`,
+        url: `https://vimeo.com/${id}${hash ? `/${hash}` : ''}`,
         id,
-        embedUrl: `https://player.vimeo.com/video/${id}?playsinline=1`,
+        embedUrl: `https://player.vimeo.com/video/${id}?playsinline=1${hash ? `&h=${hash}` : ''}`,
         embedHosts: ['player.vimeo.com', 'vimeo.com', 'www.vimeo.com'],
         embedAutoplay: 'autoplay=1&muted=1',
       };
@@ -119,7 +143,8 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
   }
 
   if (host === 'open.spotify.com' || host === 'spotify.com') {
-    const match = url.match(/spotify\.com\/(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/);
+    // Links copied in a localised Spotify carry the locale first: /intl-pl/track/ID.
+    const match = url.match(/spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/i);
     if (match) {
       return {
         kind: 'provider',
@@ -134,14 +159,16 @@ export function resolveMedia(rawUrl: string, declaredType?: string): Media {
     }
   }
 
-  if (host === 'soundcloud.com' || host === 'm.soundcloud.com') {
+  if (host === 'soundcloud.com' || host === 'm.soundcloud.com' || host === 'on.soundcloud.com') {
+    // The player resolves soundcloud.com addresses, not the mobile site's.
+    const trackUrl = url.replace('//m.soundcloud.com', '//soundcloud.com');
     return {
       kind: 'provider',
       provider: 'soundcloud',
       label: 'Open in SoundCloud',
-      url,
-      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231f7a99`,
-      embedHosts: ['w.soundcloud.com', 'soundcloud.com', 'm.soundcloud.com'],
+      url: trackUrl,
+      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(trackUrl)}&color=%231f7a99`,
+      embedHosts: ['w.soundcloud.com', 'soundcloud.com', 'm.soundcloud.com', 'on.soundcloud.com'],
       compact: true,
     };
   }

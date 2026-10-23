@@ -4945,6 +4945,30 @@ body {
   max-height: 60vh;
 }
 
+/* A picture whose link did not load (js/markdown.js): hidden on the post,
+   explained in the editor's preview. The usual cause is a link to a page that
+   shows the picture rather than to the picture itself. */
+.post-figure.is-broken {
+  display: none;
+}
+
+.fmt-preview .post-figure.is-broken {
+  display: block;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.fmt-preview .post-figure.is-broken a {
+  display: none;
+}
+
+.fmt-preview .post-figure.is-broken::before {
+  content: "This picture didn't load. The link has to lead to the image file itself (.jpg, .png, .webp...), not to a page that shows it - or use Upload instead.";
+}
+
 .fmt-preview .fmt-empty {
   color: var(--color-text-faint);
 }

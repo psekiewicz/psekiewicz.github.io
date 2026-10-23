@@ -8,14 +8,27 @@ import { icon } from './icons.js';
 // hosts, the id is extracted, and the embed URL is rebuilt from a template
 // here. Passing the original string through would let anyone point an
 // iframe at anything they liked.
-const YOUTUBE_HOSTS = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be'];
+//
+// Which forms of each provider's links are understood is kept identical to
+// resolveMedia in mobile/src/lib/media.ts - they used to differ, so a link that
+// played in the app showed as a bare link on the site and the other way round.
+const YOUTUBE_HOSTS = [
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'music.youtube.com',
+  'youtube-nocookie.com',
+  'www.youtube-nocookie.com',
+  'youtu.be',
+  'www.youtu.be',
+];
 const VIMEO_HOSTS = ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'];
 const SPOTIFY_HOSTS = ['open.spotify.com'];
-const SOUNDCLOUD_HOSTS = ['soundcloud.com', 'www.soundcloud.com', 'on.soundcloud.com'];
+const SOUNDCLOUD_HOSTS = ['soundcloud.com', 'www.soundcloud.com', 'm.soundcloud.com', 'on.soundcloud.com'];
 
 const AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac)(\?.*)?$/i;
-const VIDEO_EXT = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
-const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|svg|bmp)(\?.*)?$/i;
+const VIDEO_EXT = /\.(mp4|m4v|webm|ogv|mov)(\?.*)?$/i;
+const IMAGE_EXT = /\.(jpe?g|jfif|png|gif|webp|avif|svg|bmp)(\?.*)?$/i;
 
 // Clips uploaded here (js/uploads-data.js, mobile/src/lib/upload.ts) have a
 // still from their first moments saved beside them as <name>.poster.webp, so
@@ -35,9 +48,18 @@ export function uploadedPosterFor(src) {
 // Only ids that look like ids - keeps anything odd out of the rebuilt URL.
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
+// A link typed or copied without its scheme - "youtu.be/abc",
+// "www.youtube.com/watch?v=abc" - gets https:// in front. Anything that does
+// not start with something shaped like a host name is left alone.
+export function withScheme(raw) {
+  const value = String(raw ?? '').trim();
+  if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value)) return value;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(?=[/?#]|$)/i.test(value) ? `https://${value}` : value;
+}
+
 function parseUrl(raw) {
   try {
-    const url = new URL(String(raw).trim());
+    const url = new URL(withScheme(raw));
     return url.protocol === 'https:' || url.protocol === 'http:' ? url : null;
   } catch {
     return null;
@@ -46,9 +68,21 @@ function parseUrl(raw) {
 
 function youtubeId(url) {
   if (url.hostname.endsWith('youtu.be')) return url.pathname.slice(1).split('/')[0];
-  if (url.pathname.startsWith('/shorts/')) return url.pathname.split('/')[2];
-  if (url.pathname.startsWith('/embed/')) return url.pathname.split('/')[2];
+  // /shorts/ID, /embed/ID, /live/ID (a stream, or its recording), /v/ID.
+  const path = url.pathname.match(/^\/(?:shorts|embed|live|v)\/([^/?#]+)/);
+  if (path) return path[1];
   return url.searchParams.get('v') || '';
+}
+
+// vimeo.com/ID, vimeo.com/channels/x/ID, player.vimeo.com/video/ID - and the
+// two forms of an unlisted video, vimeo.com/ID/HASH and ...?h=HASH. The hash is
+// what lets an unlisted video play at all, so it has to reach the embed.
+function vimeoIds(url) {
+  const parts = url.pathname.split('/').filter(Boolean);
+  const at = parts.findIndex((p) => /^\d+$/.test(p));
+  if (at === -1) return null;
+  const hash = url.searchParams.get('h') || (/^[0-9a-f]{6,}$/i.test(parts[at + 1] || '') ? parts[at + 1] : '');
+  return { id: parts[at], hash: /^[0-9a-f]{6,64}$/i.test(hash) ? hash : '' };
 }
 
 // Returns { kind, embedUrl?, src?, provider } or null when the link isn't
@@ -69,12 +103,16 @@ export function parseMedia(raw, typeHint = '') {
   }
 
   if (VIMEO_HOSTS.includes(host)) {
-    const id = url.pathname.split('/').filter(Boolean).pop() || '';
-    if (/^\d+$/.test(id)) return { kind: 'iframe', provider: 'Vimeo', embedUrl: `https://player.vimeo.com/video/${id}` };
+    const vimeo = vimeoIds(url);
+    if (vimeo) {
+      const embedUrl = `https://player.vimeo.com/video/${vimeo.id}${vimeo.hash ? `?h=${vimeo.hash}` : ''}`;
+      return { kind: 'iframe', provider: 'Vimeo', embedUrl };
+    }
   }
 
   if (SPOTIFY_HOSTS.includes(host)) {
-    const parts = url.pathname.split('/').filter(Boolean);
+    // Links copied in a localised Spotify carry the locale first: /intl-pl/track/ID.
+    const parts = url.pathname.split('/').filter((p) => p && !/^intl-[a-z-]+$/i.test(p));
     // /track/ID, /album/ID, /playlist/ID - and the /embed/ form of each.
     const kindIndex = parts[0] === 'embed' ? 1 : 0;
     const what = parts[kindIndex];
@@ -91,7 +129,10 @@ export function parseMedia(raw, typeHint = '') {
     return {
       kind: 'iframe',
       provider: 'SoundCloud',
-      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url.href)}&color=%234f46e5`,
+      // The player resolves soundcloud.com addresses, not the mobile site's.
+      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(
+        url.href.replace('//m.soundcloud.com', '//soundcloud.com')
+      )}&color=%234f46e5`,
       compact: true,
     };
   }

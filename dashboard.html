@@ -210,7 +210,7 @@
     import { getRecentViewTimestamps } from '/js/views-data.js';
     import { escapeHtml, timeAgo, typeBadgeHtml } from '/js/utils.js';
     import { icon } from '/js/icons.js';
-    import { parseMedia } from '/js/media.js';
+    import { parseMedia, withScheme } from '/js/media.js';
     import { attachFormatToolbar } from '/js/format-toolbar.js';
     import { attachUpload } from '/js/upload-field.js';
     import { getSavedProjects, unsaveProject } from '/js/saves-data.js';
@@ -363,7 +363,7 @@
         type: document.getElementById('type').value,
         summary: document.getElementById('summary').value.trim(),
         description: document.getElementById('description').value.trim(),
-        mediaUrl: document.getElementById('mediaUrl').value.trim(),
+        mediaUrl: withScheme(document.getElementById('mediaUrl').value),
         imageUrl: document.getElementById('imageUrl').value.trim(),
         repoUrl: document.getElementById('repoUrl').value.trim(),
         liveUrl: document.getElementById('liveUrl').value.trim(),

@@ -17,7 +17,9 @@ const BULLET = /^\s*[-*•]\s+(.*)$/;
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
 // A picture is a line of its own: ![caption](https://...). The caption is
 // optional and doubles as the alt text.
-const IMAGE = /^\s*!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)\s*$/;
+// Addresses may hold balanced parentheses - Wikipedia's File_(1).jpg - which
+// used to cut the address short and leave the rest as text.
+const IMAGE = /^\s*!\[([^\]\n]*)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)\s*$/;
 
 // Splits the text into blocks. Each block is one of:
 //   { type: 'heading', level: 1-3, text }
@@ -87,7 +89,7 @@ export function parseBlocks(source) {
 // leading ! is swallowed and it reads as an ordinary link.
 // Links and inline code first, so their contents are never read as
 // emphasis; then **bold**, then *italic* / _italic_.
-const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
+const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/(?:[^\s<>()]|\([^\s<>()]*\))*(?:[^\s<>().,;:!?'"]|\([^\s<>()]*\)))|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
 
 // Splits one line into { type: 'text' | 'link' | 'code' | 'bold' | 'italic',
 // text, href? } tokens.
@@ -150,9 +152,11 @@ export function renderMarkdown(source) {
         const src = safeUrl(block.src);
         if (!src) return '';
         const caption = escapeHtml(block.caption);
-        // A dead link takes its whole figure with it rather than leaving a
-        // broken-image box in the middle of the article.
-        return `<figure class="post-figure"><a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer ugc"><img src="${escapeHtml(src)}" alt="${caption}" loading="lazy" onerror="this.closest('figure').remove()" /></a>${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
+        // A dead link hides its whole figure rather than leaving a
+        // broken-image box in the middle of the article - except in the
+        // editor's preview, where css/style.css shows the author why, since a
+        // picture that silently vanished looked like the editor had failed.
+        return `<figure class="post-figure"><a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer ugc"><img src="${escapeHtml(src)}" alt="${caption}" loading="lazy" onerror="this.closest('figure').classList.add('is-broken')" /></a>${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
       }
       if (block.type === 'heading') {
         const tag = `h${block.level + 1}`;

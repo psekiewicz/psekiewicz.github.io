@@ -362,3 +362,39 @@ test('a reset link that signed nobody in says what to do', async () => {
   assert.equal(await page.locator('#reset-form').isVisible(), false);
   await context.close();
 });
+
+// A picture whose link isn't an image (a page that shows one, say) used to
+// vanish from the preview without a word, which read as the editor failing.
+test('the editor preview explains a picture that did not load; a post just hides it', async () => {
+  const { page, context } = await open('/index.html', null);
+  const state = await page.evaluate(async () => {
+    const { attachFormatToolbar } = await import('/js/format-toolbar.js');
+    const { renderMarkdown } = await import('/js/markdown.js');
+    const md = '![cat](https://example.com/not-a-picture)';
+    const textarea = document.createElement('textarea');
+    textarea.value = md;
+    document.body.append(textarea);
+    attachFormatToolbar(textarea);
+    document.querySelector('.fmt-tab[data-mode="preview"]').click();
+    const post = document.createElement('div');
+    post.className = 'detail-body';
+    post.innerHTML = renderMarkdown(md);
+    document.body.append(post);
+    const figures = () => [...document.querySelectorAll('.post-figure')];
+    for (let i = 0; i < 50 && !figures().every((f) => f.classList.contains('is-broken')); i++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const [inPreview, onPost] = figures();
+    return {
+      broken: figures().map((f) => f.classList.contains('is-broken')),
+      previewShown: getComputedStyle(inPreview).display !== 'none',
+      previewNote: getComputedStyle(inPreview, '::before').content,
+      postShown: getComputedStyle(onPost).display !== 'none',
+    };
+  });
+  assert.deepEqual(state.broken, [true, true]);
+  assert.equal(state.previewShown, true);
+  assert.match(state.previewNote, /didn't load/);
+  assert.equal(state.postShown, false);
+  await context.close();
+});

@@ -18,7 +18,7 @@ import {
   getProjectById,
   updateProject,
 } from '../data/projects';
-import { posterFor, resolveMedia } from '../lib/media';
+import { posterFor, resolveMedia, withScheme } from '../lib/media';
 import type { UploadKind } from '../lib/upload';
 import { normalizeTags, PROJECT_TYPE_OPTIONS } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -439,7 +439,7 @@ export function EditorScreen({ route, navigation }: any) {
       summary: summary.trim(),
       description: description.trim(),
       imageUrl: imageUrl.trim(),
-      mediaUrl: mediaUrl.trim(),
+      mediaUrl: withScheme(mediaUrl),
       scrollImageUrl: scrollImageUrl.trim(),
       repoUrl: repoUrl.trim(),
       liveUrl: liveUrl.trim(),
