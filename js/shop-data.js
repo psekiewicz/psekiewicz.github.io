@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Buying and equipping shop cosmetics. Purchases go through RPCs that charge
+// the server's price (purchase_item()/purchase_bundle() in schema.sql), and a
+// trigger refuses to equip anything you do not own. The catalog itself - names,
+// pictures, display prices - is js/shop-items.js.
+
 const EQUIP_COLUMN = {
   bg: 'equipped_bg',
   border: 'equipped_border',

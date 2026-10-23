@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Thin wrappers over Supabase Auth - sign up, log in, log out, password reset
+// and change, the current user and auth-state changes - that turn Supabase's
+// error strings into ones a person can act on. Sessions live in localStorage,
+// managed by supabase-js; nothing here stores anything itself.
+
 function friendlyError(err) {
   const message = err && err.message ? err.message : 'Something went wrong. Please try again.';
   const map = {

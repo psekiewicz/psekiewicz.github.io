@@ -1,7 +1,8 @@
 // The shop's item catalog - display copy only. The prices that actually get
-// charged live in schema.sql's purchase_item()/purchase_bundle(), which do not
-// trust anything the client passes; keep the two in sync by hand when editing,
-// exactly as js/shop-items.js says.
+// charged live in schema.sql's shop_item_defs and shop_bundle_defs tables,
+// which purchase_item()/purchase_bundle() read without trusting anything the
+// client passes; keep the two in sync by hand when editing, exactly as
+// js/shop-items.js says.
 
 export type ShopItem = { id: string; category: string; label: string; price: number };
 

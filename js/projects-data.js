@@ -1,5 +1,11 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `projects` table - the entries people publish,
+// shown as posts, tiles and Demos cards. Drafts (published = false) are
+// visible only to their owner, and only the owner can edit or delete; both are
+// RLS policies in schema.sql, not checks made here. Counters (views, likes,
+// comments) are kept by the database and cannot be written from here.
+
 const TABLE = 'projects';
 
 function toPlainProject(row) {

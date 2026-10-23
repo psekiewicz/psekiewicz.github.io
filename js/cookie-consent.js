@@ -1,3 +1,6 @@
+// The one-time notice that the site keeps only essential data in the browser
+// (the sign-in session and preferences such as dark mode). Dismissing it is
+// remembered in localStorage; there are no tracking cookies to consent to.
 const STORAGE_KEY = 'cookie-consent';
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -2,6 +2,8 @@
 
 A professional, multi-page website for publishing and discovering projects, with a full working authentication system - built to run entirely as static files on GitHub Pages.
 
+New to this code? Start with [ARCHITECTURE.md](./ARCHITECTURE.md) - the map of how it all fits together.
+
 Your previous personal site (home/blog/about/projects) has been preserved on the [`legacy-personal-site`](https://github.com/psekiewicz/psekiewicz.github.io/tree/legacy-personal-site) branch, in case you want to bring any of it back.
 
 ## Why Supabase
@@ -172,78 +174,7 @@ CI runs all three, against a `postgres:16` service container (see `.github/workf
 
 ## Project structure
 
-```
-index.html            Home - the feed (For you / Following / Latest), with a welcome card for signed-out visitors
-age.html              Asks an account with no date of birth for one; for a 13-15 year old, asks for a parent's email
-consent.html          Where the link in a parent's email lands - confirms the account only when the button is pressed
-legal/                Terms of Service, Privacy Policy, Community Guidelines - generated, see tools/build-legal.mjs
-projects.html         Public gallery - search + tag filter over published projects
-project.html           Single project detail (?id=<row uuid>)
-demos.html              Full-screen swipeable feed of entries with a live link (scrolls.html only forwards here)
-profile.html            Public profile (?user=<uuid>) - bio, stats, follow button, achievements, their published projects
-leaderboard.html        Public - top 50 accounts by XP
-shop.html               Protected - spend points on profile backgrounds, avatar borders, and nickname effects
-settings.html           Protected - edit display name/bio/avatar, change password (requires current password), delete own account
-admin.html               Protected + admin-gated - search/moderate every project and account on the site
-login.html             Email/password login + "forgot password"
-register.html          Account creation
-dashboard.html         Protected - create/edit/publish/delete your own projects
-404.html                GitHub Pages' custom not-found page
-robots.txt              Crawler rules - allows public pages, disallows the protected/auth-gated ones
-sitemap.xml             Lists the public, statically-linkable pages for search engines
-css/style.css          Shared design system (dark theme tokens, bottom nav, the Demos feed, profile, admin styles)
-js/supabase-config.js  Your Supabase project's public URL + anon key - EDIT THIS
-js/supabase-init.js     Initializes the Supabase client, exports `supabase`
-js/auth.js               register/login/logout/reset-password/change-password, wraps Supabase Auth errors in plain-English messages
-js/projects-data.js      All reads/writes for the `projects` table
-js/profiles-data.js      Read/update the `profiles` table; batch-fetch profiles by id for author avatars
-js/follows-data.js       Follow/unfollow, follower/following counts and lists
-js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts for the `comments` table
-js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
-js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
-js/achievements.js       Achievement definitions (incl. display-only `reward` copy) + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
-js/feed-rank.js          Home feed ranking - engagement/recency scoring, weighted shuffle, seen-tracking and author spacing
-js/toast.js              Reward toast stack (achievement / level-up / XP / points earned)
-js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent.
-                         Re-checks on tab focus and via refreshProgress() after anything that changes your own XP, so a reward doesn't wait for the next navigation
-js/media.js              Turns a pasted link into an embedded player; host-allowlisted, ids rebuilt into the embed URL
-js/levels.js             The level curve and chip: levelFromXp()/levelFromStats()/levelChipHtml(), plus getLevelsForUsers() to level a whole page of authors in one query. The xp number itself comes from the server
-js/updates-data.js       A project's changelog: getUpdates(), getLatestUpdates() for a page of cards, addUpdate(), deleteUpdate()
-js/reputation-data.js    The user_reputation view (viewers/likes/comments received/followers → xp + lifetime points) and collectEarnings(), the RPC that pays reach out as spendable points
-js/notifications-data.js Read/count/mark-read for your own notifications (RLS scopes them to you)
-js/notifications-ui.js   Navbar bell, unread badge and dropdown panel, injected rather than written into every page
-js/points-data.js        getAchievementRecords() (permanently-earned vs already-claimed) + recordAchievementUnlock() and claimAchievement(), both server-verified RPCs
-js/shop-items.js         The shop's item catalog (backgrounds/borders/name effects) + effectClass() mapping an item id to its CSS class - display-only copy of the real prices in purchase_item()
-js/create-sheet.js       Bottom-sheet quick create (mobile + tab), incl. the full-screen image
-js/scroll-styles.js     Picks which image a full-screen Demos card uses
-js/share.js              Web Share API with a clipboard fallback
-js/stats-card.js         Draws the shareable stats-card PNG on a canvas and shares/downloads it
-js/shop-data.js          getOwnedItemIds() + purchaseItem() (calls purchase_item()) + equipItem() for the three cosmetic slots on `profiles`
-js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
-js/icons.js               Outline SVG icon set shared by every page
-js/theme.js               Dark mode toggle + localStorage persistence
-js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware, shows the signed-in user's real avatar
-js/nav.js                 Shared top navbar: auth-aware links + avatar, admin link, mobile menu toggle
-js/cookie-consent.js      One-time dismissible cookie notice banner, shown on every page
-js/pwa.js                 Registers sw.js; shows the "Install app" button when the browser fires beforeinstallprompt
-js/utils.js               escapeHtml / initials / avatarHtml / timeAgo / typeBadgeHtml helpers + PROJECT_TYPES metadata
-sw.js                    Service worker - caches the static app shell, always passes Supabase/cross-origin requests straight through
-manifest.webmanifest     Web app manifest - name, icons, standalone display, required for installability
-icons/                   PWA icons (192/512/maskable/apple-touch-icon) and the social preview, generated from the XOXD logo by tools/gen-brand.py
-assets/brand/            The XOXD logo - xoxd-logo.png (source) and xoxd.svg (traced vector); tools/gen-brand.py renders it into icons/ and mobile/assets/, and tools/sync-nav.mjs / js/stats-card.js / mobile BrandMark embed its path
-assets/shop/             The shop artwork - bg/ (800x240 backgrounds), border/ (240x240 transparent avatar frames), name/ (nickname fills); generated by tools/gen-shop-art.py, previewed with tools/shop-gallery.mjs
-fonts/                   Self-hosted webfonts - JetBrains Mono (latin + latin-ext subsets) for the whole UI, plus Oxygene 1 for the shop's nickname effect of the same name (see the licensing note under "Legal / compliance")
-schema.sql              Table definitions + Row Level Security policies - run in the Supabase SQL Editor (see setup above)
-supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion - see "Real bans and account deletion" above
-supabase/functions/upload-cleanup/index.ts  Edge Function that deletes uploads nothing refers to - see "Uploads and compression" above
-js/compress.js            Compresses pictures (WebP) and clips (WebCodecs/MediaRecorder -> MP4) on the device before upload
-js/uploads-data.js        uploadMedia(): compress, then put the file in the uploads bucket and return its public URL
-js/upload-field.js        attachUpload(): the Upload button under a link field; pickAndUpload() for pictures inside a post
-tools/media-optimize.mjs  The weekly ffmpeg pass over uploaded clips (.github/workflows/media-optimize.yml)
-tools/schema-drift.mjs    Compares the live database with schema.sql (.github/workflows/schema-drift.yml)
-tools/schema-fingerprint.sql  The catalog query both sides of that comparison run
-tests/smoke/              Every page in Chromium against an in-memory fake of Supabase (npm run test:smoke)
-```
+See [ARCHITECTURE.md](./ARCHITECTURE.md): a map of every folder and module, how a page is put together, which rules live in the database, what is generated from what, and what to keep in mind before changing or rewriting any of it. Each file in `js/` also opens with a comment saying what it is for.
 
 ## Data model
 

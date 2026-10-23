@@ -162,9 +162,9 @@ it hasn't shown before as local notifications; tapping one opens the entry or
 the person through the app's normal deep links. The same check also runs
 whenever you return to the app.
 
-Nothing is needed on the server and no account anywhere. `send_push()` in
-[`../schema.sql`](../schema.sql) is left over from an Expo push setup that was
-never switched on: with no rows in `push_tokens` it does nothing.
+Nothing is needed on the server and no account anywhere. An earlier Expo push
+setup (`send_push()` and `push_tokens`) has been removed; `schema.sql` drops
+both so a database built from it matches the live one.
 
 ## Animations
 

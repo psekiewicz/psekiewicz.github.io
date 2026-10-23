@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// The admin's site-wide notice (the `announcements` table and bucket in
+// schema.sql): admin.html writes it, js/announcement.js shows it to everyone
+// as a popup. At most one is live at a time; publishing replaces the last one.
+// The limits below match the form's maxlength and the table's checks.
+
 export const TITLE_MAX = 80;
 export const BODY_MAX = 4000;
 export const FILE_MAX_BYTES = 50 * 1024 * 1024;

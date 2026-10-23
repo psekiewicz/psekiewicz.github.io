@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Your own notifications (the `notifications` table). Rows are written only by
+// database triggers - on a follow, like, comment, or new work from someone you
+// follow - never by a client; RLS shows each person only their own.
+// js/notifications-ui.js draws them as the navbar bell.
+
 const TABLE = 'notifications';
 
 function toPlainNotification(row) {

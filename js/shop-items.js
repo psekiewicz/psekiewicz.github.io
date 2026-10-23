@@ -1,6 +1,8 @@
 // The shop's item catalog - client-side display copy. The actual prices
-// that get charged live in schema.sql's purchase_item(), which does not
-// trust a client-passed price; keep the two in sync by hand when editing.
+// that get charged live in schema.sql's shop_item_defs and shop_bundle_defs
+// tables, which purchase_item()/purchase_bundle() read without trusting
+// anything the client passes; keep the two in sync by hand when editing
+// (tests/integration checks them against each other).
 export const SHOP_CATEGORIES = [
   { id: 'bg', label: 'Profile backgrounds', hint: "Shows behind your profile page's header." },
   { id: 'border', label: 'Avatar borders', hint: 'Shows around your avatar wherever it appears.' },

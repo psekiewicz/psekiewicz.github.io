@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `profiles` table, the public face of an account
+// (auth.users itself is never readable from the browser). A row is created by
+// a trigger at sign-up. You can update your own name, bio and avatar; points,
+// is_admin and equipped cosmetics are guarded by triggers in schema.sql.
+
 const TABLE = 'profiles';
 
 function toPlainProfile(row) {

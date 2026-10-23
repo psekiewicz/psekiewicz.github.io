@@ -1,5 +1,8 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `likes` table (one row per project + person). RLS
+// lets anyone read and only you add or remove your own like.
+
 const TABLE = 'likes';
 
 // Like counts for a page/feed of projects in one round trip, as a
