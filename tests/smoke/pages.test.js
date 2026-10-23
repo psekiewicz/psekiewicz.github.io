@@ -462,3 +462,14 @@ test('the dashboard keeps an entry without a live link a draft, and offers only 
   await page.locator('#modal-alert', { hasText: 'needs a live link' }).waitFor({ timeout: 10_000 });
   await context.close();
 });
+
+// T&G Weekly isn't a demo, so it has its own page: CBot's issues only - a post
+// by anyone else tagged "weekly" must not pass for one - and none on the home
+// page, which is demos only.
+test('the Weekly page lists T&G issues, and only CBot can publish one', async () => {
+  const { page, context } = await open('/weekly', null);
+  await page.locator('#weekly-root .tile').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await page.locator('#weekly-root .tile-title').allInnerTexts(), ['XOXD T&G Weekly - 10.10.2026-17.10.2026']);
+  assert.match(await page.locator('#weekly-root .post-media-kind').first().innerText(), /weekly/i);
+  await context.close();
+});

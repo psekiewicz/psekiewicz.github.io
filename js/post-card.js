@@ -25,12 +25,14 @@ function coverFor(project) {
   return safeUrl(firstImage(project.description));
 }
 
-// The compact form for a profile's grid: the picture carries it, with
+// The compact form for a grid (a profile, the T&G Weekly page): the picture carries it, with
 // the title and who made it over the bottom and the counts in the corner.
-export function tileHtml(project, { author, likeCount = 0, commentCount = 0 } = {}) {
+// `badge` replaces the type badge ({ icon, label }), for tiles whose type says
+// nothing - a Weekly issue is "Other".
+export function tileHtml(project, { author, likeCount = 0, commentCount = 0, badge = null } = {}) {
   const href = `/project?id=${encodeURIComponent(project.id)}`;
   const type = PROJECT_TYPES[project.type] ? project.type : 'other';
-  const meta = PROJECT_TYPES[type];
+  const meta = badge || PROJECT_TYPES[type];
   const name = (author && author.displayName) || project.authorName;
   const cover = coverFor(project);
   return `
