@@ -131,8 +131,7 @@ must match, and tests check that they do:
 legal/                Terms, privacy, guidelines - GENERATED, see below
 download/             The page that links to the latest APK
 css/style.css         Design tokens and every shared component
-css/social.css        Sidebar, post page, profile, Demos (still holds rules
-                        for the removed feed and Explore - unused, not yet pruned)
+css/social.css        Sidebar, post page, profile, Demos
 js/                   ES modules shared by the pages (see "Modules" below)
 sw.js                 Service worker: network-first, cache as offline fallback
 manifest.webmanifest  PWA manifest
@@ -323,7 +322,7 @@ Things that must survive, whatever the stack:
 Known rough edges, in rough order of how much they cost:
 
 - Page logic lives in large inline scripts inside the HTML (up to ~550 lines
-  in `project.html` and `admin.html`); the shared stylesheet is ~5,000 lines.
+  in `project.html` and `admin.html`); the shared stylesheet is ~4,700 lines.
 - Achievements, the shop catalog and data modules are written twice (site and
   app) and kept in step by hand, with tests as the safety net.
 - `schema.sql` grew by appending; reading a table means searching for all
