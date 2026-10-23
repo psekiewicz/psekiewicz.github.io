@@ -2,6 +2,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { createVideoThumbnail, Video } from 'react-native-compressor';
 
+import { getAccountAge, needsBirthDate } from '../data/age';
 import { supabase } from './supabase';
 
 // Pictures and demo clips from the phone, compressed here before they are
@@ -124,6 +125,22 @@ async function posterBytes(clipUri: string) {
   return readBytes(saved.uri);
 }
 
+// Why the bucket would refuse this account, or '' when it won't - the same
+// check as uploadBlocker in js/uploads-data.js. The upload policy requires
+// consent_ok() (a date of birth; for a 13-15 year old, a parent's
+// confirmation), and Storage's "row-level security" refusal used to be
+// reported as the 300-file limit, after the clip had been compressed.
+async function uploadBlocker(userId: string, refused = false) {
+  const age = await getAccountAge(userId).catch(() => undefined);
+  if (age !== undefined && needsBirthDate(age)) {
+    return 'Add your date of birth before uploading - the app asks for it when it starts.';
+  }
+  if (age && age.consentState === 'pending') {
+    return 'Uploading opens once a parent confirms your account (we emailed them).';
+  }
+  return refused ? 'Upload refused - you may have reached the limit of 300 files.' : '';
+}
+
 export type UploadResult = { url: string; size: number; originalSize: number };
 
 // Opens the phone's picker and uploads what was chosen. Resolves with null if
@@ -134,6 +151,8 @@ export async function pickAndUpload(kind: UploadKind, onStage?: Stage): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Log in to upload.');
+  const blocked = await uploadBlocker(user.id);
+  if (blocked) throw new Error(blocked);
 
   const picked = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: kind === 'media' ? ['images', 'videos'] : ['images'],
@@ -158,11 +177,7 @@ export async function pickAndUpload(kind: UploadKind, onStage?: Stage): Promise<
     cacheControl: type.startsWith('video/') ? '86400' : '31536000',
   });
   if (error) {
-    throw new Error(
-      /row-level security/i.test(error.message)
-        ? 'Upload refused - you may have reached the limit of 300 files.'
-        : error.message
-    );
+    throw new Error(/row-level security/i.test(error.message) ? await uploadBlocker(user.id, true) : error.message);
   }
   const url = supabase.storage.from('uploads').getPublicUrl(path).data.publicUrl;
 

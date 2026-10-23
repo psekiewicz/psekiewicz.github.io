@@ -1,5 +1,11 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `projects` table - the entries people publish,
+// shown as posts, tiles and Demos cards. Drafts (published = false) are
+// visible only to their owner, and only the owner can edit or delete; both are
+// RLS policies in schema.sql, not checks made here. Counters (views, likes,
+// comments) are kept by the database and cannot be written from here.
+
 const TABLE = 'projects';
 
 function toPlainProject(row) {
@@ -28,45 +34,11 @@ function sortByCreatedDesc(projects) {
   return [...projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
-// A feed ranks a pool of candidates; it never needed every entry ever
-// published, and asking for them stops working long before it gets slow.
-// Unbounded, this had three faults that only appear once a site has grown:
-// PostgREST caps a response at 1000 rows, and with no ORDER BY it is an
-// arbitrary thousand - so the newest entry can simply be absent; callers then
-// put every returned id into `.in(...)`, a query string that a few hundred ids
-// is enough to push past the URL length limit, so the like and comment counts
-// fail and the ranking silently loses its entire signal; and the payload
-// carries every description in full.
-//
-// Kept identical to mobile/src/data/projects.ts, which is the same function.
-export const FEED_PAGE_SIZE = 40;
-
-// Pages that filter client-side need a pool wide enough that a search feels
-// complete, and bounded so it stays a request rather than a download.
-export const DISCOVER_POOL = 200;
-
-export async function getPublishedProjects({ limit = FEED_PAGE_SIZE, before } = {}) {
-  let query = supabase
-    .from(TABLE)
-    .select('*')
-    .eq('published', true)
-    // Ordering server-side is what makes `limit` mean "the newest ones"
-    // rather than "whichever rows Postgres happened to return".
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  // Keyset pagination rather than offset: a new entry arriving mid-scroll
-  // shifts every offset by one and makes a page repeat an item.
-  if (before) query = query.lt('created_at', before);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return sortByCreatedDesc(data.map(toPlainProject));
-}
-
 // Demos: published entries with somewhere to try them (a live URL), newest
-// first, keyset-paged the same way as the feed. A page is small because each
-// card is a full screen; demos.html asks for the next one while there are
-// still a few left to watch. Kept identical to mobile/src/data/projects.ts.
+// first. XOXD shows nothing else publicly. Keyset pagination rather than
+// offset, so a demo arriving mid-scroll doesn't make a page repeat one. A page
+// is small because each card is a full screen; the home page asks for the next
+// one while there are still a few left to watch. Kept identical to mobile/src/data/projects.ts.
 export const DEMOS_PAGE_SIZE = 12;
 
 export async function getDemoProjects({ limit = DEMOS_PAGE_SIZE, before } = {}) {
@@ -83,16 +55,16 @@ export async function getDemoProjects({ limit = DEMOS_PAGE_SIZE, before } = {}) 
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
-// Row count only - `head: true` means Postgres never sends the rows
-// themselves, just the count PostgREST computes for pagination headers.
-export async function getPublishedProjectCount() {
-  const { count, error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true }).eq('published', true);
-  if (error) throw new Error(error.message);
-  return count || 0;
-}
-
-export async function getPublishedProjectsByUser(uid) {
-  const { data, error } = await supabase.from(TABLE).select('*').eq('user_id', uid).eq('published', true);
+// A person's demos, for their profile: published and with a live link, the
+// same rule as the Demos feed. Their other entries stay in the database (and
+// in their dashboard) but are not shown anywhere public.
+export async function getDemosByUser(uid) {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('user_id', uid)
+    .eq('published', true)
+    .neq('live_url', '');
   if (error) throw new Error(error.message);
   return sortByCreatedDesc(data.map(toPlainProject));
 }

@@ -47,20 +47,20 @@ function navHtml(snapshot) {
   const current = pageId(window.location.pathname);
   const isActive = (id) => (current === id ? ' active' : '');
 
-  const loginRedirect = '/login.html?next=' + encodeURIComponent(window.location.pathname);
-  const profileHref = snapshot ? `/profile.html?user=${encodeURIComponent(snapshot.userId)}` : loginRedirect;
-  const dashboardHref = snapshot ? '/dashboard.html' : loginRedirect;
+  const loginRedirect = '/login?next=' + encodeURIComponent(window.location.pathname);
+  const profileHref = snapshot ? `/profile?user=${encodeURIComponent(snapshot.userId)}` : loginRedirect;
+  const dashboardHref = snapshot ? '/dashboard' : loginRedirect;
   const isOwnProfile =
     snapshot && current === 'profile' && new URLSearchParams(window.location.search).get('user') === snapshot.userId;
 
   return `
-    <a class="bottom-nav-item${isActive('index')}" href="/index.html">
-      <span class="bottom-nav-icon">${icon('home', { size: 20 })}</span>
-      <span>Home</span>
-    </a>
-    <a class="bottom-nav-item${isActive('demos')}" href="/demos">
+    <a class="bottom-nav-item${isActive('index')}" href="/">
       <span class="bottom-nav-icon">${icon('rocket', { size: 20 })}</span>
       <span>Demos</span>
+    </a>
+    <a class="bottom-nav-item${isActive('leaderboard')}" href="/leaderboard">
+      <span class="bottom-nav-icon">${icon('award', { size: 20 })}</span>
+      <span>Ranks</span>
     </a>
     ${
       snapshot

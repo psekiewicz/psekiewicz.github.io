@@ -6,11 +6,17 @@ import { brand } from '../theme/tokens';
 import { BrandMark } from './BrandMark';
 
 const MARK = 132;
+// The pictures fill only a small square around the logo - this far past it on
+// every side - rather than the whole screen. Full-screen, a 540x960 photo was
+// blown up and cropped hard on a tablet; a fixed square looks the same on any
+// screen, and the rest of the splash stays the white the native one shows.
+const FRAME_INSET = 10;
+const FRAME = MARK + FRAME_INSET * 2;
 
 // The splash: the logo on white, exactly as the native splash shows it, then a
-// quick flip through a handful of backdrops behind it, the way a phone's boot
-// animation cycles pictures. It ends on the last picture and hands straight to
-// the app, with no white frame in between. The logo spells the name, so
+// quick flip through a handful of pictures in a small square behind it, the way
+// a phone's boot animation cycles pictures. It ends on the last picture and
+// hands straight to the app. The logo spells the name, so
 // there is no separate wordmark. Opacity only, so all of it is on the native
 // driver; each picture simply appears above the last (no fades between them).
 //
@@ -103,25 +109,25 @@ export function SplashReveal({ onDone }: { onDone?: () => void }) {
 
   return (
     <View style={[styles.container, { backgroundColor: brand.splashBg }]}>
-      {enabled && (
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: over }]}>
-          {PICTURES.map((src, i) => (
-            <Animated.Image
-              key={i}
-              source={src}
-              resizeMode="cover"
-              fadeDuration={0}
-              style={[StyleSheet.absoluteFill, { opacity: shown[i] }]}
-            />
-          ))}
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: SCRIM }]} />
-        </Animated.View>
-      )}
-      <View style={{ width: MARK, height: MARK }}>
-        <Animated.View style={{ position: 'absolute', opacity: ink }}>
+      <View style={styles.square}>
+        {enabled && (
+          <Animated.View pointerEvents="none" style={[styles.frame, { opacity: over }]}>
+            {PICTURES.map((src, i) => (
+              <Animated.Image
+                key={i}
+                source={src}
+                resizeMode="cover"
+                fadeDuration={0}
+                style={[StyleSheet.absoluteFill, { opacity: shown[i] }]}
+              />
+            ))}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: SCRIM }]} />
+          </Animated.View>
+        )}
+        <Animated.View style={[styles.mark, { opacity: ink }]}>
           <BrandMark size={MARK} color={INK} />
         </Animated.View>
-        <Animated.View style={{ position: 'absolute', opacity: white }}>
+        <Animated.View style={[styles.mark, { opacity: white }]}>
           <BrandMark size={MARK} color="#ffffff" />
         </Animated.View>
       </View>
@@ -134,5 +140,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // The logo plus FRAME_INSET on every side, centred by the container: the
+  // pictures fill it, the logo sits in its middle.
+  square: {
+    width: FRAME,
+    height: FRAME,
+  },
+  frame: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  mark: {
+    position: 'absolute',
+    top: FRAME_INSET,
+    left: FRAME_INSET,
   },
 });

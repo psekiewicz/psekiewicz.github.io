@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Thin wrappers over Supabase Auth - sign up, log in, log out, password reset
+// and change, the current user and auth-state changes - that turn Supabase's
+// error strings into ones a person can act on. Sessions live in localStorage,
+// managed by supabase-js; nothing here stores anything itself.
+
 function friendlyError(err) {
   const message = err && err.message ? err.message : 'Something went wrong. Please try again.';
   const map = {
@@ -22,7 +27,14 @@ export async function registerUser(email, password, displayName, birthDate) {
     // birth_date rides along in the signup metadata because that is what
     // handle_new_user() reads. Sending it afterwards would mean an account
     // could exist with no age on it whenever that second call failed.
-    options: { data: { display_name: displayName, birth_date: birthDate } },
+    options: {
+      data: { display_name: displayName, birth_date: birthDate },
+      // The confirmation link lands on the login page, which says the address
+      // is confirmed. Must be in Supabase's Redirect URLs allowlist
+      // (Authentication -> URL Configuration), or Supabase falls back to its
+      // Site URL instead.
+      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+    },
   });
   if (error) throw new Error(friendlyError(error));
   return { user: data.user, session: data.session };
@@ -40,7 +52,9 @@ export async function logoutUser() {
 
 export async function resetPassword(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/login.html`,
+    // login.html sees ?reset=1 (and the recovery session the link carries)
+    // and asks for a new password instead of moving on to the dashboard.
+    redirectTo: `${window.location.origin}/login?reset=1`,
   });
   if (error) throw new Error(friendlyError(error));
 }

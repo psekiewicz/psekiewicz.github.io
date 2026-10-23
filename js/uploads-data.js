@@ -1,5 +1,6 @@
 import { supabase } from './supabase-init.js';
 import { compressFile, extensionFor, baseType, videoPoster, IMAGE_PRESETS } from './compress.js';
+import { getAccountAge, needsBirthDate } from './age-data.js';
 
 // People's own pictures and demo clips, compressed on this device and put in
 // the public `uploads` bucket (see schema.sql). What comes back is the public
@@ -17,12 +18,30 @@ export function cacheControlFor(type) {
   return String(type).startsWith('video/') ? '86400' : '31536000';
 }
 
+// Why the bucket would refuse this account, or '' when it won't. The upload
+// policy (schema.sql) also requires consent_ok(): a date of birth, and for a
+// 13-15 year old a parent's confirmation. Without them Storage answers "new
+// row violates row-level security policy", which this used to report as the
+// 300-file limit - and only after compressing, which for a clip takes a while.
+async function uploadBlocker(userId, refused = false) {
+  const age = await getAccountAge(userId).catch(() => undefined);
+  if (age !== undefined && needsBirthDate(age)) {
+    return 'Add your date of birth before uploading - it takes a moment at /age.';
+  }
+  if (age && age.consentState === 'pending') {
+    return 'Uploading opens once a parent confirms your account (we emailed them).';
+  }
+  return refused ? 'Upload refused - you may have reached the limit of 300 files.' : '';
+}
+
 // kind: 'avatar' | 'cover' | 'scroll' | 'inline' | 'media'. onStage(stage,
 // progress) reports 'compress' (0..1 for clips) and then 'upload'.
 // -> { url, path, size, originalSize }
 export async function uploadMedia(file, { kind = 'cover', onStage } = {}) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Log in to upload.');
+  const blocked = await uploadBlocker(user.id);
+  if (blocked) throw new Error(blocked);
 
   const type = baseType(file.type);
   if (kind !== 'media' && !type.startsWith('image/')) throw new Error('Pick a picture.');
@@ -43,9 +62,7 @@ export async function uploadMedia(file, { kind = 'cover', onStage } = {}) {
     cacheControl: cacheControlFor(outType),
   });
   if (error) {
-    throw new Error(/row-level security/i.test(error.message)
-      ? "Upload refused - you may have reached the limit of 300 files."
-      : error.message);
+    throw new Error(/row-level security/i.test(error.message) ? await uploadBlocker(user.id, true) : error.message);
   }
   const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 

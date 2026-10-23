@@ -14,9 +14,7 @@ import { AdminScreen } from '../screens/AdminScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { DemosScreen } from '../screens/DemosScreen';
 import { EditorScreen } from '../screens/EditorScreen';
-import { ExploreScreen } from '../screens/ExploreScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
-import { HomeScreen } from '../screens/HomeScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
@@ -34,7 +32,9 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // The same five tabs the web build's bottom bar carries on narrow screens:
-// Home / Demos / Add / Dashboard / Profile.
+// Demos / Ranks / Add / Dashboard / Profile. XOXD is only demos, so they come
+// first; the general Home feed and Explore were removed with everything else
+// that wasn't a demo.
 function Tabs() {
   return (
     <Tab.Navigator
@@ -47,8 +47,8 @@ function Tabs() {
       tabBar={(props) => <BloomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Demos" component={DemosScreen} />
+      <Tab.Screen name="Ranks" component={LeaderboardScreen} />
       {/* No Add tab. The add button pushes the `Editor` stack screen, which is
           the same screen editing and the share sheet already opened - one add
           screen rather than two that looked different, and the tab was the
@@ -70,7 +70,7 @@ function Tabs() {
 // link does. (They used to open here through Android App Links; that was
 // turned off on request.) ProjectDetail keeps a path so notifications can
 // open an entry - `?id=` arrives as the `id` param - and initialRouteName
-// puts the tabs underneath whatever a link opens, so back goes to Home.
+// puts the tabs underneath whatever a link opens, so back goes to Demos.
 //
 // Tapping a notification from lib/notify.ts goes through here as well: each one
 // carries a showcase:// URL, read below both at cold start and while running.
@@ -187,7 +187,6 @@ export function RootNavigator() {
           options={{ title: 'Post' }}
         />
         <Stack.Screen name="Editor" component={EditorScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Explore" component={ExploreScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="FollowList" component={FollowListScreen} options={{ title: '' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />

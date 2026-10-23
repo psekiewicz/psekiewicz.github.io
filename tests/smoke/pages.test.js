@@ -228,15 +228,15 @@ async function open(pagePath, user) {
   return { page, context };
 }
 
-test('the signed-in home feed draws the seeded posts, with their build row', async () => {
-  const { page, context } = await open('/index.html', SIGNED_IN);
-  await page.locator('.post').first().waitFor({ timeout: 10_000 });
-  const titles = await page.locator('.post-title').allInnerTexts();
-  assert.ok(titles.includes('Pocket Synth') && titles.includes('Trail Map'), `titles: ${titles}`);
-  // Pocket Synth has a live link, a repo and a changelog: Try it, Source, v0.2.
-  const synth = page.locator('.post', { hasText: 'Pocket Synth' });
-  assert.equal(await synth.locator('text=Try it').count(), 1);
-  assert.equal(await synth.locator('.update-version').innerText(), 'v0.2');
+// XOXD is only demos: the home page is the Demos feed, and an entry without a
+// live link (Trail Map) appears nowhere public.
+test('the home page is the demos, and only entries with a live link are on it', async () => {
+  const { page, context } = await open('/', SIGNED_IN);
+  await page.locator('.demo-card').first().waitFor({ timeout: 10_000 });
+  const text = await page.locator('#demos-root').innerText();
+  assert.match(text, /Pocket Synth/);
+  assert.doesNotMatch(text, /Trail Map/);
+  assert.equal(await page.locator('.demo-card', { hasText: 'Pocket Synth' }).locator('text=Try it').count(), 1);
   await context.close();
 });
 
@@ -249,12 +249,29 @@ test('the leaderboard ranks accounts by XP from the server', async () => {
   await context.close();
 });
 
-test("Explore's search finds people by name", async () => {
-  const { page, context } = await open('/projects.html', null);
-  await page.locator('#search-input').fill('gra');
-  await page.locator('#people-list .person-card').first().waitFor({ timeout: 10_000 });
-  assert.deepEqual(await page.locator('#people-list .person-name').allInnerTexts(), ['Grace']);
+test('the old Demos and Explore addresses forward to the home page', async () => {
+  // The home page writes the card on screen into the #, so only a link to one
+  // demo can say which: it keeps its #id, which puts that demo first.
+  for (const [from, hash] of [
+    [`/demos#${SMOKE_IDS.P1}`, `#${SMOKE_IDS.P1}`],
+    ['/projects?tag=synth', null],
+  ]) {
+    const { page, context } = await open(from, null);
+    await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+    if (hash) assert.equal(new URL(page.url()).hash, hash, from);
+    await context.close();
+  }
+});
+
+test("a profile lists only that person's demos", async () => {
+  const { page, context } = await open(`/profile?user=${SMOKE_IDS.GRACE}`, null);
+  await page.locator('.tile-grid .tile').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await page.locator('.tile-title').allInnerTexts(), ['Pocket Synth']);
   await context.close();
+  // Ada's only published entry has no live link, so there is nothing to show.
+  const ada = await open(`/profile?user=${SMOKE_IDS.ADA}`, null);
+  await ada.page.locator('text=No demos yet').waitFor({ timeout: 10_000 });
+  await ada.context.close();
 });
 
 test('the bell names the new notification types', async () => {
@@ -265,5 +282,183 @@ test('the bell names the new notification types', async () => {
   assert.match(text, /Grace published Pocket Synth/);
   assert.match(text, /Grace posted an update to Pocket Synth/);
   assert.doesNotMatch(text, /undefined/);
+  await context.close();
+});
+
+// Links use clean URLs - /projects, /project?id=..., / for home - which
+// GitHub Pages answers with the .html file of that name. The site had slid
+// back to linking *.html in most places, so this holds every link to it, and
+// to a page that exists.
+test('internal links use clean URLs and lead to real pages', () => {
+  const sources = [
+    ...pages.map((p) => p.slice(1)),
+    ...readdirSync(path.join(root, 'js')).map((name) => `js/${name}`),
+  ];
+  const problems = [];
+  for (const file of sources) {
+    const text = readFileSync(path.join(root, file), 'utf8');
+    for (const [, href] of text.matchAll(/href=["'`](\/[^"'`\s$]*)/g)) {
+      const target = href.split(/[?#]/)[0];
+      if (target.startsWith('/zarolke') || target.startsWith('/przewodnik')) continue;
+      if (/\.html$/.test(target)) problems.push(`${file}: ${href} (drop the .html)`);
+      else if (!resolveFile(target)) problems.push(`${file}: ${href} (no such page)`);
+    }
+  }
+  assert.ok(sources.length > 40, `checked only ${sources.length} files`);
+  assert.deepEqual(problems, []);
+});
+
+// The age gate sends an account with no date of birth to /age and must leave
+// it there. It used to recognise only /age.html, so with clean URLs /age
+// would have sent itself to itself for ever.
+test('the age gate leads to /age once, and lets it be', async () => {
+  const noAge = { ...SIGNED_IN, id: '00000000-0000-4000-8000-0000000000aa' };
+  const { page, context } = await open('/projects', noAge);
+  let navigations = 0;
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) navigations++;
+  });
+  await page.waitForURL(/\/age\?next=/, { timeout: 10_000 });
+  await page.waitForTimeout(1500);
+  assert.equal(new URL(page.url()).pathname, '/age');
+  assert.ok(navigations <= 1, `navigated ${navigations} times`);
+  await context.close();
+});
+
+// Where the link in a sign-up confirmation email lands (emailRedirectTo in
+// js/auth.js). The link signs the new account in, so the page says the email
+// is confirmed and moves on; a stale link says why it did nothing.
+test('a confirmation link that signed you in says so, then opens the dashboard', async () => {
+  const { page, context } = await open('/login?confirmed=1', SIGNED_IN);
+  await page.locator('#form-success', { hasText: 'confirmed' }).waitFor({ timeout: 10_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
+  await context.close();
+});
+
+test('a confirmation without a session asks you to log in', async () => {
+  const { page, context } = await open('/login?confirmed=1', null);
+  await page.locator('#form-success', { hasText: 'Log in to continue' }).waitFor({ timeout: 10_000 });
+  await page.waitForTimeout(500);
+  assert.equal(new URL(page.url()).pathname, '/login');
+  await context.close();
+});
+
+test('an expired confirmation link explains itself', async () => {
+  const hash = '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired';
+  const { page, context } = await open(`/login?confirmed=1${hash}`, null);
+  await page.locator('#form-alert', { hasText: 'invalid or has expired' }).waitFor({ timeout: 10_000 });
+  await context.close();
+});
+
+// A password-reset link signs you in. The login page used to treat that like
+// any signed-in visit and go straight to the dashboard, so the password was
+// never actually changed.
+test('a password-reset link asks for the new password before anything else', async () => {
+  const { page, context } = await open('/login?reset=1', SIGNED_IN);
+  await page.locator('#reset-form').waitFor({ state: 'visible', timeout: 10_000 });
+  assert.equal(await page.locator('#login-form').isVisible(), false);
+  await page.waitForTimeout(500);
+  assert.equal(new URL(page.url()).pathname, '/login', 'left the page before the password was set');
+  await page.locator('#new-password').fill('a-new-password');
+  await page.locator('#confirm-password').fill('a-new-password');
+  await page.locator('#reset-btn').click();
+  await page.locator('#form-success', { hasText: 'password is changed' }).waitFor({ timeout: 10_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
+  await context.close();
+});
+
+test('a reset link from an older email (login.html, type=recovery) is caught too', async () => {
+  const { page, context } = await open('/login.html#access_token=x&type=recovery', SIGNED_IN);
+  await page.locator('#reset-form').waitFor({ state: 'visible', timeout: 10_000 });
+  await context.close();
+});
+
+test('a reset link that signed nobody in says what to do', async () => {
+  const { page, context } = await open('/login?reset=1', null);
+  await page.locator('#form-alert', { hasText: 'did not sign you in' }).waitFor({ timeout: 10_000 });
+  assert.equal(await page.locator('#reset-form').isVisible(), false);
+  await context.close();
+});
+
+// A picture whose link isn't an image (a page that shows one, say) used to
+// vanish from the preview without a word, which read as the editor failing.
+test('the editor preview explains a picture that did not load; a post just hides it', async () => {
+  const { page, context } = await open('/index.html', null);
+  const state = await page.evaluate(async () => {
+    const { attachFormatToolbar } = await import('/js/format-toolbar.js');
+    const { renderMarkdown } = await import('/js/markdown.js');
+    const md = '![cat](https://example.com/not-a-picture)';
+    const textarea = document.createElement('textarea');
+    textarea.value = md;
+    document.body.append(textarea);
+    attachFormatToolbar(textarea);
+    document.querySelector('.fmt-tab[data-mode="preview"]').click();
+    const post = document.createElement('div');
+    post.className = 'detail-body';
+    post.innerHTML = renderMarkdown(md);
+    document.body.append(post);
+    const figures = () => [...document.querySelectorAll('.post-figure')];
+    for (let i = 0; i < 50 && !figures().every((f) => f.classList.contains('is-broken')); i++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const [inPreview, onPost] = figures();
+    return {
+      broken: figures().map((f) => f.classList.contains('is-broken')),
+      previewShown: getComputedStyle(inPreview).display !== 'none',
+      previewNote: getComputedStyle(inPreview, '::before').content,
+      postShown: getComputedStyle(onPost).display !== 'none',
+    };
+  });
+  assert.deepEqual(state.broken, [true, true]);
+  assert.equal(state.previewShown, true);
+  assert.match(state.previewNote, /didn't load/);
+  assert.equal(state.postShown, false);
+  await context.close();
+});
+
+// The upload policy also requires consent_ok() - a date of birth, and for a
+// 13-15 year old a parent's say-so. Storage's refusal ("new row violates
+// row-level security policy") used to be reported as the 300-file limit, and
+// only after the file had been compressed. Two real accounts had no date.
+async function tryUpload(user) {
+  const { page, context } = await open('/index.html', user);
+  const outcome = await page.evaluate(async () => {
+    const { uploadMedia } = await import('/js/uploads-data.js');
+    const canvas = Object.assign(document.createElement('canvas'), { width: 8, height: 8 });
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    try {
+      const result = await uploadMedia(new File([blob], 'dot.png', { type: 'image/png' }), { kind: 'cover' });
+      return { url: result.url };
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+  await context.close();
+  return outcome;
+}
+
+test('an upload from an account without a date of birth says to add one', async () => {
+  const outcome = await tryUpload({ ...SIGNED_IN, id: '00000000-0000-4000-8000-0000000000aa' });
+  assert.match(outcome.error || '', /date of birth/);
+});
+
+test('an upload from an account that passed the age check goes through', async () => {
+  const outcome = await tryUpload(SIGNED_IN);
+  assert.equal(outcome.error, undefined);
+  assert.match(outcome.url, /\/uploads\//);
+});
+
+// Publishing needs a live link (XOXD shows only demos), and the type list is
+// the one the database accepts: it used to offer Website, Game and the like,
+// which failed on save with a check-constraint error.
+test('the dashboard keeps an entry without a live link a draft, and offers only valid types', async () => {
+  const { page, context } = await open('/dashboard', SIGNED_IN);
+  await page.locator('#new-project-btn').click();
+  const types = await page.locator('#type option').evaluateAll((options) => options.map((o) => o.value));
+  assert.deepEqual(types.sort(), ['app', 'image', 'music', 'other', 'video']);
+  await page.locator('#title').fill('No link yet');
+  await page.locator('#published').check();
+  await page.locator('#modal-submit-btn').click();
+  await page.locator('#modal-alert', { hasText: 'needs a live link' }).waitFor({ timeout: 10_000 });
   await context.close();
 });

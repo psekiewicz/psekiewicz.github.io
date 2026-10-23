@@ -7,8 +7,8 @@ import { getOwnedItemIds } from '../data/shop';
 // Each achievement is independently unlockable, ordered here by reward
 // (roughly how hard it is to get) - used as the display order and to pick the
 // single "best" badge shown next to a name. `reward` is a display-only copy of
-// the real reward table in claim_achievement() in schema.sql, which is what
-// actually pays out and re-verifies eligibility server-side.
+// the achievement_defs table in schema.sql, which claim_achievement() reads to
+// pay out and re-verify eligibility server-side.
 
 export type Achievement = {
   id: string;

@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard.html
-Disallow: /admin.html
-Disallow: /settings.html
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
 
 Sitemap: https://psekiewicz.github.io/sitemap.xml

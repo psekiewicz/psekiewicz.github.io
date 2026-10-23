@@ -2,22 +2,19 @@
 // (HTML/CSS/JS/icons) so the app opens instantly and works on a flaky
 // connection - but never touches Supabase API/auth calls or any other
 // cross-origin request, so account state and project data always stay live.
-const CACHE_VERSION = 'showcase-shell-v44';
+const CACHE_VERSION = 'showcase-shell-v46';
 
 const PRECACHE_URLS = [
   '/',
-  '/index.html',
-  '/projects.html',
-  '/project.html',
-  '/demos',
-  '/profile.html',
-  '/settings.html',
-  '/admin.html',
-  '/login.html',
-  '/register.html',
-  '/dashboard.html',
+  '/project',
+  '/profile',
+  '/settings',
+  '/admin',
+  '/login',
+  '/register',
+  '/dashboard',
   '/shop',
-  '/leaderboard.html',
+  '/leaderboard',
   '/404.html',
   '/css/style.css',
   '/css/social.css',
@@ -29,7 +26,6 @@ const PRECACHE_URLS = [
   '/js/compress.js',
   '/js/cookie-consent.js',
   '/js/create-sheet.js',
-  '/js/feed-rank.js',
   '/js/follows-data.js',
   '/js/format-toolbar.js',
   '/js/icons.js',
@@ -129,7 +125,7 @@ async function networkFirst(request) {
     const cached = await cache.match(request);
     if (cached) return cached;
     if (request.mode === 'navigate') {
-      const shell = await cache.match('/index.html');
+      const shell = await cache.match('/');
       if (shell) return shell;
     }
     return new Response('Offline', { status: 503, statusText: 'Offline' });

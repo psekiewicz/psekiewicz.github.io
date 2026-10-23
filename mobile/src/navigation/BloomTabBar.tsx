@@ -23,8 +23,8 @@ import { radius } from '../theme/tokens';
 // place you switch to and have to leave.
 
 const ICONS: Record<string, IconName> = {
-  Home: 'home',
   Demos: 'demos',
+  Ranks: 'trophy',
   Dashboard: 'chart',
   Profile: 'user',
 };

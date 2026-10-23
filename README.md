@@ -2,6 +2,8 @@
 
 A professional, multi-page website for publishing and discovering projects, with a full working authentication system - built to run entirely as static files on GitHub Pages.
 
+New to this code? Start with [ARCHITECTURE.md](./ARCHITECTURE.md) - the map of how it all fits together.
+
 Your previous personal site (home/blog/about/projects) has been preserved on the [`legacy-personal-site`](https://github.com/psekiewicz/psekiewicz.github.io/tree/legacy-personal-site) branch, in case you want to bring any of it back.
 
 ## Why Supabase
@@ -92,15 +94,15 @@ then set `SUPABASE_DB_URL` to the **Session pooler** connection string from the 
 - **Ownership-based authorization** - enforced server-side by Postgres Row Level Security policies, not just hidden in the UI: only a project's creator can edit, publish/unpublish, or delete it.
 - **Multi-page frontend** - separate HTML documents for each view, not a single-page app. Navigation opts into **cross-document view transitions**, so the browser holds the old page on screen and cross-fades into the new one instead of flashing white; the navbar and bottom bar are named so they're matched across documents and held still rather than redrawn. A full document load still happens underneath - this changes how it looks, not what it does - and browsers without support just navigate normally.
 - **Media that plays** - an entry carries a media link (`projects.media_url`) and `js/media.js` turns it into a player in the page and in the Demos feed: YouTube, Vimeo, Spotify, SoundCloud, or a direct audio/video/image URL. A user-supplied URL is **never** put into an iframe `src` - each provider is matched against an allowlist of hosts, the id extracted, and the embed URL rebuilt from a template here, so a link can't point an iframe wherever it likes. Content types are Music / Video / Image / App / Other; the type also acts as a hint, since plenty of image hosts serve without a file extension and sniffing alone would quietly fail on them.
-- **Explore** - one search box over posts, tags and people (`projects.html`), type chips, and a tag filter every #tag on the site links into. The query lives in the URL, so a search can be shared. People are searched on the server (`searchProfiles()`), so anybody can be found; posts are searched within the newest 200.
+- **Explore** - removed when XOXD became only demos (see "Demos" below); `/projects` forwards to the home page. `searchProfiles()` went with it - the leaderboard is where people are found now.
 - **Personal dashboard** - logged-in users manage their own projects (create, edit, publish/unpublish, delete).
 - **Account settings** - edit display name, bio, avatar, and password (changing it requires re-entering the current one) from `settings.html`, plus a self-service "Delete my account" (type-to-confirm) that permanently removes your account and everything you published.
 - **Profiles & followers** - every account has a public profile page (`profile.html?user=<id>`) listing their published work and follower/following counts; anyone signed in can follow/unfollow.
-- **Demos** - a full-screen, swipeable feed of the published entries that have a live link, at `demos.html` (it replaced Scrolls; `/scrolls` now forwards there, and `scrolls?project=<id>` to that entry's page). Each card leads with the entry's clip or picture and puts **Try it**, Source and Details under it; the demo itself always opens in a new tab, never inside the site. Scrolling is the browser's own (CSS scroll snap); the page only manages what each card holds: the card on screen plays, the next one's clip is already loading, the ones either side of that have metadata only, and every other card holds just its poster - so a long feed costs no more memory than a short one. Arrow keys / J / K step one card, M toggles sound, the address follows the card on screen (`demos#<id>`, shareable), and the next page loads with three cards still to go. A 3-second dwell counts a view and marks the entry seen for the home feed's ranking. Uploaded clips get a poster frame saved beside them (`<name>.poster.webp`), shown until the clip has a frame of its own.
+- **Demos** - a full-screen, swipeable feed of the published entries that have a live link, on the home page (`index.html`; it replaced Scrolls and later moved from `/demos` to `/` - both old addresses forward, `/demos#<id>` keeping its id). Each card leads with the entry's clip or picture and puts **Try it**, Source and Details under it; the demo itself always opens in a new tab, never inside the site. Scrolling is the browser's own (CSS scroll snap); the page only manages what each card holds: the card on screen plays, the next one's clip is already loading, the ones either side of that have metadata only, and every other card holds just its poster - so a long feed costs no more memory than a short one. Arrow keys / J / K step one card, M toggles sound, the address follows the card on screen (`demos#<id>`, shareable), and the next page loads with three cards still to go. A 3-second dwell counts a view and marks the entry seen for the home feed's ranking. Uploaded clips get a poster frame saved beside them (`<name>.poster.webp`), shown until the clip has a frame of its own.
 - **Look** - the same design system as the Android app (Bloom): warm cream ground, terracotta for anything you act on, sage as the second accent, soft rounded cards and pill buttons, set in JetBrains Mono like the app. Dark mode walks the same hues down a neutral ramp. Tokens live at the top of `css/style.css`; the social layout (sidebar, feed, posts, rail, Explore, profile, post page) is in `css/social.css`.
 - **Dark mode** - a toggle in the navbar, remembered per-browser (`localStorage`), falling back to the OS theme when no explicit choice has been made.
-- **Mobile bottom nav** - on narrow screens, a fixed bottom tab bar (Home / Demos / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop. It renders **independently of the rest of the page**: it paints immediately from a `localStorage` snapshot of what it showed last time and only re-renders if the fresh account data actually differs, so tapping a tab no longer blanks the bar and rebuilds it. Auth and profile modules are imported dynamically rather than at the top, so the bar is never chained to the Supabase client loading - if that's slow or unreachable, the cached bar simply stays put.
-- **Feed-first home** - `index.html` is the feed for everyone: For you (ranked by `js/feed-rank.js`), Following and Latest tabs, posts with inline like / save / share (`js/post-card.js`), and a right-hand rail with search, who to follow and trending tags (`js/feed-rail.js`). Signed-out visitors get a short welcome card above the posts instead of a marketing page. On desktop the navigation is a left sidebar; it is written into every page by `node tools/sync-nav.mjs`, so change it there rather than by hand. A post is drawn the way a timeline draws one - the avatar down the left, one column of content beside it, name and time on a single line, and flat actions spread underneath - and posts are full-bleed, told apart by a hairline rather than each boxed in its own card, matching [the Android app](./mobile/README.md). A post with no picture stays text rather than drawing a placeholder gradient; what kind of entry it is moves up beside the time instead.
+- **Mobile bottom nav** - on narrow screens, a fixed bottom tab bar (Demos / Ranks / Add / Dashboard / Profile) mirrors the app-like navigation of TikTok/Instagram and fully replaces the top navbar's account menu there (which would otherwise overflow); the top navbar remains the primary nav on desktop. It renders **independently of the rest of the page**: it paints immediately from a `localStorage` snapshot of what it showed last time and only re-renders if the fresh account data actually differs, so tapping a tab no longer blanks the bar and rebuilds it. Auth and profile modules are imported dynamically rather than at the top, so the bar is never chained to the Supabase client loading - if that's slow or unreachable, the cached bar simply stays put.
+- **Demos is the home page** - XOXD is only demos now. `index.html` is the Demos feed; the general feed it used to be (For you / Following / Latest, ranked by `js/feed-rank.js`, with a right-hand rail from `js/feed-rail.js`) was removed along with Explore. The database still holds every entry; an entry without a live link is simply not shown publicly, and both editors keep it a draft until it has one.
 - **Avatars everywhere** - not just the profile page: the navbar chip, the bottom nav's Profile tab, and every project card, scroll, and detail page show the author's actual photo (falling back to initials on a gradient when they haven't set one).
 - **Outline icon set** - a small hand-built set of stroke-only ("no fill") SVG icons (`js/icons.js`) replaces emoji throughout the app: nav, bottom bar, theme toggle, feature cards, dashboard/admin row actions.
 - **Admin panel** (`admin.html`) - accounts with `is_admin = true` get a moderation view of every project on the site (any user, any status, searchable) with unpublish/delete actions, and a searchable Users tab showing every account's email and ban status, with real Ban (for a chosen duration)/Unban/Delete-account actions. There's no in-app way to grant the admin role itself - see "Making an account admin" below. Ban/delete require the Edge Function described below; everything else works without it.
@@ -120,7 +122,7 @@ then set `SUPABASE_DB_URL` to the **Session pooler** connection string from the 
 - **Open in Demos** - the page of an entry with a live link links straight to its own card via `demos#<id>`, which puts that entry first even when it is older than the first page.
 - **Share** - every project has a Share control (detail page) using the native share sheet on phones via the Web Share API, falling back to copying the link with a toast. Both APIs need a user gesture, so `js/share.js` is only ever called from a click.
 - **Share your stats card** - "Share stats card" on your own profile renders a `<canvas>` "wrapped"-style PNG (avatar, level, XP bar, published/followers/likes/viewers, top achievement) via `js/stats-card.js` and hands it to the native share sheet when it can carry a file, falling back to a download. Nothing is server-rendered - the card is drawn client-side from the same numbers already on the page, reading the live theme's CSS colour tokens so it matches light/dark mode, and re-drawn fresh every time so it's never stale. Own profile only, for the same reason the reach numbers themselves are: it's a card worth posting, not a stat line worth exposing about someone else. Equipped shop cosmetics show up on it too, through two complementary techniques picked per element after actually testing the alternatives, not by assumption. The background is captured with html2canvas (loaded lazily from esm.sh, the same no-build-step CDN pattern already used for `@supabase/supabase-js`) - it walks the real DOM and paints it primitive-by-primitive, so it correctly renders tiled patterns and the one image-based background that nothing else could. The avatar border and nickname effect instead read the *computed* CSS off a real, hidden element wearing the shop's own class and rebuild the visual with canvas's native gradient/shadow/stroke APIs: html2canvas renders `background-clip: text` gradient names as a flat color (a long-standing gap in that library) and renders plain box-shadow rings - 11 of the shop's 19 borders - as a solid disc covering the whole avatar instead of a ring, both real regressions found by testing rather than shipped blind. Either path needs no maintenance as the shop catalog grows, since neither hand-copies an item's definition. An earlier version tried rasterizing the real DOM into an image via an SVG `<foreignObject>` for pixel-exact fidelity everywhere, but any `<foreignObject>`-bearing SVG permanently taints a canvas it's drawn onto, unconditionally, which made the image un-exportable. The avatar photo itself (`avatarUrl` is any URL pasted into `settings.html` - not a Supabase Storage upload) often comes from a host that never sends CORS headers, which would otherwise make the card silently fall back to initials even when a real photo is set; a failed load retries once through images.weserv.nl, a free image proxy that always adds them, before giving up.
-- **Following actually does something** - Projects has an "Everyone / People I follow" filter (shown only once you follow somebody), and the home feed's ranker boosts people you follow. Before this, following someone changed nothing about what you saw.
+- **Following** - follow someone and their new demos and changelog updates reach you as notifications. (Following also used to filter Explore and boost the home feed's ranking; both went with the general feed.)
 - **Finding people** - the leaderboard doubles as people discovery: search by name, and Follow/Unfollow inline without leaving the list. Ranks stay absolute while searching, so filtering never tells you someone is #1 when they're #23.
 - **Link previews** - every page carries Open Graph and Twitter card tags with a generated 1200×630 preview image, so a shared link renders as a card instead of a bare URL. Note the limit of static hosting: previews are site-level, not per-project - crawlers don't run the JavaScript that fills a project page in, so per-project preview cards would need server-side rendering.
 - **Notifications** - a bell in the navbar with an unread count, listing new followers, likes and comments on your projects, and new work from people you follow: an entry they publish (once per entry, however often it is taken down and put back) and their changelog updates (one unread per project). Rows are written entirely by database triggers, never by the client: the person who causes a notification is never the person who receives it, so "you may insert this row" can't be expressed as an RLS policy the actor could satisfy. The trigger functions are `security definer` and work out the recipient themselves; `notifications` has select/update/delete policies for its own owner and **no insert policy at all**, so a forged notification is rejected by Postgres. Self-actions (liking your own project) notify nobody, and an identical notification that's still unread isn't duplicated - otherwise unliking and re-liking would pile them up. The [mobile app](./mobile/README.md#notifications) reads the same table: a background task checks for new rows about every 15 minutes and shows them as local notifications, so no push service is involved. The old Expo push path (`send_push()` and `push_tokens`) is gone from the database and from `schema.sql`.
@@ -162,7 +164,7 @@ npm run test:smoke  # every page in a real browser, signed out and signed in - n
 npm run test:all    # all three
 ```
 
-`npm test` covers `js/levels.js`, `js/utils.js`, `js/icons.js`, `js/feed-rank.js` and `js/media.js` - things like the XP curve, HTML/URL escaping, and the home feed's anti-bunching logic - and `tests/parity.test.js`, which holds the app's copies of the achievement list and the shop catalog to the site's (they had drifted: the app was two achievements short). It has no dependencies and needs nothing running.
+`npm test` covers `js/levels.js`, `js/utils.js`, `js/icons.js`, `js/media.js`, `js/markdown.js` and `js/format-toolbar.js` - things like the XP curve, HTML/URL escaping and which links play - and `tests/parity.test.js`, which holds the app's copies of the achievement list and the shop catalog to the site's (they had drifted: the app was two achievements short). It has no dependencies and needs nothing running.
 
 `npm run test:smoke` (in `tests/smoke/`) serves this checkout the way GitHub Pages does and loads every `.html` page in Chromium, signed out and signed in, failing on an uncaught exception, a console error, a file of ours that does not load, or a page that shows "Could not load ...". The esm.sh Supabase client is answered with `tests/smoke/fake-supabase.js`, a small in-memory database, so nothing touches the real project and no other outside request is needed. Pages are found, not listed, so a new page is covered on its own. Run `npx playwright-core install chromium` once first, or point `SMOKE_CHROMIUM` at a Chromium binary.
 
@@ -172,78 +174,7 @@ CI runs all three, against a `postgres:16` service container (see `.github/workf
 
 ## Project structure
 
-```
-index.html            Home - the feed (For you / Following / Latest), with a welcome card for signed-out visitors
-age.html              Asks an account with no date of birth for one; for a 13-15 year old, asks for a parent's email
-consent.html          Where the link in a parent's email lands - confirms the account only when the button is pressed
-legal/                Terms of Service, Privacy Policy, Community Guidelines - generated, see tools/build-legal.mjs
-projects.html         Public gallery - search + tag filter over published projects
-project.html           Single project detail (?id=<row uuid>)
-demos.html              Full-screen swipeable feed of entries with a live link (scrolls.html only forwards here)
-profile.html            Public profile (?user=<uuid>) - bio, stats, follow button, achievements, their published projects
-leaderboard.html        Public - top 50 accounts by XP
-shop.html               Protected - spend points on profile backgrounds, avatar borders, and nickname effects
-settings.html           Protected - edit display name/bio/avatar, change password (requires current password), delete own account
-admin.html               Protected + admin-gated - search/moderate every project and account on the site
-login.html             Email/password login + "forgot password"
-register.html          Account creation
-dashboard.html         Protected - create/edit/publish/delete your own projects
-404.html                GitHub Pages' custom not-found page
-robots.txt              Crawler rules - allows public pages, disallows the protected/auth-gated ones
-sitemap.xml             Lists the public, statically-linkable pages for search engines
-css/style.css          Shared design system (dark theme tokens, bottom nav, the Demos feed, profile, admin styles)
-js/supabase-config.js  Your Supabase project's public URL + anon key - EDIT THIS
-js/supabase-init.js     Initializes the Supabase client, exports `supabase`
-js/auth.js               register/login/logout/reset-password/change-password, wraps Supabase Auth errors in plain-English messages
-js/projects-data.js      All reads/writes for the `projects` table
-js/profiles-data.js      Read/update the `profiles` table; batch-fetch profiles by id for author avatars
-js/follows-data.js       Follow/unfollow, follower/following counts and lists
-js/comments-data.js      getComments/addComment/deleteComment/getCommentCounts for the `comments` table
-js/likes-data.js         getLikeCounts/getLikedSet/likeProject/unlikeProject for the `likes` table
-js/views-data.js         logProjectView() (via the log_project_view() RPC) + getRecentViewTimestamps() for the dashboard charts
-js/achievements.js       Achievement definitions (incl. display-only `reward` copy) + getUserStats()/computeAchievements()/getTopAchievement(), computed client-side from existing data
-js/feed-rank.js          Home feed ranking - engagement/recency scoring, weighted shuffle, seen-tracking and author spacing
-js/toast.js              Reward toast stack (achievement / level-up / XP / points earned)
-js/progress-watch.js     Notices new achievements, level-ups and XP gains and toasts them; also records unlocks so they become permanent.
-                         Re-checks on tab focus and via refreshProgress() after anything that changes your own XP, so a reward doesn't wait for the next navigation
-js/media.js              Turns a pasted link into an embedded player; host-allowlisted, ids rebuilt into the embed URL
-js/levels.js             The level curve and chip: levelFromXp()/levelFromStats()/levelChipHtml(), plus getLevelsForUsers() to level a whole page of authors in one query. The xp number itself comes from the server
-js/updates-data.js       A project's changelog: getUpdates(), getLatestUpdates() for a page of cards, addUpdate(), deleteUpdate()
-js/reputation-data.js    The user_reputation view (viewers/likes/comments received/followers → xp + lifetime points) and collectEarnings(), the RPC that pays reach out as spendable points
-js/notifications-data.js Read/count/mark-read for your own notifications (RLS scopes them to you)
-js/notifications-ui.js   Navbar bell, unread badge and dropdown panel, injected rather than written into every page
-js/points-data.js        getAchievementRecords() (permanently-earned vs already-claimed) + recordAchievementUnlock() and claimAchievement(), both server-verified RPCs
-js/shop-items.js         The shop's item catalog (backgrounds/borders/name effects) + effectClass() mapping an item id to its CSS class - display-only copy of the real prices in purchase_item()
-js/create-sheet.js       Bottom-sheet quick create (mobile + tab), incl. the full-screen image
-js/scroll-styles.js     Picks which image a full-screen Demos card uses
-js/share.js              Web Share API with a clipboard fallback
-js/stats-card.js         Draws the shareable stats-card PNG on a canvas and shares/downloads it
-js/shop-data.js          getOwnedItemIds() + purchaseItem() (calls purchase_item()) + equipItem() for the three cosmetic slots on `profiles`
-js/admin-data.js         isAdmin() check, admin_list_users() RPC wrapper, and the ban/unban/delete-account calls into the admin-actions Edge Function
-js/icons.js               Outline SVG icon set shared by every page
-js/theme.js               Dark mode toggle + localStorage persistence
-js/bottom-nav.js          Injects the mobile bottom tab bar, auth-aware, shows the signed-in user's real avatar
-js/nav.js                 Shared top navbar: auth-aware links + avatar, admin link, mobile menu toggle
-js/cookie-consent.js      One-time dismissible cookie notice banner, shown on every page
-js/pwa.js                 Registers sw.js; shows the "Install app" button when the browser fires beforeinstallprompt
-js/utils.js               escapeHtml / initials / avatarHtml / timeAgo / typeBadgeHtml helpers + PROJECT_TYPES metadata
-sw.js                    Service worker - caches the static app shell, always passes Supabase/cross-origin requests straight through
-manifest.webmanifest     Web app manifest - name, icons, standalone display, required for installability
-icons/                   PWA icons (192/512/maskable/apple-touch-icon) and the social preview, generated from the XOXD logo by tools/gen-brand.py
-assets/brand/            The XOXD logo - xoxd-logo.png (source) and xoxd.svg (traced vector); tools/gen-brand.py renders it into icons/ and mobile/assets/, and tools/sync-nav.mjs / js/stats-card.js / mobile BrandMark embed its path
-assets/shop/             The shop artwork - bg/ (800x240 backgrounds), border/ (240x240 transparent avatar frames), name/ (nickname fills); generated by tools/gen-shop-art.py, previewed with tools/shop-gallery.mjs
-fonts/                   Self-hosted webfonts - JetBrains Mono (latin + latin-ext subsets) for the whole UI, plus Oxygene 1 for the shop's nickname effect of the same name (see the licensing note under "Legal / compliance")
-schema.sql              Table definitions + Row Level Security policies - run in the Supabase SQL Editor (see setup above)
-supabase/functions/admin-actions/index.ts   Edge Function for real ban/unban/account deletion - see "Real bans and account deletion" above
-supabase/functions/upload-cleanup/index.ts  Edge Function that deletes uploads nothing refers to - see "Uploads and compression" above
-js/compress.js            Compresses pictures (WebP) and clips (WebCodecs/MediaRecorder -> MP4) on the device before upload
-js/uploads-data.js        uploadMedia(): compress, then put the file in the uploads bucket and return its public URL
-js/upload-field.js        attachUpload(): the Upload button under a link field; pickAndUpload() for pictures inside a post
-tools/media-optimize.mjs  The weekly ffmpeg pass over uploaded clips (.github/workflows/media-optimize.yml)
-tools/schema-drift.mjs    Compares the live database with schema.sql (.github/workflows/schema-drift.yml)
-tools/schema-fingerprint.sql  The catalog query both sides of that comparison run
-tests/smoke/              Every page in Chromium against an in-memory fake of Supabase (npm run test:smoke)
-```
+See [ARCHITECTURE.md](./ARCHITECTURE.md): a map of every folder and module, how a page is put together, which rules live in the database, what is generated from what, and what to keep in mind before changing or rewriting any of it. Each file in `js/` also opens with a comment saying what it is for.
 
 ## Data model
 

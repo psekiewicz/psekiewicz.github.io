@@ -19,7 +19,12 @@ export async function registerUser(email: string, password: string, displayName:
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    options: {
+      data: { display_name: displayName },
+      // Same landing page as the site's sign-up: a mail app opens the link in
+      // a browser, and the site's login page says the address is confirmed.
+      emailRedirectTo: 'https://psekiewicz.github.io/login?confirmed=1',
+    },
   });
   if (error) throw new Error(friendlyError(error));
   return { user: data.user, session: data.session };
@@ -35,22 +40,16 @@ export async function logoutUser() {
   await supabase.auth.signOut();
 }
 
-// The web build sends people back to login.html. Here the reset link opens the
+// The web build sends people back to the site's login page, which asks for the
+// new password. Here the reset link opens the
 // site in a browser - the app registers the `showcase://` scheme but Supabase's
 // recovery flow is a web page, and pointing it at the deployed site is both
 // simpler and what a user tapping a link in their mail app expects.
 export async function resetPassword(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://psekiewicz.github.io/login.html',
+    redirectTo: 'https://psekiewicz.github.io/login?reset=1',
   });
   if (error) throw new Error(friendlyError(error));
-}
-
-export async function getCurrentUser() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
 }
 
 // Keeps auth.user_metadata.display_name in sync with the profiles table, which

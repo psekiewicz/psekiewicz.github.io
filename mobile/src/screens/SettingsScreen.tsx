@@ -24,7 +24,6 @@ import {
 } from '../data/auth';
 import { updateProfile } from '../data/profiles';
 import { collectEarnings } from '../data/reputation';
-import { clearSeenIds } from '../lib/feedRank';
 import { disableNotifications, enableNotifications, notificationsEnabled } from '../lib/notify';
 import { useMotion } from '../theme/MotionProvider';
 import { column } from '../lib/layout';
@@ -49,7 +48,6 @@ export function SettingsScreen({ navigation }: any) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [collecting, setCollecting] = useState(false);
-  const [resettingHistory, setResettingHistory] = useState(false);
   const [notifyOn, setNotifyOn] = useState(false);
   const [togglingPush, setTogglingPush] = useState(false);
 
@@ -135,20 +133,6 @@ export function SettingsScreen({ navigation }: any) {
       setError(e.message);
     } finally {
       setCollecting(false);
-    }
-  };
-
-  const resetHistory = async () => {
-    setError('');
-    setNotice('');
-    setResettingHistory(true);
-    try {
-      await clearSeenIds();
-      setNotice('Feed history cleared - already-seen entries can resurface again.');
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setResettingHistory(false);
     }
   };
 
@@ -273,20 +257,6 @@ export function SettingsScreen({ navigation }: any) {
           />
         </View>
       </View>
-
-      <Card>
-        <Eyebrow>Feed</Eyebrow>
-        <Text style={[typography.small, { color: colors.textMuted, marginVertical: space.sm }]}>
-          The home feed remembers what you've already watched in Demos for a few days, so it
-          doesn't keep putting it first. Clearing that lets everything come back up sooner.
-        </Text>
-        <Button
-          label="Reset feed history"
-          variant="secondary"
-          onPress={resetHistory}
-          loading={resettingHistory}
-        />
-      </Card>
 
       <LegalSection navigation={navigation} />
       <AboutSection />

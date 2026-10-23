@@ -6,14 +6,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Linking, Pressable, StyleSheet, View, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icon } from '../components/icons';
+import { Icon, IconName } from '../components/icons';
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { Text } from '../components/Text';
 import { Avatar, EmptyState, Loading } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
+import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { DEMOS_PAGE_SIZE, getDemoProjects, getProjectById, Project } from '../data/projects';
 import { logProjectView } from '../data/views';
-import { markSeen } from '../lib/feedRank';
 import { firstImage } from '../lib/markdown';
 import { resolveMedia, uploadedPosterFor } from '../lib/media';
 import { safeUrl } from '../lib/utils';
@@ -21,7 +22,10 @@ import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space } from '../theme/tokens';
 
 // Demos: every published entry with a live URL, one full screen each - the
-// clip (or picture) first, "Try it" under it. The native side of demos.html.
+// clip (or picture) first, "Try it" under it. XOXD is only demos, so this is
+// the first tab, and its top bar carries what the old Home tab did: the
+// notifications bell and the leaderboard. The native side of the site's home
+// page.
 // Nothing from the demo itself runs in the app: "Try it" opens it in the
 // browser.
 //
@@ -40,6 +44,19 @@ const GLASS = 'rgba(255,255,255,0.16)';
 export function DemosScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  // The bell's dot. Refetched whenever the tab comes back into focus, so
+  // reading everything on the notifications screen clears it here.
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    const refresh = () => {
+      if (!user) return setUnread(0);
+      getUnreadCount().then(setUnread).catch(() => setUnread(0));
+    };
+    refresh();
+    return navigation.addListener('focus', refresh);
+  }, [navigation, user]);
 
   const [feed, setFeed] = useState<Project[]>([]);
   const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
@@ -106,8 +123,7 @@ export function DemosScreen({ navigation, route }: any) {
     loadPage(true);
   }, [route?.params?.projectId, navigation, loadPage]);
 
-  // A view counts after 3 seconds on a card - the same threshold as the site,
-  // and the same one that marks it seen for the home feed's ranking.
+  // A view counts after 3 seconds on a card - the same threshold as the site.
   const dwellTimer = useRef<any>(null);
   useEffect(() => () => clearTimeout(dwellTimer.current), []);
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -117,7 +133,6 @@ export function DemosScreen({ navigation, route }: any) {
     const project = first.item as Project;
     clearTimeout(dwellTimer.current);
     dwellTimer.current = setTimeout(() => {
-      markSeen(project.id);
       logProjectView(project.id).catch(() => {});
     }, 3000);
   }).current;
@@ -175,12 +190,55 @@ export function DemosScreen({ navigation, route }: any) {
         )}
       />
       <View
-        pointerEvents="none"
-        style={{ position: 'absolute', top: insets.top + space.md, left: gutter, flexDirection: 'row' }}
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          top: insets.top + space.md,
+          left: gutter,
+          right: gutter,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
       >
-        <Text style={{ color: INK, fontSize: 15, fontWeight: '700' }}>Demos</Text>
+        <Text style={{ color: INK, fontSize: 15, fontWeight: '700', flex: 1 }}>Demos</Text>
+        <GlassButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
+        <GlassButton
+          icon="bell"
+          label="Notifications"
+          dot={unread > 0}
+          onPress={() => navigation.navigate(user ? 'Notifications' : 'Login')}
+        />
       </View>
     </View>
+  );
+}
+
+// A round see-through button over the dark feed, for the top bar.
+function GlassButton({ icon, label, dot, onPress }: { icon: IconName; label: string; dot?: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={dot ? `${label}, unread` : label}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginLeft: space.sm,
+        backgroundColor: GLASS,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Icon name={icon} size={18} color={INK} />
+      {dot ? (
+        <View
+          style={{ position: 'absolute', top: 7, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary }}
+        />
+      ) : null}
+    </Pressable>
   );
 }
 

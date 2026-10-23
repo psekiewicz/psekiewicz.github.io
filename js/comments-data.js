@@ -1,5 +1,9 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `comments` table. Who may read, add or delete a
+// comment is decided by its RLS policies in schema.sql; these functions only
+// shape the rows (snake_case columns -> camelCase objects) and throw on error.
+
 const TABLE = 'comments';
 
 function toPlainComment(row) {

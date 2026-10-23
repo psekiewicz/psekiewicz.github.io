@@ -133,9 +133,7 @@
    another box or another colour. */
 .eyebrow,
 .section-head p,
-.card-meta,
-.stat-label,
-.label-caps {
+.card-meta {
   font-variant-numeric: tabular-nums;
 }
 
@@ -729,13 +727,11 @@ img {
 /* ---------- Icon animations ---------- */
 
 /* Buttons and links: the icon leads the press. */
-.btn:hover .icon,
-.card-edit-btn:hover .icon {
+.btn:hover .icon {
   transform: translateY(-1px) scale(1.1);
 }
 
-.btn:active .icon,
-.card-edit-btn:active .icon {
+.btn:active .icon {
   transform: scale(0.9);
 }
 
@@ -982,142 +978,6 @@ img {
   gap: 22px;
 }
 
-/* The homepage's "Recently published" spotlight (index.html) - one
-   project at a time, larger, switching itself on a timer or by hand.
-   Every slide is stacked with inset:0 over the active one, which is the
-   only one actually in flow (position:relative) - that's what lets the
-   viewport's height track whichever slide is showing without a fixed,
-   guessed-at height. */
-.spotlight {
-  position: relative;
-}
-
-.spotlight-viewport {
-  position: relative;
-}
-
-.spotlight-slide {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 32px;
-  opacity: 0;
-  transform: scale(0.98);
-  pointer-events: none;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.spotlight-slide.is-active {
-  position: relative;
-  opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
-}
-
-.spotlight-media {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-muted-soft);
-  background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(125, 118, 105, 0.14) 6px 7px);
-  overflow: hidden;
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: var(--color-text-faint);
-  text-decoration: none;
-}
-
-.spotlight-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.spotlight-info h3 {
-  font-size: 1.5rem;
-  margin: 10px 0 8px;
-}
-
-.spotlight-info p {
-  color: var(--color-text-muted);
-  line-height: 1.65;
-  margin-bottom: 14px;
-}
-
-.spotlight-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 22px;
-}
-
-.spotlight-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.spotlight-arrow:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  transform: scale(1.08);
-}
-
-.spotlight-arrow-next {
-  transform: rotate(180deg);
-}
-
-.spotlight-arrow-next:hover {
-  transform: rotate(180deg) scale(1.08);
-}
-
-.spotlight-dots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.spotlight-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-border-strong);
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.spotlight-dot.is-active {
-  background: var(--color-primary);
-  transform: scale(1.35);
-}
-
-@media (max-width: 720px) {
-  .spotlight-slide {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .spotlight-media {
-    aspect-ratio: 16 / 9;
-  }
-}
-
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -1149,36 +1009,6 @@ img {
   box-shadow: var(--shadow-lg);
 }
 
-.card:hover .card-thumb img {
-  transform: scale(1.04);
-}
-
-/* The empty thumbnail is a hatched placeholder rather than a pastel
-   gradient - it reads as "no image yet" instead of as decoration. */
-.card-thumb {
-  aspect-ratio: 16 / 9.5;
-  background-color: var(--color-muted-soft);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent 0 6px,
-    rgba(125, 118, 105, 0.14) 6px 7px
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-faint);
-  font-size: 1.6rem;
-  font-weight: 600;
-  overflow: hidden;
-}
-
-.card-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 .card-body {
   padding: 20px;
   display: flex;
@@ -1201,12 +1031,6 @@ img {
   text-decoration: none;
 }
 
-.card-summary {
-  font-size: 0.92rem;
-  margin: 0;
-  flex: 1;
-}
-
 .card-meta {
   display: flex;
   align-items: center;
@@ -1214,20 +1038,6 @@ img {
   font-size: 0.8rem;
   color: var(--color-text-faint);
   margin-top: 4px;
-}
-
-.card-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.card-edit-btn:hover {
-  color: var(--color-primary);
-  text-decoration: none;
 }
 
 .card-author {
@@ -1879,11 +1689,6 @@ tbody tr {
 }
 
 /* ---------- Project detail ---------- */
-.detail-hero {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: 48px 0;
-}
 
 .detail-thumb {
   width: 100%;
@@ -1909,15 +1714,6 @@ tbody tr {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.detail-meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  color: var(--color-text-faint);
-  font-size: 0.9rem;
 }
 
 .detail-body {
@@ -2405,10 +2201,6 @@ body.has-bottom-nav .demos-container > .demo-card {
   text-align: center;
 }
 
-.mt-lg {
-  margin-top: 32px;
-}
-
 .spinner {
   display: inline-block;
   width: 16px;
@@ -2487,23 +2279,13 @@ body.has-bottom-nav .demos-container > .demo-card {
   .nav-actions {
     display: none;
   }
-  /* Chrome on Android already offers its own install affordance; the
-     custom button is mainly useful on desktop where there's no automatic
-     prompt, and there's no room for it next to the hamburger on mobile. */
-  .pwa-install-btn {
-    display: none;
-  }
+
   .table-wrap {
     overflow-x: auto;
   }
   table {
     min-width: 640px;
   }
-}
-
-.pwa-install-btn {
-  margin-right: 10px;
-  flex-shrink: 0;
 }
 
 /* ---------- Theme toggle ---------- */
@@ -2822,34 +2604,6 @@ body.has-bottom-nav .scroll-card {
 .user-chip .name-badge .icon {
   width: 12px;
   height: 12px;
-}
-
-/* Log out inside the burger - mobile only. On desktop the navbar's own
-   button covers it, and .nav-links is a horizontal row where a logout
-   item would sit oddly among the section links. It's a <button>, so it
-   needs the link styling reset onto it. */
-.nav-link-logout {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  color: var(--color-danger);
-}
-
-@media (max-width: 720px) {
-  .nav-link-logout {
-    display: block;
-    margin-top: 4px;
-    border-top: 1px solid var(--color-border);
-    padding-top: 12px;
-    border-radius: 0;
-  }
-  .nav-link-logout:hover {
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-  }
 }
 
 /* ---------- Embedded media ---------- */
@@ -4559,8 +4313,6 @@ body.sheet-open .bottom-nav {
 /* Rays cut from a repeating conic gradient, masked to a ring so the
    avatar shows through, turning slowly. */
 
-/* ---------- Set nickname effects ---------- */
-
 /* ---------- Set cards on the shop page ---------- */
 .shop-bundle-grid {
   display: grid;
@@ -4943,6 +4695,30 @@ body {
   font-size: 0.92rem;
   overflow: auto;
   max-height: 60vh;
+}
+
+/* A picture whose link did not load (js/markdown.js): hidden on the post,
+   explained in the editor's preview. The usual cause is a link to a page that
+   shows the picture rather than to the picture itself. */
+.post-figure.is-broken {
+  display: none;
+}
+
+.fmt-preview .post-figure.is-broken {
+  display: block;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.fmt-preview .post-figure.is-broken a {
+  display: none;
+}
+
+.fmt-preview .post-figure.is-broken::before {
+  content: "This picture didn't load. The link has to lead to the image file itself (.jpg, .png, .webp...), not to a page that shows it - or use Upload instead.";
 }
 
 .fmt-preview .fmt-empty {

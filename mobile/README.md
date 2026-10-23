@@ -130,7 +130,7 @@ new: install the next APK from the download page once, and updates flow again.
 ```
 src/
   data/        one module per table - direct ports of the site's js/*-data.js
-  lib/         shared logic: levels, feed ranking, achievements, shop catalog,
+  lib/         shared logic: levels, achievements, shop catalog,
                cosmetics, media resolution, motion.ts (shared animations),
                notify.ts (the background notification check)
   screens/     one per screen
@@ -162,9 +162,9 @@ it hasn't shown before as local notifications; tapping one opens the entry or
 the person through the app's normal deep links. The same check also runs
 whenever you return to the app.
 
-Nothing is needed on the server and no account anywhere. `send_push()` in
-[`../schema.sql`](../schema.sql) is left over from an Expo push setup that was
-never switched on: with no rows in `push_tokens` it does nothing.
+Nothing is needed on the server and no account anywhere. An earlier Expo push
+setup (`send_push()` and `push_tokens`) has been removed; `schema.sql` drops
+both so a database built from it matches the live one.
 
 ## Animations
 

@@ -78,11 +78,6 @@ export function Card({ children, style, onPress }: any) {
   );
 }
 
-export function Divider({ style }: any) {
-  const { colors } = useTheme();
-  return <View style={[{ height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.border }, style]} />;
-}
-
 // ---------------------------------------------------------------- buttons
 
 type ButtonProps = {
@@ -490,38 +485,6 @@ export function SuccessNote({ message }: { message: string }) {
       }}
     >
       <Text style={[typography.small, { color: colors.success }]}>{message}</Text>
-    </View>
-  );
-}
-
-export function Stat({ label, value }: { label: string; value: string | number }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ alignItems: 'center', flex: 1, gap: 2 }}>
-      <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{value}</Text>
-      <Text style={[typography.eyebrow, { color: colors.textFaint }]}>{label}</Text>
-    </View>
-  );
-}
-
-export function ProgressBar({ progress }: { progress: number }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        height: 6,
-        borderRadius: 999,
-        backgroundColor: colors.mutedSoft,
-        overflow: 'hidden',
-      }}
-    >
-      <View
-        style={{
-          width: `${Math.max(0, Math.min(1, progress)) * 100}%`,
-          height: '100%',
-          backgroundColor: colors.primary,
-        }}
-      />
     </View>
   );
 }

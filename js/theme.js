@@ -1,5 +1,10 @@
 import { icon } from './icons.js';
 
+// The light/dark toggle in the navbar. The choice is kept in localStorage
+// under 'theme'; with none, the OS setting wins. Each page's <head> carries a
+// one-line inline script that applies the stored choice before anything is
+// painted, so this file only handles the button.
+
 function currentTheme() {
   var stored = localStorage.getItem('theme');
   if (stored === 'light' || stored === 'dark') return stored;

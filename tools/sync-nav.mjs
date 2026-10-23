@@ -22,13 +22,11 @@ const PAGES = [
   'age.html',
   'consent.html',
   'dashboard.html',
-  'demos.html',
   'index.html',
   'leaderboard.html',
   'login.html',
   'profile.html',
   'project.html',
-  'projects.html',
   'register.html',
   'settings.html',
   'shop.html',
@@ -42,12 +40,11 @@ const PAGES = [
 // Order is the sidebar's order. Active state is set at runtime by js/nav.js,
 // which compares each href to the current page.
 const LINKS = [
-  { href: '/index.html', label: 'Home', icon: 'home' },
-  { href: '/projects.html', label: 'Explore', icon: 'search' },
-  { href: '/demos', label: 'Demos', icon: 'rocket' },
-  { href: '/leaderboard.html', label: 'Leaderboard', icon: 'award' },
+  // XOXD is only demos, and they are the home page.
+  { href: '/', label: 'Demos', icon: 'rocket' },
+  { href: '/leaderboard', label: 'Leaderboard', icon: 'award' },
   { href: '/shop', label: 'Shop', icon: 'shopping-bag' },
-  { href: '/dashboard.html', label: 'Dashboard', icon: 'grid' },
+  { href: '/dashboard', label: 'Dashboard', icon: 'grid' },
 ];
 
 const BRAND_MARK =
@@ -55,7 +52,7 @@ const BRAND_MARK =
 
 const nav = `<nav class="navbar">
     <div class="container">
-      <a class="brand" href="/index.html" aria-label="XOXD">
+      <a class="brand" href="/" aria-label="XOXD">
         ${BRAND_MARK}
       </a>
       <div class="nav-links">

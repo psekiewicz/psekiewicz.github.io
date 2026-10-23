@@ -1,5 +1,9 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `follows` table (one row per follower -> followed
+// pair). RLS only lets you insert or delete rows where you are the follower;
+// counts are plain row counts, there is no counter column to keep in step.
+
 function toPlainProfile(row) {
   return {
     id: row.id,

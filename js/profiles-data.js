@@ -1,5 +1,10 @@
 import { supabase } from './supabase-init.js';
 
+// Reads and writes for the `profiles` table, the public face of an account
+// (auth.users itself is never readable from the browser). A row is created by
+// a trigger at sign-up. You can update your own name, bio and avatar; points,
+// is_admin and equipped cosmetics are guarded by triggers in schema.sql.
+
 const TABLE = 'profiles';
 
 function toPlainProfile(row) {
@@ -43,24 +48,6 @@ export async function getProfilesByIds(userIds) {
     data.forEach((row) => map.set(row.id, toPlainProfile(row)));
   }
   return map;
-}
-
-// People whose display name contains `query`, for Explore's search. Asked of
-// the server, so anybody can be found: this used to filter the 200 oldest
-// accounts in the browser, and nobody who joined after them ever turned up.
-export async function searchProfiles(query, limit = 12) {
-  const q = String(query ?? '').trim();
-  if (!q) return [];
-  // The name is matched literally: % _ and \ would otherwise be wildcards.
-  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .ilike('display_name', pattern)
-    .order('display_name')
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return data.map(toPlainProfile);
 }
 
 export async function updateProfile(userId, fields) {

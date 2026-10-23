@@ -24,7 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../data/admin';
 import { followUser, getFollowerCount, getFollowingCount, isFollowing, unfollowUser } from '../data/follows';
 import { getProfile, Profile } from '../data/profiles';
-import { getPublishedProjectsByUser, Project } from '../data/projects';
+import { getDemosByUser, Project } from '../data/projects';
 import { getReputation, Reputation } from '../data/reputation';
 import { padRow, useCardColumns } from '../lib/layout';
 import {
@@ -81,7 +81,7 @@ export function ProfileScreen({ route, navigation }: any) {
     try {
       const [profileRow, rows, rep, followerCount, followCount, follows] = await Promise.all([
         getProfile(targetId),
-        getPublishedProjectsByUser(targetId).catch(() => []),
+        getDemosByUser(targetId).catch(() => []),
         getReputation(targetId).catch(() => null),
         getFollowerCount(targetId).catch(() => 0),
         getFollowingCount(targetId).catch(() => 0),
@@ -555,11 +555,11 @@ export function ProfileScreen({ route, navigation }: any) {
           <View style={{ paddingHorizontal: gutter }}>
             <EmptyState
               icon="package"
-              title="Nothing published"
+              title="No demos yet"
               body={
                 isSelf
-                  ? 'Your published entries show up here.'
-                  : 'This account has no public entries yet.'
+                  ? 'Publish something with a live link and it shows up here.'
+                  : 'Nothing to try here so far.'
               }
             />
           </View>

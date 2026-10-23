@@ -85,16 +85,22 @@ export function toggleList(value, start, end, ordered) {
 
 // [text](url). The selection becomes the text; with nothing selected the
 // link's own address stands in for it, selected so it can be typed over.
+// Spaces and parentheses would end a Markdown address early, so they go in
+// percent-encoded; the address still leads to the same place.
+function mdUrl(url) {
+  return url.replace(/[\s()]/g, (c) => ({ '(': '%28', ')': '%29' })[c] || '%20');
+}
+
 export function insertLink(value, start, end, url) {
   const text = value.slice(start, end) || url;
-  const md = `[${text}](${url})`;
+  const md = `[${text}](${mdUrl(url)})`;
   return { value: value.slice(0, start) + md + value.slice(end), start: start + 1, end: start + 1 + text.length };
 }
 
 // A picture has to sit on a line of its own, with a blank line either side
 // so it can't be read as part of the paragraph around it.
 export function insertImage(value, start, end, url, caption = '') {
-  const md = `![${caption.replace(/[\[\]\n]/g, ' ').trim()}](${url})`;
+  const md = `![${caption.replace(/[\[\]\n]/g, ' ').trim()}](${mdUrl(url)})`;
   const before = value.slice(0, start).replace(/[ \t]+$/, '');
   const after = value.slice(end).replace(/^[ \t]+/, '');
   const lead = !before ? '' : before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';

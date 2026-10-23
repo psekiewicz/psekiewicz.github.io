@@ -17,18 +17,6 @@ export async function isSaved(userId: string | null, projectId: string) {
   return Boolean(data);
 }
 
-export async function getSavedSet(userId: string | null, projectIds: string[]) {
-  const uniqueIds = [...new Set(projectIds)].filter(Boolean);
-  if (!userId || uniqueIds.length === 0) return new Set<string>();
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('project_id')
-    .eq('user_id', userId)
-    .in('project_id', uniqueIds);
-  if (error) throw new Error(error.message);
-  return new Set<string>(data.map((row: any) => row.project_id));
-}
-
 export async function saveProject(userId: string, projectId: string) {
   const { error } = await supabase.from(TABLE).insert({ user_id: userId, project_id: projectId });
   // Saving something already saved is a no-op, not an error - the button can be

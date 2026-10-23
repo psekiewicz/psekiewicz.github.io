@@ -69,3 +69,13 @@ test('pictures only load from http(s) and are left out of previews', async () =>
   assert.equal(stripMarkdown('Hi\n\n![cap](https://a.com/p.png)'), 'Hi');
   assert.equal(firstImage('Hi\n\n![cap](https://a.com/p.png)'), 'https://a.com/p.png');
 });
+
+// Wikipedia-style addresses: the first ")" used to end the address, so the
+// picture came out as a link followed by ".jpg)".
+test('addresses with balanced parentheses stay whole', () => {
+  const [image] = parseBlocks('![cap](https://upload.wikimedia.org/a/File_(1).jpg)');
+  assert.deepEqual(image, { type: 'image', src: 'https://upload.wikimedia.org/a/File_(1).jpg', caption: 'cap' });
+  assert.match(renderMarkdown('[wiki](https://en.wikipedia.org/wiki/Bach_(disambiguation)) ok'), /href="https:\/\/en\.wikipedia\.org\/wiki\/Bach_\(disambiguation\)"[^>]*>wiki<\/a> ok/);
+  assert.match(renderMarkdown('see https://en.wikipedia.org/wiki/Bach_(disambiguation).'), /Bach_\(disambiguation\)" [^>]*>en\.wikipedia\.org<\/a>\.<\/p>/);
+  assert.match(renderMarkdown('(see https://example.com/a)'), /href="https:\/\/example\.com\/a"/);
+});

@@ -13,7 +13,7 @@ import { placeholderFor } from './ProjectCard';
 import { Text } from './Text';
 import { Avatar } from './ui';
 
-// The compact form for grids - Explore and profiles - matching the website's
+// The compact form for a profile's grid, matching the website's
 // tiles: the picture carries it, with the title and who made it over a dark
 // fade at the bottom and the counts beside them.
 

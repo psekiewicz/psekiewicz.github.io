@@ -9,9 +9,9 @@ import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
 // are to get) - used as the display order and to pick the single "best"
 // badge shown next to a name elsewhere in the app. `reward` is the points
 // paid out the first time it's claimed (profile.html, own profile only) -
-// it's a display-only copy of the real reward table in claim_achievement()
-// in schema.sql, which is what actually pays out and re-verifies
-// eligibility server-side; keep the two in sync by hand.
+// it's a display-only copy of the achievement_defs table in schema.sql,
+// which claim_achievement() reads to pay out and re-verify eligibility
+// server-side; keep the two in sync by hand (tests/integration checks).
 export const ACHIEVEMENTS = [
   {
     id: 'icon',

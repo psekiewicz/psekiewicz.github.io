@@ -12,14 +12,6 @@ export async function isAdmin(userId: string | null) {
   return Boolean(data && (data as any).is_admin);
 }
 
-export async function getUserCount() {
-  const { count, error } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
-  if (error) throw new Error(error.message);
-  return count || 0;
-}
-
 export type AdminUser = {
   id: string;
   email: string;

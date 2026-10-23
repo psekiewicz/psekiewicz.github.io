@@ -6,9 +6,6 @@
 //
 // A few icons (heart, bookmark, star) also have a filled twin that the
 // stylesheet swaps in for their "on" states - see --icon-filled.
-//
-// `strokeWidth` is accepted for old callers and ignored: the weight is part of
-// the picture now.
 export function icon(name, { size = 20, className = '' } = {}) {
   const safe = String(name).replace(/[^a-z0-9-]/g, '');
   return `<i class="icon${className ? ' ' + className : ''}" data-icon="${safe}" style="width:${size}px;height:${size}px" aria-hidden="true"></i>`;

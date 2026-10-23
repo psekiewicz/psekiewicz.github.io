@@ -44,3 +44,11 @@ test('insertImage puts the picture on its own block mid-article', () => {
   assert.equal(r.value, 'Intro text.\n\n![A caption](https://a.com/p.jpg)\n\nMore text.');
   assert.deepEqual(parseBlocks(r.value).map((b) => b.type), ['para', 'image', 'para']);
 });
+
+test('inserted pictures and links survive spaces and parentheses in the address', () => {
+  const picture = insertImage('', 0, 0, 'https://example.com/a b (1).jpg');
+  const [block] = parseBlocks(picture.value);
+  assert.equal(block.type, 'image');
+  assert.equal(block.src, 'https://example.com/a%20b%20%281%29.jpg');
+  assert.equal(insertLink('x', 0, 1, 'https://example.com/a)b').value, '[x](https://example.com/a%29b)');
+});

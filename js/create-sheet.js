@@ -1,7 +1,7 @@
 import { PROJECT_TYPE_OPTIONS, escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
-import { parseMedia } from './media.js';
+import { parseMedia, withScheme } from './media.js';
 import { attachFormatToolbar } from './format-toolbar.js';
 import { attachUpload } from './upload-field.js';
 
@@ -40,7 +40,7 @@ function fieldsHtml() {
       <div class="field">
         <label for="sheet-media">Media link</label>
         <input type="url" id="sheet-media" placeholder="YouTube, Vimeo, Spotify, SoundCloud, or a direct mp3/mp4/image URL" />
-        <div class="hint" id="sheet-media-hint">This is what plays in the feed and on the page.</div>
+        <div class="hint" id="sheet-media-hint">A clip or picture of the demo - it plays on its card before anyone opens it.</div>
       </div>
       <div class="field">
         <label for="sheet-description">Description</label>
@@ -57,8 +57,9 @@ function fieldsHtml() {
           <input type="url" id="sheet-repo" placeholder="https://github.com/…" />
         </div>
         <div class="field">
-          <label for="sheet-live">Live URL</label>
+          <label for="sheet-live">Live link - where people try it</label>
           <input type="url" id="sheet-live" placeholder="https://…" />
+          <div class="hint">Needed to publish: XOXD shows demos you can try.</div>
         </div>
       </div>
       <div class="field">
@@ -173,7 +174,7 @@ function mount() {
   mediaInput.addEventListener('input', () => {
     const value = mediaInput.value.trim();
     if (!value) {
-      mediaHint.textContent = 'This is what plays in the feed and on the page.';
+      mediaHint.textContent = 'A clip or picture of the demo - it plays on its card before anyone opens it.';
       mediaHint.style.color = '';
       return;
     }
@@ -194,6 +195,12 @@ function mount() {
       alertEl.classList.add('is-visible');
       return;
     }
+    // XOXD shows only demos - published entries with a live link.
+    if (sheet.querySelector('#sheet-published').checked && !sheet.querySelector('#sheet-live').value.trim()) {
+      alertEl.textContent = 'A demo needs a live link to be published. Add one, or untick Publish to keep it as a draft.';
+      alertEl.classList.add('is-visible');
+      return;
+    }
 
     submit.disabled = true;
     submit.innerHTML = '<span class="spinner"></span> Creating…';
@@ -206,14 +213,14 @@ function mount() {
       ]);
       const user = await getCurrentUser();
       if (!user) {
-        window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
+        window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
         return;
       }
 
       const id = await createProject(user.id, displayNameOf(user), {
         title,
         summary: sheet.querySelector('#sheet-summary').value.trim(),
-        mediaUrl: sheet.querySelector('#sheet-media').value.trim(),
+        mediaUrl: withScheme(sheet.querySelector('#sheet-media').value),
         description: sheet.querySelector('#sheet-description').value.trim(),
         imageUrl: sheet.querySelector('#sheet-image').value.trim(),
         tags: sheet
@@ -223,7 +230,7 @@ function mount() {
           .filter(Boolean)
           .slice(0, 10),
         repoUrl: sheet.querySelector('#sheet-repo').value.trim(),
-        liveUrl: sheet.querySelector('#sheet-live').value.trim(),
+        liveUrl: withScheme(sheet.querySelector('#sheet-live').value),
         type: sheet.querySelector('#sheet-type').value,
         scrollImageUrl: sheet.querySelector('#sheet-scroll-image').value.trim(),
         published: sheet.querySelector('#sheet-published').checked,
@@ -234,7 +241,7 @@ function mount() {
       updatePreview();
       showToast({ title: 'Project created', body: title, iconName: 'rocket', duration: 5000 });
       refreshProgress();
-      window.location.href = `/project.html?id=${encodeURIComponent(id)}`;
+      window.location.href = `/project?id=${encodeURIComponent(id)}`;
     } catch (err) {
       alertEl.textContent = err.message;
       alertEl.classList.add('is-visible');

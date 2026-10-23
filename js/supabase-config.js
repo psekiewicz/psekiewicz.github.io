@@ -1,4 +1,5 @@
-// ⚠️ REPLACE these placeholder values with your own Supabase project's values.
+// The live XOXD Supabase project. To run your own copy, replace both values
+// with your project's.
 //
 // Where to get them:
 //   1. https://supabase.com/dashboard → New project (free tier is enough)

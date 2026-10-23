@@ -7,4 +7,4 @@ Splash backdrops, all from Unsplash (Unsplash License, free to use):
 - clouds.jpg: Sam Ferrara, https://unsplash.com/photos/aerial-photo-of-foggy-mountains-1527pjeb6jg
 - lake.jpg: Tim Stief, https://unsplash.com/photos/snowy-mountains-reflected-in-dolomites-lake-YFFGkE3y4F8
 
-Resized to 540x960. Shown for a moment behind the logo in SplashReveal.
+Cropped to a 540x540 centre square. Shown for a moment in the small square around the logo in SplashReveal.

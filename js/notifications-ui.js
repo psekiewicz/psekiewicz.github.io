@@ -22,10 +22,10 @@ const VERB = {
 
 function notificationHref(notification) {
   if (notification.type === 'follow') {
-    return `/profile.html?user=${encodeURIComponent(notification.actorId)}`;
+    return `/profile?user=${encodeURIComponent(notification.actorId)}`;
   }
   if (!notification.projectId) return '#';
-  const href = `/project.html?id=${encodeURIComponent(notification.projectId)}`;
+  const href = `/project?id=${encodeURIComponent(notification.projectId)}`;
   return notification.type === 'update' ? `${href}#updates` : href;
 }
 
