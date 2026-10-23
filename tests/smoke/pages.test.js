@@ -267,3 +267,43 @@ test('the bell names the new notification types', async () => {
   assert.doesNotMatch(text, /undefined/);
   await context.close();
 });
+
+// Links use clean URLs - /projects, /project?id=..., / for home - which
+// GitHub Pages answers with the .html file of that name. The site had slid
+// back to linking *.html in most places, so this holds every link to it, and
+// to a page that exists.
+test('internal links use clean URLs and lead to real pages', () => {
+  const sources = [
+    ...pages.map((p) => p.slice(1)),
+    ...readdirSync(path.join(root, 'js')).map((name) => `js/${name}`),
+  ];
+  const problems = [];
+  for (const file of sources) {
+    const text = readFileSync(path.join(root, file), 'utf8');
+    for (const [, href] of text.matchAll(/href=["'`](\/[^"'`\s$]*)/g)) {
+      const target = href.split(/[?#]/)[0];
+      if (target.startsWith('/zarolke') || target.startsWith('/przewodnik')) continue;
+      if (/\.html$/.test(target)) problems.push(`${file}: ${href} (drop the .html)`);
+      else if (!resolveFile(target)) problems.push(`${file}: ${href} (no such page)`);
+    }
+  }
+  assert.ok(sources.length > 40, `checked only ${sources.length} files`);
+  assert.deepEqual(problems, []);
+});
+
+// The age gate sends an account with no date of birth to /age and must leave
+// it there. It used to recognise only /age.html, so with clean URLs /age
+// would have sent itself to itself for ever.
+test('the age gate leads to /age once, and lets it be', async () => {
+  const noAge = { ...SIGNED_IN, id: '00000000-0000-4000-8000-0000000000aa' };
+  const { page, context } = await open('/projects', noAge);
+  let navigations = 0;
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) navigations++;
+  });
+  await page.waitForURL(/\/age\?next=/, { timeout: 10_000 });
+  await page.waitForTimeout(1500);
+  assert.equal(new URL(page.url()).pathname, '/age');
+  assert.ok(navigations <= 1, `navigated ${navigations} times`);
+  await context.close();
+});

@@ -51,10 +51,10 @@ function bodyHtml(lines) {
 }
 
 function page(doc) {
-  const url = `https://psekiewicz.github.io/legal/${doc.key}.html`;
+  const url = `https://psekiewicz.github.io/legal/${doc.key}`;
   const tabs = LEGAL_DOCUMENTS.map(
     (d) =>
-      `<a href="/legal/${d.key}.html"${d.key === doc.key ? ' aria-current="page"' : ''}>${escape(d.title)}</a>`
+      `<a href="/legal/${d.key}"${d.key === doc.key ? ' aria-current="page"' : ''}>${escape(d.title)}</a>`
   ).join('\n        ');
   const sections = doc.sections
     .map((s) => `      <section>\n        <h2>${escape(s.heading)}</h2>\n${bodyHtml(s.body)}\n      </section>`)

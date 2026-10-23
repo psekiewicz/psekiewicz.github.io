@@ -28,23 +28,23 @@ function whoToFollowHtml(people, followingIds, signedIn) {
           const follows = followingIds.has(profile.id);
           return `
             <div class="rail-row">
-              <a href="/profile.html?user=${encodeURIComponent(profile.id)}" tabindex="-1" aria-hidden="true">
+              <a href="/profile?user=${encodeURIComponent(profile.id)}" tabindex="-1" aria-hidden="true">
                 ${avatarHtml(profile.avatarUrl, profile.displayName, effectClass(profile.equippedBorder))}
               </a>
-              <a class="rail-row-text" href="/profile.html?user=${encodeURIComponent(profile.id)}">
+              <a class="rail-row-text" href="/profile?user=${encodeURIComponent(profile.id)}">
                 <span class="rail-row-title">${escapeHtml(profile.displayName)}</span>
                 <span class="rail-row-sub">${xp.toLocaleString()} XP</span>
               </a>
               ${
                 signedIn
                   ? `<button class="btn btn-sm ${follows ? 'btn-secondary' : 'btn-primary'}" type="button" data-follow="${escapeHtml(profile.id)}" aria-pressed="${follows}">${follows ? 'Following' : 'Follow'}</button>`
-                  : `<a class="btn btn-sm btn-primary" href="/login.html?next=${encodeURIComponent('/index.html')}">Follow</a>`
+                  : `<a class="btn btn-sm btn-primary" href="/login?next=${encodeURIComponent('/')}">Follow</a>`
               }
             </div>
           `;
         })
         .join('')}
-      <a class="rail-more" href="/leaderboard.html">Show more</a>
+      <a class="rail-more" href="/leaderboard">Show more</a>
     </section>
   `;
 }
@@ -57,7 +57,7 @@ function trendingHtml(tags) {
       ${tags
         .map(
           ([tag, count]) => `
-            <a class="rail-row" href="/projects.html?tag=${encodeURIComponent(tag)}">
+            <a class="rail-row" href="/projects?tag=${encodeURIComponent(tag)}">
               <span class="rail-row-text">
                 <span class="rail-row-title">#${escapeHtml(tag)}</span>
                 <span class="rail-row-sub">${count} ${count === 1 ? 'post' : 'posts'}</span>
@@ -75,7 +75,7 @@ function trendingHtml(tags) {
 export async function renderRail(el, { user, projects, followingIds = new Set() }) {
   const tags = trendingTags(projects);
   const base = (people = []) => `
-    <form class="rail-search" action="/projects.html" role="search">
+    <form class="rail-search" action="/projects" role="search">
       ${icon('search', { size: 18 })}
       <input type="search" name="q" placeholder="Search XOXD" aria-label="Search XOXD" />
     </form>
@@ -87,7 +87,7 @@ export async function renderRail(el, { user, projects, followingIds = new Set() 
       <a class="btn btn-sm btn-primary" href="/download/">${icon('download', { size: 15 })} Get the app</a>
     </section>
     <nav class="rail-foot" aria-label="Site">
-      <a href="/leaderboard.html">Leaderboard</a>
+      <a href="/leaderboard">Leaderboard</a>
       <a href="/shop">Shop</a>
       <a href="/download/">Android app</a>
       <span>© ${new Date().getFullYear()} XOXD</span>

@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex" />
   <title>XOXD</title>
-  <!-- Scrolls was replaced by Demos (demos.html). Links to it are still out
+  <!-- Scrolls was replaced by Demos (/demos). Links to it are still out
        there, so this page only forwards them: a link to one entry
        (scrolls?project=<id>) opens that entry, anything else opens Demos. -->
   <script>
     (function () {
       var id = new URLSearchParams(location.search).get('project');
-      location.replace(id ? '/project.html?id=' + encodeURIComponent(id) : '/demos');
+      location.replace(id ? '/project?id=' + encodeURIComponent(id) : '/demos');
     })();
   </script>
   <meta http-equiv="refresh" content="0; url=/demos" />

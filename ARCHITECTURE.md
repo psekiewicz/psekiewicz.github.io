@@ -184,8 +184,16 @@ Every module starts with a comment saying what it is for. Read those first.
 4. Everything rendered from data goes through `escapeHtml()`, and every
    user-supplied link through `safeUrl()` (`js/utils.js`). Iframes are never
    given a user URL - `media.js` rebuilds embed URLs from an allowlist.
-5. Pages that need an account redirect to `/login.html?next=...` when there
+5. Pages that need an account redirect to `/login?next=...` when there
    is none. That is only a convenience; the data is protected by RLS anyway.
+6. Links use **clean URLs**: `/projects`, `/project?id=...`, `/` for home -
+   never `projects.html`. GitHub Pages serves `projects.html` for
+   `/projects`, so both work, but code that recognises the current page must
+   go through `pageId()` (`js/utils.js`), which treats them as the same page.
+   A smoke test fails on any internal link ending in `.html`. Two exceptions
+   keep `.html` on purpose: the password-reset `redirectTo` (it has to match
+   the redirect allowlist in Supabase's Auth settings) and the link in the
+   parental-consent email (sent by a deployed Edge Function).
 
 Pages are separate documents, not a single-page app. Cross-document view
 transitions make navigation look seamless.
@@ -269,7 +277,7 @@ executable checks, what the database must allow and refuse.
 
 - **New page** - copy an existing page's skeleton, add it to `PAGES` in
   `tools/sync-nav.mjs` and run it, add it to `sitemap.xml` if public and to
-  `PRECACHE_URLS` in `sw.js` if it should open offline (then bump
+  `PRECACHE_URLS` in `sw.js` (by its clean URL) if it should open offline (then bump
   `CACHE_VERSION`). The smoke test finds new pages on its own.
 - **New column or table** - add it to `schema.sql` (idempotently), with RLS
   policies if it's a table, run it in the Supabase SQL Editor, add a test to

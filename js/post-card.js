@@ -42,7 +42,7 @@ export function postBuildHtml(project, latestUpdate) {
   const live = safeUrl(project.liveUrl);
   const repo = safeUrl(project.repoUrl);
   if (!live && !repo && !latestUpdate) return '';
-  const href = `/project.html?id=${encodeURIComponent(project.id)}`;
+  const href = `/project?id=${encodeURIComponent(project.id)}`;
   return `
     <div class="post-build">
       ${live ? `<a class="btn btn-primary btn-sm" href="${escapeHtml(live)}" target="_blank" rel="noopener noreferrer">${icon('external-link', { size: 14 })} Try it</a>` : ''}
@@ -59,8 +59,8 @@ export function postBuildHtml(project, latestUpdate) {
 }
 
 export function postHtml(project, { author, level, likeCount = 0, commentCount = 0, liked = false, saved = false, latestUpdate = null } = {}) {
-  const href = `/project.html?id=${encodeURIComponent(project.id)}`;
-  const profileHref = `/profile.html?user=${encodeURIComponent(project.uid)}`;
+  const href = `/project?id=${encodeURIComponent(project.id)}`;
+  const profileHref = `/profile?user=${encodeURIComponent(project.uid)}`;
   const type = PROJECT_TYPES[project.type] ? project.type : 'other';
   const meta = PROJECT_TYPES[type];
   const name = (author && author.displayName) || project.authorName;
@@ -68,7 +68,7 @@ export function postHtml(project, { author, level, likeCount = 0, commentCount =
   const text = project.summary || stripMarkdown(project.description).slice(0, 220);
   const tags = project.tags
     .slice(0, 4)
-    .map((t) => `<a class="tag" href="/projects.html?tag=${encodeURIComponent(t)}">${escapeHtml(t)}</a>`)
+    .map((t) => `<a class="tag" href="/projects?tag=${encodeURIComponent(t)}">${escapeHtml(t)}</a>`)
     .join('');
 
   // The per-type gradient sits behind the image, so a cover that fails to load
@@ -146,13 +146,13 @@ export function bindPostActions(container, { getUser }) {
     if (action === 'share') {
       const { shareLink } = await import('./share.js');
       const title = post.querySelector('.post-title a')?.textContent || 'XOXD';
-      shareLink({ url: `/project.html?id=${encodeURIComponent(projectId)}`, title });
+      shareLink({ url: `/project?id=${encodeURIComponent(projectId)}`, title });
       return;
     }
 
     const user = getUser();
     if (!user) {
-      window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname + window.location.search);
       return;
     }
 
@@ -201,7 +201,7 @@ export function bindPostActions(container, { getUser }) {
 // The compact form for grids (Explore, profiles): the picture carries it, with
 // the title and who made it over the bottom and the counts in the corner.
 export function tileHtml(project, { author, likeCount = 0, commentCount = 0 } = {}) {
-  const href = `/project.html?id=${encodeURIComponent(project.id)}`;
+  const href = `/project?id=${encodeURIComponent(project.id)}`;
   const type = PROJECT_TYPES[project.type] ? project.type : 'other';
   const meta = PROJECT_TYPES[type];
   const name = (author && author.displayName) || project.authorName;

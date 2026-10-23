@@ -118,7 +118,7 @@ export function mediaHtml(raw, { inline = false, typeHint = '' } = {}) {
   if (media.kind === 'iframe') {
     // In the feed, YouTube/Vimeo embeds are "video" the same way a plain
     // <video> is - they should autoplay muted and be scroll-controlled by
-    // the feed (demos.html), via each provider's postMessage
+    // the feed (/demos), via each provider's postMessage
     // API (see controlEmbeddedVideo below). `compact` marks the audio-shaped
     // embeds (Spotify, SoundCloud), which stay tap-to-play like native
     // audio and are left alone here.

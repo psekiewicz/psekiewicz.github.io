@@ -206,7 +206,7 @@ function mount() {
       ]);
       const user = await getCurrentUser();
       if (!user) {
-        window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
+        window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
         return;
       }
 
@@ -234,7 +234,7 @@ function mount() {
       updatePreview();
       showToast({ title: 'Project created', body: title, iconName: 'rocket', duration: 5000 });
       refreshProgress();
-      window.location.href = `/project.html?id=${encodeURIComponent(id)}`;
+      window.location.href = `/project?id=${encodeURIComponent(id)}`;
     } catch (err) {
       alertEl.textContent = err.message;
       alertEl.classList.add('is-visible');

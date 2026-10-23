@@ -53,7 +53,7 @@ export function usePostActions(userId: string | null, onSignInNeeded: () => void
   );
 
   const share = useCallback((project: Project) => {
-    Share.share({ message: `${project.title} - https://psekiewicz.github.io/project.html?id=${project.id}` });
+    Share.share({ message: `${project.title} - https://psekiewicz.github.io/project?id=${project.id}` });
   }, []);
 
   return { likeCounts, setLikeCounts, liked, setLiked, saved, setSaved, toggleLike, toggleSave, share };

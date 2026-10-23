@@ -31,7 +31,7 @@ import { radius, space, typography } from '../theme/tokens';
 
 export function ProjectDetailScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
-  // `id` when opened from a site link (project.html?id=...), `projectId` in-app.
+  // `id` when opened from a site link (/project?id=...), `projectId` in-app.
   const projectId = route.params.projectId ?? route.params.id;
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -141,7 +141,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
   const share = () => {
     if (!project) return;
     Share.share({
-      message: `${project.title} - https://psekiewicz.github.io/project.html?id=${project.id}`,
+      message: `${project.title} - https://psekiewicz.github.io/project?id=${project.id}`,
     });
   };
 

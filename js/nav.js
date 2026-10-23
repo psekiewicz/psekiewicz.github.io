@@ -77,8 +77,8 @@ async function renderNavActions(container, user) {
   if (!user) {
     unmountNotifications();
     container.innerHTML = `
-      <a class="btn btn-primary nav-login-btn" href="/login.html" title="Log in" aria-label="Log in">${icon('user', { size: 18 })}<span>Log in</span></a>
-      <a class="btn btn-secondary nav-signup-btn" href="/register.html">Create account</a>
+      <a class="btn btn-primary nav-login-btn" href="/login" title="Log in" aria-label="Log in">${icon('user', { size: 18 })}<span>Log in</span></a>
+      <a class="btn btn-secondary nav-signup-btn" href="/register">Create account</a>
     `;
     return;
   }
@@ -101,7 +101,7 @@ async function renderNavActions(container, user) {
   // The + tab is the fastest thing about the phone app: publishing never
   // means navigating anywhere first. On phones the post button is hidden in
   // favour of that tab; the avatar and its menu show everywhere.
-  const profileHref = `/profile.html?user=${encodeURIComponent(user.id)}`;
+  const profileHref = `/profile?user=${encodeURIComponent(user.id)}`;
   container.innerHTML = `
     <button class="btn btn-primary nav-new-btn" id="nav-new-project" type="button" aria-haspopup="dialog" aria-label="New post" title="New post (press N)">
       ${icon('plus', { size: 18 })}<span>New post</span>
@@ -113,7 +113,7 @@ async function renderNavActions(container, user) {
       <div class="account-pop" id="account-pop" role="menu" hidden>
         <div class="account-pop-head">${avatarHtml(avatarUrl, name, 'avatar-sm')}<span>${escapeHtml(name)}</span></div>
         <a class="account-pop-item" role="menuitem" href="${profileHref}">${icon('user', { size: 18 })} Your profile</a>
-        <a class="account-pop-item" role="menuitem" href="/settings.html">${icon('settings', { size: 18 })} Settings</a>
+        <a class="account-pop-item" role="menuitem" href="/settings">${icon('settings', { size: 18 })} Settings</a>
         <button class="account-pop-item" role="menuitem" type="button" id="nav-logout-btn">${icon('log-out', { size: 18 })} Log out</button>
       </div>
     </div>
@@ -137,7 +137,7 @@ async function renderNavActions(container, user) {
   if (admin && navLinks && !navLinks.querySelector('[data-admin-link]')) {
     const link = document.createElement('a');
     link.className = 'nav-link';
-    link.href = '/admin.html';
+    link.href = '/admin';
     link.innerHTML = `${icon('shield', { size: 22 })}<span>Admin</span>`;
     link.setAttribute('data-admin-link', '');
     if (pageId(window.location.pathname) === 'admin') link.classList.add('active');
@@ -161,7 +161,7 @@ function bindAccountMenu(container) {
   logout.addEventListener('click', async () => {
     logout.disabled = true;
     await logoutUser();
-    window.location.href = '/index.html';
+    window.location.href = '/';
   });
 
   // Page-wide listeners are added once, however often the navbar re-renders,
