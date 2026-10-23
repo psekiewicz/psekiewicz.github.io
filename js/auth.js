@@ -52,7 +52,9 @@ export async function logoutUser() {
 
 export async function resetPassword(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/login.html`,
+    // login.html sees ?reset=1 (and the recovery session the link carries)
+    // and asks for a new password instead of moving on to the dashboard.
+    redirectTo: `${window.location.origin}/login?reset=1`,
   });
   if (error) throw new Error(friendlyError(error));
 }

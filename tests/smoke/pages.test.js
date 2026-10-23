@@ -332,3 +332,33 @@ test('an expired confirmation link explains itself', async () => {
   await page.locator('#form-alert', { hasText: 'invalid or has expired' }).waitFor({ timeout: 10_000 });
   await context.close();
 });
+
+// A password-reset link signs you in. The login page used to treat that like
+// any signed-in visit and go straight to the dashboard, so the password was
+// never actually changed.
+test('a password-reset link asks for the new password before anything else', async () => {
+  const { page, context } = await open('/login?reset=1', SIGNED_IN);
+  await page.locator('#reset-form').waitFor({ state: 'visible', timeout: 10_000 });
+  assert.equal(await page.locator('#login-form').isVisible(), false);
+  await page.waitForTimeout(500);
+  assert.equal(new URL(page.url()).pathname, '/login', 'left the page before the password was set');
+  await page.locator('#new-password').fill('a-new-password');
+  await page.locator('#confirm-password').fill('a-new-password');
+  await page.locator('#reset-btn').click();
+  await page.locator('#form-success', { hasText: 'password is changed' }).waitFor({ timeout: 10_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
+  await context.close();
+});
+
+test('a reset link from an older email (login.html, type=recovery) is caught too', async () => {
+  const { page, context } = await open('/login.html#access_token=x&type=recovery', SIGNED_IN);
+  await page.locator('#reset-form').waitFor({ state: 'visible', timeout: 10_000 });
+  await context.close();
+});
+
+test('a reset link that signed nobody in says what to do', async () => {
+  const { page, context } = await open('/login?reset=1', null);
+  await page.locator('#form-alert', { hasText: 'did not sign you in' }).waitFor({ timeout: 10_000 });
+  assert.equal(await page.locator('#reset-form').isVisible(), false);
+  await context.close();
+});

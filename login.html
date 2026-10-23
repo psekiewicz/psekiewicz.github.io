@@ -64,6 +64,18 @@
         <div class="alert alert-error" id="form-alert"></div>
         <div class="alert alert-success" id="form-success"></div>
 
+        <form id="reset-form" novalidate hidden>
+          <div class="field">
+            <label for="new-password">New password</label>
+            <input type="password" id="new-password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <div class="field">
+            <label for="confirm-password">Confirm new password</label>
+            <input type="password" id="confirm-password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="reset-btn">Set new password</button>
+        </form>
+
         <form id="login-form" novalidate>
           <div class="field">
             <label for="email">Email</label>
@@ -89,7 +101,7 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
-    import { loginUser, resetPassword, getCurrentUser } from '/js/auth.js';
+    import { loginUser, resetPassword, getCurrentUser, changePassword } from '/js/auth.js';
 
     const form = document.getElementById('login-form');
     const alertBox = document.getElementById('form-alert');
@@ -144,8 +156,43 @@
     // Read before the Supabase client tidies the address bar. A confirmation
     // link that has expired or was already used comes back with the reason in
     // the hash instead of a session.
-    const linkError = new URLSearchParams(window.location.hash.slice(1)).get('error_description');
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const linkError = hash.get('error_description');
     const confirmed = new URLSearchParams(window.location.search).has('confirmed');
+    // A password-reset link signs you in too. Moving on to the dashboard, as
+    // for any signed-in visitor, would leave the old password in place, so
+    // this asks for the new one first. type=recovery also catches links from
+    // emails sent before the link carried ?reset=1.
+    const recovering = new URLSearchParams(window.location.search).has('reset') || hash.get('type') === 'recovery';
+
+    function showResetForm() {
+      document.querySelector('.auth-card h1').textContent = 'Set a new password';
+      document.querySelector('.auth-card .sub').textContent = 'Choose the password you will log in with from now on.';
+      form.hidden = true;
+      document.querySelectorAll('.auth-card .form-footer').forEach((el) => (el.hidden = true));
+      resetForm.hidden = false;
+      document.getElementById('new-password').focus();
+    }
+
+    const resetForm = document.getElementById('reset-form');
+    const resetBtn = document.getElementById('reset-btn');
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('new-password').value;
+      if (password.length < 6) return showError('Password must be at least 6 characters long.');
+      if (password !== document.getElementById('confirm-password').value) return showError('Passwords do not match.');
+      resetBtn.disabled = true;
+      resetBtn.innerHTML = '<span class="spinner"></span> Saving…';
+      try {
+        await changePassword(password);
+        showSuccess('Your password is changed.');
+        setTimeout(() => (window.location.href = '/dashboard'), 1500);
+      } catch (err) {
+        showError(err.message);
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Set new password';
+      }
+    });
 
     // If already logged in, skip straight to the dashboard. The confirmation
     // link signs the new account in on its own, so after confirming this is
@@ -156,6 +203,11 @@
         return;
       }
       const user = await getCurrentUser();
+      if (recovering) {
+        if (user) showResetForm();
+        else showError('This reset link did not sign you in. Enter your email and click "Forgot your password?" for a new one.');
+        return;
+      }
       if (confirmed) {
         showSuccess(user ? 'Your email is confirmed - you are signed in.' : 'Your email is confirmed. Log in to continue.');
         if (user) setTimeout(() => (window.location.href = '/dashboard'), 1500);

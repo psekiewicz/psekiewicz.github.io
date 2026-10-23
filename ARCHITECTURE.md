@@ -190,13 +190,13 @@ Every module starts with a comment saying what it is for. Read those first.
    never `projects.html`. GitHub Pages serves `projects.html` for
    `/projects`, so both work, but code that recognises the current page must
    go through `pageId()` (`js/utils.js`), which treats them as the same page.
-   A smoke test fails on any internal link ending in `.html`. Two exceptions
-   keep `.html` on purpose: the password-reset `redirectTo` (it has to match
-   the redirect allowlist in Supabase's Auth settings) and the link in the
-   parental-consent email (sent by a deployed Edge Function).
+   A smoke test fails on any internal link ending in `.html`. One exception
+   keeps `.html` on purpose: the link in the parental-consent email (sent by
+   a deployed Edge Function).
 7. Links in Supabase's own emails come back to the site: sign-up
    confirmation to `/login?confirmed=1` (`emailRedirectTo`), password reset
-   to `/login.html`. Supabase only honours an address on the Redirect URLs
+   to `/login?reset=1`, where the page asks for the new password before
+   anything else (both links sign you in). Supabase only honours an address on the Redirect URLs
    allowlist (*Authentication -> URL Configuration*); anything else falls
    back to the Site URL there, which defaults to `http://localhost:3000`.
    Both should be set to the live site.
