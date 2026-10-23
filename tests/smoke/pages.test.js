@@ -398,3 +398,35 @@ test('the editor preview explains a picture that did not load; a post just hides
   assert.equal(state.postShown, false);
   await context.close();
 });
+
+// The upload policy also requires consent_ok() - a date of birth, and for a
+// 13-15 year old a parent's say-so. Storage's refusal ("new row violates
+// row-level security policy") used to be reported as the 300-file limit, and
+// only after the file had been compressed. Two real accounts had no date.
+async function tryUpload(user) {
+  const { page, context } = await open('/index.html', user);
+  const outcome = await page.evaluate(async () => {
+    const { uploadMedia } = await import('/js/uploads-data.js');
+    const canvas = Object.assign(document.createElement('canvas'), { width: 8, height: 8 });
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    try {
+      const result = await uploadMedia(new File([blob], 'dot.png', { type: 'image/png' }), { kind: 'cover' });
+      return { url: result.url };
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+  await context.close();
+  return outcome;
+}
+
+test('an upload from an account without a date of birth says to add one', async () => {
+  const outcome = await tryUpload({ ...SIGNED_IN, id: '00000000-0000-4000-8000-0000000000aa' });
+  assert.match(outcome.error || '', /date of birth/);
+});
+
+test('an upload from an account that passed the age check goes through', async () => {
+  const outcome = await tryUpload(SIGNED_IN);
+  assert.equal(outcome.error, undefined);
+  assert.match(outcome.url, /\/uploads\//);
+});
