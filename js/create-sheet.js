@@ -40,7 +40,7 @@ function fieldsHtml() {
       <div class="field">
         <label for="sheet-media">Media link</label>
         <input type="url" id="sheet-media" placeholder="YouTube, Vimeo, Spotify, SoundCloud, or a direct mp3/mp4/image URL" />
-        <div class="hint" id="sheet-media-hint">This is what plays in the feed and on the page.</div>
+        <div class="hint" id="sheet-media-hint">A clip or picture of the demo - it plays on its card before anyone opens it.</div>
       </div>
       <div class="field">
         <label for="sheet-description">Description</label>
@@ -57,8 +57,9 @@ function fieldsHtml() {
           <input type="url" id="sheet-repo" placeholder="https://github.com/…" />
         </div>
         <div class="field">
-          <label for="sheet-live">Live URL</label>
+          <label for="sheet-live">Live link - where people try it</label>
           <input type="url" id="sheet-live" placeholder="https://…" />
+          <div class="hint">Needed to publish: XOXD shows demos you can try.</div>
         </div>
       </div>
       <div class="field">
@@ -173,7 +174,7 @@ function mount() {
   mediaInput.addEventListener('input', () => {
     const value = mediaInput.value.trim();
     if (!value) {
-      mediaHint.textContent = 'This is what plays in the feed and on the page.';
+      mediaHint.textContent = 'A clip or picture of the demo - it plays on its card before anyone opens it.';
       mediaHint.style.color = '';
       return;
     }
@@ -191,6 +192,12 @@ function mount() {
     const title = sheet.querySelector('#sheet-title').value.trim();
     if (title.length < 3) {
       alertEl.textContent = 'Title must be at least 3 characters.';
+      alertEl.classList.add('is-visible');
+      return;
+    }
+    // XOXD shows only demos - published entries with a live link.
+    if (sheet.querySelector('#sheet-published').checked && !sheet.querySelector('#sheet-live').value.trim()) {
+      alertEl.textContent = 'A demo needs a live link to be published. Add one, or untick Publish to keep it as a draft.';
       alertEl.classList.add('is-visible');
       return;
     }
@@ -223,7 +230,7 @@ function mount() {
           .filter(Boolean)
           .slice(0, 10),
         repoUrl: sheet.querySelector('#sheet-repo').value.trim(),
-        liveUrl: sheet.querySelector('#sheet-live').value.trim(),
+        liveUrl: withScheme(sheet.querySelector('#sheet-live').value),
         type: sheet.querySelector('#sheet-type').value,
         scrollImageUrl: sheet.querySelector('#sheet-scroll-image').value.trim(),
         published: sheet.querySelector('#sheet-published').checked,

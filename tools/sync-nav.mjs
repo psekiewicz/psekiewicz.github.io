@@ -22,13 +22,11 @@ const PAGES = [
   'age.html',
   'consent.html',
   'dashboard.html',
-  'demos.html',
   'index.html',
   'leaderboard.html',
   'login.html',
   'profile.html',
   'project.html',
-  'projects.html',
   'register.html',
   'settings.html',
   'shop.html',
@@ -42,9 +40,8 @@ const PAGES = [
 // Order is the sidebar's order. Active state is set at runtime by js/nav.js,
 // which compares each href to the current page.
 const LINKS = [
-  { href: '/', label: 'Home', icon: 'home' },
-  { href: '/projects', label: 'Explore', icon: 'search' },
-  { href: '/demos', label: 'Demos', icon: 'rocket' },
+  // XOXD is only demos, and they are the home page.
+  { href: '/', label: 'Demos', icon: 'rocket' },
   { href: '/leaderboard', label: 'Leaderboard', icon: 'award' },
   { href: '/shop', label: 'Shop', icon: 'shopping-bag' },
   { href: '/dashboard', label: 'Dashboard', icon: 'grid' },

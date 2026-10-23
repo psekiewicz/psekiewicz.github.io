@@ -7,10 +7,18 @@ every feature and why it is the way it is; this file is the short version of
 
 ## What it is
 
-**XOXD** is a small social network for things people make - music, videos,
-pictures, apps. People publish entries, follow each other, like, comment and
-save, earn XP and levels from what others do with their work, and spend points
-on profile cosmetics in a shop.
+**XOXD** is a feed of **demos**: things people are building that you can try
+in a tap. Each demo is one full screen - its clip or picture, then "Try it",
+which opens the thing itself. Around that: profiles, likes and comments, a
+dated changelog per demo, following and notifications, and XP, levels,
+achievements and a cosmetics shop.
+
+It used to be a general social network for music, videos, pictures and apps,
+with a home feed and an Explore page; those were removed and only the demos
+system kept. The database still holds everything (entries without a live link
+included) - only the site and the app stopped showing it. An entry is a demo
+when it is published and has a live link (`projects.live_url`); nothing else
+is shown publicly, and the editors refuse to publish without one.
 
 It exists twice, sharing one backend:
 
@@ -93,7 +101,7 @@ must match, and tests check that they do:
 | Word | Means |
 | --- | --- |
 | project / entry / post | The same thing: one row of `projects`. "Project" in code and table names, "entry" or "post" in the interface. |
-| Demos | The full-screen swipeable feed (`demos.html`). It used to be called **Scrolls**; `scrolls.html` only redirects, and you'll still see `scroll_image_url`, `scroll-styles.js`. |
+| demo / Demos | A published entry with a live link, and the full-screen swipeable feed of them - the home page (`index.html`), and the first tab in the app. It was once called **Scrolls** and lived at `/demos`; `scrolls.html` and `demos.html` only redirect, and you'll still see `scroll_image_url`, `scroll-styles.js`. |
 | showcase | The project's old internal name. Survives in localStorage keys, the service-worker cache name and the APK file name (`showcase.apk`). Changing it would log people out of cached state or break the download link, so it stays. |
 | XP / level | Reputation, computed by the database from what others did with your work. Never spent. |
 | points | Spendable currency for the shop. Earned from reach (`collect_earnings()`) and achievement claims. |
@@ -109,10 +117,8 @@ must match, and tests check that they do:
 ```
 *.html                Website pages. Each holds its own page logic in an inline
                       <script type="module"> at the bottom (see "How a page works").
-  index.html            Home feed (For you / Following / Latest)
-  projects.html         Explore: search posts, tags, people
+  index.html            Home: the Demos feed, one full screen per demo
   project.html          One entry (?id=), comments, updates, likes
-  demos.html            Full-screen feed of entries with a live link
   profile.html          A person (?user=), their work, achievements
   dashboard.html        Your own entries: create, edit, publish, delete
   settings.html         Your account
@@ -120,11 +126,13 @@ must match, and tests check that they do:
   leaderboard.html      Top accounts by XP
   admin.html            Moderation (admins only)
   login.html, register.html, age.html, consent.html, 404.html
-  scrolls.html          Redirect only (old name of Demos)
+  demos.html, projects.html, scrolls.html
+                        Redirects only: Demos' old address, Explore, Scrolls
 legal/                Terms, privacy, guidelines - GENERATED, see below
 download/             The page that links to the latest APK
 css/style.css         Design tokens and every shared component
-css/social.css        Feed layout: sidebar, posts, rail, Explore, profile
+css/social.css        Sidebar, post page, profile, Demos (still holds rules
+                        for the removed feed and Explore - unused, not yet pruned)
 js/                   ES modules shared by the pages (see "Modules" below)
 sw.js                 Service worker: network-first, cache as offline fallback
 manifest.webmanifest  PWA manifest
@@ -154,14 +162,14 @@ zarolke/, przewodnik/ Unrelated sites hosted here (see top)
   version).
 - **Pure logic, unit-tested** - `utils.js` (escaping, `safeUrl`, avatars,
   dates), `markdown.js`, `media.js` (link -> player, host allowlist),
-  `feed-rank.js`, `levels.js`, `compress.js`, `format-toolbar.js`,
+  `levels.js`, `compress.js`, `format-toolbar.js`,
   `scroll-styles.js`, `icons.js`.
 - **Catalogs** - `achievements.js`, `shop-items.js` (display copies, see the
   table above).
-- **Rendering pieces** - `post-card.js`, `feed-rail.js`, `stats-card.js`,
+- **Rendering pieces** - `post-card.js` (profile tiles), `stats-card.js`,
   `toast.js`, `create-sheet.js`, `upload-field.js`, `share.js`.
 - **Loaded on every page** - `theme.js`, `nav.js`, `bottom-nav.js`,
-  `cookie-consent.js`, `pwa.js`, and `animations.js` (all but Demos).
+  `cookie-consent.js`, `pwa.js`, and `animations.js` (all but the Demos home page).
   `nav.js` in turn runs `age-gate.js` and `announcement.js`, mounts the
   notification bell (`notifications-ui.js`) and starts `progress-watch.js`
   (level-up and achievement toasts), so a new page gets all of that by
@@ -186,9 +194,9 @@ Every module starts with a comment saying what it is for. Read those first.
    given a user URL - `media.js` rebuilds embed URLs from an allowlist.
 5. Pages that need an account redirect to `/login?next=...` when there
    is none. That is only a convenience; the data is protected by RLS anyway.
-6. Links use **clean URLs**: `/projects`, `/project?id=...`, `/` for home -
-   never `projects.html`. GitHub Pages serves `projects.html` for
-   `/projects`, so both work, but code that recognises the current page must
+6. Links use **clean URLs**: `/leaderboard`, `/project?id=...`, `/` for home -
+   never `leaderboard.html`. GitHub Pages serves `leaderboard.html` for
+   `/leaderboard`, so both work, but code that recognises the current page must
    go through `pageId()` (`js/utils.js`), which treats them as the same page.
    A smoke test fails on any internal link ending in `.html`. One exception
    keeps `.html` on purpose: the link in the parental-consent email (sent by
@@ -208,8 +216,8 @@ transitions make navigation look seamless.
 
 Same backend, same rules. Its structure mirrors the site on purpose:
 `mobile/src/data/*.ts` are near line-by-line ports of `js/*-data.js`, and
-`mobile/src/lib/` holds ports of the pure logic (levels, feed ranking,
-markdown, media, catalogs). When you change one side, look for the other.
+`mobile/src/lib/` holds ports of the pure logic (levels, markdown, media,
+catalogs). When you change one side, look for the other.
 Screens are in `mobile/src/screens/`, navigation in
 `mobile/src/navigation/RootNavigator.tsx`.
 

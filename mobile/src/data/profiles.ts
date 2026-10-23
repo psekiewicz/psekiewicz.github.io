@@ -56,24 +56,6 @@ export async function getProfilesByIds(userIds: string[]) {
   return map;
 }
 
-// People whose display name contains `query`, for Explore's search. Asked of
-// the server, so anybody can be found: this used to filter the 200 oldest
-// accounts on the phone. Same as js/profiles-data.js.
-export async function searchProfiles(query: string, limit = 12) {
-  const q = String(query ?? '').trim();
-  if (!q) return [];
-  // The name is matched literally: % _ and \ would otherwise be wildcards.
-  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .ilike('display_name', pattern)
-    .order('display_name')
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return (data || []).map(toPlainProfile);
-}
-
 export async function updateProfile(
   userId: string,
   fields: { displayName: string; bio: string; avatarUrl: string }

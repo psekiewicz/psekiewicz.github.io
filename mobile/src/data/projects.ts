@@ -50,44 +50,9 @@ function sortByCreatedDesc(projects: Project[]) {
   );
 }
 
-// A feed ranks a pool of candidates; it never needed every entry ever
-// published, and asking for them stops working long before it gets slow.
-// Unbounded, this had three faults that only appear once a site has grown:
-// PostgREST caps a response at 1000 rows, and with no ORDER BY it is an
-// arbitrary thousand - so the newest entry can simply be absent; the callers
-// then put every returned id into `.in(...)`, which is a query string that a
-// few hundred ids is enough to push past the URL length limit, so the like and
-// comment counts fail and the ranking silently loses its entire signal; and
-// the payload carries every description in full.
-export const FEED_PAGE_SIZE = 40;
-
-// Discover filters client-side, so its pool has to be wide enough that a
-// search feels complete on a site this size, and bounded so it stays a
-// request rather than a download.
-export const DISCOVER_POOL = 200;
-
-export async function getPublishedProjects(
-  { limit = FEED_PAGE_SIZE, before }: { limit?: number; before?: string } = {}
-) {
-  let query = supabase
-    .from(TABLE)
-    .select('*')
-    .eq('published', true)
-    // Ordering server-side is what makes `limit` mean "the newest ones"
-    // rather than "whichever thousand Postgres happened to return".
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  // Keyset pagination rather than offset: a new entry arriving mid-scroll
-  // shifts every offset by one and makes a page repeat an item.
-  if (before) query = query.lt('created_at', before);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return sortByCreatedDesc(data.map(toPlainProject));
-}
-
 // Demos: published entries with somewhere to try them (a live URL), newest
-// first, keyset-paged like the feed. Kept identical to js/projects-data.js.
+// first, keyset-paged so a demo arriving mid-scroll doesn't make a page repeat
+// one. XOXD shows nothing else publicly. Kept identical to js/projects-data.js.
 export const DEMOS_PAGE_SIZE = 12;
 
 export async function getDemoProjects(
@@ -106,12 +71,15 @@ export async function getDemoProjects(
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
-export async function getPublishedProjectsByUser(uid: string) {
+// A person's demos, for their profile: published and with a live link, the
+// same rule as the Demos feed. Kept identical to js/projects-data.js.
+export async function getDemosByUser(uid: string) {
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
     .eq('user_id', uid)
-    .eq('published', true);
+    .eq('published', true)
+    .neq('live_url', '');
   if (error) throw new Error(error.message);
   return sortByCreatedDesc(data.map(toPlainProject));
 }

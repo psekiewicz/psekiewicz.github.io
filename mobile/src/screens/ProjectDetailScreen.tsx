@@ -243,15 +243,15 @@ export function ProjectDetailScreen({ route, navigation }: any) {
             ) : null}
             {project.tags.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                {/* Labels only: they used to open Explore, which went with
+                    everything that wasn't a demo. */}
                 {project.tags.map((tag) => (
-                  <Pressable
+                  <View
                     key={tag}
-                    onPress={() => navigation.navigate('Explore', { tag })}
-                    accessibilityRole="link"
                     style={{ paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }}
                   >
                     <Text style={{ fontSize: 11, color: colors.textMuted }}>#{tag}</Text>
-                  </Pressable>
+                  </View>
                 ))}
               </View>
             ) : null}

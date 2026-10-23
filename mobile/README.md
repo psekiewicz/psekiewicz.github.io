@@ -130,7 +130,7 @@ new: install the next APK from the download page once, and updates flow again.
 ```
 src/
   data/        one module per table - direct ports of the site's js/*-data.js
-  lib/         shared logic: levels, feed ranking, achievements, shop catalog,
+  lib/         shared logic: levels, achievements, shop catalog,
                cosmetics, media resolution, motion.ts (shared animations),
                notify.ts (the background notification check)
   screens/     one per screen

@@ -19,20 +19,6 @@ export async function isSaved(userId, projectId) {
   return Boolean(data);
 }
 
-// Which of these entries the user has saved - one round trip for a whole
-// feed, so a list of entries can paint its filled/hollow state in one go.
-export async function getSavedSet(userId, projectIds) {
-  const uniqueIds = [...new Set(projectIds)].filter(Boolean);
-  if (!userId || uniqueIds.length === 0) return new Set();
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('project_id')
-    .eq('user_id', userId)
-    .in('project_id', uniqueIds);
-  if (error) throw new Error(error.message);
-  return new Set(data.map((row) => row.project_id));
-}
-
 export async function saveProject(userId, projectId) {
   const { error } = await supabase.from(TABLE).insert({ user_id: userId, project_id: projectId });
   // Saving something already saved is a no-op, not an error - the button

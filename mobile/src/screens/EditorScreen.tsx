@@ -405,7 +405,7 @@ export function EditorScreen({ route, navigation }: any) {
         setTags(p.tags);
         setProjectType(p.type);
         setPublished(p.published);
-        if (p.imageUrl || p.scrollImageUrl || p.repoUrl || p.liveUrl) setShowMore(true);
+        if (p.imageUrl || p.scrollImageUrl || p.repoUrl) setShowMore(true);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -431,6 +431,11 @@ export function EditorScreen({ route, navigation }: any) {
   const save = async (publish: boolean) => {
     if (!user) return navigation.navigate('Login');
     if (!title.trim()) return setError('Give it a title.');
+    // XOXD shows only demos - published entries with a live link - so one
+    // without stays a draft rather than being published to nowhere.
+    if (publish && !liveUrl.trim()) {
+      return setError('A demo needs a live link to be published. Add one, or save it as a draft.');
+    }
 
     setError('');
     setBusy(true);
@@ -442,7 +447,7 @@ export function EditorScreen({ route, navigation }: any) {
       mediaUrl: withScheme(mediaUrl),
       scrollImageUrl: scrollImageUrl.trim(),
       repoUrl: repoUrl.trim(),
-      liveUrl: liveUrl.trim(),
+      liveUrl: withScheme(liveUrl),
       tags: normalizeTags(tags),
       type: projectType,
       published: publish,
@@ -492,7 +497,7 @@ export function EditorScreen({ route, navigation }: any) {
           onPress={() =>
             navigation.canGoBack()
               ? navigation.goBack()
-              : navigation.navigate('Tabs', { screen: 'Home' })
+              : navigation.navigate('Tabs', { screen: 'Demos' })
           }
         />
       }
@@ -584,7 +589,17 @@ export function EditorScreen({ route, navigation }: any) {
 
         <TagField tags={tags} onChange={setTags} colors={colors} />
 
-        {/* Four URLs most entries never set. One tap, rather than four empty
+        {/* Where people try it. Always on screen: XOXD shows only demos, so an
+            entry is published only with one (see save below). */}
+        <LinkRow
+          icon="external"
+          label="Live"
+          value={liveUrl}
+          onChangeText={setLiveUrl}
+          colors={colors}
+        />
+
+        {/* Three URLs most entries never set. One tap, rather than three empty
             boxes holding the screen open. */}
         <Pressable
           onPress={() => setShowMore((v) => !v)}
@@ -621,13 +636,6 @@ export function EditorScreen({ route, navigation }: any) {
               onChangeText={setScrollImageUrl}
               colors={colors}
               upload="scroll"
-            />
-            <LinkRow
-              icon="external"
-              label="Live"
-              value={liveUrl}
-              onChangeText={setLiveUrl}
-              colors={colors}
             />
             <LinkRow
               icon="chart"

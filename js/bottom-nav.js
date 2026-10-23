@@ -55,12 +55,12 @@ function navHtml(snapshot) {
 
   return `
     <a class="bottom-nav-item${isActive('index')}" href="/">
-      <span class="bottom-nav-icon">${icon('home', { size: 20 })}</span>
-      <span>Home</span>
-    </a>
-    <a class="bottom-nav-item${isActive('demos')}" href="/demos">
       <span class="bottom-nav-icon">${icon('rocket', { size: 20 })}</span>
       <span>Demos</span>
+    </a>
+    <a class="bottom-nav-item${isActive('leaderboard')}" href="/leaderboard">
+      <span class="bottom-nav-icon">${icon('award', { size: 20 })}</span>
+      <span>Ranks</span>
     </a>
     ${
       snapshot

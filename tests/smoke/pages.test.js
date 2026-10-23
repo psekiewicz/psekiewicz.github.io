@@ -228,15 +228,15 @@ async function open(pagePath, user) {
   return { page, context };
 }
 
-test('the signed-in home feed draws the seeded posts, with their build row', async () => {
-  const { page, context } = await open('/index.html', SIGNED_IN);
-  await page.locator('.post').first().waitFor({ timeout: 10_000 });
-  const titles = await page.locator('.post-title').allInnerTexts();
-  assert.ok(titles.includes('Pocket Synth') && titles.includes('Trail Map'), `titles: ${titles}`);
-  // Pocket Synth has a live link, a repo and a changelog: Try it, Source, v0.2.
-  const synth = page.locator('.post', { hasText: 'Pocket Synth' });
-  assert.equal(await synth.locator('text=Try it').count(), 1);
-  assert.equal(await synth.locator('.update-version').innerText(), 'v0.2');
+// XOXD is only demos: the home page is the Demos feed, and an entry without a
+// live link (Trail Map) appears nowhere public.
+test('the home page is the demos, and only entries with a live link are on it', async () => {
+  const { page, context } = await open('/', SIGNED_IN);
+  await page.locator('.demo-card').first().waitFor({ timeout: 10_000 });
+  const text = await page.locator('#demos-root').innerText();
+  assert.match(text, /Pocket Synth/);
+  assert.doesNotMatch(text, /Trail Map/);
+  assert.equal(await page.locator('.demo-card', { hasText: 'Pocket Synth' }).locator('text=Try it').count(), 1);
   await context.close();
 });
 
@@ -249,12 +249,29 @@ test('the leaderboard ranks accounts by XP from the server', async () => {
   await context.close();
 });
 
-test("Explore's search finds people by name", async () => {
-  const { page, context } = await open('/projects.html', null);
-  await page.locator('#search-input').fill('gra');
-  await page.locator('#people-list .person-card').first().waitFor({ timeout: 10_000 });
-  assert.deepEqual(await page.locator('#people-list .person-name').allInnerTexts(), ['Grace']);
+test('the old Demos and Explore addresses forward to the home page', async () => {
+  // The home page writes the card on screen into the #, so only a link to one
+  // demo can say which: it keeps its #id, which puts that demo first.
+  for (const [from, hash] of [
+    [`/demos#${SMOKE_IDS.P1}`, `#${SMOKE_IDS.P1}`],
+    ['/projects?tag=synth', null],
+  ]) {
+    const { page, context } = await open(from, null);
+    await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+    if (hash) assert.equal(new URL(page.url()).hash, hash, from);
+    await context.close();
+  }
+});
+
+test("a profile lists only that person's demos", async () => {
+  const { page, context } = await open(`/profile?user=${SMOKE_IDS.GRACE}`, null);
+  await page.locator('.tile-grid .tile').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await page.locator('.tile-title').allInnerTexts(), ['Pocket Synth']);
   await context.close();
+  // Ada's only published entry has no live link, so there is nothing to show.
+  const ada = await open(`/profile?user=${SMOKE_IDS.ADA}`, null);
+  await ada.page.locator('text=No demos yet').waitFor({ timeout: 10_000 });
+  await ada.context.close();
 });
 
 test('the bell names the new notification types', async () => {
@@ -429,4 +446,19 @@ test('an upload from an account that passed the age check goes through', async (
   const outcome = await tryUpload(SIGNED_IN);
   assert.equal(outcome.error, undefined);
   assert.match(outcome.url, /\/uploads\//);
+});
+
+// Publishing needs a live link (XOXD shows only demos), and the type list is
+// the one the database accepts: it used to offer Website, Game and the like,
+// which failed on save with a check-constraint error.
+test('the dashboard keeps an entry without a live link a draft, and offers only valid types', async () => {
+  const { page, context } = await open('/dashboard', SIGNED_IN);
+  await page.locator('#new-project-btn').click();
+  const types = await page.locator('#type option').evaluateAll((options) => options.map((o) => o.value));
+  assert.deepEqual(types.sort(), ['app', 'image', 'music', 'other', 'video']);
+  await page.locator('#title').fill('No link yet');
+  await page.locator('#published').check();
+  await page.locator('#modal-submit-btn').click();
+  await page.locator('#modal-alert', { hasText: 'needs a live link' }).waitFor({ timeout: 10_000 });
+  await context.close();
 });
