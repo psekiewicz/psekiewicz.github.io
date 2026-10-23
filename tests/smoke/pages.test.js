@@ -307,3 +307,28 @@ test('the age gate leads to /age once, and lets it be', async () => {
   assert.ok(navigations <= 1, `navigated ${navigations} times`);
   await context.close();
 });
+
+// Where the link in a sign-up confirmation email lands (emailRedirectTo in
+// js/auth.js). The link signs the new account in, so the page says the email
+// is confirmed and moves on; a stale link says why it did nothing.
+test('a confirmation link that signed you in says so, then opens the dashboard', async () => {
+  const { page, context } = await open('/login?confirmed=1', SIGNED_IN);
+  await page.locator('#form-success', { hasText: 'confirmed' }).waitFor({ timeout: 10_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
+  await context.close();
+});
+
+test('a confirmation without a session asks you to log in', async () => {
+  const { page, context } = await open('/login?confirmed=1', null);
+  await page.locator('#form-success', { hasText: 'Log in to continue' }).waitFor({ timeout: 10_000 });
+  await page.waitForTimeout(500);
+  assert.equal(new URL(page.url()).pathname, '/login');
+  await context.close();
+});
+
+test('an expired confirmation link explains itself', async () => {
+  const hash = '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired';
+  const { page, context } = await open(`/login?confirmed=1${hash}`, null);
+  await page.locator('#form-alert', { hasText: 'invalid or has expired' }).waitFor({ timeout: 10_000 });
+  await context.close();
+});

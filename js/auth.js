@@ -27,7 +27,14 @@ export async function registerUser(email, password, displayName, birthDate) {
     // birth_date rides along in the signup metadata because that is what
     // handle_new_user() reads. Sending it afterwards would mean an account
     // could exist with no age on it whenever that second call failed.
-    options: { data: { display_name: displayName, birth_date: birthDate } },
+    options: {
+      data: { display_name: displayName, birth_date: birthDate },
+      // The confirmation link lands on the login page, which says the address
+      // is confirmed. Must be in Supabase's Redirect URLs allowlist
+      // (Authentication -> URL Configuration), or Supabase falls back to its
+      // Site URL instead.
+      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+    },
   });
   if (error) throw new Error(friendlyError(error));
   return { user: data.user, session: data.session };

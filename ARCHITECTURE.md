@@ -194,6 +194,12 @@ Every module starts with a comment saying what it is for. Read those first.
    keep `.html` on purpose: the password-reset `redirectTo` (it has to match
    the redirect allowlist in Supabase's Auth settings) and the link in the
    parental-consent email (sent by a deployed Edge Function).
+7. Links in Supabase's own emails come back to the site: sign-up
+   confirmation to `/login?confirmed=1` (`emailRedirectTo`), password reset
+   to `/login.html`. Supabase only honours an address on the Redirect URLs
+   allowlist (*Authentication -> URL Configuration*); anything else falls
+   back to the Site URL there, which defaults to `http://localhost:3000`.
+   Both should be set to the live site.
 
 Pages are separate documents, not a single-page app. Cross-document view
 transitions make navigation look seamless.

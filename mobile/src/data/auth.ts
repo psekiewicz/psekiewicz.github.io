@@ -19,7 +19,12 @@ export async function registerUser(email: string, password: string, displayName:
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    options: {
+      data: { display_name: displayName },
+      // Same landing page as the site's sign-up: a mail app opens the link in
+      // a browser, and the site's login page says the address is confirmed.
+      emailRedirectTo: 'https://psekiewicz.github.io/login?confirmed=1',
+    },
   });
   if (error) throw new Error(friendlyError(error));
   return { user: data.user, session: data.session };

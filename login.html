@@ -141,9 +141,26 @@
       }
     });
 
-    // If already logged in, skip straight to the dashboard.
+    // Read before the Supabase client tidies the address bar. A confirmation
+    // link that has expired or was already used comes back with the reason in
+    // the hash instead of a session.
+    const linkError = new URLSearchParams(window.location.hash.slice(1)).get('error_description');
+    const confirmed = new URLSearchParams(window.location.search).has('confirmed');
+
+    // If already logged in, skip straight to the dashboard. The confirmation
+    // link signs the new account in on its own, so after confirming this is
+    // the usual path - with a moment to say so first.
     (async () => {
+      if (linkError) {
+        showError(`${linkError}. If you already confirmed your email, just log in; otherwise register again for a new link.`);
+        return;
+      }
       const user = await getCurrentUser();
+      if (confirmed) {
+        showSuccess(user ? 'Your email is confirmed - you are signed in.' : 'Your email is confirmed. Log in to continue.');
+        if (user) setTimeout(() => (window.location.href = '/dashboard'), 1500);
+        return;
+      }
       if (user) window.location.href = '/dashboard';
     })();
   </script>
