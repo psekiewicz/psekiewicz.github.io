@@ -30,6 +30,7 @@ const PAGES = [
   'register.html',
   'settings.html',
   'shop.html',
+  'weekly.html',
   'download/index.html',
   // Written by tools/build-legal.mjs; listed so a nav change reaches them too.
   'legal/terms.html',
@@ -42,6 +43,7 @@ const PAGES = [
 const LINKS = [
   // XOXD is only demos, and they are the home page.
   { href: '/', label: 'Demos', icon: 'rocket' },
+  { href: '/weekly', label: 'T&amp;G Weekly', icon: 'globe' },
   { href: '/leaderboard', label: 'Leaderboard', icon: 'award' },
   { href: '/shop', label: 'Shop', icon: 'shopping-bag' },
   { href: '/dashboard', label: 'Dashboard', icon: 'grid' },

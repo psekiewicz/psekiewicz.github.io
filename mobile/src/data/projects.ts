@@ -71,6 +71,28 @@ export async function getDemoProjects(
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// T&G Weekly - the tech and gaming news digest a scheduled task posts every
+// Saturday as the CBot account. Not a demo (no live link), so it has its own
+// screen. Matched by author as well as tag: tags are anyone's to set. Kept
+// identical to js/projects-data.js.
+export const WEEKLY_AUTHOR_ID = '176c749c-dd5b-4aee-b184-aa59381e9d1d';
+export const WEEKLY_TAG = 'weekly';
+
+export async function getWeeklyIssues({ limit = 20, before }: { limit?: number; before?: string } = {}) {
+  let query = supabase
+    .from(TABLE)
+    .select('*')
+    .eq('published', true)
+    .eq('user_id', WEEKLY_AUTHOR_ID)
+    .contains('tags', [WEEKLY_TAG])
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (before) query = query.lt('created_at', before);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return sortByCreatedDesc(data.map(toPlainProject));
+}
+
 // A person's demos, for their profile: published and with a live link, the
 // same rule as the Demos feed. Kept identical to js/projects-data.js.
 export async function getDemosByUser(uid: string) {

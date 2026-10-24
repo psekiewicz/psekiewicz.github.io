@@ -33,7 +33,8 @@ export type IconName =
   | 'pencil'
   | 'lock'
   | 'music'
-  | 'image';
+  | 'image'
+  | 'globe';
 
 type Props = {
   name: IconName;

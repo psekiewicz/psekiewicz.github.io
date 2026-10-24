@@ -160,6 +160,7 @@ const APP_ICONS = {
   lock: 'lock',
   music: 'music',
   image: 'image',
+  globe: 'globe',
 };
 
 function shapesOf(inner) {

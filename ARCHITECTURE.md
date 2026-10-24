@@ -102,6 +102,7 @@ must match, and tests check that they do:
 | --- | --- |
 | project / entry / post | The same thing: one row of `projects`. "Project" in code and table names, "entry" or "post" in the interface. |
 | demo / Demos | A published entry with a live link, and the full-screen swipeable feed of them - the home page (`index.html`), and the first tab in the app. It was once called **Scrolls** and lived at `/demos`; `scrolls.html` and `demos.html` only redirect, and you'll still see `scroll_image_url`, `scroll-styles.js`. |
+| T&G Weekly | XOXD Tech & Gaming Weekly, a news digest that a scheduled Claude task ("Tech gaming news", Saturdays 10:00 Warsaw) writes and inserts straight into `projects` as the **CBot** account, tagged `weekly`. Not a demo, so it has its own page (`/weekly`) and app screen; matched by CBot's id *and* the tag (`getWeeklyIssues()`), since anyone can tag a post. |
 | showcase | The project's old internal name. Survives in localStorage keys, the service-worker cache name and the APK file name (`showcase.apk`). Changing it would log people out of cached state or break the download link, so it stays. |
 | XP / level | Reputation, computed by the database from what others did with your work. Never spent. |
 | points | Spendable currency for the shop. Earned from reach (`collect_earnings()`) and achievement claims. |
@@ -118,6 +119,7 @@ must match, and tests check that they do:
 *.html                Website pages. Each holds its own page logic in an inline
                       <script type="module"> at the bottom (see "How a page works").
   index.html            Home: the Demos feed, one full screen per demo
+  weekly.html           T&G Weekly: the news digest's issues (see above)
   project.html          One entry (?id=), comments, updates, likes
   profile.html          A person (?user=), their work, achievements
   dashboard.html        Your own entries: create, edit, publish, delete

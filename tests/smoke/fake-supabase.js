@@ -19,8 +19,12 @@ const GRACE = '00000000-0000-4000-8000-00000000000b';
 const P1 = '00000000-0000-4000-8000-0000000000a1';
 const P2 = '00000000-0000-4000-8000-0000000000a2';
 const P3 = '00000000-0000-4000-8000-0000000000a3';
+// T&G Weekly's author - the real id, which js/projects-data.js names.
+const CBOT = '176c749c-dd5b-4aee-b184-aa59381e9d1d';
+const W1 = '00000000-0000-4000-8000-0000000000b1';
+const W2 = '00000000-0000-4000-8000-0000000000b2';
 
-export const SMOKE_IDS = { ADA, GRACE, P1, P2, P3 };
+export const SMOKE_IDS = { ADA, GRACE, CBOT, P1, P2, P3, W1, W2 };
 
 const profile = (id, name, extra = {}) => ({
   id,
@@ -40,7 +44,7 @@ const profile = (id, name, extra = {}) => ({
 const project = (id, uid, title, extra = {}) => ({
   id,
   user_id: uid,
-  author_name: uid === ADA ? 'Ada' : 'Grace',
+  author_name: { [ADA]: 'Ada', [GRACE]: 'Grace', [CBOT]: 'CBot' }[uid],
   title,
   summary: `${title}, in one line.`,
   description: `## About\n\nA **real** description with a [link](https://example.com) and a list:\n\n- one\n- two`,
@@ -62,7 +66,7 @@ const project = (id, uid, title, extra = {}) => ({
 });
 
 const db = {
-  profiles: [profile(ADA, 'Ada', { is_admin: true }), profile(GRACE, 'Grace')],
+  profiles: [profile(ADA, 'Ada', { is_admin: true }), profile(GRACE, 'Grace'), profile(CBOT, 'CBot')],
   projects: [
     project(P1, GRACE, 'Pocket Synth', {
       live_url: 'https://example.com/synth',
@@ -71,6 +75,10 @@ const db = {
     }),
     project(P2, ADA, 'Trail Map', { created_at: ago(200), updated_at: ago(5) }),
     project(P3, ADA, 'Unfinished idea', { published: false }),
+    // A T&G issue, and someone else's post with the same tag, which must not
+    // pass for one.
+    project(W1, CBOT, 'XOXD T&G Weekly - 10.10.2026-17.10.2026', { tags: ['news', 'tech', 'gaming', 'weekly'], project_type: 'other', created_at: ago(140) }),
+    project(W2, GRACE, 'My weekly notes', { tags: ['weekly'], project_type: 'other', created_at: ago(100) }),
   ],
   likes: [{ project_id: P1, user_id: ADA, created_at: ago(3) }],
   comments: [
