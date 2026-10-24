@@ -49,18 +49,22 @@ function navHtml(snapshot) {
 
   const loginRedirect = '/login?next=' + encodeURIComponent(window.location.pathname);
   const profileHref = snapshot ? `/profile?user=${encodeURIComponent(snapshot.userId)}` : loginRedirect;
-  const dashboardHref = snapshot ? '/dashboard' : loginRedirect;
+  const inNews = ['news', 'newsletter', 'article'].includes(current) ? ' active' : '';
+  // Your work, Saved and Settings hang off You, as in the app, so You stays
+  // lit on them too.
   const isOwnProfile =
-    snapshot && current === 'profile' && new URLSearchParams(window.location.search).get('user') === snapshot.userId;
+    snapshot &&
+    ((current === 'profile' && new URLSearchParams(window.location.search).get('user') === snapshot.userId) ||
+      ['dashboard', 'settings'].includes(current));
 
   return `
     <a class="bottom-nav-item${isActive('index')}" href="/">
       <span class="bottom-nav-icon">${icon('rocket', { size: 20 })}</span>
       <span>Demos</span>
     </a>
-    <a class="bottom-nav-item${isActive('leaderboard')}" href="/leaderboard">
-      <span class="bottom-nav-icon">${icon('award', { size: 20 })}</span>
-      <span>Ranks</span>
+    <a class="bottom-nav-item${inNews}" href="/news">
+      <span class="bottom-nav-icon">${icon('globe', { size: 20 })}</span>
+      <span>News</span>
     </a>
     ${
       snapshot
@@ -71,13 +75,13 @@ function navHtml(snapshot) {
              <span class="bottom-nav-icon">${icon('plus', { size: 20 })}</span>
            </a>`
     }
-    <a class="bottom-nav-item${isActive('dashboard')}" href="${dashboardHref}">
-      <span class="bottom-nav-icon">${icon('grid', { size: 20 })}</span>
-      <span>Dashboard</span>
+    <a class="bottom-nav-item${isActive('leaderboard')}" href="/leaderboard">
+      <span class="bottom-nav-icon">${icon('award', { size: 20 })}</span>
+      <span>Ranks</span>
     </a>
     <a class="bottom-nav-item${isOwnProfile ? ' active' : ''}" href="${profileHref}">
       <span class="bottom-nav-icon">${profileIconHtml(snapshot)}</span>
-      <span>Profile</span>
+      <span>You</span>
     </a>
   `;
 }

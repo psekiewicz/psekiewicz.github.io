@@ -4,7 +4,6 @@ import { Text } from '../components/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { SectionRule, StatBlock, TonePill } from '../components/bloom';
-import { TopBar } from '../components/TopBar';
 import { placeholderFor } from '../components/ProjectCard';
 import { ProgressRing } from '../components/ProgressRing';
 import { Body, Button, Card, EmptyState, ErrorNote, Heading, Loading } from '../components/ui';
@@ -104,8 +103,6 @@ export function DashboardScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <TopBar title="Your work" />
-
       <FlatList
       style={{ flex: 1 }}
       contentContainerStyle={{
@@ -113,7 +110,7 @@ export function DashboardScreen({ navigation }: any) {
         paddingHorizontal: gutter,
         paddingTop: 20,
         gap: 12,
-        paddingBottom: 116,
+        paddingBottom: space.xxl,
       }}
       data={projects}
       keyExtractor={(item) => item.id}

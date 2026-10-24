@@ -202,8 +202,6 @@ export function DemosScreen({ navigation, route }: any) {
         }}
       >
         <Text style={{ color: INK, fontSize: 15, fontWeight: '700', flex: 1 }}>Demos</Text>
-        <GlassButton icon="globe" label="News" onPress={() => navigation.navigate('News')} />
-        <GlassButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
         <GlassButton
           icon="bell"
           label="Notifications"

@@ -224,7 +224,12 @@ Same backend, same rules. Its structure mirrors the site on purpose:
 `mobile/src/lib/` holds ports of the pure logic (levels, markdown, media,
 catalogs). When you change one side, look for the other.
 Screens are in `mobile/src/screens/`, navigation in
-`mobile/src/navigation/RootNavigator.tsx`.
+`mobile/src/navigation/RootNavigator.tsx`. Both builds have the same bottom
+bar - Demos / News / + / Ranks / You - and the same rule behind it: the
+tabs are the places to read, and everything that's yours (Your work, Saved,
+Shop, Settings) is reached from You. The app's lists of places are built
+from one pair of components (`ListGroup`/`ListRow` in `components/ui.tsx`),
+and state labels from one `Badge`, so a new screen looks like the rest.
 
 One thing is kept apart on purpose: `mobile/src/features/app-update/`, the
 App updates screen (Settings → App updates), which checks for an

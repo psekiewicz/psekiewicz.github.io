@@ -48,7 +48,7 @@ const LINKS = [
   { href: '/news', label: 'News', icon: 'globe' },
   { href: '/leaderboard', label: 'Leaderboard', icon: 'award' },
   { href: '/shop', label: 'Shop', icon: 'shopping-bag' },
-  { href: '/dashboard', label: 'Dashboard', icon: 'grid' },
+  { href: '/dashboard', label: 'Your work', icon: 'grid' },
 ];
 
 const BRAND_MARK =

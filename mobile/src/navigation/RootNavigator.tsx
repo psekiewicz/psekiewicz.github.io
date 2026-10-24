@@ -39,10 +39,10 @@ import { useTheme } from '../theme/ThemeProvider';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// The same five tabs the web build's bottom bar carries on narrow screens:
-// Demos / Ranks / Add / Dashboard / Profile. XOXD is only demos, so they come
-// first; the general Home feed and Explore were removed with everything else
-// that wasn't a demo.
+// The same bar the website carries on narrow screens: Demos / News / Add /
+// Ranks / You. The two things to read come first, then the leaderboard, then
+// you - and everything that's yours (your work, saved, the shop, settings)
+// is a list on You rather than a tab or a stray button somewhere else.
 function Tabs() {
   return (
     <Tab.Navigator
@@ -56,14 +56,14 @@ function Tabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Demos" component={DemosScreen} />
-      <Tab.Screen name="Ranks" component={LeaderboardScreen} />
+      <Tab.Screen name="News" component={NewsScreen} />
       {/* No Add tab. The add button pushes the `Editor` stack screen, which is
           the same screen editing and the share sheet already opened - one add
           screen rather than two that looked different, and the tab was the
           worse one: always mounted, so it needed code to blank itself between
           visits, and overlapped by the floating bar that kept swallowing its
           publish button. */}
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="Ranks" component={LeaderboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -221,13 +221,8 @@ export function RootNavigator() {
         <Stack.Screen name="FollowList" component={FollowListScreen} options={{ title: '' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Shop" component={ShopScreen} options={{ title: 'Shop' }} />
-        <Stack.Screen
-          name="Leaderboard"
-          component={LeaderboardScreen}
-          options={{ title: 'Leaderboard' }}
-        />
+        <Stack.Screen name="YourWork" component={DashboardScreen} options={{ title: 'Your work' }} />
         <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Saved' }} />
-        <Stack.Screen name="News" component={NewsScreen} options={{ title: 'News' }} />
         <Stack.Screen name="Newsletter" component={NewsletterScreen} options={{ title: '' }} />
         <Stack.Screen name="Article" component={ArticleScreen} options={{ title: '' }} />
         <Stack.Screen name="NewsEditor" component={NewsEditorScreen} options={{ title: '' }} />

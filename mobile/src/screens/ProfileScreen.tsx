@@ -4,7 +4,7 @@ import { FlatList, ImageBackground, Pressable, RefreshControl, useWindowDimensio
 import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HeaderButton, StatBlock } from '../components/bloom';
+import { StatBlock } from '../components/bloom';
 import { FeedTabs } from '../components/FeedTabs';
 import { PostTile } from '../components/PostTile';
 import { CosmeticBackground } from '../components/CosmeticBackground';
@@ -18,6 +18,8 @@ import {
   EmptyState,
   ErrorNote,
   Heading,
+  ListGroup,
+  ListRow,
   Loading,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -26,7 +28,7 @@ import { followUser, getFollowerCount, getFollowingCount, isFollowing, unfollowU
 import { getProfile, Profile } from '../data/profiles';
 import { getDemosByUser, Project } from '../data/projects';
 import { getReputation, Reputation } from '../data/reputation';
-import { padRow, useCardColumns } from '../lib/layout';
+import { padRow, TAB_BAR_CLEARANCE, useCardColumns } from '../lib/layout';
 import {
   claimAchievement,
   getAchievementRecords,
@@ -217,30 +219,6 @@ export function ProfileScreen({ route, navigation }: any) {
           }}
         />
       )}
-      {isSelf ? (
-        <View
-          style={{
-            position: 'absolute',
-            top: insets.top + 8,
-            right: 20,
-            flexDirection: 'row',
-            gap: 10,
-          }}
-        >
-          <HeaderButton
-            size={38}
-            icon="bookmark"
-            label="Saved"
-            onPress={() => navigation.navigate('Saved')}
-          />
-          <HeaderButton
-            size={38}
-            icon="settings"
-            label="Settings"
-            onPress={() => navigation.navigate('Settings')}
-          />
-        </View>
-      ) : null}
       <Text
         style={[
           typography.eyebrow,
@@ -287,7 +265,7 @@ export function ProfileScreen({ route, navigation }: any) {
         // padRow adds null placeholders to fill the last row, so the key has to
         // cope with them - an odd number of posts used to crash here.
         keyExtractor={(item, index) => (item ? item.id : `pad-${index}`)}
-        contentContainerStyle={{ paddingBottom: 116, gap: 12 }}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE, gap: 12 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -502,13 +480,16 @@ export function ProfileScreen({ route, navigation }: any) {
                 </View>
               </View>
 
-              {isSelf && admin ? (
-                <Button
-                  label="Admin panel"
-                  icon="shield"
-                  variant="secondary"
-                  onPress={() => navigation.navigate('Admin')}
-                />
+              {/* Everything that's yours, in one list - the You tab's way to
+                  your work, saved entries, the shop and settings. */}
+              {isSelf ? (
+                <ListGroup>
+                  <ListRow icon="folder" label="Your work" onPress={() => navigation.navigate('YourWork')} />
+                  <ListRow icon="bookmark" label="Saved" onPress={() => navigation.navigate('Saved')} />
+                  <ListRow icon="shopping-bag" label="Shop" detail={`${formatCount(points)} pts`} onPress={() => navigation.navigate('Shop')} />
+                  <ListRow icon="settings" label="Settings" onPress={() => navigation.navigate('Settings')} />
+                  {admin ? <ListRow icon="shield" label="Admin panel" onPress={() => navigation.navigate('Admin')} /> : null}
+                </ListGroup>
               ) : null}
 
               {/* Posts / Achievements, as on the website's profile. */}
