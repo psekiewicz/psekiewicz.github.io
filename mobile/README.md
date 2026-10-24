@@ -125,6 +125,29 @@ as the build does - and comparing.
 Builds made before the switch report runtime version 1.2.0 and receive nothing
 new: install the next APK from the download page once, and updates flow again.
 
+## Version names
+
+`expo.version` in `app.json` is the name people see: in Settings, on the App
+updates screen, and in each GitHub release's title ("XOXD 1.3.0 (build 112)").
+It no longer affects which updates reach which build (that's the fingerprint,
+above), and that's why it stopped moving after 1.2.0 - so bump it by hand
+with the change that earns it:
+
+```sh
+node tools/bump-version.mjs minor   # new features      1.3.0 -> 1.4.0
+node tools/bump-version.mjs patch   # fixes only         1.3.0 -> 1.3.1
+node tools/bump-version.mjs major   # a different app    1.3.0 -> 2.0.0
+```
+
+The build number is separate: `android.yml` sets `versionCode` to the run
+number, so every APK is newer than the last even when the name stays put.
+
+| Version | What came with it |
+| --- | --- |
+| 1.3.0 | Demos only; News with newsletters and read marks; the App updates screen |
+| 1.2.0 | Changelog, Try it / Source, Shipper and Maintainer, fingerprint OTA |
+| 1.1.1 | Reports from the app, then background notifications, JetBrains Mono, rotation and the XOXD name |
+
 ## Layout
 
 ```
