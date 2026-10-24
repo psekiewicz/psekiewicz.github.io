@@ -24,7 +24,7 @@ import { gutter, radius, space } from '../theme/tokens';
 // Demos: every published entry with a live URL, one full screen each - the
 // clip (or picture) first, "Try it" under it. XOXD is only demos, so this is
 // the first tab, and its top bar carries what the old Home tab did - the
-// notifications bell and the leaderboard - plus T&G Weekly. The native side of the site's home
+// notifications bell and the leaderboard - plus News. The native side of the site's home
 // page.
 // Nothing from the demo itself runs in the app: "Try it" opens it in the
 // browser.
@@ -201,7 +201,7 @@ export function DemosScreen({ navigation, route }: any) {
         }}
       >
         <Text style={{ color: INK, fontSize: 15, fontWeight: '700', flex: 1 }}>Demos</Text>
-        <GlassButton icon="globe" label="T&G Weekly" onPress={() => navigation.navigate('Weekly')} />
+        <GlassButton icon="globe" label="News" onPress={() => navigation.navigate('News')} />
         <GlassButton icon="trophy" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
         <GlassButton
           icon="bell"

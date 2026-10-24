@@ -432,6 +432,8 @@ begin
   if new.display_name is distinct from old.display_name then
     update public.projects set author_name = new.display_name where user_id = new.id;
     update public.comments set author_name = new.display_name where user_id = new.id;
+    update public.news_comments set author_name = new.display_name where user_id = new.id;
+    update public.news_articles set author_name = new.display_name where author_id = new.id;
   end if;
   return new;
 end;
@@ -2131,6 +2133,10 @@ begin
     when 'follows' then 60
     when 'reports' then 20
     when 'project_updates' then 10
+    when 'news_comments' then 20
+    when 'news_likes' then 120
+    when 'news_issues' then 10
+    when 'news_articles' then 60
   end;
 
   if v_limit is null then
@@ -2776,6 +2782,363 @@ create table if not exists public.media_optimized (
   processed_at timestamptz not null default now()
 );
 alter table public.media_optimized enable row level security;
+
+-- ============================================================
+-- News - weekly issues and the articles in them
+--
+-- XOXD is only demos, with one exception: news. An issue is one week's
+-- edition ("T&G Weekly 24-31.10"); articles belong to an issue. Anyone,
+-- signed in or not, can read published issues and their articles; only
+-- trusted creators - the news_editors list, which only an admin can change -
+-- can create, edit or delete them. People react to an issue as a whole: likes
+-- and comments on news_issues, which earn nobody XP or points (they are not
+-- in user_reputation), so news can't be farmed.
+--
+-- The T&G Weekly digest is written by a scheduled task and inserted as the
+-- CBot account, which is on news_editors.
+-- ============================================================
+
+create table if not exists public.news_editors (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  granted_by uuid references auth.users (id) on delete set null,
+  granted_at timestamptz not null default now()
+);
+
+alter table public.news_editors enable row level security;
+
+-- Public, so a page can mark who writes the news. Nobody writes to it from a
+-- client: admin_set_news_editor() below is the only way in or out.
+drop policy if exists "News editors are public" on public.news_editors;
+create policy "News editors are public"
+  on public.news_editors for select
+  using (true);
+
+create or replace function public.is_news_editor()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.news_editors e where e.user_id = (select auth.uid()));
+$$;
+
+create or replace function public.admin_set_news_editor(p_user uuid, p_editor boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin) then
+    raise exception 'Admin access required';
+  end if;
+  if p_editor then
+    insert into public.news_editors (user_id, granted_by)
+    values (p_user, (select auth.uid()))
+    on conflict (user_id) do nothing;
+  else
+    delete from public.news_editors where user_id = p_user;
+  end if;
+end;
+$$;
+
+revoke execute on function public.admin_set_news_editor(uuid, boolean) from public, anon;
+grant execute on function public.admin_set_news_editor(uuid, boolean) to authenticated;
+
+create table if not exists public.news_issues (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 3 and 120),
+  summary text not null default '' check (char_length(summary) <= 300),
+  cover_url text not null default '',
+  -- The week it covers, shown under the title. Optional: an issue is not
+  -- forced into calendar weeks.
+  period_start date,
+  period_end date,
+  created_by uuid references auth.users (id) on delete set null,
+  published boolean not null default true,
+  likes_count integer not null default 0,
+  comments_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (period_end is null or period_start is null or period_end >= period_start)
+);
+
+create index if not exists news_issues_created_at_idx on public.news_issues (created_at desc);
+
+alter table public.news_issues enable row level security;
+
+create table if not exists public.news_articles (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.news_issues (id) on delete cascade,
+  author_id uuid references auth.users (id) on delete set null,
+  author_name text not null default '',
+  title text not null check (char_length(title) between 3 and 200),
+  -- The standfirst: a sentence or two under the headline, and what the
+  -- issue's list shows.
+  lead text not null default '' check (char_length(lead) <= 600),
+  -- Markdown, read by js/markdown.js like a post body.
+  body text not null default '' check (char_length(body) <= 40000),
+  image_url text not null default '',
+  source_name text not null default '' check (char_length(source_name) <= 100),
+  source_url text not null default '',
+  -- Order within the issue, most important first.
+  position integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists news_articles_issue_idx on public.news_articles (issue_id, position);
+
+alter table public.news_articles enable row level security;
+
+-- Published issues are for everyone; an editor also sees drafts.
+drop policy if exists "Published issues are public" on public.news_issues;
+create policy "Published issues are public"
+  on public.news_issues for select
+  using (published or public.is_news_editor());
+
+drop policy if exists "News editors create issues" on public.news_issues;
+create policy "News editors create issues"
+  on public.news_issues for insert
+  with check (public.is_news_editor() and public.consent_ok() and created_by = (select auth.uid()));
+
+-- A newsroom: any editor may correct any issue or article, not only their own.
+drop policy if exists "News editors edit issues" on public.news_issues;
+create policy "News editors edit issues"
+  on public.news_issues for update
+  using (public.is_news_editor())
+  with check (public.is_news_editor() and public.consent_ok());
+
+drop policy if exists "News editors or admins delete issues" on public.news_issues;
+create policy "News editors or admins delete issues"
+  on public.news_issues for delete
+  using (
+    public.is_news_editor()
+    or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
+  );
+
+-- Visibility rides on the issue's own policy: the lookup only finds an issue
+-- the caller may see.
+drop policy if exists "Articles are readable if their issue is" on public.news_articles;
+create policy "Articles are readable if their issue is"
+  on public.news_articles for select
+  using (exists (select 1 from public.news_issues i where i.id = issue_id));
+
+drop policy if exists "News editors write articles" on public.news_articles;
+create policy "News editors write articles"
+  on public.news_articles for insert
+  with check (public.is_news_editor() and public.consent_ok() and author_id = (select auth.uid()));
+
+drop policy if exists "News editors edit articles" on public.news_articles;
+create policy "News editors edit articles"
+  on public.news_articles for update
+  using (public.is_news_editor())
+  with check (public.is_news_editor() and public.consent_ok());
+
+drop policy if exists "News editors or admins delete articles" on public.news_articles;
+create policy "News editors or admins delete articles"
+  on public.news_articles for delete
+  using (
+    public.is_news_editor()
+    or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
+  );
+
+-- What a client may not decide: who created an issue, its counters, an
+-- article's author and the name shown for them. Writes made outside the
+-- client roles (the scheduled task, migrations) are left as they are.
+create or replace function public.guard_news_client_writes()
+returns trigger as $$
+declare
+  v_display_name text;
+begin
+  if current_user not in ('authenticated', 'anon') then
+    return new;
+  end if;
+  if tg_table_name = 'news_issues' then
+    if tg_op = 'INSERT' then
+      new.created_by := auth.uid();
+      new.likes_count := 0;
+      new.comments_count := 0;
+    else
+      new.created_by := old.created_by;
+      new.likes_count := old.likes_count;
+      new.comments_count := old.comments_count;
+    end if;
+  else
+    if tg_op = 'INSERT' then
+      new.author_id := auth.uid();
+    else
+      new.author_id := old.author_id;
+    end if;
+    select display_name into v_display_name from public.profiles where id = new.author_id;
+    new.author_name := coalesce(v_display_name, '');
+  end if;
+  return new;
+end;
+$$ language plpgsql set search_path = public;
+
+drop trigger if exists news_issues_guard_client_writes on public.news_issues;
+create trigger news_issues_guard_client_writes
+  before insert or update on public.news_issues
+  for each row execute function public.guard_news_client_writes();
+
+drop trigger if exists news_articles_guard_client_writes on public.news_articles;
+create trigger news_articles_guard_client_writes
+  before insert or update on public.news_articles
+  for each row execute function public.guard_news_client_writes();
+
+drop trigger if exists news_issues_set_updated_at on public.news_issues;
+create trigger news_issues_set_updated_at
+  before update on public.news_issues
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists news_articles_set_updated_at on public.news_articles;
+create trigger news_articles_set_updated_at
+  before update on public.news_articles
+  for each row execute function public.set_updated_at();
+
+-- Reactions to an issue: the same shape and rules as likes and comments on
+-- a project, but on their own tables, so they never reach user_reputation.
+create table if not exists public.news_likes (
+  issue_id uuid not null references public.news_issues (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (issue_id, user_id)
+);
+
+create index if not exists news_likes_user_idx on public.news_likes (user_id);
+
+alter table public.news_likes enable row level security;
+
+drop policy if exists "News likes are public" on public.news_likes;
+create policy "News likes are public"
+  on public.news_likes for select
+  using (true);
+
+drop policy if exists "Signed-in users like issues as themselves" on public.news_likes;
+create policy "Signed-in users like issues as themselves"
+  on public.news_likes for insert
+  with check (
+    (select auth.uid()) = user_id
+    and public.consent_ok()
+    and exists (select 1 from public.news_issues i where i.id = issue_id and i.published)
+  );
+
+drop policy if exists "Users remove their own news like" on public.news_likes;
+create policy "Users remove their own news like"
+  on public.news_likes for delete
+  using ((select auth.uid()) = user_id);
+
+create table if not exists public.news_comments (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.news_issues (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists news_comments_issue_idx on public.news_comments (issue_id);
+create index if not exists news_comments_user_idx on public.news_comments (user_id);
+
+alter table public.news_comments enable row level security;
+
+-- The name shown is the commenter's own, as for comments on a project.
+drop trigger if exists news_comments_guard_client_writes on public.news_comments;
+create trigger news_comments_guard_client_writes
+  before insert or update on public.news_comments
+  for each row execute function public.guard_comment_client_writes();
+
+drop policy if exists "News comments are readable if their issue is" on public.news_comments;
+create policy "News comments are readable if their issue is"
+  on public.news_comments for select
+  using (exists (select 1 from public.news_issues i where i.id = issue_id));
+
+drop policy if exists "Signed-in users comment on issues" on public.news_comments;
+create policy "Signed-in users comment on issues"
+  on public.news_comments for insert
+  with check (
+    (select auth.uid()) = user_id
+    and public.consent_ok()
+    and exists (select 1 from public.news_issues i where i.id = issue_id and i.published)
+  );
+
+-- The commenter, any news editor (moderating the newsroom's own pages) or an
+-- admin can remove a comment.
+drop policy if exists "Comment author, news editor or admin can delete" on public.news_comments;
+create policy "Comment author, news editor or admin can delete"
+  on public.news_comments for delete
+  using (
+    (select auth.uid()) = user_id
+    or public.is_news_editor()
+    or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
+  );
+
+-- Counts kept on the issue row, as projects keep theirs.
+create or replace function public.count_news_reactions()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_issue uuid := coalesce(new.issue_id, old.issue_id);
+  v_delta integer := case when tg_op = 'INSERT' then 1 else -1 end;
+begin
+  if tg_table_name = 'news_likes' then
+    update public.news_issues set likes_count = greatest(0, likes_count + v_delta) where id = v_issue;
+  else
+    update public.news_issues set comments_count = greatest(0, comments_count + v_delta) where id = v_issue;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists news_likes_count on public.news_likes;
+create trigger news_likes_count
+  after insert or delete on public.news_likes
+  for each row execute function public.count_news_reactions();
+
+drop trigger if exists news_comments_count on public.news_comments;
+create trigger news_comments_count
+  after insert or delete on public.news_comments
+  for each row execute function public.count_news_reactions();
+
+drop trigger if exists news_likes_rate_limit on public.news_likes;
+create trigger news_likes_rate_limit
+  before insert on public.news_likes
+  for each row execute function public.enforce_rate_limit();
+
+drop trigger if exists news_comments_rate_limit on public.news_comments;
+create trigger news_comments_rate_limit
+  before insert on public.news_comments
+  for each row execute function public.enforce_rate_limit();
+
+drop trigger if exists news_issues_rate_limit on public.news_issues;
+create trigger news_issues_rate_limit
+  before insert on public.news_issues
+  for each row execute function public.enforce_rate_limit();
+
+drop trigger if exists news_articles_rate_limit on public.news_articles;
+create trigger news_articles_rate_limit
+  before insert on public.news_articles
+  for each row execute function public.enforce_rate_limit();
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['news_issues', 'news_articles', 'news_likes', 'news_comments'] loop
+    execute format('drop trigger if exists %I on public.%I', t || '_pin_created_at', t);
+    execute format(
+      'create trigger %I before insert or update on public.%I for each row execute function public.pin_created_at()',
+      t || '_pin_created_at',
+      t
+    );
+  end loop;
+end
+$$;
 
 -- ============================================================
 -- The audio guide (Audioprzewodnik, Wczasy Bez Kasy)

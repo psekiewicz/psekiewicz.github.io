@@ -19,12 +19,13 @@ const GRACE = '00000000-0000-4000-8000-00000000000b';
 const P1 = '00000000-0000-4000-8000-0000000000a1';
 const P2 = '00000000-0000-4000-8000-0000000000a2';
 const P3 = '00000000-0000-4000-8000-0000000000a3';
-// T&G Weekly's author - the real id, which js/projects-data.js names.
 const CBOT = '176c749c-dd5b-4aee-b184-aa59381e9d1d';
-const W1 = '00000000-0000-4000-8000-0000000000b1';
-const W2 = '00000000-0000-4000-8000-0000000000b2';
+const I1 = '00000000-0000-4000-8000-0000000000c1';
+const I2 = '00000000-0000-4000-8000-0000000000c2';
+const A1 = '00000000-0000-4000-8000-0000000000d1';
+const A2 = '00000000-0000-4000-8000-0000000000d2';
 
-export const SMOKE_IDS = { ADA, GRACE, CBOT, P1, P2, P3, W1, W2 };
+export const SMOKE_IDS = { ADA, GRACE, CBOT, P1, P2, P3, I1, I2, A1, A2 };
 
 const profile = (id, name, extra = {}) => ({
   id,
@@ -75,11 +76,35 @@ const db = {
     }),
     project(P2, ADA, 'Trail Map', { created_at: ago(200), updated_at: ago(5) }),
     project(P3, ADA, 'Unfinished idea', { published: false }),
-    // A T&G issue, and someone else's post with the same tag, which must not
-    // pass for one.
-    project(W1, CBOT, 'XOXD T&G Weekly - 10.10.2026-17.10.2026', { tags: ['news', 'tech', 'gaming', 'weekly'], project_type: 'other', created_at: ago(140) }),
-    project(W2, GRACE, 'My weekly notes', { tags: ['weekly'], project_type: 'other', created_at: ago(100) }),
   ],
+  // News: CBot writes T&G Weekly; Ada is an editor too, so the signed-in
+  // pages show the newsroom's controls. One live issue, one draft.
+  news_editors: [{ user_id: CBOT }, { user_id: ADA }],
+  news_issues: [
+    {
+      id: I1, title: 'XOXD T&G Weekly - 17-24 Oct 2026', summary: 'A launch trailer, a probe and a remaster.',
+      cover_url: '', period_start: '2026-10-17', period_end: '2026-10-24', created_by: CBOT, published: true,
+      likes_count: 1, comments_count: 1, created_at: ago(20), updated_at: ago(20),
+    },
+    {
+      id: I2, title: 'Next week, unfinished', summary: '', cover_url: '', period_start: null, period_end: null,
+      created_by: ADA, published: false, likes_count: 0, comments_count: 0, created_at: ago(2), updated_at: ago(2),
+    },
+  ],
+  news_articles: [
+    {
+      id: A1, issue_id: I1, author_id: CBOT, author_name: 'CBot', title: 'A big launch trailer lands',
+      lead: 'The studio showed the release date.', body: '## What we saw\n\nMore than expected.', image_url: '',
+      source_name: 'Example News', source_url: 'https://example.com/trailer', position: 0, created_at: ago(20), updated_at: ago(20),
+    },
+    {
+      id: A2, issue_id: I1, author_id: CBOT, author_name: 'CBot', title: 'Regulators open a probe',
+      lead: 'Questions about data.', body: 'Details are thin.', image_url: '', source_name: '', source_url: '',
+      position: 1, created_at: ago(20), updated_at: ago(20),
+    },
+  ],
+  news_likes: [{ issue_id: I1, user_id: GRACE, created_at: ago(5) }],
+  news_comments: [{ id: 'nc1', issue_id: I1, user_id: GRACE, author_name: 'Grace', body: 'Good week.', created_at: ago(4) }],
   likes: [{ project_id: P1, user_id: ADA, created_at: ago(3) }],
   comments: [
     { id: 'c1', project_id: P1, user_id: ADA, author_name: 'Ada', body: 'Lovely sound.', created_at: ago(2) },
@@ -153,6 +178,7 @@ function visible(table, row) {
   const me = currentUser()?.id;
   if (table === 'projects') return row.published || row.user_id === me;
   if (['notifications', 'saves', 'account_ages'].includes(table)) return row.user_id === me;
+  if (table === 'news_issues') return row.published || db.news_editors.some((e) => e.user_id === me);
   return true;
 }
 
@@ -170,7 +196,8 @@ class Query {
     this.orders = [];
     this.limitTo = null;
     this.rangeTo = null;
-    this.single = null;
+    // Not `single`: an own property of that name would hide single() below.
+    this.singleMode = null;
     this.head = false;
     this.count = null;
     this.payload = null;
@@ -207,8 +234,8 @@ class Query {
   order(c, { ascending = true } = {}) { this.orders.push([c, ascending]); return this; }
   limit(n) { this.limitTo = n; return this; }
   range(from, to) { this.rangeTo = [from, to]; return this; }
-  maybeSingle() { this.single = 'maybe'; return this; }
-  single() { this.single = 'one'; return this; }
+  maybeSingle() { this.singleMode = 'maybe'; return this; }
+  single() { this.singleMode = 'one'; return this; }
 
   then(resolve, reject) {
     try {
@@ -259,8 +286,8 @@ class Query {
   }
 
   shape(rows) {
-    if (this.single === 'maybe') return { data: rows[0] ?? null, error: null };
-    if (this.single === 'one') {
+    if (this.singleMode === 'maybe') return { data: rows[0] ?? null, error: null };
+    if (this.singleMode === 'one') {
       return rows.length ? { data: rows[0], error: null } : { data: null, error: { message: 'No rows', code: 'PGRST116' } };
     }
     return { data: rows, error: null };
@@ -283,6 +310,8 @@ const RPC = {
   admin_close_reports: () => 0,
   purchase_item: () => 80,
   purchase_bundle: () => 60,
+  is_news_editor: () => db.news_editors.some((e) => e.user_id === currentUser()?.id),
+  admin_set_news_editor: () => null,
 };
 
 const listeners = new Set();

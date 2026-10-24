@@ -46,7 +46,7 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://psekiewicz.github.io/weekly</loc>
+    <loc>https://psekiewicz.github.io/news</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

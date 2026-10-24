@@ -107,6 +107,8 @@ const QUERY = {
   '/project.html': `?id=${SMOKE_IDS.P1}`,
   '/profile.html': `?user=${SMOKE_IDS.GRACE}`,
   '/consent.html': `?token=${'a'.repeat(64)}`,
+  '/issue.html': `?id=${SMOKE_IDS.I1}`,
+  '/article.html': `?id=${SMOKE_IDS.A1}`,
 };
 
 const SIGNED_IN = {
@@ -463,13 +465,51 @@ test('the dashboard keeps an entry without a live link a draft, and offers only 
   await context.close();
 });
 
-// T&G Weekly isn't a demo, so it has its own page: CBot's issues only - a post
-// by anyone else tagged "weekly" must not pass for one - and none on the home
-// page, which is demos only.
-test('the Weekly page lists T&G issues, and only CBot can publish one', async () => {
+// News: issues anyone reads, articles inside them, and controls only for news
+// editors (Ada is one in the fake database; Grace isn't).
+test('News lists the published issues; an editor also sees drafts and can start one', async () => {
+  const out = await open('/news', null);
+  await out.page.locator('.news-issue-card').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await out.page.locator('.news-issue-title').allInnerTexts(), ['XOXD T&G Weekly - 17-24 Oct 2026']);
+  assert.match(await out.page.locator('.news-issue-card').first().innerText(), /2 articles/);
+  assert.equal(await out.page.locator('#new-issue-btn').count(), 0);
+  await out.context.close();
+
+  const editor = await open('/news', SIGNED_IN);
+  await editor.page.locator('#new-issue-btn').waitFor({ timeout: 10_000 });
+  assert.equal(await editor.page.locator('.news-issue-card').count(), 2);
+  await editor.page.locator('#new-issue-btn').click();
+  await editor.page.locator('#ni-title').fill('XOXD T&G Weekly - 24-31 Oct 2026');
+  await editor.page.locator('.modal-overlay button[type="submit"]').click();
+  await editor.page.waitForURL(/\/issue\?id=/, { timeout: 10_000 });
+  await editor.context.close();
+});
+
+test('an issue shows its articles in order, its likes and comments, and editing only to editors', async () => {
+  const reader = await open(`/issue?id=${SMOKE_IDS.I1}`, { ...SIGNED_IN, id: SMOKE_IDS.GRACE, user_metadata: { display_name: 'Grace' } });
+  await reader.page.locator('.news-article-card').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await reader.page.locator('.news-article-title').allInnerTexts(), ['A big launch trailer lands', 'Regulators open a probe']);
+  assert.equal(await reader.page.locator('#like-count').innerText(), '1');
+  await reader.page.locator('.comment-body', { hasText: 'Good week.' }).waitFor({ timeout: 10_000 });
+  assert.equal(await reader.page.locator('#add-article').count(), 0);
+  await reader.context.close();
+
+  const editor = await open(`/issue?id=${SMOKE_IDS.I1}`, SIGNED_IN);
+  await editor.page.locator('#add-article').waitFor({ timeout: 10_000 });
+  await editor.context.close();
+});
+
+test('an article reads like a news story and leads on to the rest of its issue', async () => {
+  const { page, context } = await open(`/article?id=${SMOKE_IDS.A1}`, null);
+  await page.locator('.news-article-full h1').waitFor({ timeout: 10_000 });
+  assert.equal(await page.locator('.news-article-full h1').innerText(), 'A big launch trailer lands');
+  assert.equal(await page.locator('.news-source a').getAttribute('href'), 'https://example.com/trailer');
+  assert.deepEqual(await page.locator('.news-more li').allInnerTexts(), ['Regulators open a probe']);
+  await context.close();
+});
+
+test('the old T&G Weekly page forwards to News', async () => {
   const { page, context } = await open('/weekly', null);
-  await page.locator('#weekly-root .tile').first().waitFor({ timeout: 10_000 });
-  assert.deepEqual(await page.locator('#weekly-root .tile-title').allInnerTexts(), ['XOXD T&G Weekly - 10.10.2026-17.10.2026']);
-  assert.match(await page.locator('#weekly-root .post-media-kind').first().innerText(), /weekly/i);
+  await page.waitForURL((url) => url.pathname === '/news', { timeout: 10_000 });
   await context.close();
 });
