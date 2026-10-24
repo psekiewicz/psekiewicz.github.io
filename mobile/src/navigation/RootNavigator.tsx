@@ -26,7 +26,10 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ShopScreen } from '../screens/ShopScreen';
-import { WeeklyScreen } from '../screens/WeeklyScreen';
+import { ArticleScreen } from '../screens/ArticleScreen';
+import { IssueScreen } from '../screens/IssueScreen';
+import { NewsEditorScreen } from '../screens/NewsEditorScreen';
+import { NewsScreen } from '../screens/NewsScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const Tab = createBottomTabNavigator();
@@ -198,7 +201,10 @@ export function RootNavigator() {
           options={{ title: 'Leaderboard' }}
         />
         <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Saved' }} />
-        <Stack.Screen name="Weekly" component={WeeklyScreen} options={{ title: 'T&G Weekly' }} />
+        <Stack.Screen name="News" component={NewsScreen} options={{ title: 'News' }} />
+        <Stack.Screen name="Issue" component={IssueScreen} options={{ title: '' }} />
+        <Stack.Screen name="Article" component={ArticleScreen} options={{ title: '' }} />
+        <Stack.Screen name="NewsEditor" component={NewsEditorScreen} options={{ title: '' }} />
         <Stack.Screen
           name="Notifications"
           component={NotificationsScreen}

@@ -16,16 +16,37 @@ import { Avatar } from './ui';
 // the website's post page has it: a box to write in, then the comments. The
 // data handling lives here only.
 
+// Where the comments live. A project's by default; News passes its issue's
+// (news_comments), which are shaped the same.
+export type CommentSource = {
+  load: (id: string) => Promise<Comment[]>;
+  add: (id: string, userId: string, authorName: string, body: string) => Promise<Comment>;
+  remove: (commentId: string) => Promise<void>;
+};
+
+const PROJECT_COMMENTS: CommentSource = { load: getComments, add: addComment, remove: deleteComment };
+
 type Props = {
   projectId: string;
   // The owner can delete any comment on their own post, as RLS allows.
   ownerId: string;
+  source?: CommentSource;
+  // Anyone else RLS lets delete any comment here (a news editor on an issue).
+  canModerate?: boolean;
   onCountChange?: (delta: number) => void;
   onSignIn: () => void;
   onAuthorPress: (userId: string) => void;
 };
 
-export function CommentsSection({ projectId, ownerId, onCountChange, onSignIn, onAuthorPress }: Props) {
+export function CommentsSection({
+  projectId,
+  ownerId,
+  source = PROJECT_COMMENTS,
+  canModerate = false,
+  onCountChange,
+  onSignIn,
+  onAuthorPress,
+}: Props) {
   const { colors } = useTheme();
   const { user, profile } = useAuth();
 
@@ -37,21 +58,22 @@ export function CommentsSection({ projectId, ownerId, onCountChange, onSignIn, o
 
   useEffect(() => {
     setLoading(true);
-    getComments(projectId)
+    source
+      .load(projectId)
       .then(async (rows) => {
         setComments(rows);
         setAuthors(await getProfilesByIds(rows.map((c) => c.userId)).catch(() => new Map<string, Profile>()));
       })
       .catch(() => setComments([]))
       .finally(() => setLoading(false));
-  }, [projectId]);
+  }, [projectId, source]);
 
   const submit = async () => {
     if (!user || !body.trim()) return;
     setSending(true);
     try {
       const name = profile?.displayName || displayNameOf(user);
-      const created = await addComment(projectId, user.id, name, body.trim());
+      const created = await source.add(projectId, user.id, name, body.trim());
       setComments((prev) => [...prev, created]);
       setBody('');
       onCountChange?.(1);
@@ -64,7 +86,7 @@ export function CommentsSection({ projectId, ownerId, onCountChange, onSignIn, o
 
   const remove = async (comment: Comment) => {
     try {
-      await deleteComment(comment.id);
+      await source.remove(comment.id);
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
       onCountChange?.(-1);
     } catch {
@@ -138,7 +160,7 @@ export function CommentsSection({ projectId, ownerId, onCountChange, onSignIn, o
       ) : (
         <View style={[box, { overflow: 'hidden' }]}>
           {comments.map((c, i) => {
-            const canDelete = !!user && (c.userId === user.id || ownerId === user.id);
+            const canDelete = !!user && (c.userId === user.id || ownerId === user.id || canModerate);
             return (
               <View
                 key={c.id}

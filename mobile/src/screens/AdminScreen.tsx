@@ -33,6 +33,7 @@ import {
 } from '../data/announcements';
 import { deleteProject, getAllProjects, Project, togglePublish } from '../data/projects';
 import { safeUrl, timeAgo } from '../lib/utils';
+import { getNewsEditorIds, setNewsEditor } from '../data/news';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
@@ -56,6 +57,7 @@ export function AdminScreen({ navigation }: any) {
   const [hidden, setHidden] = useState({ projects: false, users: false });
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [newsEditors, setNewsEditors] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,12 +78,14 @@ export function AdminScreen({ navigation }: any) {
       return;
     }
     try {
-      const [projectRows, userRows] = await Promise.all([
+      const [projectRows, userRows, editorIds] = await Promise.all([
         getAllProjects().catch(() => []),
         listUsersForAdmin().catch(() => []),
+        getNewsEditorIds().catch(() => new Set<string>()),
       ]);
       setProjects(projectRows);
       setUsers(userRows);
+      setNewsEditors(editorIds);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -178,6 +182,27 @@ export function AdminScreen({ navigation }: any) {
     } catch (e: any) {
       setError(`${e.message} - bans need the admin-actions Edge Function deployed.`);
     }
+  };
+
+  // Who may write in News. Only an admin can change it, and
+  // admin_set_news_editor() checks that again (schema.sql).
+  const toggleNewsEditor = (target: AdminUser) => {
+    const on = !newsEditors.has(target.id);
+    Alert.alert(on ? 'Make news editor?' : 'Remove from News?', on ? `${target.displayName} will be able to create issues and write articles.` : `${target.displayName} will no longer write in News.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: on ? 'Make editor' : 'Remove',
+        onPress: async () => {
+          try {
+            await setNewsEditor(target.id, on);
+            setNotice(on ? `${target.displayName} can now write in News.` : `${target.displayName} no longer writes in News.`);
+            load();
+          } catch (e: any) {
+            setError(e.message);
+          }
+        },
+      },
+    ]);
   };
 
   const removeUser = (target: AdminUser) => {
@@ -566,6 +591,9 @@ export function AdminScreen({ navigation }: any) {
                       {item.isAdmin ? (
                         <Text style={[typography.eyebrow, { color: colors.accent }]}>Admin</Text>
                       ) : null}
+                      {newsEditors.has(item.id) ? (
+                        <Text style={[typography.eyebrow, { color: colors.primary }]}>News</Text>
+                      ) : null}
                       {banned ? (
                         <Text style={[typography.eyebrow, { color: colors.danger }]}>Banned</Text>
                       ) : null}
@@ -576,6 +604,12 @@ export function AdminScreen({ navigation }: any) {
                   </View>
                 </View>
 
+                <Button
+                  small
+                  label={newsEditors.has(item.id) ? 'Remove from News' : 'Make news editor'}
+                  variant="secondary"
+                  onPress={() => toggleNewsEditor(item)}
+                />
                 <View style={{ flexDirection: 'row', gap: space.sm }}>
                   <Button
                     small

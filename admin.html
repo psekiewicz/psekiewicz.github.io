@@ -37,7 +37,7 @@
       </a>
       <div class="nav-links">
         <a class="nav-link" href="/"><i class="icon" data-icon="rocket" style="width:22px;height:22px" aria-hidden="true"></i><span>Demos</span></a>
-        <a class="nav-link" href="/weekly"><i class="icon" data-icon="globe" style="width:22px;height:22px" aria-hidden="true"></i><span>T&amp;G Weekly</span></a>
+        <a class="nav-link" href="/news"><i class="icon" data-icon="globe" style="width:22px;height:22px" aria-hidden="true"></i><span>News</span></a>
         <a class="nav-link" href="/leaderboard"><i class="icon" data-icon="award" style="width:22px;height:22px" aria-hidden="true"></i><span>Leaderboard</span></a>
         <a class="nav-link" href="/shop"><i class="icon" data-icon="shopping-bag" style="width:22px;height:22px" aria-hidden="true"></i><span>Shop</span></a>
         <a class="nav-link" href="/dashboard"><i class="icon" data-icon="grid" style="width:22px;height:22px" aria-hidden="true"></i><span>Dashboard</span></a>
@@ -166,6 +166,7 @@
   <script type="module">
     import { onAuthChange } from '/js/auth.js';
     import { isAdmin, listUsersForAdmin, banUser, unbanUser, deleteAccount } from '/js/admin-data.js';
+    import { getNewsEditorIds, setNewsEditor } from '/js/news-data.js';
     import { getAllProjects, togglePublish, deleteProject } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml } from '/js/utils.js';
@@ -380,6 +381,8 @@
 
     // ---------- Users ----------
 
+    let newsEditorIds = new Set();
+
     function renderUsersTable() {
       const q = userSearchInput.value.trim().toLowerCase();
       if (hidden.users && !q) {
@@ -432,11 +435,17 @@
                   ${avatarHtml(u.avatarUrl, u.displayName, 'avatar-sm')}
                   <a href="/profile?user=${encodeURIComponent(u.id)}">${escapeHtml(u.displayName)}</a>
                   ${u.isAdmin ? '<span class="tag" style="margin-left:6px;">Admin</span>' : ''}
+                  ${newsEditorIds.has(u.id) ? '<span class="tag" style="margin-left:6px;">News editor</span>' : ''}
                 </span>
               </td>
               <td>${escapeHtml(u.email || '-')}</td>
               <td>${timeAgo(u.createdAt)}</td>
               <td>${statusHtml}</td>
+              <td>
+                <button class="btn btn-secondary btn-sm" data-action="news" title="News editors can create issues and write articles in News">
+                  ${newsEditorIds.has(u.id) ? 'Remove from News' : 'Make news editor'}
+                </button>
+              </td>
               <td>${actionsHtml}</td>
             </tr>
           `;
@@ -452,6 +461,7 @@
                 <th>Email</th>
                 <th>Joined</th>
                 <th>Status</th>
+                <th>News</th>
                 <th></th>
               </tr>
             </thead>
@@ -493,6 +503,22 @@
           });
         }
 
+        // Who may write in News (schema.sql: news_editors). Only an admin can
+        // change it, and admin_set_news_editor() checks that again.
+        const newsBtn = row.querySelector('[data-action="news"]');
+        newsBtn.addEventListener('click', async () => {
+          const on = !newsEditorIds.has(user.id);
+          if (!confirm(on ? `Let ${user.displayName} create issues and write articles in News?` : `Stop ${user.displayName} writing in News?`)) return;
+          newsBtn.disabled = true;
+          try {
+            await setNewsEditor(user.id, on);
+            await loadUsers();
+          } catch (err) {
+            alert(err.message);
+            newsBtn.disabled = false;
+          }
+        });
+
         const deleteBtn = row.querySelector('[data-action="delete"]');
         if (deleteBtn) {
           deleteBtn.addEventListener('click', async () => {
@@ -511,7 +537,7 @@
     }
 
     async function loadUsers() {
-      allUsers = await listUsersForAdmin();
+      [allUsers, newsEditorIds] = await Promise.all([listUsersForAdmin(), getNewsEditorIds().catch(() => new Set())]);
       renderStats();
       renderUsersTable();
     }
