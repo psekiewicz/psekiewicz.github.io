@@ -5,22 +5,25 @@ import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Icon } from '../components/icons';
 import { Text } from '../components/Text';
 import { Button, EmptyState, ErrorNote, Loading } from '../components/ui';
+import { UnreadPill } from '../components/UnreadPill';
 import { useAuth } from '../context/AuthContext';
-import { getArticleCounts, getIssues, isNewsEditor, NewsIssue, periodLabel } from '../data/news';
+import { getArticleIdsByNewsletter, getNewsletters, getReadIds, isNewsEditor, Newsletter } from '../data/news';
 import { column } from '../lib/layout';
 import { safeUrl } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 
-// News: every issue, newest first - the native side of the site's /news.
-// Anyone reads; news editors (granted by an admin) also see drafts and can
-// start an issue. An issue opens on the Issue screen.
+// News: the newsletters there are to read - the native side of the site's
+// /news. Each says how many articles it holds and how many this reader hasn't
+// opened; one opens on the Newsletter screen. News editors (granted by an
+// admin) also see drafts and can start a newsletter.
 export function NewsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
 
-  const [issues, setIssues] = useState<NewsIssue[]>([]);
-  const [counts, setCounts] = useState<Map<string, number>>(new Map());
+  const [letters, setLetters] = useState<Newsletter[]>([]);
+  const [articleIds, setArticleIds] = useState<Map<string, string[]>>(new Map());
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,10 +31,12 @@ export function NewsScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [list, canEdit] = await Promise.all([getIssues(), user ? isNewsEditor() : Promise.resolve(false)]);
-      setIssues(list);
+      const [list, canEdit] = await Promise.all([getNewsletters(), user ? isNewsEditor() : Promise.resolve(false)]);
+      const byLetter = await getArticleIdsByNewsletter(list.map((l) => l.id)).catch(() => new Map<string, string[]>());
+      setLetters(list);
       setEditor(canEdit);
-      setCounts(await getArticleCounts(list.map((i) => i.id)).catch(() => new Map()));
+      setArticleIds(byLetter);
+      setReadIds(await getReadIds(user?.id, [...byLetter.values()].flat()).catch(() => new Set<string>()));
       setError('');
     } catch (e: any) {
       setError(e.message);
@@ -51,7 +56,7 @@ export function NewsScreen({ navigation }: any) {
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
-      data={issues}
+      data={letters}
       keyExtractor={(item) => item.id}
       contentContainerStyle={{ ...column(), padding: space.lg, gap: space.md, paddingBottom: space.xxl }}
       refreshControl={
@@ -71,21 +76,22 @@ export function NewsScreen({ navigation }: any) {
         <View style={{ gap: space.sm, marginBottom: space.sm }}>
           <ErrorNote message={error} />
           <Text style={[typography.small, { color: colors.textMuted }]}>
-            The week in technology and games, one issue at a time - including XOXD Tech & Gaming Weekly, every Saturday.
+            Newsletters from XOXD's editors - like Tech & Gaming Weekly, every Saturday. Pick one to see everything in it, and what you haven't read yet.
           </Text>
           {editor ? (
-            <Button label="New issue" icon="plus" small onPress={() => navigation.navigate('NewsEditor', { mode: 'issue' })} />
+            <Button label="New newsletter" icon="plus" small onPress={() => navigation.navigate('NewsEditor', { mode: 'newsletter' })} />
           ) : null}
         </View>
       }
-      ListEmptyComponent={<EmptyState icon="globe" title="No issues yet" body="The first one arrives on Saturday." />}
+      ListEmptyComponent={<EmptyState icon="globe" title="No newsletters yet" body="The first one is on its way." />}
       renderItem={({ item }) => {
         const cover = safeUrl(item.coverUrl);
-        const period = periodLabel(item);
-        const n = counts.get(item.id) || 0;
+        const ids = articleIds.get(item.id) || [];
+        const n = ids.length;
+        const unread = ids.filter((id) => !readIds.has(id)).length;
         return (
           <Pressable
-            onPress={() => navigation.navigate('Issue', { issueId: item.id })}
+            onPress={() => navigation.navigate('Newsletter', { newsletterId: item.id })}
             accessibilityRole="button"
             style={({ pressed }) => ({
               flexDirection: 'row',
@@ -116,11 +122,6 @@ export function NewsScreen({ navigation }: any) {
               )}
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              {period ? (
-                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.6 }}>
-                  {period.toUpperCase()}
-                </Text>
-              ) : null}
               <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }} numberOfLines={2}>
                 {item.title}
                 {item.published ? '' : '  (draft)'}
@@ -130,9 +131,12 @@ export function NewsScreen({ navigation }: any) {
                   {item.summary}
                 </Text>
               ) : null}
-              <Text style={{ color: colors.textFaint, fontSize: 11 }}>
-                {n} {n === 1 ? 'article' : 'articles'} · {item.likesCount} likes · {item.commentsCount} comments
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                <Text style={{ color: colors.textFaint, fontSize: 11 }}>
+                  {n} {n === 1 ? 'article' : 'articles'}
+                </Text>
+                {unread ? <UnreadPill label={`${unread} new`} /> : n ? <Text style={{ color: colors.textFaint, fontSize: 11 }}>✓ All read</Text> : null}
+              </View>
             </View>
           </Pressable>
         );

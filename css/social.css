@@ -1475,16 +1475,16 @@ textarea:focus {
   }
 }
 
-/* ---------- News (news.html, issue.html, article.html) ----------
+/* ---------- News (news.html, newsletter.html, article.html) ----------
    A news section inside an app of demos: plain reading layouts in the post
-   column, with the kicker (the week) in the accent colour the way a
+   column, with the kicker (the date) in the accent colour the way a
    newspaper sets a section line. */
 .news-list {
   display: grid;
   gap: 14px;
 }
 
-.news-issue-card {
+.news-letter-card {
   display: grid;
   grid-template-columns: 160px 1fr;
   gap: 16px;
@@ -1497,12 +1497,12 @@ textarea:focus {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.news-issue-card:hover {
+.news-letter-card:hover {
   border-color: var(--color-border-strong);
   box-shadow: var(--shadow-sm);
 }
 
-.news-issue-cover {
+.news-letter-cover {
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
@@ -1510,14 +1510,14 @@ textarea:focus {
   background: var(--color-surface-alt);
 }
 
-.news-issue-cover.is-empty {
+.news-letter-cover.is-empty {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-faint);
 }
 
-.news-issue-text {
+.news-letter-text {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1533,19 +1533,19 @@ textarea:focus {
   text-transform: uppercase;
 }
 
-.news-issue-title {
+.news-letter-title {
   font-size: 1.08rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
-.news-issue-summary {
+.news-letter-summary {
   color: var(--color-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
-.news-issue-meta {
+.news-letter-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
@@ -1554,18 +1554,18 @@ textarea:focus {
   font-size: 0.8rem;
 }
 
-.news-issue-meta span {
+.news-letter-meta span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
-.news-issue-head {
+.news-letter-head {
   padding: 8px 0 18px;
   border-bottom: 1px solid var(--color-border);
 }
 
-.news-issue-hero {
+.news-letter-hero {
   display: block;
   width: 100%;
   max-height: 420px;
@@ -1655,6 +1655,32 @@ textarea:focus {
   line-height: 1.8;
 }
 
+/* Read or not, per reader: a "New" pill on what they haven't opened, and a
+   quieter headline on what they have. */
+.news-unread {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.news-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-faint);
+}
+
+.news-article-card.is-read .news-article-title a {
+  color: var(--color-text-muted);
+}
+
 @media (min-width: 720px) {
   .news-article-card:has(.news-article-image) {
     grid-template-columns: 220px 1fr;
@@ -1662,7 +1688,7 @@ textarea:focus {
 }
 
 @media (max-width: 560px) {
-  .news-issue-card {
+  .news-letter-card {
     grid-template-columns: 1fr;
   }
 }

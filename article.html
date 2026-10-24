@@ -5,18 +5,18 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title id="page-title">News - XOXD</title>
-  <meta name="description" content="A technology and games story on XOXD." />
+  <meta name="description" content="An article from a newsletter on XOXD." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="XOXD" />
   <meta property="og:title" content="News - XOXD" />
-  <meta property="og:description" content="A technology and games story on XOXD." />
+  <meta property="og:description" content="An article from a newsletter on XOXD." />
   <meta property="og:url" content="https://psekiewicz.github.io/article" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="News - XOXD" />
-  <meta name="twitter:description" content="A technology and games story on XOXD." />
+  <meta name="twitter:description" content="An article from a newsletter on XOXD." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/social.css" />
@@ -58,12 +58,13 @@
     <div id="article-root">
       <div class="container" style="padding-top:48px;"><p>Loading article…</p></div>
     </div>
+    <div id="comments-root"></div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>© <span id="year"></span> XOXD</span>
-      <a href="/news">All issues</a>
+      <a href="/news">All newsletters</a>
     </div>
   </footer>
 
@@ -74,42 +75,54 @@
   <script type="module" src="/js/pwa.js"></script>
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
-    import { getArticle, getArticles, getIssue, isNewsEditor, periodLabel, updateArticle, deleteArticle } from '/js/news-data.js';
+    import { isAdmin } from '/js/admin-data.js';
+    import {
+      getArticle, getArticles, getNewsletter, isNewsEditor, articleDate, updateArticle, deleteArticle, getReadIds, markRead,
+      hasLikedArticle, likeArticle, unlikeArticle, getArticleComments, addArticleComment, deleteArticleComment,
+    } from '/js/news-data.js';
+    import { getProfilesByIds } from '/js/profiles-data.js';
     import { renderMarkdown } from '/js/markdown.js';
-    import { escapeHtml, safeUrl, timeAgo } from '/js/utils.js';
+    import { escapeHtml, safeUrl, avatarHtml, timeAgo } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { shareLink } from '/js/share.js';
 
     // One article, set like a news story: headline, lead, picture, the text,
-    // and where it comes from. Reactions belong to the issue, so the way on is
-    // back to it - and to the rest of the issue's articles below this one.
+    // and where it comes from; then its likes and comments, and the rest of
+    // its newsletter. Opening it marks it read for this reader.
 
     document.getElementById('year').textContent = new Date().getFullYear();
     const root = document.getElementById('article-root');
+    const commentsRoot = document.getElementById('comments-root');
     const id = new URLSearchParams(location.search).get('id');
 
-    function render(article, issue, siblings, editor) {
+    let user = null;
+    let editor = false;
+    let admin = false;
+
+    function render(article, letter, others, readIds) {
       document.getElementById('page-title').textContent = `${article.title} - XOXD`;
       const img = safeUrl(article.imageUrl);
       const src = safeUrl(article.sourceUrl);
-      const issueHref = `/issue?id=${encodeURIComponent(issue.id)}`;
-      const others = siblings.filter((a) => a.id !== article.id);
+      const letterHref = `/newsletter?id=${encodeURIComponent(letter.id)}`;
       root.innerHTML = `
         <div class="post-page news-article-page">
           <div class="post-page-bar">
-            <a class="icon-btn" href="${issueHref}" aria-label="Back to the issue">${icon('arrow-left', { size: 20 })}</a>
-            <a href="${issueHref}"><strong>${escapeHtml(issue.title)}</strong></a>
+            <a class="icon-btn" href="${letterHref}" aria-label="Back to the newsletter">${icon('arrow-left', { size: 20 })}</a>
+            <a href="${letterHref}"><strong>${escapeHtml(letter.title)}</strong></a>
           </div>
           <article class="news-article-full">
-            ${periodLabel(issue) ? `<p class="news-kicker">${escapeHtml(periodLabel(issue))}</p>` : ''}
+            <p class="news-kicker">${escapeHtml(articleDate(article))}</p>
             <h1 class="post-detail-title">${escapeHtml(article.title)}</h1>
             ${article.lead ? `<p class="news-article-standfirst">${escapeHtml(article.lead)}</p>` : ''}
             <p class="news-article-meta">${escapeHtml(article.authorName)} · ${timeAgo(article.createdAt)}</p>
-            ${img ? `<img class="news-issue-hero" src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
+            ${img ? `<img class="news-letter-hero" src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
             <div class="detail-body">${renderMarkdown(article.body)}</div>
             ${src ? `<p class="news-source">Source: <a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.sourceName || new URL(src).hostname)} ↗</a></p>` : ''}
             <footer class="post-actions engagement-bar">
-              <a class="post-action" href="${issueHref}#comments">${icon('message-circle', { size: 19 })}<span>Discuss this issue</span></a>
+              <button class="like-btn post-action" id="like-btn" type="button" aria-pressed="false">
+                ${icon('heart', { size: 19 })} <span id="like-count">${article.likesCount}</span>
+              </button>
+              <a class="post-action" href="#comments">${icon('message-circle', { size: 19 })}<span>Comments</span></a>
               <button class="post-action" id="share-btn" type="button">${icon('share', { size: 19 })}<span>Share</span></button>
               ${editor ? `<span class="post-action-spacer"></span>
                 <button class="btn btn-secondary btn-sm" type="button" id="edit-article">${icon('pencil', { size: 14 })} Edit</button>
@@ -118,12 +131,42 @@
           </article>
           ${others.length ? `
             <section class="news-more">
-              <h2 class="explore-section-title">More in this issue</h2>
-              <ul>${others.map((a) => `<li><a href="/article?id=${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a></li>`).join('')}</ul>
+              <h2 class="explore-section-title">More from ${escapeHtml(letter.title)}</h2>
+              <ul>${others
+                .map((a) => `<li><a href="/article?id=${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a> ${readIds.has(a.id) ? '' : '<span class="news-unread">New</span>'}</li>`)
+                .join('')}</ul>
             </section>` : ''}
         </div>`;
 
       document.getElementById('share-btn').addEventListener('click', () => shareLink({ url: location.href, title: article.title }));
+
+      const likeBtn = document.getElementById('like-btn');
+      let liked = false;
+      const paint = () => {
+        likeBtn.classList.toggle('is-liked', liked);
+        likeBtn.setAttribute('aria-pressed', String(liked));
+        document.getElementById('like-count').textContent = article.likesCount;
+      };
+      if (user) hasLikedArticle(user.id, article.id).then((v) => { liked = v; paint(); }).catch(() => {});
+      likeBtn.addEventListener('click', async () => {
+        if (!user) {
+          window.location.href = '/login?next=' + encodeURIComponent(location.pathname + location.search);
+          return;
+        }
+        likeBtn.disabled = true;
+        try {
+          if (liked) await unlikeArticle(user.id, article.id);
+          else await likeArticle(user.id, article.id);
+          article.likesCount += liked ? -1 : 1;
+          liked = !liked;
+          paint();
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          likeBtn.disabled = false;
+        }
+      });
+
       if (!editor) return;
       document.getElementById('edit-article').addEventListener('click', async () => {
         const { openArticleForm } = await import('/js/news-editor.js');
@@ -134,31 +177,110 @@
         if (!confirm(`Delete "${article.title}"?`)) return;
         try {
           await deleteArticle(article.id);
-          window.location.href = issueHref;
+          window.location.href = letterHref;
         } catch (err) {
           alert(err.message);
         }
       });
     }
 
+    async function renderComments(article) {
+      let comments;
+      try {
+        comments = await getArticleComments(article.id);
+      } catch (err) {
+        commentsRoot.innerHTML = `<section class="post-page post-comments"><p>Could not load comments: ${escapeHtml(err.message)}</p></section>`;
+        return;
+      }
+      const profiles = await getProfilesByIds(comments.map((c) => c.userId)).catch(() => new Map());
+      const list = comments.length
+        ? comments
+            .map((c) => {
+              const p = profiles.get(c.userId);
+              const canDelete = Boolean(user && (user.id === c.userId || editor || admin));
+              return `
+                <article class="comment">
+                  <div class="comment-head">
+                    ${avatarHtml(p ? p.avatarUrl : '', c.authorName, 'avatar-sm')}
+                    <div class="comment-head-text">
+                      <span class="comment-author-row"><a href="/profile?user=${encodeURIComponent(c.userId)}" class="comment-author">${escapeHtml(c.authorName)}</a></span>
+                      <span class="comment-time">${timeAgo(c.createdAt)}</span>
+                    </div>
+                    ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(c.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
+                  </div>
+                  <p class="comment-body">${escapeHtml(c.body)}</p>
+                </article>`;
+            })
+            .join('')
+        : '<p class="hint">No comments yet - say what you made of it.</p>';
+      const form = user
+        ? `<form class="comment-form" id="comment-form">
+             <textarea id="comment-body" placeholder="Write a comment…" maxlength="2000" required></textarea>
+             <button class="btn btn-primary" type="submit">${icon('send', { size: 15 })} Post</button>
+           </form>`
+        : `<p class="hint"><a href="/login?next=${encodeURIComponent(location.pathname + location.search)}">Log in</a> to leave a comment.</p>`;
+      commentsRoot.innerHTML = `
+        <section class="post-page post-comments" id="comments">
+          <h2 class="explore-section-title">Comments · ${comments.length}</h2>
+          ${form}
+          <div class="comments-list">${list}</div>
+        </section>`;
+      const commentForm = document.getElementById('comment-form');
+      if (commentForm) {
+        commentForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const body = document.getElementById('comment-body').value.trim();
+          if (!body) return;
+          const btn = commentForm.querySelector('button[type="submit"]');
+          btn.disabled = true;
+          try {
+            await addArticleComment(article.id, user.id, body);
+            await renderComments(article);
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      }
+      commentsRoot.querySelectorAll('.comment-delete').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this comment?')) return;
+          try {
+            await deleteArticleComment(btn.dataset.id);
+            await renderComments(article);
+          } catch (err) {
+            alert(err.message);
+          }
+        })
+      );
+    }
+
     (async () => {
       if (!id) {
-        root.innerHTML = '<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>No article specified</h3><a class="btn btn-primary" href="/news">All issues</a></div></div>';
+        root.innerHTML = '<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>No article specified</h3><a class="btn btn-primary" href="/news">All newsletters</a></div></div>';
         return;
       }
       try {
         const article = await getArticle(id);
         if (!article) {
-          root.innerHTML = '<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Article not found</h3><p>It may have been taken down.</p><a class="btn btn-primary" href="/news">All issues</a></div></div>';
+          root.innerHTML = '<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Article not found</h3><p>It may have been taken down.</p><a class="btn btn-primary" href="/news">All newsletters</a></div></div>';
           return;
         }
-        const user = await getCurrentUser();
-        const [issue, siblings, editor] = await Promise.all([
-          getIssue(article.issueId),
-          getArticles(article.issueId),
+        user = await getCurrentUser();
+        // Marked read as soon as it opens; a failure only means it stays "New".
+        markRead(user?.id, article.id).catch(() => {});
+        const [letter, siblings, isEditor, isAdminUser] = await Promise.all([
+          getNewsletter(article.newsletterId),
+          getArticles(article.newsletterId),
           user ? isNewsEditor() : false,
+          user ? isAdmin(user.id).catch(() => false) : false,
         ]);
-        render(article, issue, siblings, editor);
+        editor = isEditor;
+        admin = isAdminUser;
+        const others = siblings.filter((a) => a.id !== article.id).slice(0, 6);
+        const readIds = await getReadIds(user?.id, others.map((a) => a.id)).catch(() => new Set());
+        render(article, letter, others, readIds);
+        renderComments(article);
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load article: ${escapeHtml(err.message)}</p></div>`;
       }

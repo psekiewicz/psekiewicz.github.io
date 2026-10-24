@@ -107,7 +107,8 @@ const QUERY = {
   '/project.html': `?id=${SMOKE_IDS.P1}`,
   '/profile.html': `?user=${SMOKE_IDS.GRACE}`,
   '/consent.html': `?token=${'a'.repeat(64)}`,
-  '/issue.html': `?id=${SMOKE_IDS.I1}`,
+  '/newsletter.html': `?id=${SMOKE_IDS.I1}`,
+  '/issue.html': `?id=${SMOKE_IDS.A1}`,
   '/article.html': `?id=${SMOKE_IDS.A1}`,
 };
 
@@ -465,46 +466,73 @@ test('the dashboard keeps an entry without a live link a draft, and offers only 
   await context.close();
 });
 
-// News: issues anyone reads, articles inside them, and controls only for news
-// editors (Ada is one in the fake database; Grace isn't).
-test('News lists the published issues; an editor also sees drafts and can start one', async () => {
+// News: newsletters anyone reads, articles inside them, each reader's own
+// read marks, and controls only for news editors (Ada is one in the fake
+// database; Grace isn't, and has read the older T&G article).
+const GRACE_SIGNED_IN = { ...SIGNED_IN, id: SMOKE_IDS.GRACE, user_metadata: { display_name: 'Grace' } };
+
+test('News lists the newsletters with what is new to the reader; an editor also sees drafts and can start one', async () => {
   const out = await open('/news', null);
-  await out.page.locator('.news-issue-card').first().waitFor({ timeout: 10_000 });
-  assert.deepEqual(await out.page.locator('.news-issue-title').allInnerTexts(), ['XOXD T&G Weekly - 17-24 Oct 2026']);
-  assert.match(await out.page.locator('.news-issue-card').first().innerText(), /2 articles/);
-  assert.equal(await out.page.locator('#new-issue-btn').count(), 0);
+  await out.page.locator('.news-letter-card').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await out.page.locator('.news-letter-title').allInnerTexts(), ['XOXD T&G Weekly']);
+  assert.match(await out.page.locator('.news-letter-card').first().innerText(), /2 articles[\s\S]*2 new/i);
+  assert.equal(await out.page.locator('#new-letter-btn').count(), 0);
   await out.context.close();
 
+  const grace = await open('/news', GRACE_SIGNED_IN);
+  await grace.page.locator('.news-letter-card').first().waitFor({ timeout: 10_000 });
+  assert.match(await grace.page.locator('.news-letter-card').first().innerText(), /1 new/i);
+  await grace.context.close();
+
   const editor = await open('/news', SIGNED_IN);
-  await editor.page.locator('#new-issue-btn').waitFor({ timeout: 10_000 });
-  assert.equal(await editor.page.locator('.news-issue-card').count(), 2);
-  await editor.page.locator('#new-issue-btn').click();
-  await editor.page.locator('#ni-title').fill('XOXD T&G Weekly - 24-31 Oct 2026');
+  await editor.page.locator('#new-letter-btn').waitFor({ timeout: 10_000 });
+  assert.equal(await editor.page.locator('.news-letter-card').count(), 2);
+  await editor.page.locator('#new-letter-btn').click();
+  await editor.page.locator('#nl-title').fill('Indie Picks');
   await editor.page.locator('.modal-overlay button[type="submit"]').click();
-  await editor.page.waitForURL(/\/issue\?id=/, { timeout: 10_000 });
+  await editor.page.waitForURL(/\/newsletter\?id=/, { timeout: 10_000 });
   await editor.context.close();
 });
 
-test('an issue shows its articles in order, its likes and comments, and editing only to editors', async () => {
-  const reader = await open(`/issue?id=${SMOKE_IDS.I1}`, { ...SIGNED_IN, id: SMOKE_IDS.GRACE, user_metadata: { display_name: 'Grace' } });
+test('a newsletter lists every article newest first, each marked read or new, with editing only for editors', async () => {
+  const reader = await open(`/newsletter?id=${SMOKE_IDS.I1}`, GRACE_SIGNED_IN);
   await reader.page.locator('.news-article-card').first().waitFor({ timeout: 10_000 });
-  assert.deepEqual(await reader.page.locator('.news-article-title').allInnerTexts(), ['A big launch trailer lands', 'Regulators open a probe']);
-  assert.equal(await reader.page.locator('#like-count').innerText(), '1');
-  await reader.page.locator('.comment-body', { hasText: 'Good week.' }).waitFor({ timeout: 10_000 });
+  assert.deepEqual(await reader.page.locator('.news-article-title').allInnerTexts(), [
+    'XOXD T&G Weekly - 17-24 Oct 2026',
+    'XOXD T&G Weekly - 10-17 Oct 2026',
+  ]);
+  const cards = reader.page.locator('.news-article-card');
+  assert.match(await cards.nth(0).innerText(), /^\s*new\b/i);
+  assert.match(await cards.nth(1).innerText(), /^\s*read\b/i);
+  assert.equal(await cards.nth(1).evaluate((el) => el.classList.contains('is-read')), true);
   assert.equal(await reader.page.locator('#add-article').count(), 0);
   await reader.context.close();
 
-  const editor = await open(`/issue?id=${SMOKE_IDS.I1}`, SIGNED_IN);
+  const editor = await open(`/newsletter?id=${SMOKE_IDS.I1}`, SIGNED_IN);
   await editor.page.locator('#add-article').waitFor({ timeout: 10_000 });
   await editor.context.close();
 });
 
-test('an article reads like a news story and leads on to the rest of its issue', async () => {
+test('an article reads like a news story, carries its likes and comments, and counts as read once opened', async () => {
   const { page, context } = await open(`/article?id=${SMOKE_IDS.A1}`, null);
   await page.locator('.news-article-full h1').waitFor({ timeout: 10_000 });
-  assert.equal(await page.locator('.news-article-full h1').innerText(), 'A big launch trailer lands');
-  assert.equal(await page.locator('.news-source a').getAttribute('href'), 'https://example.com/trailer');
-  assert.deepEqual(await page.locator('.news-more li').allInnerTexts(), ['Regulators open a probe']);
+  assert.equal(await page.locator('.news-article-full h1').innerText(), 'XOXD T&G Weekly - 17-24 Oct 2026');
+  assert.equal(await page.locator('#like-count').innerText(), '1');
+  await page.locator('.comment-body', { hasText: 'Good week.' }).waitFor({ timeout: 10_000 });
+  assert.deepEqual(await page.locator('.news-more li a').allInnerTexts(), ['XOXD T&G Weekly - 10-17 Oct 2026']);
+
+  // A guest's read marks stay in the browser: back on the newsletter, the
+  // article just opened no longer says "New".
+  await page.goto(`${origin}/newsletter?id=${SMOKE_IDS.I1}`);
+  await page.locator('.news-article-card').first().waitFor({ timeout: 10_000 });
+  assert.match(await page.locator('.news-article-card').nth(0).innerText(), /^\s*read\b/i);
+  assert.match(await page.locator('.news-article-card').nth(1).innerText(), /^\s*new\b/i);
+  await context.close();
+});
+
+test('an old issue link opens the article that took its place', async () => {
+  const { page, context } = await open(`/issue?id=${SMOKE_IDS.A1}`, null);
+  await page.waitForURL((url) => url.pathname === '/article', { timeout: 10_000 });
   await context.close();
 });
 

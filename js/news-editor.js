@@ -4,11 +4,11 @@ import { withScheme } from './media.js';
 import { attachFormatToolbar } from './format-toolbar.js';
 import { attachUpload } from './upload-field.js';
 
-// The forms a news editor uses: a new or edited issue, and a new or edited
-// article. Each is a modal built on demand, so pages for readers never carry
-// them. Both resolve with the saved fields, or null when closed. Saving is
-// the caller's (it knows which issue it is on); a thrown error is shown in
-// the form and the form stays open.
+// The forms a news editor uses: a new or edited newsletter, and a new or
+// edited article. Each is a modal built on demand, so pages for readers never
+// carry them. Both resolve with the saved fields, or null when closed. Saving
+// is the caller's (it knows which newsletter it is on); a thrown error is
+// shown in the form and the form stays open.
 
 function field(id, label, input, hint = '') {
   return `
@@ -70,35 +70,26 @@ function openModal(title, bodyHtml, submitLabel, { onReady, read, save }) {
 
 const value = (root, id) => root.querySelector(`#${id}`).value;
 
-// `save(fields)` stores the issue; `issue` prefills the form for an edit.
-export function openIssueForm({ issue = null, save }) {
+// `save(fields)` stores the newsletter; `newsletter` prefills the form for an edit.
+export function openNewsletterForm({ newsletter = null, save }) {
   const body = `
-    ${field('ni-title', 'Title', `<input type="text" id="ni-title" required minlength="3" maxlength="120" placeholder="T&amp;G Weekly - 24-31 Oct 2026" value="${escapeHtml(issue?.title || '')}" />`)}
-    <div class="two-col">
-      ${field('ni-start', 'Week from', `<input type="date" id="ni-start" value="${escapeHtml(issue?.periodStart || '')}" />`)}
-      ${field('ni-end', 'to', `<input type="date" id="ni-end" value="${escapeHtml(issue?.periodEnd || '')}" />`)}
-    </div>
-    ${field('ni-summary', 'Summary', `<input type="text" id="ni-summary" maxlength="300" placeholder="The week's biggest stories, in a sentence" value="${escapeHtml(issue?.summary || '')}" />`)}
-    ${field('ni-cover', 'Cover image', `<input type="url" id="ni-cover" placeholder="https://…" value="${escapeHtml(issue?.coverUrl || '')}" />`)}
+    ${field('nl-title', 'Name', `<input type="text" id="nl-title" required minlength="3" maxlength="120" placeholder="XOXD T&amp;G Weekly" value="${escapeHtml(newsletter?.title || '')}" />`)}
+    ${field('nl-summary', 'What it is', `<input type="text" id="nl-summary" maxlength="300" placeholder="Tech and gaming news of the week, every Saturday" value="${escapeHtml(newsletter?.summary || '')}" />`)}
+    ${field('nl-cover', 'Cover image', `<input type="url" id="nl-cover" placeholder="https://…" value="${escapeHtml(newsletter?.coverUrl || '')}" />`)}
     <div class="field checkbox-field">
-      <input type="checkbox" id="ni-published" ${issue && !issue.published ? '' : 'checked'} />
-      <label for="ni-published" style="margin:0;">Published - untick to keep it a draft only editors see</label>
+      <input type="checkbox" id="nl-published" ${newsletter && !newsletter.published ? '' : 'checked'} />
+      <label for="nl-published" style="margin:0;">Published - untick to keep it a draft only editors see</label>
     </div>`;
-  return openModal(issue ? 'Edit issue' : 'New issue', body, issue ? 'Save changes' : 'Create issue', {
-    onReady: (root) => attachUpload(root.querySelector('#ni-cover'), { kind: 'cover' }),
+  return openModal(newsletter ? 'Edit newsletter' : 'New newsletter', body, newsletter ? 'Save changes' : 'Create newsletter', {
+    onReady: (root) => attachUpload(root.querySelector('#nl-cover'), { kind: 'cover' }),
     read: (root) => {
-      const title = value(root, 'ni-title').trim();
-      if (title.length < 3) throw new Error('Give the issue a title (at least 3 characters).');
-      const periodStart = value(root, 'ni-start') || null;
-      const periodEnd = value(root, 'ni-end') || null;
-      if (periodStart && periodEnd && periodEnd < periodStart) throw new Error('The week has to end after it starts.');
+      const title = value(root, 'nl-title').trim();
+      if (title.length < 3) throw new Error('Give the newsletter a name (at least 3 characters).');
       return {
         title,
-        summary: value(root, 'ni-summary'),
-        coverUrl: withScheme(value(root, 'ni-cover')),
-        periodStart,
-        periodEnd,
-        published: root.querySelector('#ni-published').checked,
+        summary: value(root, 'nl-summary'),
+        coverUrl: withScheme(value(root, 'nl-cover')),
+        published: root.querySelector('#nl-published').checked,
       };
     },
     save,
@@ -106,17 +97,16 @@ export function openIssueForm({ issue = null, save }) {
 }
 
 // `save(fields)` stores the article; `article` prefills the form for an edit.
-export function openArticleForm({ article = null, position = 0, save }) {
+export function openArticleForm({ article = null, save }) {
   const body = `
     ${field('na-title', 'Headline', `<input type="text" id="na-title" required minlength="3" maxlength="200" value="${escapeHtml(article?.title || '')}" />`)}
-    ${field('na-lead', 'Lead', `<textarea id="na-lead" rows="3" maxlength="600" placeholder="A sentence or two under the headline - what the issue's list shows">${escapeHtml(article?.lead || '')}</textarea>`)}
+    ${field('na-lead', 'Lead', `<textarea id="na-lead" rows="3" maxlength="600" placeholder="A sentence or two under the headline - what the newsletter's list shows">${escapeHtml(article?.lead || '')}</textarea>`)}
     ${field('na-image', 'Picture', `<input type="url" id="na-image" placeholder="https://…" value="${escapeHtml(article?.imageUrl || '')}" />`)}
     ${field('na-body', 'Article', `<textarea id="na-body" rows="12" maxlength="40000" placeholder="The full story">${escapeHtml(article?.body || '')}</textarea>`)}
     <div class="two-col">
       ${field('na-source-name', 'Source', `<input type="text" id="na-source-name" maxlength="100" placeholder="The Verge" value="${escapeHtml(article?.sourceName || '')}" />`)}
       ${field('na-source-url', 'Source link', `<input type="url" id="na-source-url" placeholder="https://…" value="${escapeHtml(article?.sourceUrl || '')}" />`)}
-    </div>
-    ${field('na-position', 'Position in the issue', `<input type="number" id="na-position" min="0" step="1" value="${article ? article.position : position}" />`, 'Lower comes first.')}`;
+    </div>`;
   return openModal(article ? 'Edit article' : 'New article', body, article ? 'Save changes' : 'Add article', {
     onReady: (root) => {
       attachUpload(root.querySelector('#na-image'), { kind: 'cover' });
@@ -132,7 +122,6 @@ export function openArticleForm({ article = null, position = 0, save }) {
         body: value(root, 'na-body'),
         sourceName: value(root, 'na-source-name'),
         sourceUrl: withScheme(value(root, 'na-source-url')),
-        position: Number.parseInt(value(root, 'na-position'), 10) || 0,
       };
     },
     save,

@@ -188,7 +188,7 @@ export function AdminScreen({ navigation }: any) {
   // admin_set_news_editor() checks that again (schema.sql).
   const toggleNewsEditor = (target: AdminUser) => {
     const on = !newsEditors.has(target.id);
-    Alert.alert(on ? 'Make news editor?' : 'Remove from News?', on ? `${target.displayName} will be able to create issues and write articles.` : `${target.displayName} will no longer write in News.`, [
+    Alert.alert(on ? 'Make news editor?' : 'Remove from News?', on ? `${target.displayName} will be able to create newsletters and write articles.` : `${target.displayName} will no longer write in News.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: on ? 'Make editor' : 'Remove',

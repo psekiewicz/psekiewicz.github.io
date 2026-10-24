@@ -31,7 +31,7 @@ const PAGES = [
   'settings.html',
   'shop.html',
   'news.html',
-  'issue.html',
+  'newsletter.html',
   'article.html',
   'download/index.html',
   // Written by tools/build-legal.mjs; listed so a nav change reaches them too.

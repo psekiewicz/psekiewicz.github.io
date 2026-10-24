@@ -1285,8 +1285,8 @@ itRls('every item the shop lists is charged at the price it shows', async () => 
 });
 
 // --- news ----------------------------------------------------------------
-// Issues and articles: anyone reads, only news editors write, and only an
-// admin decides who is one.
+// Newsletters and their articles: anyone reads, only news editors write, and
+// only an admin decides who is one.
 
 async function makeEditor(opts = {}) {
   const id = await makeUser(opts);
@@ -1294,59 +1294,68 @@ async function makeEditor(opts = {}) {
   return id;
 }
 
-async function makeIssue(editor, { published = true, title = 'T&G Weekly 24-31.10' } = {}) {
+async function makeNewsletter(editor, { published = true, title = 'XOXD T&G Weekly' } = {}) {
   const { rows } = await client.query(
-    'insert into public.news_issues (title, created_by, published) values ($1, $2, $3) returning id',
+    'insert into public.newsletters (title, created_by, published) values ($1, $2, $3) returning id',
     [title, editor, published]
   );
   return rows[0].id;
 }
 
-itRls('anyone, signed in or not, reads published issues and their articles - drafts only editors', async () => {
+async function makeArticle(newsletter, editor, title = 'T&G Weekly 24-31.10') {
+  const { rows } = await client.query(
+    'insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, $3) returning id',
+    [newsletter, editor, title]
+  );
+  return rows[0].id;
+}
+
+itRls('anyone, signed in or not, reads published newsletters and their articles - drafts only editors', async () => {
   const editor = await makeEditor();
   const reader = await makeUser();
-  const live = await makeIssue(editor);
-  const draft = await makeIssue(editor, { published: false, title: 'Next week, unfinished' });
-  await client.query("insert into public.news_articles (issue_id, author_id, title) values ($1, $3, 'Live story'), ($2, $3, 'Draft story')", [live, draft, editor]);
+  const live = await makeNewsletter(editor);
+  const draft = await makeNewsletter(editor, { published: false, title: 'Coming soon' });
+  await makeArticle(live, editor, 'Live story');
+  await makeArticle(draft, editor, 'Draft story');
 
   for (const who of [() => asAnon(), () => asUser(reader)]) {
     await who();
-    const issues = await client.query('select id from public.news_issues where id = any($1)', [[live, draft]]);
-    assert.deepEqual(issues.rows.map((r) => r.id), [live]);
-    const articles = await client.query('select title from public.news_articles where issue_id = any($1)', [[live, draft]]);
+    const letters = await client.query('select id from public.newsletters where id = any($1)', [[live, draft]]);
+    assert.deepEqual(letters.rows.map((r) => r.id), [live]);
+    const articles = await client.query('select title from public.news_articles where newsletter_id = any($1)', [[live, draft]]);
     assert.deepEqual(articles.rows.map((r) => r.title), ['Live story']);
     await asSuperuser();
   }
 
   await asUser(editor);
-  const all = await client.query('select id from public.news_issues where id = any($1)', [[live, draft]]);
+  const all = await client.query('select id from public.newsletters where id = any($1)', [[live, draft]]);
   assert.equal(all.rowCount, 2);
 });
 
-itRls('only news editors can create, edit or delete issues and articles', async () => {
+itRls('only news editors can create, edit or delete newsletters and articles', async () => {
   const editor = await makeEditor();
   const other = await makeUser();
-  const issue = await makeIssue(editor);
+  const letter = await makeNewsletter(editor);
 
   await asUser(other);
   await expectRejects(
-    () => client.query("insert into public.news_issues (title, created_by) values ('My own news', $1)", [other]),
+    () => client.query("insert into public.newsletters (title, created_by) values ('My own news', $1)", [other]),
     /row-level security/
   );
   await expectRejects(
-    () => client.query("insert into public.news_articles (issue_id, author_id, title) values ($1, $2, 'Sneaky story')", [issue, other]),
+    () => client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'Sneaky story')", [letter, other]),
     /row-level security/
   );
-  const edit = await client.query("update public.news_issues set title = 'Taken over' where id = $1", [issue]);
+  const edit = await client.query("update public.newsletters set title = 'Taken over' where id = $1", [letter]);
   assert.equal(edit.rowCount, 0);
-  const del = await client.query('delete from public.news_issues where id = $1', [issue]);
+  const del = await client.query('delete from public.newsletters where id = $1', [letter]);
   assert.equal(del.rowCount, 0);
 
   await asSuperuser();
   await asUser(editor);
   const { rows } = await client.query(
-    "insert into public.news_articles (issue_id, author_id, title, lead) values ($1, $2, 'Real story', 'What happened.') returning id",
-    [issue, editor]
+    "insert into public.news_articles (newsletter_id, author_id, title, lead) values ($1, $2, 'Real story', 'What happened.') returning id",
+    [letter, editor]
   );
   const ok = await client.query("update public.news_articles set title = 'Real story, corrected' where id = $1", [rows[0].id]);
   assert.equal(ok.rowCount, 1);
@@ -1376,49 +1385,52 @@ itRls('nobody can make themselves a news editor; an admin can grant and take it 
   assert.equal((await client.query('select public.is_news_editor() as on')).rows[0].on, false);
 });
 
-itRls("an editor can't write under someone else's name or set an issue's counters", async () => {
+itRls("an editor can't write under someone else's name or set an article's counters", async () => {
   const editor = await makeEditor({ displayName: 'Real Name' });
   const victim = await makeUser({ displayName: 'Victim' });
-  const issue = await makeIssue(editor);
+  const letter = await makeNewsletter(editor);
 
   await asUser(editor);
   // Naming someone else as the author is not refused but corrected: the
   // article is the editor's, under the editor's own name.
   const forged = await client.query(
-    "insert into public.news_articles (issue_id, author_id, author_name, title) values ($1, $2, 'Victim', 'Forged') returning author_id, author_name",
-    [issue, victim]
+    "insert into public.news_articles (newsletter_id, author_id, author_name, title, likes_count) values ($1, $2, 'Victim', 'Forged', 500) returning id, author_id, author_name, likes_count",
+    [letter, victim]
   );
-  assert.deepEqual(forged.rows[0], { author_id: editor, author_name: 'Real Name' });
-  const { rows } = await client.query(
-    "insert into public.news_articles (issue_id, author_id, author_name, title) values ($1, $2, 'Somebody Famous', 'Mine') returning author_name",
-    [issue, editor]
+  assert.deepEqual(
+    { author_id: forged.rows[0].author_id, author_name: forged.rows[0].author_name, likes_count: forged.rows[0].likes_count },
+    { author_id: editor, author_name: 'Real Name', likes_count: 0 }
   );
-  assert.equal(rows[0].author_name, 'Real Name');
 
-  await client.query('update public.news_issues set likes_count = 9999, comments_count = 9999, created_by = $2 where id = $1', [issue, victim]);
-  const after = await client.query('select likes_count, comments_count, created_by from public.news_issues where id = $1', [issue]);
-  assert.deepEqual(after.rows[0], { likes_count: 0, comments_count: 0, created_by: editor });
+  await client.query('update public.news_articles set likes_count = 9999, comments_count = 9999 where id = $1', [forged.rows[0].id]);
+  const counts = await client.query('select likes_count, comments_count from public.news_articles where id = $1', [forged.rows[0].id]);
+  assert.deepEqual(counts.rows[0], { likes_count: 0, comments_count: 0 });
+
+  await client.query('update public.newsletters set created_by = $2 where id = $1', [letter, victim]);
+  const after = await client.query('select created_by from public.newsletters where id = $1', [letter]);
+  assert.equal(after.rows[0].created_by, editor);
 });
 
-itRls('readers like and comment on an issue; counts follow, and none of it is worth XP', async () => {
+itRls('readers like and comment on an article; counts follow, and none of it is worth XP', async () => {
   const editor = await makeEditor();
   const reader = await makeUser({ displayName: 'Reader' });
-  const issue = await makeIssue(editor);
+  const letter = await makeNewsletter(editor);
+  const article = await makeArticle(letter, editor);
 
   await asUser(reader);
-  await client.query('insert into public.news_likes (issue_id, user_id) values ($1, $2)', [issue, reader]);
+  await client.query('insert into public.news_likes (article_id, user_id) values ($1, $2)', [article, reader]);
   const { rows } = await client.query(
-    "insert into public.news_comments (issue_id, user_id, author_name, body) values ($1, $2, 'Someone Else', 'Great week') returning author_name",
-    [issue, reader]
+    "insert into public.news_comments (article_id, user_id, author_name, body) values ($1, $2, 'Someone Else', 'Great week') returning author_name",
+    [article, reader]
   );
   assert.equal(rows[0].author_name, 'Reader');
   await expectRejects(
-    () => client.query("insert into public.news_comments (issue_id, user_id, body) values ($1, $2, 'as the editor')", [issue, editor]),
+    () => client.query("insert into public.news_comments (article_id, user_id, body) values ($1, $2, 'as the editor')", [article, editor]),
     /row-level security/
   );
 
   await asSuperuser();
-  const counts = await client.query('select likes_count, comments_count from public.news_issues where id = $1', [issue]);
+  const counts = await client.query('select likes_count, comments_count from public.news_articles where id = $1', [article]);
   assert.deepEqual(counts.rows[0], { likes_count: 1, comments_count: 1 });
   const rep = await client.query('select xp from public.user_reputation where user_id = $1', [editor]);
   assert.equal(Number(rep.rows[0]?.xp ?? 0), 0);
@@ -1426,18 +1438,58 @@ itRls('readers like and comment on an issue; counts follow, and none of it is wo
   // The commenter or an editor can remove a comment; another reader can't.
   const stranger = await makeUser();
   await asUser(stranger);
-  assert.equal((await client.query('delete from public.news_comments where issue_id = $1', [issue])).rowCount, 0);
+  assert.equal((await client.query('delete from public.news_comments where article_id = $1', [article])).rowCount, 0);
   await asSuperuser();
   await asUser(editor);
-  assert.equal((await client.query('delete from public.news_comments where issue_id = $1', [issue])).rowCount, 1);
+  assert.equal((await client.query('delete from public.news_comments where article_id = $1', [article])).rowCount, 1);
+});
+
+itRls("nobody reacts to an article in an editor's unpublished newsletter", async () => {
+  const editor = await makeEditor();
+  const reader = await makeUser();
+  const draft = await makeNewsletter(editor, { published: false });
+  const article = await makeArticle(draft, editor);
+
+  await asUser(reader);
+  await expectRejects(() => client.query('insert into public.news_likes (article_id, user_id) values ($1, $2)', [article, reader]), /row-level security/);
+});
+
+itRls('each reader marks articles read for themselves, and nobody sees anyone else\'s', async () => {
+  const editor = await makeEditor();
+  const reader = await makeUser();
+  const other = await makeUser();
+  const letter = await makeNewsletter(editor);
+  const first = await makeArticle(letter, editor, 'Week one');
+  await makeArticle(letter, editor, 'Week two');
+
+  await asUser(reader);
+  await client.query('insert into public.news_reads (user_id, article_id) values ($1, $2) on conflict do nothing', [reader, first]);
+  await client.query('insert into public.news_reads (user_id, article_id) values ($1, $2) on conflict do nothing', [reader, first]);
+  await expectRejects(
+    () => client.query('insert into public.news_reads (user_id, article_id) values ($1, $2)', [other, first]),
+    /row-level security/
+  );
+  const mine = await client.query('select article_id from public.news_reads');
+  assert.deepEqual(mine.rows.map((r) => r.article_id), [first]);
+
+  await asSuperuser();
+  await asUser(other);
+  assert.equal((await client.query('select 1 from public.news_reads')).rowCount, 0);
+  await asSuperuser();
+  await asAnon();
+  await expectRejects(
+    () => client.query('insert into public.news_reads (user_id, article_id) values ($1, $2)', [reader, first]),
+    /row-level security|permission denied/
+  );
 });
 
 itRls('an account still waiting on a parent can read the news but not react to it', async () => {
   const editor = await makeEditor();
-  const issue = await makeIssue(editor);
+  const letter = await makeNewsletter(editor);
+  const article = await makeArticle(letter, editor);
   const teen = await makeUser({ birthDate: birthDateYearsAgo(14) });
 
   await asUser(teen);
-  assert.equal((await client.query('select id from public.news_issues where id = $1', [issue])).rowCount, 1);
-  await expectRejects(() => client.query('insert into public.news_likes (issue_id, user_id) values ($1, $2)', [issue, teen]), /row-level security/);
+  assert.equal((await client.query('select id from public.news_articles where id = $1', [article])).rowCount, 1);
+  await expectRejects(() => client.query('insert into public.news_likes (article_id, user_id) values ($1, $2)', [article, teen]), /row-level security/);
 });
