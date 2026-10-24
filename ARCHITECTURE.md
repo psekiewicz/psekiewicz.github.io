@@ -226,6 +226,14 @@ catalogs). When you change one side, look for the other.
 Screens are in `mobile/src/screens/`, navigation in
 `mobile/src/navigation/RootNavigator.tsx`.
 
+One thing is kept apart on purpose: `mobile/src/features/app-update/`, the
+App updates screen (Settings → App updates), which checks for an
+over-the-air update and for a newer APK on GitHub releases. Google Play
+doesn't let an app it distributes update itself, so a Play build drops it
+with `node tools/remove-app-update.mjs` - the folder goes, and so does every
+line elsewhere marked `app-update`. `tests/app-update-removable.test.js`
+keeps that working.
+
 Builds: every push to `main` touching `mobile/` builds a signed APK
 (`android.yml`) and publishes a JavaScript-only over-the-air update
 (`eas-update.yml`). Details, signing and the fingerprint scheme are in
