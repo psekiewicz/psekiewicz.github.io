@@ -125,6 +125,24 @@ as the build does - and comparing.
 Builds made before the switch report runtime version 1.2.0 and receive nothing
 new: install the next APK from the download page once, and updates flow again.
 
+## Staying in the app
+
+Nothing tapped inside the app sends someone out of it. Every link goes
+through `src/lib/links.ts`: a website link (an entry, article, newsletter,
+profile, the leaderboard, the shop) opens the matching screen
+(`src/lib/siteRoutes.ts`), any other web link opens in an in-app browser tab
+(`expo-web-browser`), and only `mailto:` and other apps' schemes reach the
+system. `tests/app-links.test.js` fails if code anywhere else opens a URL.
+
+The sign-up and password-reset emails sent from the app come back to it at
+`showcase://auth` (`src/lib/authLinks.ts`): confirming signs the person in,
+and a reset opens the Reset password screen. Supabase only redirects there if
+`showcase://**` is on the project's Redirect URLs list (Authentication → URL
+Configuration); otherwise the link falls back to the website.
+
+Website links tapped in *other* apps still open the browser - claiming them
+with Android App Links was turned off on request.
+
 ## Version names
 
 `expo.version` in `app.json` is the name people see: in Settings, on the App
@@ -144,6 +162,7 @@ number, so every APK is newer than the last even when the name stays put.
 
 | Version | What came with it |
 | --- | --- |
+| 1.4.0 | Everything stays in the app: website links open app screens, other links an in-app browser tab, and sign-up and password-reset emails come back into the app |
 | 1.3.0 | Demos only; News with newsletters and read marks; the App updates screen |
 | 1.2.0 | Changelog, Try it / Source, Shipper and Maintainer, fingerprint OTA |
 | 1.1.1 | Reports from the app, then background notifications, JetBrains Mono, rotation and the XOXD name |

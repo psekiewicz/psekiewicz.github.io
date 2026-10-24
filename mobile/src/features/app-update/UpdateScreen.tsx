@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, View } from 'react-native';
 
 import { Text } from '../../components/Text';
 import { Body, Button, Card, ErrorNote, Eyebrow, SuccessNote } from '../../components/ui';
 import { column } from '../../lib/layout';
+import { openLink } from '../../lib/links';
 import { useTheme } from '../../theme/ThemeProvider';
 import { gutter, space, typography } from '../../theme/tokens';
 import { ApkRelease, applyOta, checkOta, installedVersion, isNewerApk, latestApk, otaAvailable } from './checks';
@@ -110,7 +111,7 @@ export function UpdateScreen({ navigation }: any) {
         {newerApk && apk ? (
           <>
             <SuccessNote message={`${apk.name} is out (published ${new Date(apk.publishedAt).toLocaleDateString()}).`} />
-            <Button label="Download the new APK" icon="download" onPress={() => Linking.openURL(apk.downloadUrl)} />
+            <Button label="Download the new APK" icon="download" onPress={() => openLink(apk.downloadUrl)} />
           </>
         ) : (
           <Body muted>

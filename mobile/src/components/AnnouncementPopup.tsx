@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Announcement, Attachment, getActiveAnnouncement, markSeen, wasSeen } from '../data/announcements';
+import { openLink } from '../lib/links';
 import { safeUrl } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
@@ -51,7 +52,7 @@ function AttachmentView({ file }: { file: Attachment }) {
   if (type.startsWith('audio/')) return <Film url={url} audio />;
   return (
     <Pressable
-      onPress={() => Linking.openURL(url).catch(() => {})}
+      onPress={() => openLink(url)}
       accessibilityRole="link"
       style={{
         padding: space.md,
