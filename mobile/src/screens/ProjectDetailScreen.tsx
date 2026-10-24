@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,6 +24,7 @@ import { isSaved, saveProject, unsaveProject } from '../data/saves';
 import { logProjectView } from '../data/views';
 import { levelFromXp } from '../lib/levels';
 import { getReputation } from '../data/reputation';
+import { openLink } from '../lib/links';
 import { resolveMedia } from '../lib/media';
 import { formatCount, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -280,7 +281,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
                   label="Open live link"
                   icon="external-link"
                   variant="secondary"
-                  onPress={() => Linking.openURL(project.liveUrl)}
+                  onPress={() => openLink(project.liveUrl)}
                 />
               ) : null}
               {project.repoUrl ? (
@@ -288,7 +289,7 @@ export function ProjectDetailScreen({ route, navigation }: any) {
                   label="Open repository"
                   icon="code"
                   variant="secondary"
-                  onPress={() => Linking.openURL(project.repoUrl)}
+                  onPress={() => openLink(project.repoUrl)}
                 />
               ) : null}
             </View>
@@ -410,14 +411,14 @@ function MediaBlock({ media, colors }: any) {
             // Spotify and SoundCloud render an audio strip, not a video
             // surface, and stretching it to 16:9 leaves a band of dead space.
             height={media.compact ? 166 : 210}
-            onNavigateOut={(url) => Linking.openURL(url)}
+            onNavigateOut={(url) => openLink(url)}
           />
         </View>
         <Button
           label={media.label}
           icon="external-link"
           variant="secondary"
-          onPress={() => Linking.openURL(media.url)}
+          onPress={() => openLink(media.url)}
         />
       </View>
     );
@@ -429,7 +430,7 @@ function MediaBlock({ media, colors }: any) {
         label={media.kind === 'provider' ? media.label : 'Open link'}
         icon="external-link"
         variant="secondary"
-        onPress={() => Linking.openURL(media.url)}
+        onPress={() => openLink(media.url)}
       />
     );
   }

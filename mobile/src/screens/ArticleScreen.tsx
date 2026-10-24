@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Share, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { CommentSource, CommentsSection } from '../components/CommentsSection';
 import { RichText } from '../components/RichText';
@@ -28,6 +28,7 @@ import {
   unlikeArticle,
 } from '../data/news';
 import { column } from '../lib/layout';
+import { openLink } from '../lib/links';
 import { safeUrl, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
@@ -130,7 +131,7 @@ export function ArticleScreen({ navigation, route }: any) {
       {src ? (
         <Text style={[typography.small, { color: colors.textMuted }]}>
           Source:{' '}
-          <Text onPress={() => Linking.openURL(src)} style={{ color: colors.primary }}>
+          <Text onPress={() => openLink(src)} style={{ color: colors.primary }}>
             {article.sourceName || new URL(src).hostname} ↗
           </Text>
         </Text>

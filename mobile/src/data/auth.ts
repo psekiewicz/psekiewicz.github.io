@@ -1,3 +1,4 @@
+import { AUTH_REDIRECT } from '../lib/authLinks';
 import { supabase } from '../lib/supabase';
 
 function friendlyError(err: any) {
@@ -21,9 +22,9 @@ export async function registerUser(email: string, password: string, displayName:
     password,
     options: {
       data: { display_name: displayName },
-      // Same landing page as the site's sign-up: a mail app opens the link in
-      // a browser, and the site's login page says the address is confirmed.
-      emailRedirectTo: 'https://psekiewicz.github.io/login?confirmed=1',
+      // Back into the app, signed in (lib/authLinks.ts). The site's own
+      // sign-ups land on its login page instead.
+      emailRedirectTo: `${AUTH_REDIRECT}?confirmed=1`,
     },
   });
   if (error) throw new Error(friendlyError(error));
@@ -40,14 +41,12 @@ export async function logoutUser() {
   await supabase.auth.signOut();
 }
 
-// The web build sends people back to the site's login page, which asks for the
-// new password. Here the reset link opens the
-// site in a browser - the app registers the `showcase://` scheme but Supabase's
-// recovery flow is a web page, and pointing it at the deployed site is both
-// simpler and what a user tapping a link in their mail app expects.
+// The reset link comes back into the app, which asks for the new password on
+// its Reset password screen (lib/authLinks.ts). The web build sends people to
+// the site's login page for the same thing.
 export async function resetPassword(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://psekiewicz.github.io/login?reset=1',
+    redirectTo: `${AUTH_REDIRECT}?reset=1`,
   });
   if (error) throw new Error(friendlyError(error));
 }

@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Project } from '../data/projects';
 import type { ProjectUpdate } from '../data/updates';
+import { openLink } from '../lib/links';
 import { coverFor } from '../lib/media';
 import { stripMarkdown } from '../lib/markdown';
 import { formatCount, safeUrl, timeAgo, typeMeta } from '../lib/utils';
@@ -230,8 +231,8 @@ export function PostCard({
 
         {live || repo || latestUpdate ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 10 }}>
-            {live ? <Button small label="Try it" icon="external" onPress={() => Linking.openURL(live)} /> : null}
-            {repo ? <Button small variant="secondary" label="Source" onPress={() => Linking.openURL(repo)} /> : null}
+            {live ? <Button small label="Try it" icon="external" onPress={() => openLink(live)} /> : null}
+            {repo ? <Button small variant="secondary" label="Source" onPress={() => openLink(repo)} /> : null}
             {latestUpdate ? (
               <Pressable
                 onPress={onPress}

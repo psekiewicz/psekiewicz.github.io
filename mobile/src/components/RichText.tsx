@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { openLink } from '../lib/links';
 import { parseBlocks, parseInline } from '../lib/markdown';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
@@ -24,7 +25,7 @@ function Inline({ source }: { source: string }) {
               <Text
                 key={i}
                 accessibilityRole="link"
-                onPress={() => Linking.openURL(tok.href!).catch(() => {})}
+                onPress={() => openLink(tok.href!)}
                 style={{ color: colors.primary, textDecorationLine: 'underline' }}
               >
                 {tok.text}
@@ -66,7 +67,7 @@ function Figure({ src, caption }: { src: string; caption: string }) {
   if (failed) return null;
   return (
     <View style={{ gap: 6, marginVertical: 4 }}>
-      <Pressable onPress={() => Linking.openURL(src).catch(() => {})} accessibilityRole="imagebutton" accessibilityLabel={caption || 'Image'}>
+      <Pressable onPress={() => openLink(src)} accessibilityRole="imagebutton" accessibilityLabel={caption || 'Image'}>
         <Image
           source={{ uri: src }}
           contentFit="cover"

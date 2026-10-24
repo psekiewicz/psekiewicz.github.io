@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, Linking, Pressable, StyleSheet, View, ViewToken } from 'react-native';
+import { Dimensions, FlatList, Pressable, StyleSheet, View, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../components/icons';
@@ -15,6 +15,7 @@ import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
 import { DEMOS_PAGE_SIZE, getDemoProjects, getProjectById, Project } from '../data/projects';
 import { logProjectView } from '../data/views';
+import { openLink } from '../lib/links';
 import { firstImage } from '../lib/markdown';
 import { resolveMedia, uploadedPosterFor } from '../lib/media';
 import { safeUrl } from '../lib/utils';
@@ -303,8 +304,8 @@ function DemoCard({ project, author, height, active, insetBottom, onAuthor, onOp
         </Pressable>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          {live ? <Pill label="Try it" icon="external" primary onPress={() => Linking.openURL(live)} /> : null}
-          {repo ? <Pill label="Source" onPress={() => Linking.openURL(repo)} /> : null}
+          {live ? <Pill label="Try it" icon="external" primary onPress={() => openLink(live)} /> : null}
+          {repo ? <Pill label="Source" onPress={() => openLink(repo)} /> : null}
           <Pill label="Details" onPress={onOpen} />
         </View>
       </View>
@@ -348,7 +349,7 @@ function DemoMedia({ media, poster, framed, active, height }: any) {
         allowedHosts={media.embedHosts || []}
         height={height}
         autoplayParams={media.embedAutoplay}
-        onNavigateOut={(url: string) => Linking.openURL(url)}
+        onNavigateOut={(url: string) => openLink(url)}
       />
     );
   }

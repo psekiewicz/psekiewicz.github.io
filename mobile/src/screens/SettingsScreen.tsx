@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 import { UploadButton } from '../components/UploadButton';
 
@@ -24,6 +24,7 @@ import {
 } from '../data/auth';
 import { updateProfile } from '../data/profiles';
 import { collectEarnings } from '../data/reputation';
+import { openInBrowserTab } from '../lib/links';
 import { disableNotifications, enableNotifications, notificationsEnabled } from '../lib/notify';
 import { useMotion } from '../theme/MotionProvider';
 import { column } from '../lib/layout';
@@ -372,7 +373,7 @@ function AboutSection() {
         <Body>XOXD v{appConfig.expo.version}</Body>
         <Text
           style={[typography.small, { color: colors.primary }]}
-          onPress={() => Linking.openURL(WEBSITE_URL)}
+          onPress={() => openInBrowserTab(WEBSITE_URL)}
         >
           {WEBSITE_URL.replace('https://', '')}
         </Text>
