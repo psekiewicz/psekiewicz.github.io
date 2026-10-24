@@ -102,7 +102,7 @@ must match, and tests check that they do:
 | --- | --- |
 | project / entry / post | The same thing: one row of `projects`. "Project" in code and table names, "entry" or "post" in the interface. |
 | demo / Demos | A published entry with a live link, and the full-screen swipeable feed of them - the home page (`index.html`), and the first tab in the app. It was once called **Scrolls** and lived at `/demos`; `scrolls.html` and `demos.html` only redirect, and you'll still see `scroll_image_url`, `scroll-styles.js`. |
-| News | Weekly issues (`news_issues`) of articles (`news_articles`), with likes and comments on the issue (`news_likes`, `news_comments`, no XP). Only accounts in `news_editors` write - granted by an admin through `admin_set_news_editor()`; RLS and the `guard_news_client_writes` trigger enforce it. Pages `/news`, `/issue`, `/article`; data in `js/news-data.js` / `mobile/src/data/news.ts`. XOXD T&G Weekly is one issue a week, written by a scheduled Claude task ("Tech gaming news", Saturdays 10:00 Warsaw) as **CBot**. |
+| News | Newsletters (`newsletters`) and their articles (`news_articles`), newest first; likes and comments on an article (`news_likes`, `news_comments`, no XP); each reader's read marks in `news_reads` (private to them; guests keep theirs locally). Only accounts in `news_editors` write - granted by an admin through `admin_set_news_editor()`; RLS and the `guard_news_client_writes` trigger enforce it. Pages `/news`, `/newsletter`, `/article`; data in `js/news-data.js` / `mobile/src/data/news.ts`. XOXD T&G Weekly is one newsletter; a scheduled Claude task ("Tech gaming news", Saturdays 10:00 Warsaw) adds one article a week to it as **CBot**. |
 | showcase | The project's old internal name. Survives in localStorage keys, the service-worker cache name and the APK file name (`showcase.apk`). Changing it would log people out of cached state or break the download link, so it stays. |
 | XP / level | Reputation, computed by the database from what others did with your work. Never spent. |
 | points | Spendable currency for the shop. Earned from reach (`collect_earnings()`) and achievement claims. |
@@ -119,9 +119,10 @@ must match, and tests check that they do:
 *.html                Website pages. Each holds its own page logic in an inline
                       <script type="module"> at the bottom (see "How a page works").
   index.html            Home: the Demos feed, one full screen per demo
-  news.html             News: the list of issues (see above)
-  issue.html            one issue and its articles, likes, comments
-  article.html          one article
+  news.html             News: the list of newsletters (see above)
+  newsletter.html       one newsletter: its articles, read or new
+  article.html          one article, its likes and comments
+  issue.html            redirect to the article (News had issues once)
   weekly.html           redirect to /news (the old T&G page)
   project.html          One entry (?id=), comments, updates, likes
   profile.html          A person (?user=), their work, achievements

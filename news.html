@@ -5,18 +5,18 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title id="page-title">News - XOXD</title>
-  <meta name="description" content="The week in technology and games on XOXD, one issue at a time." />
+  <meta name="description" content="Newsletters on XOXD - technology and games, written by its editors." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="XOXD" />
   <meta property="og:title" content="News - XOXD" />
-  <meta property="og:description" content="The week in technology and games on XOXD, one issue at a time." />
+  <meta property="og:description" content="Newsletters on XOXD - technology and games, written by its editors." />
   <meta property="og:url" content="https://psekiewicz.github.io/news" />
   <meta property="og:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="News - XOXD" />
-  <meta name="twitter:description" content="The week in technology and games on XOXD, one issue at a time." />
+  <meta name="twitter:description" content="Newsletters on XOXD - technology and games, written by its editors." />
   <meta name="twitter:image" content="https://psekiewicz.github.io/icons/social-preview.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/social.css" />
@@ -60,12 +60,12 @@
         <div class="section-head">
           <div>
             <h1 style="margin-bottom:6px;">News</h1>
-            <p style="margin:0;">The week in technology and games, one issue at a time - including XOXD Tech &amp; Gaming Weekly, every Saturday.</p>
+            <p style="margin:0;">Newsletters from XOXD's editors - like Tech &amp; Gaming Weekly, every Saturday. Pick one to see everything in it, and what you haven't read yet.</p>
           </div>
           <div id="editor-actions"></div>
         </div>
         <div id="news-root">
-          <p>Loading issues…</p>
+          <p>Loading newsletters…</p>
         </div>
       </div>
     </section>
@@ -86,61 +86,68 @@
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
-    import { getIssues, getArticleCounts, isNewsEditor, createIssue, periodLabel } from '/js/news-data.js';
+    import { getNewsletters, getArticleIdsByNewsletter, getReadIds, isNewsEditor, createNewsletter } from '/js/news-data.js';
     import { escapeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
-    // News: every issue, newest first. Anyone reads; news editors (granted
-    // by an admin) also see drafts and a "New issue" button. An issue opens
-    // on /issue, its articles on /article.
+    // News: the newsletters there are to read. Each card says how many
+    // articles it holds and how many of them this reader hasn't opened yet;
+    // a newsletter opens on /newsletter. News editors (granted by an admin)
+    // also see drafts and a "New newsletter" button.
 
     document.getElementById('year').textContent = new Date().getFullYear();
     const root = document.getElementById('news-root');
 
-    function issueCardHtml(issue, articleCount) {
-      const cover = safeUrl(issue.coverUrl);
-      const period = periodLabel(issue);
+    function cardHtml(letter, articleIds, readIds) {
+      const cover = safeUrl(letter.coverUrl);
+      const total = articleIds.length;
+      const unread = articleIds.filter((id) => !readIds.has(id)).length;
       return `
-        <a class="news-issue-card" href="/issue?id=${encodeURIComponent(issue.id)}">
-          ${cover ? `<img class="news-issue-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="news-issue-cover is-empty">${icon('globe', { size: 28 })}</span>`}
-          <span class="news-issue-text">
-            ${period ? `<span class="news-kicker">${escapeHtml(period)}</span>` : ''}
-            <span class="news-issue-title">${escapeHtml(issue.title)}${issue.published ? '' : ' <span class="status-pill draft">Draft</span>'}</span>
-            ${issue.summary ? `<span class="news-issue-summary">${escapeHtml(issue.summary)}</span>` : ''}
-            <span class="news-issue-meta">
-              <span>${articleCount} ${articleCount === 1 ? 'article' : 'articles'}</span>
-              <span>${icon('heart', { size: 13 })} ${issue.likesCount}</span>
-              <span>${icon('message-circle', { size: 13 })} ${issue.commentsCount}</span>
+        <a class="news-letter-card" href="/newsletter?id=${encodeURIComponent(letter.id)}">
+          ${cover ? `<img class="news-letter-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="news-letter-cover is-empty">${icon('globe', { size: 28 })}</span>`}
+          <span class="news-letter-text">
+            <span class="news-letter-title">${escapeHtml(letter.title)}${letter.published ? '' : ' <span class="status-pill draft">Draft</span>'}</span>
+            ${letter.summary ? `<span class="news-letter-summary">${escapeHtml(letter.summary)}</span>` : ''}
+            <span class="news-letter-meta">
+              <span>${total} ${total === 1 ? 'article' : 'articles'}</span>
+              ${unread ? `<span class="news-unread">${unread} new</span>` : total ? `<span class="news-read">${icon('check', { size: 13 })} All read</span>` : ''}
             </span>
           </span>
         </a>`;
     }
 
+    // Back from a newsletter, the counts may be out of date.
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) location.reload();
+    });
+
     (async () => {
       try {
-        const [user, editor, issues] = await Promise.all([getCurrentUser(), isNewsEditor(), getIssues()]);
+        const [user, editor, letters] = await Promise.all([getCurrentUser(), isNewsEditor(), getNewsletters()]);
         if (user && editor) {
           const actions = document.getElementById('editor-actions');
-          actions.innerHTML = `<button class="btn btn-primary" id="new-issue-btn" type="button">${icon('plus', { size: 16 })} New issue</button>`;
-          document.getElementById('new-issue-btn').addEventListener('click', async () => {
-            const { openIssueForm } = await import('/js/news-editor.js');
+          actions.innerHTML = `<button class="btn btn-primary" id="new-letter-btn" type="button">${icon('plus', { size: 16 })} New newsletter</button>`;
+          document.getElementById('new-letter-btn').addEventListener('click', async () => {
+            const { openNewsletterForm } = await import('/js/news-editor.js');
             let created = null;
-            await openIssueForm({
+            await openNewsletterForm({
               save: async (fields) => {
-                created = await createIssue(user.id, fields);
+                created = await createNewsletter(user.id, fields);
               },
             });
-            if (created) window.location.href = `/issue?id=${encodeURIComponent(created.id)}`;
+            if (created) window.location.href = `/newsletter?id=${encodeURIComponent(created.id)}`;
           });
         }
-        if (!issues.length) {
-          root.innerHTML = '<div class="empty-state"><h3>No issues yet</h3><p>The first one arrives on Saturday.</p></div>';
+        if (!letters.length) {
+          root.innerHTML = '<div class="empty-state"><h3>No newsletters yet</h3><p>The first one is on its way.</p></div>';
           return;
         }
-        const counts = await getArticleCounts(issues.map((i) => i.id)).catch(() => new Map());
-        root.innerHTML = `<div class="news-list">${issues.map((i) => issueCardHtml(i, counts.get(i.id) || 0)).join('')}</div>`;
+        const byLetter = await getArticleIdsByNewsletter(letters.map((l) => l.id)).catch(() => new Map());
+        const allIds = [...byLetter.values()].flat();
+        const readIds = await getReadIds(user?.id, allIds).catch(() => new Set());
+        root.innerHTML = `<div class="news-list">${letters.map((l) => cardHtml(l, byLetter.get(l.id) || [], readIds)).join('')}</div>`;
       } catch (err) {
-        root.innerHTML = `<p>Could not load issues: ${escapeHtml(err.message)}</p>`;
+        root.innerHTML = `<p>Could not load newsletters: ${escapeHtml(err.message)}</p>`;
       }
     })();
   </script>

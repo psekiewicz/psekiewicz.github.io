@@ -78,33 +78,31 @@ const db = {
     project(P3, ADA, 'Unfinished idea', { published: false }),
   ],
   // News: CBot writes T&G Weekly; Ada is an editor too, so the signed-in
-  // pages show the newsroom's controls. One live issue, one draft.
+  // pages show the newsroom's controls. One live newsletter with two
+  // articles (Grace has read the older one), and one draft newsletter.
   news_editors: [{ user_id: CBOT }, { user_id: ADA }],
-  news_issues: [
+  newsletters: [
     {
-      id: I1, title: 'XOXD T&G Weekly - 17-24 Oct 2026', summary: 'A launch trailer, a probe and a remaster.',
-      cover_url: '', period_start: '2026-10-17', period_end: '2026-10-24', created_by: CBOT, published: true,
-      likes_count: 1, comments_count: 1, created_at: ago(20), updated_at: ago(20),
+      id: I1, title: 'XOXD T&G Weekly', summary: 'Tech and gaming news of the week, every Saturday.',
+      cover_url: '', created_by: CBOT, published: true, created_at: ago(200), updated_at: ago(200),
     },
-    {
-      id: I2, title: 'Next week, unfinished', summary: '', cover_url: '', period_start: null, period_end: null,
-      created_by: ADA, published: false, likes_count: 0, comments_count: 0, created_at: ago(2), updated_at: ago(2),
-    },
+    { id: I2, title: 'Coming soon', summary: '', cover_url: '', created_by: ADA, published: false, created_at: ago(2), updated_at: ago(2) },
   ],
   news_articles: [
     {
-      id: A1, issue_id: I1, author_id: CBOT, author_name: 'CBot', title: 'A big launch trailer lands',
-      lead: 'The studio showed the release date.', body: '## What we saw\n\nMore than expected.', image_url: '',
-      source_name: 'Example News', source_url: 'https://example.com/trailer', position: 0, created_at: ago(20), updated_at: ago(20),
+      id: A1, newsletter_id: I1, author_id: CBOT, author_name: 'CBot', title: 'XOXD T&G Weekly - 17-24 Oct 2026',
+      lead: 'A launch trailer, a probe and a remaster.', body: '## Top stories\n\n- **A big launch trailer lands.** More than expected.', image_url: '',
+      source_name: '', source_url: '', likes_count: 1, comments_count: 1, created_at: ago(5), updated_at: ago(5),
     },
     {
-      id: A2, issue_id: I1, author_id: CBOT, author_name: 'CBot', title: 'Regulators open a probe',
-      lead: 'Questions about data.', body: 'Details are thin.', image_url: '', source_name: '', source_url: '',
-      position: 1, created_at: ago(20), updated_at: ago(20),
+      id: A2, newsletter_id: I1, author_id: CBOT, author_name: 'CBot', title: 'XOXD T&G Weekly - 10-17 Oct 2026',
+      lead: 'Regulators open a probe.', body: 'Details are thin.', image_url: '', source_name: 'Example News',
+      source_url: 'https://example.com/probe', likes_count: 0, comments_count: 0, created_at: ago(170), updated_at: ago(170),
     },
   ],
-  news_likes: [{ issue_id: I1, user_id: GRACE, created_at: ago(5) }],
-  news_comments: [{ id: 'nc1', issue_id: I1, user_id: GRACE, author_name: 'Grace', body: 'Good week.', created_at: ago(4) }],
+  news_likes: [{ article_id: A1, user_id: GRACE, created_at: ago(4) }],
+  news_comments: [{ id: 'nc1', article_id: A1, user_id: GRACE, author_name: 'Grace', body: 'Good week.', created_at: ago(4) }],
+  news_reads: [{ user_id: GRACE, article_id: A2, read_at: ago(100) }],
   likes: [{ project_id: P1, user_id: ADA, created_at: ago(3) }],
   comments: [
     { id: 'c1', project_id: P1, user_id: ADA, author_name: 'Ada', body: 'Lovely sound.', created_at: ago(2) },
@@ -177,8 +175,8 @@ function currentUser() {
 function visible(table, row) {
   const me = currentUser()?.id;
   if (table === 'projects') return row.published || row.user_id === me;
-  if (['notifications', 'saves', 'account_ages'].includes(table)) return row.user_id === me;
-  if (table === 'news_issues') return row.published || db.news_editors.some((e) => e.user_id === me);
+  if (['notifications', 'saves', 'account_ages', 'news_reads'].includes(table)) return row.user_id === me;
+  if (table === 'newsletters') return row.published || db.news_editors.some((e) => e.user_id === me);
   return true;
 }
 

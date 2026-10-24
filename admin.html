@@ -442,7 +442,7 @@
               <td>${timeAgo(u.createdAt)}</td>
               <td>${statusHtml}</td>
               <td>
-                <button class="btn btn-secondary btn-sm" data-action="news" title="News editors can create issues and write articles in News">
+                <button class="btn btn-secondary btn-sm" data-action="news" title="News editors can create newsletters and write articles in News">
                   ${newsEditorIds.has(u.id) ? 'Remove from News' : 'Make news editor'}
                 </button>
               </td>
@@ -508,7 +508,7 @@
         const newsBtn = row.querySelector('[data-action="news"]');
         newsBtn.addEventListener('click', async () => {
           const on = !newsEditorIds.has(user.id);
-          if (!confirm(on ? `Let ${user.displayName} create issues and write articles in News?` : `Stop ${user.displayName} writing in News?`)) return;
+          if (!confirm(on ? `Let ${user.displayName} create newsletters and write articles in News?` : `Stop ${user.displayName} writing in News?`)) return;
           newsBtn.disabled = true;
           try {
             await setNewsEditor(user.id, on);

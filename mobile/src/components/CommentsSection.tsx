@@ -16,7 +16,7 @@ import { Avatar } from './ui';
 // the website's post page has it: a box to write in, then the comments. The
 // data handling lives here only.
 
-// Where the comments live. A project's by default; News passes its issue's
+// Where the comments live. A project's by default; News passes an article's
 // (news_comments), which are shaped the same.
 export type CommentSource = {
   load: (id: string) => Promise<Comment[]>;
@@ -31,7 +31,7 @@ type Props = {
   // The owner can delete any comment on their own post, as RLS allows.
   ownerId: string;
   source?: CommentSource;
-  // Anyone else RLS lets delete any comment here (a news editor on an issue).
+  // Anyone else RLS lets delete any comment here (a news editor on an article).
   canModerate?: boolean;
   onCountChange?: (delta: number) => void;
   onSignIn: () => void;

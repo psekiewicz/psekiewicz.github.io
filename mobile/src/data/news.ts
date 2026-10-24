@@ -1,32 +1,31 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { supabase } from '../lib/supabase';
 import type { Comment } from './comments';
 
-// News: weekly issues and the articles in them (the news_* tables in
+// News: newsletters and the articles in them (the news_* tables in
 // schema.sql). Anyone reads; only news editors write, and only an admin
 // decides who is one - RLS enforces it, this only shapes rows. People like
-// and comment on an issue as a whole, which earns nobody XP. The mirror of
-// js/news-data.js.
+// and comment on an article, which earns nobody XP, and each reader's "read"
+// marks are their own: kept in news_reads when signed in, on this device
+// otherwise. The mirror of js/news-data.js.
 
-const ISSUES = 'news_issues';
+const NEWSLETTERS = 'newsletters';
 const ARTICLES = 'news_articles';
 
-export type NewsIssue = {
+export type Newsletter = {
   id: string;
   title: string;
   summary: string;
   coverUrl: string;
-  periodStart: string | null;
-  periodEnd: string | null;
   createdBy: string | null;
   published: boolean;
-  likesCount: number;
-  commentsCount: number;
   createdAt: string;
 };
 
 export type NewsArticle = {
   id: string;
-  issueId: string;
+  newsletterId: string;
   authorId: string | null;
   authorName: string;
   title: string;
@@ -35,16 +34,15 @@ export type NewsArticle = {
   imageUrl: string;
   sourceName: string;
   sourceUrl: string;
-  position: number;
+  likesCount: number;
+  commentsCount: number;
   createdAt: string;
 };
 
-export type IssueFields = {
+export type NewsletterFields = {
   title: string;
   summary?: string;
   coverUrl?: string;
-  periodStart?: string | null;
-  periodEnd?: string | null;
   published?: boolean;
 };
 
@@ -55,21 +53,16 @@ export type ArticleFields = {
   imageUrl?: string;
   sourceName?: string;
   sourceUrl?: string;
-  position?: number;
 };
 
-function toIssue(row: any): NewsIssue {
+function toNewsletter(row: any): Newsletter {
   return {
     id: row.id,
     title: row.title,
     summary: row.summary || '',
     coverUrl: row.cover_url || '',
-    periodStart: row.period_start || null,
-    periodEnd: row.period_end || null,
     createdBy: row.created_by,
     published: Boolean(row.published),
-    likesCount: row.likes_count || 0,
-    commentsCount: row.comments_count || 0,
     createdAt: row.created_at,
   };
 }
@@ -77,7 +70,7 @@ function toIssue(row: any): NewsIssue {
 function toArticle(row: any): NewsArticle {
   return {
     id: row.id,
-    issueId: row.issue_id,
+    newsletterId: row.newsletter_id,
     authorId: row.author_id,
     authorName: row.author_name || 'Unknown',
     title: row.title,
@@ -86,7 +79,8 @@ function toArticle(row: any): NewsArticle {
     imageUrl: row.image_url || '',
     sourceName: row.source_name || '',
     sourceUrl: row.source_url || '',
-    position: row.position || 0,
+    likesCount: row.likes_count || 0,
+    commentsCount: row.comments_count || 0,
     createdAt: row.created_at,
   };
 }
@@ -95,7 +89,7 @@ function toArticle(row: any): NewsArticle {
 function toComment(row: any): Comment {
   return {
     id: row.id,
-    projectId: row.issue_id,
+    projectId: row.article_id,
     userId: row.user_id,
     authorName: row.author_name || 'Unknown',
     body: row.body,
@@ -103,18 +97,9 @@ function toComment(row: any): Comment {
   };
 }
 
-/** "17 Oct - 24 Oct 2026", or '' for an issue with no period. */
-export function periodLabel(issue: Pick<NewsIssue, 'periodStart' | 'periodEnd'>) {
-  const fmt = (d: string, withYear: boolean) =>
-    new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      ...(withYear ? { year: 'numeric' } : {}),
-      timeZone: 'UTC',
-    });
-  if (issue.periodStart && issue.periodEnd) return `${fmt(issue.periodStart, false)} - ${fmt(issue.periodEnd, true)}`;
-  if (issue.periodStart) return `From ${fmt(issue.periodStart, true)}`;
-  return '';
+/** "24 Oct 2026" - the date an article came out. */
+export function articleDate(article: Pick<NewsArticle, 'createdAt'>) {
+  return new Date(article.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export async function isNewsEditor() {
@@ -123,37 +108,41 @@ export async function isNewsEditor() {
   return Boolean(data);
 }
 
-export async function getIssues({ limit = 20, before }: { limit?: number; before?: string } = {}) {
-  let query = supabase.from(ISSUES).select('*').order('created_at', { ascending: false }).limit(limit);
-  if (before) query = query.lt('created_at', before);
-  const { data, error } = await query;
+/** Drafts come back only for an editor (RLS). */
+export async function getNewsletters() {
+  const { data, error } = await supabase.from(NEWSLETTERS).select('*').order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map(toIssue);
+  return (data || []).map(toNewsletter);
 }
 
-export async function getIssue(id: string) {
-  const { data, error } = await supabase.from(ISSUES).select('*').eq('id', id).maybeSingle();
+export async function getNewsletter(id: string) {
+  const { data, error } = await supabase.from(NEWSLETTERS).select('*').eq('id', id).maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? toIssue(data) : null;
+  return data ? toNewsletter(data) : null;
 }
 
-export async function getArticleCounts(issueIds: string[]) {
-  const ids = [...new Set(issueIds)].filter(Boolean);
-  const counts = new Map<string, number>();
-  if (!ids.length) return counts;
-  const { data, error } = await supabase.from(ARTICLES).select('issue_id').in('issue_id', ids);
+/** Every article id per newsletter, newest first - to count them and tell how many are unread. */
+export async function getArticleIdsByNewsletter(newsletterIds: string[]) {
+  const ids = [...new Set(newsletterIds)].filter(Boolean);
+  const byLetter = new Map<string, string[]>(ids.map((id) => [id, []]));
+  if (!ids.length) return byLetter;
+  const { data, error } = await supabase
+    .from(ARTICLES)
+    .select('id, newsletter_id')
+    .in('newsletter_id', ids)
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  (data || []).forEach((row: any) => counts.set(row.issue_id, (counts.get(row.issue_id) || 0) + 1));
-  return counts;
+  (data || []).forEach((row: any) => byLetter.get(row.newsletter_id)?.push(row.id));
+  return byLetter;
 }
 
-export async function getArticles(issueId: string) {
+/** Newest first. */
+export async function getArticles(newsletterId: string) {
   const { data, error } = await supabase
     .from(ARTICLES)
     .select('*')
-    .eq('issue_id', issueId)
-    .order('position', { ascending: true })
-    .order('created_at', { ascending: true });
+    .eq('newsletter_id', newsletterId)
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(toArticle);
 }
@@ -164,34 +153,32 @@ export async function getArticle(id: string) {
   return data ? toArticle(data) : null;
 }
 
-function issueRow(fields: IssueFields) {
+function newsletterRow(fields: NewsletterFields) {
   return {
     title: fields.title.trim(),
     summary: (fields.summary || '').trim(),
     cover_url: (fields.coverUrl || '').trim(),
-    period_start: fields.periodStart || null,
-    period_end: fields.periodEnd || null,
     published: fields.published !== false,
   };
 }
 
-export async function createIssue(uid: string, fields: IssueFields) {
+export async function createNewsletter(uid: string, fields: NewsletterFields) {
   const { data, error } = await supabase
-    .from(ISSUES)
-    .insert({ ...issueRow(fields), created_by: uid })
+    .from(NEWSLETTERS)
+    .insert({ ...newsletterRow(fields), created_by: uid })
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return toIssue(data);
+  return toNewsletter(data);
 }
 
-export async function updateIssue(id: string, fields: IssueFields) {
-  const { error } = await supabase.from(ISSUES).update(issueRow(fields)).eq('id', id);
+export async function updateNewsletter(id: string, fields: NewsletterFields) {
+  const { error } = await supabase.from(NEWSLETTERS).update(newsletterRow(fields)).eq('id', id);
   if (error) throw new Error(error.message);
 }
 
-export async function deleteIssue(id: string) {
-  const { error } = await supabase.from(ISSUES).delete().eq('id', id);
+export async function deleteNewsletter(id: string) {
+  const { error } = await supabase.from(NEWSLETTERS).delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
 
@@ -203,14 +190,13 @@ function articleRow(fields: ArticleFields) {
     image_url: (fields.imageUrl || '').trim(),
     source_name: (fields.sourceName || '').trim(),
     source_url: (fields.sourceUrl || '').trim(),
-    position: Number.isFinite(fields.position) ? fields.position : 0,
   };
 }
 
-export async function createArticle(issueId: string, uid: string, fields: ArticleFields) {
+export async function createArticle(newsletterId: string, uid: string, fields: ArticleFields) {
   const { data, error } = await supabase
     .from(ARTICLES)
-    .insert({ ...articleRow(fields), issue_id: issueId, author_id: uid })
+    .insert({ ...articleRow(fields), newsletter_id: newsletterId, author_id: uid })
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -227,50 +213,93 @@ export async function deleteArticle(id: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function hasLikedIssue(userId: string | null, issueId: string) {
+// --- read marks ---------------------------------------------------------
+// Signed in, they live in news_reads and follow the reader to the site; a
+// guest's stay on this device only.
+
+const GUEST_READS_KEY = 'xoxd.newsReads';
+
+async function guestReads() {
+  try {
+    const ids = JSON.parse((await AsyncStorage.getItem(GUEST_READS_KEY)) || '[]');
+    return new Set<string>(Array.isArray(ids) ? ids : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+/** The ids among `articleIds` that this reader has opened. */
+export async function getReadIds(userId: string | null | undefined, articleIds: string[]) {
+  const ids = [...new Set(articleIds)].filter(Boolean);
+  if (!ids.length) return new Set<string>();
+  if (!userId) {
+    const read = await guestReads();
+    return new Set(ids.filter((id) => read.has(id)));
+  }
+  const { data, error } = await supabase.from('news_reads').select('article_id').in('article_id', ids);
+  if (error) throw new Error(error.message);
+  return new Set<string>((data || []).map((row: any) => row.article_id));
+}
+
+export async function markRead(userId: string | null | undefined, articleId: string) {
+  if (!userId) {
+    const read = await guestReads();
+    read.add(articleId);
+    await AsyncStorage.setItem(GUEST_READS_KEY, JSON.stringify([...read])).catch(() => {});
+    return;
+  }
+  const { error } = await supabase
+    .from('news_reads')
+    .upsert({ user_id: userId, article_id: articleId }, { onConflict: 'user_id,article_id', ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+}
+
+// --- reactions ----------------------------------------------------------
+
+export async function hasLikedArticle(userId: string | null, articleId: string) {
   if (!userId) return false;
   const { data, error } = await supabase
     .from('news_likes')
-    .select('issue_id')
-    .eq('issue_id', issueId)
+    .select('article_id')
+    .eq('article_id', articleId)
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return Boolean(data);
 }
 
-export async function likeIssue(userId: string, issueId: string) {
-  const { error } = await supabase.from('news_likes').insert({ issue_id: issueId, user_id: userId });
+export async function likeArticle(userId: string, articleId: string) {
+  const { error } = await supabase.from('news_likes').insert({ article_id: articleId, user_id: userId });
   if (error) throw new Error(error.message);
 }
 
-export async function unlikeIssue(userId: string, issueId: string) {
-  const { error } = await supabase.from('news_likes').delete().eq('issue_id', issueId).eq('user_id', userId);
+export async function unlikeArticle(userId: string, articleId: string) {
+  const { error } = await supabase.from('news_likes').delete().eq('article_id', articleId).eq('user_id', userId);
   if (error) throw new Error(error.message);
 }
 
-export async function getIssueComments(issueId: string) {
+export async function getArticleComments(articleId: string) {
   const { data, error } = await supabase
     .from('news_comments')
     .select('*')
-    .eq('issue_id', issueId)
+    .eq('article_id', articleId)
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data || []).map(toComment);
 }
 
 // The signature CommentsSection calls (authorName is set by the database).
-export async function addIssueComment(issueId: string, userId: string, _authorName: string, body: string) {
+export async function addArticleComment(articleId: string, userId: string, _authorName: string, body: string) {
   const { data, error } = await supabase
     .from('news_comments')
-    .insert({ issue_id: issueId, user_id: userId, body: body.trim() })
+    .insert({ article_id: articleId, user_id: userId, body: body.trim() })
     .select()
     .single();
   if (error) throw new Error(error.message);
   return toComment(data);
 }
 
-export async function deleteIssueComment(id: string) {
+export async function deleteArticleComment(id: string) {
   const { error } = await supabase.from('news_comments').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }

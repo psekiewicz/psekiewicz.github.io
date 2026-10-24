@@ -1,30 +1,55 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Share, View } from 'react-native';
 
+import { CommentSource, CommentsSection } from '../components/CommentsSection';
 import { RichText } from '../components/RichText';
 import { Text } from '../components/Text';
 import { EmptyState, Loading } from '../components/ui';
+import { UnreadPill } from '../components/UnreadPill';
 import { useAuth } from '../context/AuthContext';
-import { getArticle, getArticles, getIssue, isNewsEditor, NewsArticle, NewsIssue, periodLabel } from '../data/news';
+import { isAdmin } from '../data/admin';
+import {
+  addArticleComment,
+  articleDate,
+  deleteArticleComment,
+  getArticle,
+  getArticleComments,
+  getArticles,
+  getNewsletter,
+  getReadIds,
+  hasLikedArticle,
+  isNewsEditor,
+  likeArticle,
+  markRead,
+  NewsArticle,
+  Newsletter,
+  unlikeArticle,
+} from '../data/news';
 import { column } from '../lib/layout';
 import { safeUrl, timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
 
+const ARTICLE_COMMENTS: CommentSource = { load: getArticleComments, add: addArticleComment, remove: deleteArticleComment };
+
 // One article, set like a news story: headline, lead, picture, the text and
-// where it comes from. Reactions belong to the issue, so the way on is back to
-// it, and to the rest of its articles. The native side of the site's /article.
+// where it comes from; then its likes and comments, and more from its
+// newsletter. Opening it marks it read for this reader. The native side of
+// the site's /article.
 export function ArticleScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const articleId: string = route.params?.articleId;
 
   const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [issue, setIssue] = useState<NewsIssue | null>(null);
-  const [siblings, setSiblings] = useState<NewsArticle[]>([]);
+  const [letter, setLetter] = useState<Newsletter | null>(null);
+  const [others, setOthers] = useState<NewsArticle[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState(false);
+  const [moderator, setModerator] = useState(false);
+  const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -32,14 +57,21 @@ export function ArticleScreen({ navigation, route }: any) {
       const a = await getArticle(articleId);
       setArticle(a);
       if (a) {
-        const [i, list, canEdit] = await Promise.all([
-          getIssue(a.issueId),
-          getArticles(a.issueId),
+        // Marked read as soon as it opens; a failure only means it stays "New".
+        markRead(user?.id, a.id).catch(() => {});
+        const [l, list, canEdit, admin] = await Promise.all([
+          getNewsletter(a.newsletterId),
+          getArticles(a.newsletterId),
           user ? isNewsEditor() : Promise.resolve(false),
+          user ? isAdmin(user.id).catch(() => false) : Promise.resolve(false),
         ]);
-        setIssue(i);
-        setSiblings(list.filter((x) => x.id !== a.id));
+        const rest = list.filter((x) => x.id !== a.id).slice(0, 6);
+        setLetter(l);
+        setOthers(rest);
         setEditor(canEdit);
+        setModerator(canEdit || admin);
+        setReadIds(await getReadIds(user?.id, rest.map((x) => x.id)).catch(() => new Set<string>()));
+        if (user) setLiked(await hasLikedArticle(user.id, a.id).catch(() => false));
       }
     } catch {
       setArticle(null);
@@ -54,11 +86,27 @@ export function ArticleScreen({ navigation, route }: any) {
   }, [navigation, load]);
 
   useEffect(() => {
-    if (issue) navigation.setOptions({ title: issue.title });
-  }, [navigation, issue]);
+    if (letter) navigation.setOptions({ title: letter.title });
+  }, [navigation, letter]);
+
+  const toggleLike = async () => {
+    if (!user) return navigation.navigate('Login');
+    if (!article) return;
+    const next = !liked;
+    setLiked(next);
+    setArticle({ ...article, likesCount: article.likesCount + (next ? 1 : -1) });
+    try {
+      if (next) await likeArticle(user.id, article.id);
+      else await unlikeArticle(user.id, article.id);
+    } catch (e: any) {
+      setLiked(!next);
+      setArticle(article);
+      Alert.alert('Could not update the like', e.message);
+    }
+  };
 
   if (loading) return <Loading />;
-  if (!article || !issue) {
+  if (!article || !letter) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}>
         <EmptyState icon="globe" title="Article not found" body="It may have been taken down." />
@@ -68,13 +116,10 @@ export function ArticleScreen({ navigation, route }: any) {
 
   const img = safeUrl(article.imageUrl);
   const src = safeUrl(article.sourceUrl);
-  const period = periodLabel(issue);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ ...column(), padding: gutter, paddingBottom: space.xxl, gap: space.md }}>
-      {period ? (
-        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.6 }}>{period.toUpperCase()}</Text>
-      ) : null}
+      <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.6 }}>{articleDate(article).toUpperCase()}</Text>
       <Text style={[typography.h2, { color: colors.text }]}>{article.title}</Text>
       {article.lead ? <Text style={[typography.body, { color: colors.textMuted, fontSize: 16 }]}>{article.lead}</Text> : null}
       <Text style={{ color: colors.textFaint, fontSize: 12 }}>
@@ -93,13 +138,14 @@ export function ArticleScreen({ navigation, route }: any) {
 
       <View style={{ flexDirection: 'row', gap: space.xl, alignItems: 'center', marginTop: space.sm }}>
         <Pressable
-          onPress={() => navigation.navigate('Issue', { issueId: issue.id })}
+          onPress={toggleLike}
           hitSlop={8}
           accessibilityRole="button"
+          accessibilityLabel={liked ? 'Unlike' : 'Like'}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
         >
-          <Feather name="message-circle" size={18} color={colors.textMuted} />
-          <Text style={{ color: colors.textMuted }}>Discuss this issue</Text>
+          <Feather name="heart" size={19} color={liked ? colors.primary : colors.textMuted} />
+          <Text style={{ color: colors.textMuted }}>{article.likesCount}</Text>
         </Pressable>
         <Pressable
           onPress={() => Share.share({ message: `${article.title} - https://psekiewicz.github.io/article?id=${article.id}` })}
@@ -112,7 +158,7 @@ export function ArticleScreen({ navigation, route }: any) {
         </Pressable>
         {editor ? (
           <Text
-            onPress={() => navigation.navigate('NewsEditor', { mode: 'article', issueId: issue.id, articleId: article.id })}
+            onPress={() => navigation.navigate('NewsEditor', { mode: 'article', newsletterId: letter.id, articleId: article.id })}
             style={{ color: colors.textMuted, fontWeight: '700' }}
           >
             Edit
@@ -120,17 +166,28 @@ export function ArticleScreen({ navigation, route }: any) {
         ) : null}
       </View>
 
-      {siblings.length ? (
+      <CommentsSection
+        projectId={article.id}
+        ownerId=""
+        source={ARTICLE_COMMENTS}
+        canModerate={moderator}
+        onSignIn={() => navigation.navigate('Login')}
+        onAuthorPress={(userId) => navigation.navigate('UserProfile', { userId })}
+      />
+
+      {others.length ? (
         <View style={{ gap: space.sm, marginTop: space.lg, paddingTop: space.lg, borderTopWidth: 1.5, borderTopColor: colors.border }}>
-          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>More in this issue</Text>
-          {siblings.map((s) => (
-            <Text
+          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>More from {letter.title}</Text>
+          {others.map((s) => (
+            <Pressable
               key={s.id}
               onPress={() => navigation.push('Article', { articleId: s.id })}
-              style={{ color: colors.primary, fontSize: 14 }}
+              accessibilityRole="link"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
             >
-              {s.title}
-            </Text>
+              <Text style={{ color: colors.primary, fontSize: 14, flexShrink: 1 }}>{s.title}</Text>
+              {readIds.has(s.id) ? null : <UnreadPill />}
+            </Pressable>
           ))}
         </View>
       ) : null}

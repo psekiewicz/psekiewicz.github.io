@@ -27,7 +27,7 @@ import { SavedScreen } from '../screens/SavedScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ShopScreen } from '../screens/ShopScreen';
 import { ArticleScreen } from '../screens/ArticleScreen';
-import { IssueScreen } from '../screens/IssueScreen';
+import { NewsletterScreen } from '../screens/NewsletterScreen';
 import { NewsEditorScreen } from '../screens/NewsEditorScreen';
 import { NewsScreen } from '../screens/NewsScreen';
 import { useTheme } from '../theme/ThemeProvider';
@@ -202,7 +202,7 @@ export function RootNavigator() {
         />
         <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Saved' }} />
         <Stack.Screen name="News" component={NewsScreen} options={{ title: 'News' }} />
-        <Stack.Screen name="Issue" component={IssueScreen} options={{ title: '' }} />
+        <Stack.Screen name="Newsletter" component={NewsletterScreen} options={{ title: '' }} />
         <Stack.Screen name="Article" component={ArticleScreen} options={{ title: '' }} />
         <Stack.Screen name="NewsEditor" component={NewsEditorScreen} options={{ title: '' }} />
         <Stack.Screen
