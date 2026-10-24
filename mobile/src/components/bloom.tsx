@@ -7,8 +7,8 @@ import { radius, typography } from '../theme/tokens';
 import { Icon, IconName } from './icons';
 
 // What is left of Bloom's chrome now that the feed screens draw a plain
-// components/TopBar instead: the round translucent button a profile's cover
-// still carries, and the tinted pills and stat blocks the dashboard uses.
+// components/TopBar instead: the tinted pills and stat blocks the dashboard
+// uses.
 //
 // The accent header itself is gone. It was a block of terracotta with 34px
 // corners over every list, which is where the app's "rounded screen" came
@@ -16,37 +16,6 @@ import { Icon, IconName } from './icons';
 
 /** Cream, for anything drawn on top of an accent fill. */
 export const ON_ACCENT = '#ffffff';
-
-/** A 40px translucent circle holding one icon - the header's own buttons. */
-export function HeaderButton({
-  icon,
-  onPress,
-  label,
-  size = 40,
-}: {
-  icon: IconName;
-  onPress?: () => void;
-  label?: string;
-  size?: number;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
-        width: size,
-        height: size,
-        borderRadius: radius.pill,
-        backgroundColor: `rgba(255,255,255,${pressed ? 0.34 : 0.2})`,
-        alignItems: 'center',
-        justifyContent: 'center',
-      })}
-    >
-      <Icon name={icon} size={size * 0.45} color={ON_ACCENT} />
-    </Pressable>
-  );
-}
 
 /** A small tinted status pill - LIVE / DRAFT / a media kind. */
 export function TonePill({

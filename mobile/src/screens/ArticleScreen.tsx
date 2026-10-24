@@ -6,8 +6,7 @@ import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 import { CommentSource, CommentsSection } from '../components/CommentsSection';
 import { RichText } from '../components/RichText';
 import { Text } from '../components/Text';
-import { EmptyState, Loading } from '../components/ui';
-import { UnreadPill } from '../components/UnreadPill';
+import { Badge, EmptyState, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../data/admin';
 import {
@@ -187,7 +186,7 @@ export function ArticleScreen({ navigation, route }: any) {
               style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
             >
               <Text style={{ color: colors.primary, fontSize: 14, flexShrink: 1 }}>{s.title}</Text>
-              {readIds.has(s.id) ? null : <UnreadPill />}
+              {readIds.has(s.id) ? null : <Badge label="New" />}
             </Pressable>
           ))}
         </View>

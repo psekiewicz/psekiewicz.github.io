@@ -437,6 +437,98 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
+// ---------------------------------------------------------------- lists
+
+/**
+ * The one small label the app uses for state: "NEW" on unread news, "UPDATE"
+ * on Settings, "DRAFT" on an editor's draft, a count. `tone` picks accent
+ * (wants attention) or quiet (just information).
+ */
+export function Badge({ label, tone = 'accent' }: { label: string; tone?: 'accent' | 'quiet' }) {
+  const { colors } = useTheme();
+  const accent = tone === 'accent';
+  return (
+    <View
+      style={{
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: radius.pill,
+        backgroundColor: accent ? colors.primary : colors.surfaceAlt,
+      }}
+    >
+      <Text style={{ color: accent ? colors.onAccent : colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 0.4 }}>
+        {label.toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * A row that leads somewhere: icon, label, an optional detail or badge, and a
+ * chevron. Settings, the You tab and the news lists all use it, so "a place
+ * you can go" looks the same everywhere. Put rows in a ListGroup.
+ */
+export function ListRow({
+  icon,
+  label,
+  detail,
+  badge,
+  onPress,
+  danger,
+}: {
+  icon?: any;
+  label: string;
+  detail?: string;
+  badge?: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
+  const { colors } = useTheme();
+  const tint = danger ? colors.danger : colors.text;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={badge ? `${label}, ${badge}` : label}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.md,
+        paddingHorizontal: space.lg,
+        paddingVertical: 14,
+        backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
+      })}
+    >
+      {icon ? <Feather name={icon} size={18} color={danger ? colors.danger : colors.textMuted} /> : null}
+      <Text style={[typography.body, { color: tint, flex: 1 }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {detail ? <Text style={[typography.small, { color: colors.textFaint }]}>{detail}</Text> : null}
+      {badge ? <Badge label={badge} /> : null}
+      <Feather name="chevron-right" size={18} color={colors.textFaint} />
+    </Pressable>
+  );
+}
+
+/** A card of ListRows with hairlines between them, under an optional eyebrow. */
+export function ListGroup({ title, children, style }: { title?: string; children: React.ReactNode; style?: ViewStyle }) {
+  const { colors } = useTheme();
+  const rows = React.Children.toArray(children).filter(Boolean);
+  return (
+    <View style={style}>
+      {title ? <Eyebrow style={{ marginBottom: space.sm }}>{title}</Eyebrow> : null}
+      <View style={{ backgroundColor: colors.surface, borderRadius: radius.md, overflow: 'hidden' }}>
+        {rows.map((row, i) => (
+          <View key={i} style={i ? { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: colors.border } : null}>
+            {row}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function EmptyState({ icon, title, body, action }: any) {
   const { colors } = useTheme();
   return (

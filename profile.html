@@ -40,7 +40,7 @@
         <a class="nav-link" href="/news"><i class="icon" data-icon="globe" style="width:22px;height:22px" aria-hidden="true"></i><span>News</span></a>
         <a class="nav-link" href="/leaderboard"><i class="icon" data-icon="award" style="width:22px;height:22px" aria-hidden="true"></i><span>Leaderboard</span></a>
         <a class="nav-link" href="/shop"><i class="icon" data-icon="shopping-bag" style="width:22px;height:22px" aria-hidden="true"></i><span>Shop</span></a>
-        <a class="nav-link" href="/dashboard"><i class="icon" data-icon="grid" style="width:22px;height:22px" aria-hidden="true"></i><span>Dashboard</span></a>
+        <a class="nav-link" href="/dashboard"><i class="icon" data-icon="grid" style="width:22px;height:22px" aria-hidden="true"></i><span>Your work</span></a>
       </div>
       <div class="nav-right">
         <div class="nav-actions" id="nav-actions"></div>
@@ -275,7 +275,9 @@
       if (isOwnProfile) {
         // No Log out here any more: the navbar carries it on desktop and the
         // burger menu on mobile, so the profile page doesn't need a third copy.
-        actionButton = `<a class="btn btn-secondary" href="/settings">Edit profile</a>`;
+        // Your work is the way into what you've published, as on the app's You
+        // tab; editing the profile is the pencil, as it is there.
+        actionButton = `<a class="btn btn-primary" href="/dashboard" style="white-space:nowrap;">Your work</a> <a class="btn btn-secondary" href="/settings" title="Edit profile" aria-label="Edit profile">${icon('pencil', { size: 16 })}</a>`;
       } else if (currentUser) {
         actionButton = `<button class="btn ${following ? 'btn-secondary' : 'btn-primary'}" id="follow-btn" type="button">${following ? 'Unfollow' : 'Follow'}</button>`;
       } else {

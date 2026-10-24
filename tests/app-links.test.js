@@ -20,12 +20,13 @@ test('website links open the matching app screen', () => {
     ['/project?id=p1', { name: 'ProjectDetail', params: { projectId: 'p1' } }],
     ['/project.html?id=p1', { name: 'ProjectDetail', params: { projectId: 'p1' } }],
     ['/profile?user=u1', { name: 'UserProfile', params: { userId: 'u1' } }],
-    ['/news', { name: 'News' }],
-    ['/weekly', { name: 'News' }],
+    ['/news', { name: 'Tabs', params: { screen: 'News' } }],
+    ['/weekly', { name: 'Tabs', params: { screen: 'News' } }],
     ['/newsletter?id=n1', { name: 'Newsletter', params: { newsletterId: 'n1' } }],
     ['/article?id=a1', { name: 'Article', params: { articleId: 'a1' } }],
     ['/issue?id=a1', { name: 'Article', params: { articleId: 'a1' } }],
     ['/leaderboard', { name: 'Tabs', params: { screen: 'Ranks' } }],
+    ['/dashboard', { name: 'YourWork' }],
     ['/shop/', { name: 'Shop' }],
   ];
   for (const [page, route] of cases) assert.deepEqual(siteRoute(SITE + page), route, page);

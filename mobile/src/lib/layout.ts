@@ -11,6 +11,12 @@ import { useWindowDimensions } from 'react-native';
  * the site it mirrors.
  */
 
+/**
+ * How far a tab screen's content has to scroll past its end to clear the
+ * floating bottom bar (navigation/BloomTabBar.tsx) - the same on every tab.
+ */
+export const TAB_BAR_CLEARANCE = 116;
+
 // The site's rule is `repeat(auto-fill, minmax(280px, 1fr))`. Using the same
 // minimum here is what keeps the two looking like one product on one device.
 export const MIN_CARD_WIDTH = 280;

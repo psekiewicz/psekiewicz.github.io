@@ -12,6 +12,8 @@ import {
   Eyebrow,
   Field,
   Heading,
+  ListGroup,
+  ListRow,
   SuccessNote,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -339,28 +341,17 @@ function MotionSection() {
 }
 
 function LegalSection({ navigation }: any) {
-  const { colors } = useTheme();
-  const links: { doc: 'terms' | 'privacy' | 'guidelines'; label: string }[] = [
-    { doc: 'terms', label: 'Terms of Service' },
-    { doc: 'privacy', label: 'Privacy Policy' },
-    { doc: 'guidelines', label: 'Community Guidelines' },
+  const links: { doc: 'terms' | 'privacy' | 'guidelines'; label: string; icon: string }[] = [
+    { doc: 'terms', label: 'Terms of Service', icon: 'file-text' },
+    { doc: 'privacy', label: 'Privacy Policy', icon: 'lock' },
+    { doc: 'guidelines', label: 'Community Guidelines', icon: 'users' },
   ];
   return (
-    <View>
-      <Eyebrow>Legal</Eyebrow>
-      <View style={{ marginTop: space.md, gap: space.sm }}>
-        {links.map((link) => (
-          <Text
-            key={link.doc}
-            accessibilityRole="link"
-            style={[typography.body, { color: colors.primary }]}
-            onPress={() => navigation.navigate('Legal', { doc: link.doc })}
-          >
-            {link.label}
-          </Text>
-        ))}
-      </View>
-    </View>
+    <ListGroup title="Legal">
+      {links.map((link) => (
+        <ListRow key={link.doc} icon={link.icon} label={link.label} onPress={() => navigation.navigate('Legal', { doc: link.doc })} />
+      ))}
+    </ListGroup>
   );
 }
 

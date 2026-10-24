@@ -24,10 +24,14 @@ import { radius } from '../theme/tokens';
 
 const ICONS: Record<string, IconName> = {
   Demos: 'demos',
+  News: 'globe',
   Ranks: 'trophy',
-  Dashboard: 'chart',
   Profile: 'user',
 };
+
+// The route is still called Profile (links and notifications open it by that
+// name); the bar calls it You, as the website's does.
+const LABELS: Record<string, string> = { Profile: 'You' };
 
 export function BloomTabBar({ state, navigation }: any) {
   const { colors } = useTheme();
@@ -56,7 +60,7 @@ export function BloomTabBar({ state, navigation }: any) {
         onPress={() => go(route, isFocused)}
         accessibilityRole="button"
         accessibilityState={{ selected: isFocused }}
-        accessibilityLabel={route.name}
+        accessibilityLabel={LABELS[route.name] || route.name}
         style={({ pressed }) => ({
           flex: 1,
           height: 58,
@@ -73,7 +77,7 @@ export function BloomTabBar({ state, navigation }: any) {
           strokeWidth={isFocused ? 2.7 : 2.1}
         />
         <Text style={{ fontSize: 10.5, fontWeight: isFocused ? '700' : '500', color }} numberOfLines={1}>
-          {route.name}
+          {LABELS[route.name] || route.name}
         </Text>
       </Pressable>
     );

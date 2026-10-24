@@ -30,16 +30,16 @@ export function siteRoute(url: string): Route | null {
     }
     case '/news':
     case '/weekly':
-      return { name: 'News' };
+      return { name: 'Tabs', params: { screen: 'News' } };
     case '/newsletter':
-      return id ? { name: 'Newsletter', params: { newsletterId: id } } : { name: 'News' };
+      return id ? { name: 'Newsletter', params: { newsletterId: id } } : { name: 'Tabs', params: { screen: 'News' } };
     case '/article':
     case '/issue':
-      return id ? { name: 'Article', params: { articleId: id } } : { name: 'News' };
+      return id ? { name: 'Article', params: { articleId: id } } : { name: 'Tabs', params: { screen: 'News' } };
     case '/leaderboard':
       return { name: 'Tabs', params: { screen: 'Ranks' } };
     case '/dashboard':
-      return { name: 'Tabs', params: { screen: 'Dashboard' } };
+      return { name: 'YourWork' };
     case '/shop':
       return { name: 'Shop' };
     case '/settings':

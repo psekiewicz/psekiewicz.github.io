@@ -4,8 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { Text } from '../components/Text';
-import { Button, EmptyState, ErrorNote, Loading } from '../components/ui';
-import { UnreadPill } from '../components/UnreadPill';
+import { Badge, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import {
   articleDate,
@@ -112,7 +111,7 @@ export function NewsletterScreen({ navigation, route }: any) {
           <Text style={{ color: colors.textFaint, fontSize: 12 }}>
             {articles.length} {articles.length === 1 ? 'article' : 'articles'}
           </Text>
-          {unread ? <UnreadPill label={`${unread} new`} /> : articles.length ? <Text style={{ color: colors.textFaint, fontSize: 12 }}>✓ All read</Text> : null}
+          {unread ? <Badge label={`${unread} new`} /> : articles.length ? <Badge label="All read" tone="quiet" /> : null}
           <Pressable
             onPress={() => Share.share({ message: `${letter.title} - https://psekiewicz.github.io/newsletter?id=${letter.id}` })}
             hitSlop={8}
@@ -164,7 +163,7 @@ export function NewsletterScreen({ navigation, route }: any) {
               >
                 {img ? <Image source={{ uri: img }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.sm }} contentFit="cover" /> : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                  {read ? <Text style={{ color: colors.textFaint, fontSize: 11, fontWeight: '700' }}>✓ READ</Text> : <UnreadPill />}
+                  {read ? <Badge label="Read" tone="quiet" /> : <Badge label="New" />}
                   <Text style={{ color: colors.textFaint, fontSize: 12 }}>{articleDate(a)}</Text>
                 </View>
                 <Text style={{ color: read ? colors.textMuted : colors.text, fontWeight: '700', fontSize: 16 }}>{a.title}</Text>

@@ -460,12 +460,21 @@ export function EditorScreen({ route, navigation }: any) {
         const name = profile?.displayName || displayNameOf(user);
         await createProject(user.id, name, fields);
       }
-      navigation.navigate('Tabs', { screen: 'Dashboard' });
+      showYourWork();
     } catch (e: any) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  // Done here, on to Your work - by going back to it if that's where the
+  // editor was opened from, and otherwise by taking the editor's place, so
+  // back from Your work never lands in a finished form.
+  const showYourWork = () => {
+    const routes = navigation.getState().routes;
+    if (routes[routes.length - 2]?.name === 'YourWork') navigation.goBack();
+    else navigation.replace('YourWork');
   };
 
   const confirmDelete = () => {
@@ -477,7 +486,7 @@ export function EditorScreen({ route, navigation }: any) {
         onPress: async () => {
           try {
             await deleteProject(projectId);
-            navigation.navigate('Tabs', { screen: 'Dashboard' });
+            showYourWork();
           } catch (e: any) {
             setError(e.message);
           }
