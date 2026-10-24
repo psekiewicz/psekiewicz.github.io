@@ -30,6 +30,7 @@ import { column } from '../lib/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import { space, typography } from '../theme/tokens';
 import appConfig from '../../app.json';
+import { UpdateSettingsLink } from '../features/app-update'; // app-update
 
 const WEBSITE_URL = 'https://psekiewicz.github.io';
 
@@ -73,6 +74,7 @@ export function SettingsScreen({ navigation }: any) {
         <ThemeSection preference={themePreference} setPreference={setThemePreference} />
         <MotionSection />
         <LegalSection navigation={navigation} />
+        <UpdateSettingsLink navigation={navigation} /* app-update */ />
         <AboutSection />
       </View>
     );
@@ -259,6 +261,7 @@ export function SettingsScreen({ navigation }: any) {
       </View>
 
       <LegalSection navigation={navigation} />
+      <UpdateSettingsLink navigation={navigation} /* app-update */ />
       <AboutSection />
 
       <View

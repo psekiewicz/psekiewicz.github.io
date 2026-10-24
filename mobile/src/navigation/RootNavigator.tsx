@@ -30,6 +30,7 @@ import { ArticleScreen } from '../screens/ArticleScreen';
 import { NewsletterScreen } from '../screens/NewsletterScreen';
 import { NewsEditorScreen } from '../screens/NewsEditorScreen';
 import { NewsScreen } from '../screens/NewsScreen';
+import { UpdateScreen } from '../features/app-update'; // app-update
 import { useTheme } from '../theme/ThemeProvider';
 
 const Tab = createBottomTabNavigator();
@@ -210,6 +211,7 @@ export function RootNavigator() {
           component={NotificationsScreen}
           options={{ title: 'Notifications' }}
         />
+        <Stack.Screen name="AppUpdate" component={UpdateScreen} options={{ title: 'App updates' }} /* app-update */ />
         <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
         <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
