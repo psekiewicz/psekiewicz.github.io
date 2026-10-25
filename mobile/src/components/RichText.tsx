@@ -19,6 +19,10 @@ function Inline({ source }: { source: string }) {
   return (
     <>
       {parseInline(source).map((tok, i) => {
+        const emphasis = {
+          ...(tok.bold ? { fontWeight: '700' as const } : null),
+          ...(tok.italic ? { fontStyle: 'italic' as const } : null),
+        };
         switch (tok.type) {
           case 'link':
             return (
@@ -26,31 +30,25 @@ function Inline({ source }: { source: string }) {
                 key={i}
                 accessibilityRole="link"
                 onPress={() => openLink(tok.href!)}
-                style={{ color: colors.primary, textDecorationLine: 'underline' }}
+                style={[emphasis, { color: colors.primary, textDecorationLine: 'underline' }]}
               >
                 {tok.text}
               </Text>
             );
           case 'code':
             return (
-              <Text key={i} style={{ backgroundColor: colors.surfaceAlt }}>
-                {tok.text}
-              </Text>
-            );
-          case 'bold':
-            return (
-              <Text key={i} style={{ fontWeight: '700' }}>
-                {tok.text}
-              </Text>
-            );
-          case 'italic':
-            return (
-              <Text key={i} style={{ fontStyle: 'italic' }}>
+              <Text key={i} style={[emphasis, { backgroundColor: colors.surfaceAlt }]}>
                 {tok.text}
               </Text>
             );
           default:
-            return tok.text;
+            return tok.bold || tok.italic ? (
+              <Text key={i} style={emphasis}>
+                {tok.text}
+              </Text>
+            ) : (
+              tok.text
+            );
         }
       })}
     </>

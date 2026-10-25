@@ -164,6 +164,7 @@ number, so every APK is newer than the last even when the name stays put.
 | --- | --- |
 | 1.7.0 | The intro: a fresh install opens on a short animated tour - Demos, News, Ranks, You - ending on Get started; Settings can replay it |
 | 1.8.0 | Your own newsletter: start one for points (free once you're popular), pick its editors; Completionist for every achievement; the intro waits for Next |
+| 1.8.1 | Bold italic shows: italic made bold (or bold made italic) renders as both, and Italic on bold text no longer strips it |
 | 1.6.1 | The Demos tab's icon is a play button in a circle (the website's too) |
 | 1.6.0 | Features that connect: your shop border and name effect wherever you appear, one Activity list on profiles, and news articles and demos linking both ways |
 | 1.5.0 | One app instead of segments: News is a tab (Demos / News / + / Ranks / You), Your work, Saved, Shop and Settings are one list on You, the duplicate leaderboard and news buttons are gone, and lists and badges share one look |

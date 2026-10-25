@@ -16,15 +16,27 @@ function lineRange(value: string, start: number, end: number): [number, number] 
   return [from, to];
 }
 
+// How many asterisks sit right before and right after the selection decide
+// whether it is italic, bold or both; other marks just have to be there.
+function isWrappedIn(value: string, start: number, end: number, kind: Kind) {
+  if (kind === 'code') return true;
+  const left = (value.slice(0, start).match(/\*+$/) || [''])[0].length;
+  const right = (value.slice(end).match(/^\*+/) || [''])[0].length;
+  const run = Math.min(left, right);
+  return kind === 'italic' ? run === 1 || run === 3 : run === 2 || run === 3;
+}
+
 // Wraps the selection in a mark, or unwraps it if it's already wrapped. With
 // nothing selected it inserts a placeholder and selects it, ready to type
-// over.
+// over. Bold and italic share the asterisk, so what wraps the selection is
+// counted: a run of 1 or 3 is italic (3 is bold italic), 2 or 3 is bold -
+// Italic on **bold** makes it ***bold italic***, not *italic*.
 export function wrap(value: string, start: number, end: number, kind: Kind): Edit {
   const mark = MARK[kind];
   const selected = value.slice(start, end);
-  const before = value.slice(start - mark.length, start);
+  const before = value.slice(Math.max(0, start - mark.length), start);
   const after = value.slice(end, end + mark.length);
-  if (selected && before === mark && after === mark) {
+  if (selected && before === mark && after === mark && isWrappedIn(value, start, end, kind)) {
     return {
       value: value.slice(0, start - mark.length) + selected + value.slice(end + mark.length),
       start: start - mark.length,

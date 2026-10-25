@@ -13,6 +13,19 @@ test('wrap bolds the selection, and unwraps it on a second press', () => {
   assert.deepEqual(wrap(once.value, once.start, once.end, 'bold'), { value: 'say hi now', start: 4, end: 6 });
 });
 
+test('bold on italic, and italic on bold, make bold italic; each press undoes its own', () => {
+  const italic = wrap('say hi now', 4, 6, 'italic');
+  const both = wrap(italic.value, italic.start, italic.end, 'bold');
+  assert.equal(both.value, 'say ***hi*** now');
+  assert.equal(wrap(both.value, both.start, both.end, 'bold').value, 'say *hi* now');
+  assert.equal(wrap(both.value, both.start, both.end, 'italic').value, 'say **hi** now');
+
+  const bold = wrap('say hi now', 4, 6, 'bold');
+  assert.equal(wrap(bold.value, bold.start, bold.end, 'italic').value, 'say ***hi*** now');
+  // Italic on **bold** doesn't eat one of its asterisks.
+  assert.notEqual(wrap(bold.value, bold.start, bold.end, 'italic').value, 'say *hi* now');
+});
+
 test('wrap with nothing selected inserts a selected placeholder', () => {
   const r = wrap('', 0, 0, 'italic');
   assert.equal(r.value, '*italic text*');
