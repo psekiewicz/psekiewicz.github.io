@@ -78,11 +78,14 @@
     import { isAdmin } from '/js/admin-data.js';
     import {
       getArticle, getArticles, getNewsletter, isNewsEditor, articleDate, updateArticle, deleteArticle, getReadIds, markRead,
-      hasLikedArticle, likeArticle, unlikeArticle, getArticleComments, addArticleComment, deleteArticleComment,
+      hasLikedArticle, likeArticle, unlikeArticle, getArticleComments, addArticleComment, deleteArticleComment, linkedDemoIds,
     } from '/js/news-data.js';
+    import { getDemosByIds } from '/js/projects-data.js';
+    import { tileHtml } from '/js/post-card.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
     import { renderMarkdown } from '/js/markdown.js';
-    import { escapeHtml, safeUrl, avatarHtml, timeAgo } from '/js/utils.js';
+    import { escapeHtml, safeUrl, timeAgo } from '/js/utils.js';
+    import { personAvatar, personName } from '/js/people.js';
     import { icon } from '/js/icons.js';
     import { shareLink } from '/js/share.js';
 
@@ -99,7 +102,7 @@
     let editor = false;
     let admin = false;
 
-    function render(article, letter, others, readIds) {
+    function render(article, letter, others, readIds, author) {
       document.getElementById('page-title').textContent = `${article.title} - XOXD`;
       const img = safeUrl(article.imageUrl);
       const src = safeUrl(article.sourceUrl);
@@ -114,9 +117,13 @@
             <p class="news-kicker">${escapeHtml(articleDate(article))}</p>
             <h1 class="post-detail-title">${escapeHtml(article.title)}</h1>
             ${article.lead ? `<p class="news-article-standfirst">${escapeHtml(article.lead)}</p>` : ''}
-            <p class="news-article-meta">${escapeHtml(article.authorName)} · ${timeAgo(article.createdAt)}</p>
+            <p class="news-article-meta">
+              ${article.authorId ? `<a class="news-byline" href="/profile?user=${encodeURIComponent(article.authorId)}">${personAvatar(author, article.authorName, 'avatar-sm')} ${personName(author, article.authorName)}</a>` : escapeHtml(article.authorName)}
+              · ${timeAgo(article.createdAt)}
+            </p>
             ${img ? `<img class="news-letter-hero" src="${escapeHtml(img)}" alt="" onerror="this.remove()" />` : ''}
             <div class="detail-body">${renderMarkdown(article.body)}</div>
+            <section class="news-demos" id="article-demos" hidden></section>
             ${src ? `<p class="news-source">Source: <a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.sourceName || new URL(src).hostname)} ↗</a></p>` : ''}
             <footer class="post-actions engagement-bar">
               <button class="like-btn post-action" id="like-btn" type="button" aria-pressed="false">
@@ -184,6 +191,25 @@
       });
     }
 
+    // The demos this article links to, as the same tiles a profile shows -
+    // so a story about something on XOXD leads straight to trying it.
+    async function renderDemos(article) {
+      const ids = linkedDemoIds(article.body);
+      if (!ids.length) return;
+      const box = document.getElementById('article-demos');
+      try {
+        const demos = await getDemosByIds(ids);
+        if (!demos.length) return;
+        const authors = await getProfilesByIds(demos.map((d) => d.uid)).catch(() => new Map());
+        box.innerHTML = `
+          <h2 class="explore-section-title">${demos.length === 1 ? 'The demo in this article' : 'Demos in this article'}</h2>
+          <div class="tile-grid">${demos.map((d) => tileHtml(d, { author: authors.get(d.uid) })).join('')}</div>`;
+        box.hidden = false;
+      } catch {
+        // The article reads fine without them.
+      }
+    }
+
     async function renderComments(article) {
       let comments;
       try {
@@ -201,9 +227,9 @@
               return `
                 <article class="comment">
                   <div class="comment-head">
-                    ${avatarHtml(p ? p.avatarUrl : '', c.authorName, 'avatar-sm')}
+                    ${personAvatar(p, c.authorName, 'avatar-sm')}
                     <div class="comment-head-text">
-                      <span class="comment-author-row"><a href="/profile?user=${encodeURIComponent(c.userId)}" class="comment-author">${escapeHtml(c.authorName)}</a></span>
+                      <span class="comment-author-row"><a href="/profile?user=${encodeURIComponent(c.userId)}" class="comment-author">${personName(p, c.authorName)}</a></span>
                       <span class="comment-time">${timeAgo(c.createdAt)}</span>
                     </div>
                     ${canDelete ? `<button class="comment-delete" type="button" data-id="${escapeHtml(c.id)}" aria-label="Delete comment">${icon('trash', { size: 14 })}</button>` : ''}
@@ -269,17 +295,19 @@
         user = await getCurrentUser();
         // Marked read as soon as it opens; a failure only means it stays "New".
         markRead(user?.id, article.id).catch(() => {});
-        const [letter, siblings, isEditor, isAdminUser] = await Promise.all([
+        const [letter, siblings, isEditor, isAdminUser, authors] = await Promise.all([
           getNewsletter(article.newsletterId),
           getArticles(article.newsletterId),
           user ? isNewsEditor() : false,
           user ? isAdmin(user.id).catch(() => false) : false,
+          getProfilesByIds([article.authorId]).catch(() => new Map()),
         ]);
         editor = isEditor;
         admin = isAdminUser;
         const others = siblings.filter((a) => a.id !== article.id).slice(0, 6);
         const readIds = await getReadIds(user?.id, others.map((a) => a.id)).catch(() => new Set());
-        render(article, letter, others, readIds);
+        render(article, letter, others, readIds, authors.get(article.authorId));
+        renderDemos(article);
         renderComments(article);
       } catch (err) {
         root.innerHTML = `<div class="container" style="padding-top:48px;"><p>Could not load article: ${escapeHtml(err.message)}</p></div>`;

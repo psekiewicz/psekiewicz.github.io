@@ -11,7 +11,7 @@ import { radius } from '../theme/tokens';
 import { Icon } from './icons';
 import { placeholderFor } from './ProjectCard';
 import { Text } from './Text';
-import { Avatar } from './ui';
+import { Avatar, DisplayName } from './ui';
 
 // The compact form for a profile's grid, matching the website's
 // tiles: the picture carries it, with the title and who made it over a dark
@@ -19,7 +19,7 @@ import { Avatar } from './ui';
 
 type Props = {
   project: Project;
-  author?: { displayName: string; avatarUrl: string };
+  author?: { displayName: string; avatarUrl: string; equippedBorder?: string; equippedNameEffect?: string };
   likeCount?: number;
   commentCount?: number;
   showAuthor?: boolean;
@@ -102,10 +102,10 @@ export function PostTile({ project, author, likeCount, commentCount, showAuthor 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           {showAuthor ? (
             <>
-              <Avatar url={author?.avatarUrl} name={name} size={18} />
-              <Text style={{ color: CREAM, fontSize: 11, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-                {name}
-              </Text>
+              <Avatar url={author?.avatarUrl} name={name} size={18} ring={author?.equippedBorder} />
+              <View style={{ flex: 1 }}>
+                <DisplayName name={name} effect={author?.equippedNameEffect} style={{ color: CREAM, fontSize: 11, fontWeight: '600' }} />
+              </View>
             </>
           ) : (
             <View style={{ flex: 1 }} />

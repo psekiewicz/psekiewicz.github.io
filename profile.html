@@ -126,6 +126,8 @@
       EMPTY_ACHIEVEMENT_RECORDS,
     } from '/js/points-data.js';
     import { effectClass } from '/js/shop-items.js';
+    import { personAvatar, personName } from '/js/people.js';
+    import { getActivity } from '/js/activity-data.js';
     import { levelFromStats, levelChipHtml } from '/js/levels.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -193,12 +195,61 @@
         .map(
           (p) => `
             <a class="follow-list-item" href="/profile?user=${encodeURIComponent(p.id)}">
-              <span class="avatar">${safeUrl(p.avatarUrl) ? `<img src="${escapeHtml(safeUrl(p.avatarUrl))}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escapeHtml(initials(p.displayName))}</span>
-              <span>${escapeHtml(p.displayName)}</span>
+              ${personAvatar(p, p.displayName)}
+              <span>${personName(p, p.displayName)}</span>
             </a>
           `
         )
         .join('');
+    }
+
+    // The Activity tab: everything this person did across XOXD, newest first
+    // (js/activity-data.js). Fetched the first time the tab opens.
+    const ACTIVITY_ICONS = {
+      demo: 'rocket', update: 'code', comment: 'message-circle', 'news-comment': 'globe', achievement: 'award', item: 'shopping-bag',
+    };
+    let activityLoadedFor = null;
+
+    function activityHref(target) {
+      if (target.type === 'project') return `/project?id=${encodeURIComponent(target.id)}`;
+      if (target.type === 'article') return `/article?id=${encodeURIComponent(target.id)}`;
+      if (target.type === 'shop') return '/shop';
+      return '#achievements';
+    }
+
+    async function loadActivity(userId, isOwnProfile, showTab) {
+      const panel = root.querySelector('[data-panel="activity"]');
+      if (!panel || activityLoadedFor === userId) return;
+      activityLoadedFor = userId;
+      try {
+        const activity = await getActivity(userId);
+        panel.innerHTML = activity.length
+          ? `<ol class="activity-list">${activity
+              .map(
+                (a) => `
+                <li>
+                  <a class="activity-item" href="${activityHref(a.target)}"${a.target.type === 'achievements' ? ' data-goto="achievements"' : ''}>
+                    <span class="activity-icon">${icon(ACTIVITY_ICONS[a.kind] || 'star', { size: 16 })}</span>
+                    <span class="activity-text">
+                      <span>${escapeHtml(a.text)}</span>
+                      ${a.detail ? `<span class="activity-detail">“${escapeHtml(a.detail)}”</span>` : ''}
+                      <span class="activity-time">${timeAgo(a.at)}</span>
+                    </span>
+                  </a>
+                </li>`
+              )
+              .join('')}</ol>`
+          : `<div class="feed-empty"><h3>Nothing yet</h3><p>${isOwnProfile ? 'Publish a demo, comment on one or on the news, and it shows up here.' : 'Nothing to show so far.'}</p></div>`;
+        panel.querySelectorAll('[data-goto]').forEach((a) =>
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            showTab(a.dataset.goto);
+          })
+        );
+      } catch (err) {
+        activityLoadedFor = null;
+        panel.innerHTML = `<p>Could not load activity: ${escapeHtml(err.message)}</p>`;
+      }
     }
 
     async function openPeopleModal(title, loader) {
@@ -214,6 +265,7 @@
     }
 
     async function render() {
+      activityLoadedFor = null;
       if (!profileUserId) {
         root.innerHTML = `<div class="empty-state"><h3>No profile specified</h3><p>Follow a link from a project card to view a profile.</p><a class="btn btn-primary" href="/">Browse demos</a></div>`;
         return;
@@ -407,18 +459,22 @@
 
           <div class="feed-tabs profile-tabs" role="tablist" aria-label="Profile sections">
             <button class="feed-tab" type="button" role="tab" aria-selected="true" data-tab="posts">Posts</button>
+            <button class="feed-tab" type="button" role="tab" aria-selected="false" data-tab="activity">Activity</button>
             ${stats ? `<button class="feed-tab" type="button" role="tab" aria-selected="false" data-tab="achievements">Achievements · ${unlockedCount}</button>` : ''}
           </div>
           <div class="profile-panel" data-panel="posts">${projectsGrid}</div>
+          <div class="profile-panel" data-panel="activity" hidden><p class="hint">Loading…</p></div>
           <div class="profile-panel" data-panel="achievements" hidden>${achievementsSection}</div>
         </div>
       `;
 
+      const showTab = (name) => {
+        root.querySelectorAll('.profile-tabs [data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+        root.querySelectorAll('.profile-panel').forEach((p) => (p.hidden = p.dataset.panel !== name));
+        if (name === 'activity') loadActivity(profileUserId, isOwnProfile, showTab);
+      };
       root.querySelectorAll('.profile-tabs [data-tab]').forEach((tab) => {
-        tab.addEventListener('click', () => {
-          root.querySelectorAll('.profile-tabs [data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
-          root.querySelectorAll('.profile-panel').forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
-        });
+        tab.addEventListener('click', () => showTab(tab.dataset.tab));
       });
 
       document.getElementById('followers-stat').addEventListener('click', () => {

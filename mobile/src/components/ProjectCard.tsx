@@ -11,11 +11,11 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius, typography } from '../theme/tokens';
 import { CountPill, TonePill } from './bloom';
 import { Icon } from './icons';
-import { Avatar, LevelChip } from './ui';
+import { Avatar, DisplayName, LevelChip } from './ui';
 
 type Props = {
   project: Partial<Project> & { id: string; title: string };
-  author?: { displayName: string; avatarUrl: string; equippedBorder?: string };
+  author?: { displayName: string; avatarUrl: string; equippedBorder?: string; equippedNameEffect?: string };
   level?: number;
   likeCount?: number;
   commentCount?: number;
@@ -135,12 +135,13 @@ export function ProjectCard({
                 size={24}
                 ring={author?.equippedBorder}
               />
-              <Text
-                style={{ fontSize: 12, fontWeight: '700', color: colors.text, flexShrink: 1 }}
-                numberOfLines={1}
-              >
-                {author?.displayName || project.authorName}
-              </Text>
+              <View style={{ flexShrink: 1 }}>
+                <DisplayName
+                  name={author?.displayName || project.authorName}
+                  effect={author?.equippedNameEffect}
+                  style={{ fontSize: 12 }}
+                />
+              </View>
               {level ? <LevelChip level={level} small /> : null}
             </Pressable>
 

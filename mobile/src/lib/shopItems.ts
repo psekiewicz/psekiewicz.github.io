@@ -9,7 +9,7 @@ export type ShopItem = { id: string; category: string; label: string; price: num
 export const SHOP_CATEGORIES = [
   { id: 'bg', label: 'Profile backgrounds', hint: "Shows behind your profile page's header." },
   { id: 'border', label: 'Avatar borders', hint: 'Shows around your avatar wherever it appears.' },
-  { id: 'name', label: 'Nickname effects', hint: 'Styles your display name on your profile.' },
+  { id: 'name', label: 'Nickname effects', hint: 'Styles your display name wherever it appears - comments, demos, news, the leaderboard.' },
 ];
 
 export const SHOP_ITEMS: ShopItem[] = [

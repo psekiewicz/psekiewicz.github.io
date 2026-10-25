@@ -70,7 +70,8 @@
   <script type="module">
     import { getDemoProjects, getProjectById, DEMOS_PAGE_SIZE } from '/js/projects-data.js';
     import { getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { escapeHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { personAvatar, personName } from '/js/people.js';
     import { parseMedia, mediaHtml, uploadedPosterFor, controlEmbeddedVideo } from '/js/media.js';
     import { scrollImageFor } from '/js/scroll-styles.js';
     import { stripMarkdown } from '/js/markdown.js';
@@ -139,8 +140,8 @@
           </button>` : ''}
           <div class="scroll-content">
             <a class="scroll-author" href="/profile?user=${encodeURIComponent(project.uid)}">
-              ${avatarHtml(profile ? profile.avatarUrl : '', project.authorName, 'scroll-avatar')}
-              <span>@${escapeHtml(project.authorName)}</span>
+              ${personAvatar(profile, project.authorName, 'scroll-avatar')}
+              <span>@${personName(profile, project.authorName)}</span>
             </a>
             <h2>${escapeHtml(project.title)}</h2>
             ${summary ? `<p>${escapeHtml(summary)}</p>` : ''}

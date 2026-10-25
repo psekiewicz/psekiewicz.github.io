@@ -304,6 +304,49 @@ export async function deleteArticleComment(id: string) {
   if (error) throw new Error(error.message);
 }
 
+// --- demos in the news ---------------------------------------------------
+// An article that links to a demo shows it as a card, and the demo's page
+// shows the articles that featured it. The mirror of js/news-data.js.
+
+const DEMO_LINK = /(?:https?:\/\/psekiewicz\.github\.io)?\/project(?:\.html)?\?id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
+
+/** The demo ids an article's text links to, first mention first. */
+export function linkedDemoIds(body: string) {
+  const ids: string[] = [];
+  for (const m of String(body || '').matchAll(DEMO_LINK)) {
+    const id = m[1].toLowerCase();
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+export type Featuring = { id: string; title: string; newsletterTitle: string; createdAt: string };
+
+/** The articles that link to a demo, newest first - "Featured in" on its page. */
+export async function getArticlesFeaturing(projectId: string): Promise<Featuring[]> {
+  const { data, error } = await supabase
+    .from(ARTICLES)
+    .select('id, title, newsletter_id, created_at')
+    .ilike('body', `%${projectId}%`)
+    .order('created_at', { ascending: false })
+    .limit(5);
+  if (error) throw new Error(error.message);
+  const rowsList = data || [];
+  const letterIds = [...new Set(rowsList.map((row: any) => row.newsletter_id))];
+  const letters = new Map<string, string>();
+  if (letterIds.length) {
+    const res = await supabase.from(NEWSLETTERS).select('id, title').in('id', letterIds);
+    if (res.error) throw new Error(res.error.message);
+    (res.data || []).forEach((row: any) => letters.set(row.id, row.title));
+  }
+  return rowsList.map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    newsletterTitle: letters.get(row.newsletter_id) || '',
+    createdAt: row.created_at,
+  }));
+}
+
 /** Admin only (the function refuses anyone else). */
 export async function setNewsEditor(userId: string, editor: boolean) {
   const { error } = await supabase.rpc('admin_set_news_editor', { p_user: userId, p_editor: editor });

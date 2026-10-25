@@ -84,6 +84,22 @@ export async function getDemosByUser(uid: string) {
   return sortByCreatedDesc(data.map(toPlainProject));
 }
 
+// Particular demos, in the order asked for - the ones a news article links to.
+// Kept identical to js/projects-data.js.
+export async function getDemosByIds(ids: string[]) {
+  const unique = [...new Set(ids)].filter(Boolean);
+  if (!unique.length) return [];
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .in('id', unique)
+    .eq('published', true)
+    .neq('live_url', '');
+  if (error) throw new Error(error.message);
+  const byId = new Map((data || []).map((row: any) => [row.id, toPlainProject(row)]));
+  return unique.map((id) => byId.get(id)).filter(Boolean) as ReturnType<typeof toPlainProject>[];
+}
+
 // Every project regardless of owner or published state. Only returns anything
 // for admins - RLS enforces that, this function doesn't check.
 export async function getAllProjects() {

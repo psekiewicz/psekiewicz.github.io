@@ -258,6 +258,44 @@ export async function deleteArticleComment(id) {
   if (error) throw new Error(error.message);
 }
 
+// --- demos in the news ---------------------------------------------------
+// A news article that links to a demo on XOXD shows that demo as a card, and
+// the demo's page shows the articles that featured it - the two halves of
+// XOXD pointing at each other. A link counts in any of its forms: the full
+// address, /project?id=… or /project.html?id=….
+
+const DEMO_LINK = /(?:https?:\/\/psekiewicz\.github\.io)?\/project(?:\.html)?\?id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
+
+// The demo ids an article's text links to, first mention first.
+export function linkedDemoIds(body) {
+  const ids = [];
+  for (const m of String(body || '').matchAll(DEMO_LINK)) {
+    const id = m[1].toLowerCase();
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+// The articles that link to a demo, newest first, with their newsletter's
+// name - for "Featured in" on the demo's page.
+export async function getArticlesFeaturing(projectId) {
+  const { data, error } = await supabase
+    .from(ARTICLES)
+    .select('id, title, newsletter_id, created_at')
+    .ilike('body', `%${projectId}%`)
+    .order('created_at', { ascending: false })
+    .limit(5);
+  if (error) throw new Error(error.message);
+  const letterIds = [...new Set(data.map((row) => row.newsletter_id))];
+  const letters = new Map();
+  if (letterIds.length) {
+    const res = await supabase.from(NEWSLETTERS).select('id, title').in('id', letterIds);
+    if (res.error) throw new Error(res.error.message);
+    res.data.forEach((row) => letters.set(row.id, row.title));
+  }
+  return data.map((row) => ({ id: row.id, title: row.title, newsletterTitle: letters.get(row.newsletter_id) || '', createdAt: row.created_at }));
+}
+
 // Admin only (the function refuses anyone else).
 export async function setNewsEditor(userId, editor) {
   const { error } = await supabase.rpc('admin_set_news_editor', { p_user: userId, p_editor: editor });

@@ -67,7 +67,7 @@ const project = (id, uid, title, extra = {}) => ({
 });
 
 const db = {
-  profiles: [profile(ADA, 'Ada', { is_admin: true }), profile(GRACE, 'Grace'), profile(CBOT, 'CBot')],
+  profiles: [profile(ADA, 'Ada', { is_admin: true, equipped_border: 'border-gold', equipped_name_effect: 'name-gradient' }), profile(GRACE, 'Grace'), profile(CBOT, 'CBot')],
   projects: [
     project(P1, GRACE, 'Pocket Synth', {
       live_url: 'https://example.com/synth',
@@ -91,7 +91,7 @@ const db = {
   news_articles: [
     {
       id: A1, newsletter_id: I1, author_id: CBOT, author_name: 'CBot', title: 'XOXD T&G Weekly - 17-24 Oct 2026',
-      lead: 'A launch trailer, a probe and a remaster.', body: '## Top stories\n\n- **A big launch trailer lands.** More than expected.', image_url: '',
+      lead: 'A launch trailer, a probe and a remaster.', body: `## Top stories\n\n- **A big launch trailer lands.** More than expected.\n\n## New on XOXD\n\n- **Pocket Synth** by Grace - a synth. [Try it on XOXD](https://psekiewicz.github.io/project?id=${P1})`, image_url: '',
       source_name: '', source_url: '', likes_count: 1, comments_count: 1, created_at: ago(5), updated_at: ago(5),
     },
     {
@@ -182,7 +182,8 @@ function visible(table, row) {
 
 function likePattern(pattern, flags) {
   const escaped = String(pattern).replace(/[.*+?^${}()|[\]\\]/g, (c) => (c === '\\' ? '\\\\' : `\\${c}`));
-  return new RegExp(`^${escaped.replace(/%/g, '.*').replace(/_/g, '.')}$`, flags);
+  // 's': in Postgres, % and _ match newlines too.
+  return new RegExp(`^${escaped.replace(/%/g, '.*').replace(/_/g, '.')}$`, `${flags}s`);
 }
 
 class Query {

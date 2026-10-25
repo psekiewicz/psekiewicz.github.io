@@ -1,7 +1,8 @@
 import { getNotifications, getUnreadCount, markAllRead } from './notifications-data.js';
 import { getProfilesByIds } from './profiles-data.js';
 import { getProjectTitles } from './projects-data.js';
-import { escapeHtml, avatarHtml, timeAgo } from './utils.js';
+import { escapeHtml, timeAgo } from './utils.js';
+import { personAvatar, personName } from './people.js';
 import { icon } from './icons.js';
 
 // The bell is injected rather than written into all twelve pages, and it
@@ -36,9 +37,9 @@ function itemHtml(notification, profiles, titles) {
 
   return `
     <a class="notif-item${notification.read ? '' : ' is-unread'}" href="${notificationHref(notification)}">
-      ${avatarHtml(actor ? actor.avatarUrl : '', name, 'avatar-sm')}
+      ${personAvatar(actor, name, 'avatar-sm')}
       <span class="notif-text">
-        <span><strong>${escapeHtml(name)}</strong> ${VERB[notification.type] || 'did something with'}${
+        <span><strong>${personName(actor, name)}</strong> ${VERB[notification.type] || 'did something with'}${
           subject ? ` <strong>${escapeHtml(subject)}</strong>` : ''
         }</span>
         <span class="notif-time">${timeAgo(notification.createdAt)}</span>

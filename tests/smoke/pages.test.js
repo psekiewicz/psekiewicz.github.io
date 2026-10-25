@@ -530,6 +530,41 @@ test('an article reads like a news story, carries its likes and comments, and co
   await context.close();
 });
 
+// One XOXD rather than separate features: what you bought shows wherever
+// you appear, a profile has one activity list across everything, and news
+// and demos link both ways. Ada wears the gold border and gradient name.
+test('your border and name effect show on your comments, not only your profile', async () => {
+  const { page, context } = await open(`/project?id=${SMOKE_IDS.P1}`, null);
+  const comment = page.locator('.comment', { hasText: 'Lovely sound.' });
+  await comment.waitFor({ timeout: 10_000 });
+  assert.equal(await comment.locator('.avatar.shop-border-gold').count(), 1);
+  assert.equal(await comment.locator('.comment-author .shop-name-gradient').count(), 1);
+  await context.close();
+});
+
+test("a profile's Activity tab lists what they did across demos, news and the shop", async () => {
+  const { page, context } = await open(`/profile?user=${SMOKE_IDS.ADA}`, null);
+  await page.locator('.profile-tabs [data-tab="activity"]').click({ timeout: 10_000 });
+  await page.locator('.activity-item').first().waitFor({ timeout: 10_000 });
+  const text = await page.locator('.activity-list').innerText();
+  assert.match(text, /Commented on Pocket Synth/);
+  assert.match(text, /Earned Launched/);
+  assert.match(text, /Got Paper in the shop/);
+  await context.close();
+});
+
+test('an article shows the demos it links to, and the demo links back to the article', async () => {
+  const article = await open(`/article?id=${SMOKE_IDS.A1}`, null);
+  await article.page.locator('#article-demos .tile').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await article.page.locator('#article-demos .tile-title').allInnerTexts(), ['Pocket Synth']);
+  await article.context.close();
+
+  const demo = await open(`/project?id=${SMOKE_IDS.P1}`, null);
+  await demo.page.locator('.news-featured a').first().waitFor({ timeout: 10_000 });
+  assert.deepEqual(await demo.page.locator('.news-featured a').allInnerTexts(), ['XOXD T&G Weekly - 17-24 Oct 2026']);
+  await demo.context.close();
+});
+
 test('an old issue link opens the article that took its place', async () => {
   const { page, context } = await open(`/issue?id=${SMOKE_IDS.A1}`, null);
   await page.waitForURL((url) => url.pathname === '/article', { timeout: 10_000 });
