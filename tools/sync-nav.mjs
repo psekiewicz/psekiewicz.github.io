@@ -44,7 +44,7 @@ const PAGES = [
 // which compares each href to the current page.
 const LINKS = [
   // XOXD is only demos, and they are the home page.
-  { href: '/', label: 'Demos', icon: 'rocket' },
+  { href: '/', label: 'Demos', icon: 'play-circle' },
   { href: '/news', label: 'News', icon: 'globe' },
   { href: '/leaderboard', label: 'Leaderboard', icon: 'award' },
   { href: '/shop', label: 'Shop', icon: 'shopping-bag' },

@@ -684,6 +684,7 @@ img {
 .icon[data-icon='shield-check'] { --icon-outline: url('/assets/icons/shield-check.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='folder'] { --icon-outline: url('/assets/icons/folder.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='globe'] { --icon-outline: url('/assets/icons/globe.svg'); --icon: var(--icon-outline); }
+.icon[data-icon='play-circle'] { --icon-outline: url('/assets/icons/play-circle.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='users'] { --icon-outline: url('/assets/icons/users.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='external-link'] { --icon-outline: url('/assets/icons/external-link.svg'); --icon: var(--icon-outline); }
 .icon[data-icon='arrow-left'] { --icon-outline: url('/assets/icons/arrow-left.svg'); --icon: var(--icon-outline); }
