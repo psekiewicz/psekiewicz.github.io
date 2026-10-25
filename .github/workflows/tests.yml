@@ -8,7 +8,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, where playwright-core 1.56 has no
+    # Chromium to install, so the smoke tests can't run there.
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
