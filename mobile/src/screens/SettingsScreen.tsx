@@ -76,6 +76,7 @@ export function SettingsScreen({ navigation }: any) {
         <Button label="Sign in" onPress={() => navigation.navigate('Login')} />
         <ThemeSection preference={themePreference} setPreference={setThemePreference} />
         <MotionSection />
+        <IntroLink navigation={navigation} />
         <LegalSection navigation={navigation} />
         <UpdateSettingsLink navigation={navigation} /* app-update */ />
         <AboutSection />
@@ -263,6 +264,7 @@ export function SettingsScreen({ navigation }: any) {
         </View>
       </View>
 
+      <IntroLink navigation={navigation} />
       <LegalSection navigation={navigation} />
       <UpdateSettingsLink navigation={navigation} /* app-update */ />
       <AboutSection />
@@ -337,6 +339,15 @@ function MotionSection() {
         "System" follows your phone's reduce-motion accessibility setting.
       </Text>
     </View>
+  );
+}
+
+// The intro a new install opens on, for anyone who wants to see it again.
+function IntroLink({ navigation }: any) {
+  return (
+    <ListGroup title="Intro">
+      <ListRow icon="play-circle" label="Watch the intro" onPress={() => navigation.navigate('Intro')} />
+    </ListGroup>
   );
 }
 

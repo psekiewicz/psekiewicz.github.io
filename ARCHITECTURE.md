@@ -248,6 +248,15 @@ The features also point at each other rather than standing alone:
   `getArticlesFeaturing` in the news data modules). The weekly T&G task adds
   a "New on XOXD" section with the week's new demos, so every issue does it.
 
+A fresh install opens on the intro, `mobile/src/features/intro/`: a short
+animated tour (the XOXD tiles, then Demos, News, Ranks and You, tied together
+by the app's own bottom bar) that ends on Get started / I already have an
+account, shown once per install (a flag in AsyncStorage) and replayable from
+Settings. It is built from two small pieces in `anim.tsx` - `Anim` (enter,
+then optionally move on) and `Loop` - on React Native's own Animated, native
+driver, and with reduced motion on every element simply rests where its
+animation would end.
+
 One thing is kept apart on purpose: `mobile/src/features/app-update/`, the
 App updates screen (Settings → App updates), which checks for an
 over-the-air update and for a newer APK on GitHub releases. Google Play
