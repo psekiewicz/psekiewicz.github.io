@@ -950,6 +950,19 @@ begin
       return (select extract(epoch from (now() - created_at)) / 86400 from public.profiles where id = p_uid);
     when 'profile_complete' then
       return (select case when bio <> '' and avatar_url <> '' then 1 else 0 end from public.profiles where id = p_uid);
+    -- Every other achievement earned - recorded, or earned now and not yet
+    -- noticed. Skips its own kind, so it never asks about itself.
+    when 'all_achievements' then
+      return (
+        select case when count(*) = 0 then 1 else 0 end
+        from public.achievement_defs d
+        where d.metric <> 'all_achievements'
+          and not exists (
+            select 1 from public.unlocked_achievements u
+            where u.user_id = p_uid and u.achievement_id = d.id
+          )
+          and coalesce(public.achievement_metric(p_uid, d.metric), 0) < d.threshold
+      );
     when 'stylized' then
       return (
         select case when equipped_bg <> 'none' and equipped_border <> 'none' and equipped_name_effect <> 'none' then 1 else 0 end
@@ -1077,7 +1090,8 @@ insert into public.achievement_defs (id, metric, threshold, reward) values
   ('trendsetter', 'stylized', 1, 60),
   ('all-set', 'profile_complete', 1, 15),
   ('shipper', 'demo_projects', 1, 40),
-  ('maintainer', 'releases', 5, 60)
+  ('maintainer', 'releases', 5, 60),
+  ('completionist', 'all_achievements', 1, 500)
 on conflict (id) do update set
   metric = excluded.metric,
   threshold = excluded.threshold,
@@ -2789,9 +2803,13 @@ alter table public.media_optimized enable row level security;
 -- XOXD is only demos, with one exception: news. A newsletter is a series
 -- ("XOXD T&G Weekly"); its articles come out one after another, newest first
 -- - for T&G, one article is one week's digest. Anyone, signed in or not, can
--- read published newsletters and their articles; only trusted creators - the
+-- read published newsletters and their articles. The newsroom - the
 -- news_editors list, which only an admin can change - can create, edit or
--- delete them. People like and comment on an article; that earns nobody XP
+-- delete any of them. Anyone else can run a newsletter of their own: whoever
+-- starts one owns it (its admin) and picks who else writes in it
+-- (newsletter_editors). Starting one costs points unless you're popular -
+-- start_newsletter() is the only way in for someone outside the newsroom.
+-- People like and comment on an article; that earns nobody XP
 -- or points (it is not in user_reputation), so news can't be farmed. Each
 -- reader's "read" marks are kept in news_reads, private to them.
 --
@@ -2881,33 +2899,108 @@ create table if not exists public.news_articles (
 );
 
 create index if not exists news_articles_newsletter_idx on public.news_articles (newsletter_id, created_at desc);
+create index if not exists newsletters_created_by_idx on public.newsletters (created_by);
 
 alter table public.news_articles enable row level security;
 
--- Published newsletters are for everyone; an editor also sees drafts.
+-- Who writes in a newsletter besides its owner. The owner adds and removes
+-- them; an editor can also step down.
+create table if not exists public.newsletter_editors (
+  newsletter_id uuid not null references public.newsletters (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  added_by uuid references auth.users (id) on delete set null,
+  added_at timestamptz not null default now(),
+  primary key (newsletter_id, user_id)
+);
+
+create index if not exists newsletter_editors_user_idx on public.newsletter_editors (user_id);
+create index if not exists newsletter_editors_added_by_idx on public.newsletter_editors (added_by);
+
+alter table public.newsletter_editors enable row level security;
+
+create or replace function public.owns_newsletter(p_newsletter uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.newsletters n
+    where n.id = p_newsletter and n.created_by = (select auth.uid())
+  );
+$$;
+
+-- The newsroom, the owner, or one of the owner's editors.
+create or replace function public.can_write_newsletter(p_newsletter uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_news_editor()
+    or public.owns_newsletter(p_newsletter)
+    or exists (
+      select 1 from public.newsletter_editors e
+      where e.newsletter_id = p_newsletter and e.user_id = (select auth.uid())
+    );
+$$;
+
+drop policy if exists "Newsletter editors are public" on public.newsletter_editors;
+create policy "Newsletter editors are public"
+  on public.newsletter_editors for select
+  using (true);
+
+-- Up to 20 editors besides the owner, who is one already.
+drop policy if exists "Owners add editors to their newsletter" on public.newsletter_editors;
+create policy "Owners add editors to their newsletter"
+  on public.newsletter_editors for insert
+  with check (
+    public.owns_newsletter(newsletter_id)
+    and public.consent_ok()
+    and added_by = (select auth.uid())
+    and user_id <> (select auth.uid())
+    and (select count(*) from public.newsletter_editors e where e.newsletter_id = newsletter_editors.newsletter_id) < 20
+  );
+
+drop policy if exists "Owners remove editors, editors step down" on public.newsletter_editors;
+create policy "Owners remove editors, editors step down"
+  on public.newsletter_editors for delete
+  using (
+    public.owns_newsletter(newsletter_id)
+    or (select auth.uid()) = user_id
+    or public.is_news_editor()
+  );
+
+-- Published newsletters are for everyone; a draft only for whoever writes in
+-- it.
 drop policy if exists "Published newsletters are public" on public.newsletters;
 create policy "Published newsletters are public"
   on public.newsletters for select
-  using (published or public.is_news_editor());
+  using (published or public.can_write_newsletter(id));
 
 drop policy if exists "News editors create newsletters" on public.newsletters;
 create policy "News editors create newsletters"
   on public.newsletters for insert
   with check (public.is_news_editor() and public.consent_ok() and created_by = (select auth.uid()));
 
--- A newsroom: any editor may correct any newsletter or article, not only
--- their own.
+-- A newsroom: any news editor may correct any newsletter or article, not only
+-- their own. An owner runs their own newsletter.
 drop policy if exists "News editors edit newsletters" on public.newsletters;
-create policy "News editors edit newsletters"
+drop policy if exists "News editors or owners edit newsletters" on public.newsletters;
+create policy "News editors or owners edit newsletters"
   on public.newsletters for update
-  using (public.is_news_editor())
-  with check (public.is_news_editor() and public.consent_ok());
+  using (public.is_news_editor() or (select auth.uid()) = created_by)
+  with check ((public.is_news_editor() or (select auth.uid()) = created_by) and public.consent_ok());
 
 drop policy if exists "News editors or admins delete newsletters" on public.newsletters;
-create policy "News editors or admins delete newsletters"
+drop policy if exists "News editors, owners or admins delete newsletters" on public.newsletters;
+create policy "News editors, owners or admins delete newsletters"
   on public.newsletters for delete
   using (
     public.is_news_editor()
+    or (select auth.uid()) = created_by
     or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
   );
 
@@ -2919,28 +3012,40 @@ create policy "Articles are readable if their newsletter is"
   using (exists (select 1 from public.newsletters n where n.id = newsletter_id));
 
 drop policy if exists "News editors write articles" on public.news_articles;
-create policy "News editors write articles"
+drop policy if exists "Newsletter writers write articles" on public.news_articles;
+create policy "Newsletter writers write articles"
   on public.news_articles for insert
-  with check (public.is_news_editor() and public.consent_ok() and author_id = (select auth.uid()));
+  with check (public.can_write_newsletter(newsletter_id) and public.consent_ok() and author_id = (select auth.uid()));
 
+-- The newsroom and the newsletter's owner edit any article in it; an editor
+-- edits their own while they're still one.
 drop policy if exists "News editors edit articles" on public.news_articles;
-create policy "News editors edit articles"
+drop policy if exists "Newsletter writers edit articles" on public.news_articles;
+create policy "Newsletter writers edit articles"
   on public.news_articles for update
-  using (public.is_news_editor())
-  with check (public.is_news_editor() and public.consent_ok());
+  using (
+    public.is_news_editor()
+    or public.owns_newsletter(newsletter_id)
+    or ((select auth.uid()) = author_id and public.can_write_newsletter(newsletter_id))
+  )
+  with check (public.can_write_newsletter(newsletter_id) and public.consent_ok());
 
 drop policy if exists "News editors or admins delete articles" on public.news_articles;
-create policy "News editors or admins delete articles"
+drop policy if exists "Newsletter writers or admins delete articles" on public.news_articles;
+create policy "Newsletter writers or admins delete articles"
   on public.news_articles for delete
   using (
     public.is_news_editor()
+    or public.owns_newsletter(newsletter_id)
+    or (select auth.uid()) = author_id
     or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
   );
 
 -- What a client may not decide: who created a newsletter, an article's
--- author and the name shown for them, and an article's counters. Writes made
--- outside the client roles (the scheduled task, migrations) are left as they
--- are.
+-- author and the name shown for them, which newsletter an article is in, and
+-- an article's counters. Links must be web links - anyone can write news now,
+-- and a javascript: link is not one. Writes made outside the client roles
+-- (the scheduled task, migrations) are left as they are.
 create or replace function public.guard_news_client_writes()
 returns trigger as $$
 declare
@@ -2955,6 +3060,9 @@ begin
     else
       new.created_by := old.created_by;
     end if;
+    if new.cover_url <> '' and new.cover_url !~* '^https?://' then
+      raise exception 'Links must start with http:// or https://';
+    end if;
   else
     if tg_op = 'INSERT' then
       new.author_id := auth.uid();
@@ -2962,8 +3070,13 @@ begin
       new.comments_count := 0;
     else
       new.author_id := old.author_id;
+      new.newsletter_id := old.newsletter_id;
       new.likes_count := old.likes_count;
       new.comments_count := old.comments_count;
+    end if;
+    if (new.image_url <> '' and new.image_url !~* '^https?://')
+       or (new.source_url <> '' and new.source_url !~* '^https?://') then
+      raise exception 'Links must start with http:// or https://';
     end if;
     select display_name into v_display_name from public.profiles where id = new.author_id;
     new.author_name := coalesce(v_display_name, '');
@@ -3073,14 +3186,19 @@ create policy "Signed-in users comment on articles"
     and public.news_article_is_live(article_id)
   );
 
--- The commenter, any news editor (moderating the newsroom's own pages) or an
--- admin can remove a comment.
+-- The commenter, any news editor (moderating the newsroom's own pages), the
+-- newsletter's owner (moderating theirs) or an admin can remove a comment.
 drop policy if exists "Comment author, news editor or admin can delete" on public.news_comments;
-create policy "Comment author, news editor or admin can delete"
+drop policy if exists "Comment author, newsletter owner, news editor or admin can delete" on public.news_comments;
+create policy "Comment author, newsletter owner, news editor or admin can delete"
   on public.news_comments for delete
   using (
     (select auth.uid()) = user_id
     or public.is_news_editor()
+    or exists (
+      select 1 from public.news_articles a
+      where a.id = article_id and public.owns_newsletter(a.newsletter_id)
+    )
     or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)
   );
 
@@ -3179,6 +3297,117 @@ begin
   end loop;
 end
 $$;
+
+-- Starting a newsletter of your own. The terms live in one place,
+-- newsletter_terms(), which the clients read to say what it takes:
+--
+--   - free once 25 people follow you (popular), otherwise 500 points - what
+--     unlocking every achievement pays (Completionist);
+--   - up to 3 newsletters per person, so points can't buy a flood of them.
+--
+-- The newsroom starts newsletters free and without a cap, as before.
+create or replace function public.newsletter_terms()
+returns json
+language sql
+immutable
+set search_path = ''
+as $$
+  select json_build_object('price', 500, 'popular_followers', 25, 'max_owned', 3);
+$$;
+
+-- Where the caller stands against those terms, for the "Start a newsletter"
+-- screen: what it would cost them now, and whether they can at all.
+create or replace function public.my_newsletter_terms()
+returns json
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_terms json := public.newsletter_terms();
+  v_followers integer;
+  v_owned integer;
+  v_points integer;
+  v_newsroom boolean := public.is_news_editor();
+  v_cost integer;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in';
+  end if;
+  select count(*) into v_followers from public.follows f where f.following_id = v_uid;
+  select count(*) into v_owned from public.newsletters n where n.created_by = v_uid;
+  select points into v_points from public.profiles p where p.id = v_uid;
+  v_cost := case
+    when v_newsroom or v_followers >= (v_terms->>'popular_followers')::integer then 0
+    else (v_terms->>'price')::integer
+  end;
+  return json_build_object(
+    'price', (v_terms->>'price')::integer,
+    'popular_followers', (v_terms->>'popular_followers')::integer,
+    'max_owned', (v_terms->>'max_owned')::integer,
+    'followers', v_followers,
+    'owned', v_owned,
+    'points', coalesce(v_points, 0),
+    'cost', v_cost,
+    'can_start', public.consent_ok()
+      and (v_newsroom or v_owned < (v_terms->>'max_owned')::integer)
+      and coalesce(v_points, 0) >= v_cost
+  );
+end;
+$$;
+
+-- Charges (or not) and creates the newsletter in one go, owned by the caller.
+create or replace function public.start_newsletter(p_title text, p_summary text default '', p_cover_url text default '')
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_terms json := public.newsletter_terms();
+  v_newsroom boolean := public.is_news_editor();
+  v_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in';
+  end if;
+  if not public.consent_ok() then
+    raise exception 'This account can''t publish yet';
+  end if;
+  if coalesce(p_cover_url, '') <> '' and p_cover_url !~* '^https?://' then
+    raise exception 'Links must start with http:// or https://';
+  end if;
+
+  -- Two taps at once can't both slip under the cap or spend the same points.
+  perform pg_advisory_xact_lock(hashtextextended(v_uid::text || ':start_newsletter', 0));
+
+  if not v_newsroom then
+    if (select count(*) from public.newsletters n where n.created_by = v_uid) >= (v_terms->>'max_owned')::integer then
+      raise exception 'You already run % newsletters', v_terms->>'max_owned';
+    end if;
+    if (select count(*) from public.follows f where f.following_id = v_uid) < (v_terms->>'popular_followers')::integer then
+      update public.profiles set points = points - (v_terms->>'price')::integer
+      where id = v_uid and points >= (v_terms->>'price')::integer;
+      if not found then
+        raise exception 'Not enough points';
+      end if;
+    end if;
+  end if;
+
+  insert into public.newsletters (title, summary, cover_url, created_by, published)
+  values (trim(p_title), trim(coalesce(p_summary, '')), trim(coalesce(p_cover_url, '')), v_uid, true)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+revoke execute on function public.my_newsletter_terms() from public, anon;
+revoke execute on function public.start_newsletter(text, text, text) from public, anon;
+grant execute on function public.my_newsletter_terms() to authenticated;
+grant execute on function public.start_newsletter(text, text, text) to authenticated;
 
 -- ============================================================
 -- The audio guide (Audioprzewodnik, Wczasy Bez Kasy)

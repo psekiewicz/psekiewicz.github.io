@@ -250,8 +250,8 @@ The features also point at each other rather than standing alone:
 
 A fresh install opens on the intro, `mobile/src/features/intro/`: a short
 animated tour (the XOXD tiles, then Demos, News, Ranks and You, tied together
-by the app's own bottom bar) that ends on Get started / I already have an
-account, shown once per install (a flag in AsyncStorage) and replayable from
+by the app's own bottom bar) that moves on only when the person taps Next,
+and ends on Get started / I already have an account, shown once per install (a flag in AsyncStorage) and replayable from
 Settings. It is built from two small pieces in `anim.tsx` - `Anim` (enter,
 then optionally move on) and `Loop` - on React Native's own Animated, native
 driver, and with reduced motion on every element simply rests where its
