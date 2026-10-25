@@ -59,7 +59,7 @@ function navHtml(snapshot) {
 
   return `
     <a class="bottom-nav-item${isActive('index')}" href="/">
-      <span class="bottom-nav-icon">${icon('rocket', { size: 20 })}</span>
+      <span class="bottom-nav-icon">${icon('play-circle', { size: 20 })}</span>
       <span>Demos</span>
     </a>
     <a class="bottom-nav-item${inNews}" href="/news">
