@@ -9,7 +9,8 @@ export type Block =
   | { type: 'para'; lines: string[] }
   | { type: 'image'; src: string; caption: string };
 
-export type Inline = { type: 'text' | 'link' | 'code' | 'bold' | 'italic'; text: string; href?: string };
+type Style = { bold?: boolean; italic?: boolean };
+export type Inline = { type: 'text' | 'link' | 'code'; text: string; href?: string } & Style;
 
 const HEADING = /^(#{1,3})\s+(.+?)\s*#*\s*$/;
 const BULLET = /^\s*[-*•]\s+(.*)$/;
@@ -87,25 +88,29 @@ export function parseBlocks(source: string | null | undefined): Block[] {
 // An image written in the middle of a sentence has nowhere to go, so the
 // leading ! is swallowed and it reads as an ordinary link.
 // Links and inline code first, so their contents are never read as
-// emphasis; then **bold**, then *italic* / _italic_.
-const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/(?:[^\s<>()]|\([^\s<>()]*\))*(?:[^\s<>().,;:!?'"]|\([^\s<>()]*\)))|`([^`\n]+)`|\*\*([^*\n]+?)\*\*|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])/g;
+// emphasis; then ***bold italic***, **bold** / __bold__, then *italic* /
+// _italic_.
+const INLINE = /!?\[([^\]\n]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/(?:[^\s<>()]|\([^\s<>()]*\))*(?:[^\s<>().,;:!?'"]|\([^\s<>()]*\)))|`([^`\n]+)`|\*\*\*(?!\s)([^*\n]+?)(?<!\s)\*\*\*|\*\*(?!\s)((?:[^*\n]|\*(?!\*))+?)(?<!\s)\*\*|(?<![\w_])__(?!\s)([^_\n]+?)(?<!\s)__(?![\w_])|(?<![\w*])\*(?![\s*])((?:[^*\n]|\*\*[^*\n]+?\*\*)+?)(?<![\s*])\*(?![\w*])|(?<![\w_])_(?![\s_])((?:[^_\n]|__[^_\n]+?__)+?)(?<![\s_])_(?![\w_])/g;
 
-// Splits one line into { type: 'text' | 'link' | 'code' | 'bold' | 'italic',
-// text, href? } tokens.
-export function parseInline(source: string | null | undefined): Inline[] {
+// Splits one line into { type: 'text' | 'link' | 'code', text, href?, bold?,
+// italic? } tokens. Emphasis nests - **bold *and italic* inside**, ***both***,
+// _**both**_ - so a bold or italic span is read again for what's inside it,
+// and its tokens carry the style down.
+export function parseInline(source: string | null | undefined, style: Style = {}): Inline[] {
   const text = String(source ?? '');
   const tokens: Inline[] = [];
   let last = 0;
   for (const m of text.matchAll(INLINE)) {
-    if (m.index! > last) tokens.push({ type: 'text', text: text.slice(last, m.index!) });
-    if (m[1] !== undefined) tokens.push({ type: 'link', text: m[1], href: m[2] });
-    else if (m[3] !== undefined) tokens.push({ type: 'link', text: linkLabel(m[3]), href: m[3] });
-    else if (m[4] !== undefined) tokens.push({ type: 'code', text: m[4] });
-    else if (m[5] !== undefined) tokens.push({ type: 'bold', text: m[5] });
-    else tokens.push({ type: 'italic', text: m[6] ?? m[7] });
+    if (m.index! > last) tokens.push({ type: 'text', text: text.slice(last, m.index!), ...style });
+    if (m[1] !== undefined) tokens.push({ type: 'link', text: m[1], href: m[2], ...style });
+    else if (m[3] !== undefined) tokens.push({ type: 'link', text: linkLabel(m[3]), href: m[3], ...style });
+    else if (m[4] !== undefined) tokens.push({ type: 'code', text: m[4], ...style });
+    else if (m[5] !== undefined) tokens.push(...parseInline(m[5], { ...style, bold: true, italic: true }));
+    else if (m[6] !== undefined || m[7] !== undefined) tokens.push(...parseInline(m[6] ?? m[7], { ...style, bold: true }));
+    else tokens.push(...parseInline(m[8] ?? m[9], { ...style, italic: true }));
     last = m.index! + m[0].length;
   }
-  if (last < text.length) tokens.push({ type: 'text', text: text.slice(last) });
+  if (last < text.length) tokens.push({ type: 'text', text: text.slice(last), ...style });
   return tokens;
 }
 

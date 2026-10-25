@@ -39,6 +39,16 @@ test('inline bold, italic, code and [text](url)', () => {
   );
 });
 
+test('bold and italic nest: italic made bold, bold made italic, and either inside the other', () => {
+  for (const md of ['***both***', '**_both_**', '_**both**_', '*__both__*']) {
+    assert.equal(renderMarkdown(md), '<p><strong><em>both</em></strong></p>', md);
+  }
+  assert.equal(renderMarkdown('**bold *it* bold**'), '<p><strong>bold </strong><strong><em>it</em></strong><strong> bold</strong></p>');
+  assert.equal(renderMarkdown('*it **bold** it*'), '<p><em>it </em><strong><em>bold</em></strong><em> it</em></p>');
+  assert.equal(renderMarkdown('__bold__'), '<p><strong>bold</strong></p>');
+  assert.equal(renderMarkdown('a ** b ** c'), '<p>a ** b ** c</p>');
+});
+
 test('stray asterisks and snake_case are left alone', () => {
   assert.equal(renderMarkdown('2 * 3 * 4 and snake_case_name'), '<p>2 * 3 * 4 and snake_case_name</p>');
 });
