@@ -10,7 +10,7 @@ import { timeAgo } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space, typography } from '../theme/tokens';
 import { Text, TextInput } from './Text';
-import { Avatar } from './ui';
+import { Avatar, DisplayName } from './ui';
 
 // The conversation under a post, in the page rather than in a sheet - the way
 // the website's post page has it: a box to write in, then the comments. The
@@ -94,8 +94,10 @@ export function CommentsSection({
     }
   };
 
-  const avatarOf = (comment: Comment) =>
-    authors.get(comment.userId)?.avatarUrl || (comment.userId === user?.id ? profile?.avatarUrl : undefined);
+  // The commenter's own profile - for their avatar, and the border and name
+  // effect they wear everywhere.
+  const authorOf = (comment: Comment) =>
+    authors.get(comment.userId) || (comment.userId === user?.id ? profile || undefined : undefined);
 
   const box = {
     backgroundColor: colors.surface,
@@ -112,7 +114,7 @@ export function CommentsSection({
 
       {user ? (
         <View style={[box, { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.sm, paddingLeft: space.md }]}>
-          <Avatar url={profile?.avatarUrl} name={profile?.displayName || displayNameOf(user)} size={30} />
+          <Avatar url={profile?.avatarUrl} name={profile?.displayName || displayNameOf(user)} size={30} ring={profile?.equippedBorder} />
           <TextInput
             value={body}
             onChangeText={setBody}
@@ -173,17 +175,13 @@ export function CommentsSection({
                 }}
               >
                 <Pressable onPress={() => onAuthorPress(c.userId)} hitSlop={4}>
-                  <Avatar url={avatarOf(c)} name={c.authorName} size={32} />
+                  <Avatar url={authorOf(c)?.avatarUrl} name={c.authorName} size={32} ring={authorOf(c)?.equippedBorder} />
                 </Pressable>
                 <View style={{ flex: 1, gap: 3 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                    <Text
-                      onPress={() => onAuthorPress(c.userId)}
-                      style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}
-                      numberOfLines={1}
-                    >
-                      {c.authorName}
-                    </Text>
+                    <Pressable onPress={() => onAuthorPress(c.userId)} hitSlop={4} style={{ flexShrink: 1 }}>
+                      <DisplayName name={c.authorName} effect={authorOf(c)?.equippedNameEffect} style={{ fontSize: 13 }} />
+                    </Pressable>
                     <Text style={{ color: colors.textFaint, fontSize: 11 }}>{timeAgo(c.createdAt)}</Text>
                     <View style={{ flex: 1 }} />
                     {canDelete ? (

@@ -162,6 +162,7 @@ number, so every APK is newer than the last even when the name stays put.
 
 | Version | What came with it |
 | --- | --- |
+| 1.6.0 | Features that connect: your shop border and name effect wherever you appear, one Activity list on profiles, and news articles and demos linking both ways |
 | 1.5.0 | One app instead of segments: News is a tab (Demos / News / + / Ranks / You), Your work, Saved, Shop and Settings are one list on You, the duplicate leaderboard and news buttons are gone, and lists and badges share one look |
 | 1.4.0 | Everything stays in the app: website links open app screens, other links an in-app browser tab, and sign-up and password-reset emails come back into the app |
 | 1.3.0 | Demos only; News with newsletters and read marks; the App updates screen |

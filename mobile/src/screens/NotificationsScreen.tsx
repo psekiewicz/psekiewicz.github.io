@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../components/Text';
 
-import { Avatar, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
+import { Avatar, Button, DisplayName, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import {
   getNotifications,
@@ -110,10 +110,10 @@ export function NotificationsScreen({ navigation }: any) {
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Avatar url={actor?.avatarUrl} name={actor?.displayName} size={32} />
+            <Avatar url={actor?.avatarUrl} name={actor?.displayName} size={32} ring={actor?.equippedBorder} />
             <View style={{ flex: 1 }}>
+              <DisplayName name={actor?.displayName || 'Someone'} effect={actor?.equippedNameEffect} style={typography.body} />
               <Text style={[typography.body, { color: colors.text }]} numberOfLines={2}>
-                <Text style={{ fontWeight: '700' }}>{actor?.displayName || 'Someone'}</Text>{' '}
                 {copy.verb}
                 {title ? <Text style={{ fontWeight: '700' }}> {title}</Text> : null}
               </Text>

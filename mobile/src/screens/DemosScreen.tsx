@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from '../components/icons';
 import { ProviderEmbed } from '../components/ProviderEmbed';
 import { Text } from '../components/Text';
-import { Avatar, EmptyState, Loading } from '../components/ui';
+import { Avatar, DisplayName, EmptyState, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getUnreadCount } from '../data/notifications';
 import { getProfilesByIds, Profile } from '../data/profiles';
@@ -285,9 +285,11 @@ function DemoCard({ project, author, height, active, insetBottom, onAuthor, onOp
             size={34}
             ring={author?.equippedBorder}
           />
-          <Text style={{ color: INK, fontWeight: '700', fontSize: 13 }}>
-            {author?.displayName || project.authorName}
-          </Text>
+          <DisplayName
+            name={author?.displayName || project.authorName}
+            effect={author?.equippedNameEffect}
+            style={{ color: INK, fontSize: 13 }}
+          />
         </Pressable>
 
         <Pressable onPress={onOpen}>

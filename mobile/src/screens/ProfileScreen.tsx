@@ -5,6 +5,7 @@ import { Text } from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatBlock } from '../components/bloom';
+import { ActivityList } from '../components/ActivityList';
 import { FeedTabs } from '../components/FeedTabs';
 import { PostTile } from '../components/PostTile';
 import { CosmeticBackground } from '../components/CosmeticBackground';
@@ -69,7 +70,7 @@ export function ProfileScreen({ route, navigation }: any) {
   const [claimed, setClaimed] = useState<Set<string>>(new Set());
   const [admin, setAdmin] = useState(false);
   const [showCard, setShowCard] = useState(false);
-  const [tab, setTab] = useState<'posts' | 'achievements'>('posts');
+  const [tab, setTab] = useState<'posts' | 'activity' | 'achievements'>('posts');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -492,17 +493,27 @@ export function ProfileScreen({ route, navigation }: any) {
                 </ListGroup>
               ) : null}
 
-              {/* Posts / Achievements, as on the website's profile. */}
+              {/* Posts / Activity / Achievements, as on the website's profile. */}
               <View style={{ marginHorizontal: -gutter }}>
                 <FeedTabs
                   tabs={[
                     { value: 'posts', label: `Posts · ${projects.length}` },
+                    { value: 'activity', label: 'Activity' },
                     { value: 'achievements', label: `Achievements · ${unlockedList.length}` },
                   ]}
                   value={tab}
-                  onChange={(next) => setTab(next as 'posts' | 'achievements')}
+                  onChange={(next) => setTab(next as 'posts' | 'activity' | 'achievements')}
                 />
               </View>
+
+              {tab === 'activity' && targetId ? (
+                <ActivityList
+                  userId={targetId}
+                  isSelf={isSelf}
+                  navigation={navigation}
+                  onAchievements={() => setTab('achievements')}
+                />
+              ) : null}
 
               {/* Achievements, three to a row. */}
               {tab === 'achievements' && achievements.length > 0 ? (
@@ -532,7 +543,7 @@ export function ProfileScreen({ route, navigation }: any) {
           </View>
         }
         ListEmptyComponent={
-          tab === 'achievements' ? null : (
+          tab !== 'posts' ? null : (
           <View style={{ paddingHorizontal: gutter }}>
             <EmptyState
               icon="package"

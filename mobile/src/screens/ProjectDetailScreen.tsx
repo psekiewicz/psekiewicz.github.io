@@ -14,6 +14,7 @@ import { Icon } from '../components/icons';
 import { ReportSheet } from '../components/ReportSheet';
 import { RichText } from '../components/RichText';
 import { Avatar, Button, DisplayName, ErrorNote, LevelChip, Loading, TypeBadge } from '../components/ui';
+import { FeaturedInNews } from '../components/NewsAndDemos';
 import { useAuth } from '../context/AuthContext';
 import { getCommentCounts } from '../data/comments';
 import { followUser, isFollowing, unfollowUser } from '../data/follows';
@@ -354,6 +355,10 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               </Pressable>
             ) : null}
           </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 12, paddingTop: 12 }}>
+          <FeaturedInNews projectId={projectId} navigation={navigation} />
         </View>
 
         <View style={{ paddingHorizontal: 12, paddingTop: 12 }}>

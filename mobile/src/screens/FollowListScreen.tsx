@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet } from 'react-native';
-import { Text } from '../components/Text';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { Avatar, EmptyState, ErrorNote, Loading } from '../components/ui';
+import { Avatar, DisplayName, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { getFollowers, getFollowing, MiniProfile } from '../data/follows';
 import { useTheme } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
@@ -62,10 +61,10 @@ export function FollowListScreen({ route, navigation }: any) {
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Avatar url={item.avatarUrl} name={item.displayName} size={38} />
-          <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }} numberOfLines={1}>
-            {item.displayName}
-          </Text>
+          <Avatar url={item.avatarUrl} name={item.displayName} size={38} ring={item.equippedBorder} />
+          <View style={{ flex: 1 }}>
+            <DisplayName name={item.displayName} effect={item.equippedNameEffect} />
+          </View>
         </Pressable>
       )}
     />

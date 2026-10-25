@@ -60,6 +60,7 @@
         <div class="post-skeleton" aria-hidden="true"></div>
       </div>
     </div>
+    <div id="featured-root"></div>
     <div id="updates-root"></div>
     <div id="comments-root"></div>
   </main>
@@ -91,12 +92,14 @@
   <script type="module">
     import { getProjectById } from '/js/projects-data.js';
     import { getProfile, getProfilesByIds } from '/js/profiles-data.js';
-    import { escapeHtml, timeAgo, avatarHtml, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { escapeHtml, timeAgo, typeBadgeHtml, safeUrl } from '/js/utils.js';
+    import { personAvatar, personName } from '/js/people.js';
     import { icon } from '/js/icons.js';
     import { renderMarkdown } from '/js/markdown.js';
     import { onAuthChange, displayNameOf } from '/js/auth.js';
     import { getComments, addComment, deleteComment } from '/js/comments-data.js';
     import { getUpdates, addUpdate, deleteUpdate } from '/js/updates-data.js';
+    import { getArticlesFeaturing } from '/js/news-data.js';
     import { refreshProgress } from '/js/progress-watch.js';
     import { isAdmin } from '/js/admin-data.js';
     import { getLikeCounts, getLikedSet, likeProject, unlikeProject } from '/js/likes-data.js';
@@ -262,11 +265,11 @@
           <article class="post post-detail">
             <header class="post-head">
               <a href="/profile?user=${encodeURIComponent(project.uid)}" tabindex="-1" aria-hidden="true">
-                ${avatarHtml(authorProfile ? authorProfile.avatarUrl : '', project.authorName)}
+                ${personAvatar(authorProfile, project.authorName)}
               </a>
               <div class="post-byline">
                 <span class="post-author">
-                  <a href="/profile?user=${encodeURIComponent(project.uid)}">${escapeHtml(project.authorName)}</a>
+                  <a href="/profile?user=${encodeURIComponent(project.uid)}">${personName(authorProfile, project.authorName)}</a>
                   <span id="author-level"></span>
                 </span>
                 <span class="post-meta">
@@ -398,10 +401,10 @@
       return `
         <article class="comment" data-comment-id="${escapeHtml(comment.id)}">
           <div class="comment-head">
-            ${avatarHtml(profile ? profile.avatarUrl : '', comment.authorName, 'avatar-sm')}
+            ${personAvatar(profile, comment.authorName, 'avatar-sm')}
             <div class="comment-head-text">
               <span class="comment-author-row">
-                <a href="/profile?user=${encodeURIComponent(comment.userId)}" class="comment-author">${escapeHtml(comment.authorName)}</a>
+                <a href="/profile?user=${encodeURIComponent(comment.userId)}" class="comment-author">${personName(profile, comment.authorName)}</a>
                 ${levelInfo ? levelChipHtml(levelInfo.level, 'sm') : ''}
               </span>
               <span class="comment-time">${timeAgo(comment.createdAt)}</span>
@@ -427,6 +430,28 @@
           <div class="update-body">${renderMarkdown(update.body)}</div>
         </article>
       `;
+    }
+
+    // The news articles that linked to this demo: where the rest of XOXD
+    // talked about it. Nothing is drawn when there are none.
+    async function renderFeatured(project) {
+      const featuredRoot = document.getElementById('featured-root');
+      let articles = [];
+      try {
+        articles = await getArticlesFeaturing(project.id);
+      } catch {
+        return;
+      }
+      if (!articles.length) return;
+      featuredRoot.innerHTML = `
+        <section class="post-page news-featured">
+          <h2 class="explore-section-title">${icon('globe', { size: 16 })} Featured in the news</h2>
+          <ul>${articles
+            .map(
+              (a) => `<li><a href="/article?id=${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a>${a.newsletterTitle ? ` <span class="hint">· ${escapeHtml(a.newsletterTitle)}</span>` : ''}</li>`
+            )
+            .join('')}</ul>
+        </section>`;
     }
 
     async function renderUpdates(project) {
@@ -628,6 +653,7 @@
         }
 
         if (currentProject) {
+          renderFeatured(currentProject);
           renderUpdates(currentProject);
           renderComments(currentProject);
         }

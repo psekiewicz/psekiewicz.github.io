@@ -231,6 +231,23 @@ Shop, Settings) is reached from You. The app's lists of places are built
 from one pair of components (`ListGroup`/`ListRow` in `components/ui.tsx`),
 and state labels from one `Badge`, so a new screen looks like the rest.
 
+The features also point at each other rather than standing alone:
+
+- **A person looks the same everywhere.** Their shop border and name effect
+  are drawn wherever they appear - comments on demos and articles, the demos
+  feed, tiles, news bylines, notifications, follower lists, the leaderboard -
+  through `js/people.js` (`personAvatar`/`personName`) on the site and
+  `Avatar ring=` / `DisplayName effect=` in the app.
+- **A profile has one Activity list** across demos, updates, comments (on
+  demos and on the news), achievements and shop purchases -
+  `js/activity-data.js` / `mobile/src/data/activity.ts`. All of it is public
+  data; saves, read marks and views never appear.
+- **News and demos link both ways.** A demo link in an article
+  (`/project?id=…`) shows the demo as a tile under the text, and the demo's
+  page lists the articles that featured it (`linkedDemoIds` /
+  `getArticlesFeaturing` in the news data modules). The weekly T&G task adds
+  a "New on XOXD" section with the week's new demos, so every issue does it.
+
 One thing is kept apart on purpose: `mobile/src/features/app-update/`, the
 App updates screen (Settings → App updates), which checks for an
 over-the-air update and for a newer APK on GitHub releases. Google Play

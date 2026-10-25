@@ -1,12 +1,20 @@
 import { supabase } from '../lib/supabase';
 
-export type MiniProfile = { id: string; displayName: string; avatarUrl: string };
+export type MiniProfile = {
+  id: string;
+  displayName: string;
+  avatarUrl: string;
+  equippedBorder: string;
+  equippedNameEffect: string;
+};
 
 function toPlainProfile(row: any): MiniProfile {
   return {
     id: row.id,
     displayName: row.display_name || 'Unknown',
     avatarUrl: row.avatar_url || '',
+    equippedBorder: row.equipped_border || 'none',
+    equippedNameEffect: row.equipped_name_effect || 'none',
   };
 }
 

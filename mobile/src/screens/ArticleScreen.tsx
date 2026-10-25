@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { CommentSource, CommentsSection } from '../components/CommentsSection';
+import { ArticleDemos } from '../components/NewsAndDemos';
 import { RichText } from '../components/RichText';
 import { Text } from '../components/Text';
 import { Badge, EmptyState, Loading } from '../components/ui';
@@ -127,6 +128,7 @@ export function ArticleScreen({ navigation, route }: any) {
       </Text>
       {img ? <Image source={{ uri: img }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md }} contentFit="cover" /> : null}
       {article.body ? <RichText source={article.body} /> : null}
+      <ArticleDemos body={article.body} navigation={navigation} />
       {src ? (
         <Text style={[typography.small, { color: colors.textMuted }]}>
           Source:{' '}

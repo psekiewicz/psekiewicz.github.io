@@ -9,6 +9,8 @@ function toPlainProfile(row) {
     id: row.id,
     displayName: row.display_name || 'Unknown',
     avatarUrl: row.avatar_url || '',
+    equippedBorder: row.equipped_border || 'none',
+    equippedNameEffect: row.equipped_name_effect || 'none',
   };
 }
 

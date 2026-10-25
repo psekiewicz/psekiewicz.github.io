@@ -1639,6 +1639,18 @@ textarea:focus {
   padding: 8px 0 18px;
 }
 
+.news-byline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.news-byline:hover {
+  color: var(--color-primary);
+}
+
 .news-article-full > .news-article-meta {
   margin-bottom: 18px;
 }
@@ -1766,4 +1778,77 @@ textarea:focus {
 
 .legal-page li::marker {
   color: var(--color-primary);
+}
+
+/* ---------- Demos and the news, pointing at each other ----------
+   article.html: the demos an article links to, as tiles under the text.
+   project.html: the articles that featured a demo. */
+.news-demos {
+  margin: 24px 0 8px;
+}
+
+.news-featured ul {
+  margin: 0;
+  padding-left: 1.2em;
+  line-height: 1.8;
+}
+
+.news-featured .explore-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Activity (profile.html's Activity tab) ----------
+   One person's doings across demos, news and the shop, as a plain list -
+   an icon for the kind, what happened, a quoted comment, when. */
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.activity-item:hover .activity-text > span:first-child {
+  color: var(--color-primary);
+}
+
+.activity-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.activity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.activity-detail {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-time {
+  color: var(--color-text-faint);
+  font-size: 0.78rem;
 }

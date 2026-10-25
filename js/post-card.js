@@ -1,4 +1,5 @@
-import { escapeHtml, avatarHtml, safeUrl, PROJECT_TYPES } from './utils.js';
+import { escapeHtml, safeUrl, PROJECT_TYPES } from './utils.js';
+import { personAvatar, personName } from './people.js';
 import { icon } from './icons.js';
 import { parseMedia } from './media.js';
 import { firstImage } from './markdown.js';
@@ -43,8 +44,8 @@ export function tileHtml(project, { author, likeCount = 0, commentCount = 0, bad
       <span class="tile-info">
         <span class="tile-title">${escapeHtml(project.title)}</span>
         <span class="tile-meta">
-          ${avatarHtml(author ? author.avatarUrl : '', name, 'avatar-sm')}
-          <span class="tile-author">${escapeHtml(name)}</span>
+          ${personAvatar(author, name, 'avatar-sm')}
+          <span class="tile-author">${personName(author, name)}</span>
           <span class="tile-counts">${icon('heart', { size: 13 })}${likeCount} ${icon('message-circle', { size: 13 })}${commentCount}</span>
         </span>
       </span>
