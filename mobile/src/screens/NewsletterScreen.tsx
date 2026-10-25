@@ -4,10 +4,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { Text } from '../components/Text';
-import { Badge, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
+import { Avatar, Badge, Button, DisplayName, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import { getProfile, Profile } from '../data/profiles';
 import {
   articleDate,
+  canWriteNewsletter,
   deleteNewsletter,
   getArticles,
   getNewsletter,
@@ -22,9 +24,10 @@ import { useTheme } from '../theme/ThemeProvider';
 import { gutter, radius, space, typography } from '../theme/tokens';
 
 // One newsletter: every article in it, newest first, each marked "New" until
-// this reader has opened it. News editors also get the controls to edit the
-// newsletter and add, edit or remove articles. Likes and comments are on each
-// article. The native side of the site's /newsletter.
+// this reader has opened it, under who runs it. Whoever writes in it can add
+// articles and edit their own; its owner (and the newsroom) can also edit any
+// article, rename or delete it, and pick its editors. Likes and comments are
+// on each article. The native side of the site's /newsletter.
 export function NewsletterScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -33,7 +36,9 @@ export function NewsletterScreen({ navigation, route }: any) {
   const [letter, setLetter] = useState<Newsletter | null>(null);
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [editor, setEditor] = useState(false);
+  const [writer, setWriter] = useState(false);
+  const [newsroom, setNewsroom] = useState(false);
+  const [owner, setOwner] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -41,14 +46,17 @@ export function NewsletterScreen({ navigation, route }: any) {
   // read stops saying "New".
   const load = useCallback(async () => {
     try {
-      const [l, list, canEdit] = await Promise.all([
+      const [l, list, canWrite, isNewsroom] = await Promise.all([
         getNewsletter(newsletterId),
         getArticles(newsletterId),
+        user ? canWriteNewsletter(newsletterId) : Promise.resolve(false),
         user ? isNewsEditor() : Promise.resolve(false),
       ]);
       setLetter(l);
       setArticles(list);
-      setEditor(canEdit);
+      setWriter(canWrite);
+      setNewsroom(isNewsroom);
+      setOwner(l?.createdBy ? await getProfile(l.createdBy).catch(() => null) : null);
       setReadIds(await getReadIds(user?.id, list.map((a) => a.id)).catch(() => new Set<string>()));
       setError('');
     } catch (e: any) {
@@ -96,6 +104,8 @@ export function NewsletterScreen({ navigation, route }: any) {
   }
 
   const cover = safeUrl(letter.coverUrl);
+  // Runs the whole newsletter: its owner, or the newsroom.
+  const manages = Boolean(user && (letter.createdBy === user.id || newsroom));
   const unread = articles.filter((a) => !readIds.has(a.id)).length;
 
   return (
@@ -107,6 +117,18 @@ export function NewsletterScreen({ navigation, route }: any) {
           {letter.published ? '' : '  (draft)'}
         </Text>
         {letter.summary ? <Text style={[typography.body, { color: colors.textMuted }]}>{letter.summary}</Text> : null}
+        {owner ? (
+          <Pressable
+            onPress={() => navigation.navigate('UserProfile', { userId: owner.id })}
+            accessibilityRole="button"
+            accessibilityLabel={`Run by ${owner.displayName}`}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
+          >
+            <Avatar url={owner.avatarUrl} name={owner.displayName} size={24} ring={owner.equippedBorder} />
+            <Text style={{ color: colors.textFaint, fontSize: 12 }}>Run by</Text>
+            <DisplayName name={owner.displayName} effect={owner.equippedNameEffect} style={{ fontSize: 12 }} />
+          </Pressable>
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <Text style={{ color: colors.textFaint, fontSize: 12 }}>
             {articles.length} {articles.length === 1 ? 'article' : 'articles'}
@@ -125,17 +147,28 @@ export function NewsletterScreen({ navigation, route }: any) {
         {cover ? (
           <Image source={{ uri: cover }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md }} contentFit="cover" />
         ) : null}
-        {editor ? (
+        {writer || manages ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             <Button label="Add article" icon="plus" small onPress={() => navigation.navigate('NewsEditor', { mode: 'article', newsletterId: letter.id })} />
             <Button
-              label="Edit newsletter"
-              icon="edit-2"
+              label="Editors"
+              icon="users"
               small
               variant="secondary"
-              onPress={() => navigation.navigate('NewsEditor', { mode: 'newsletter', newsletterId: letter.id })}
+              onPress={() => navigation.navigate('NewsletterEditors', { newsletterId: letter.id })}
             />
-            <Button label="Delete" icon="trash-2" small variant="secondary" onPress={confirmDelete} />
+            {manages ? (
+              <>
+                <Button
+                  label="Edit newsletter"
+                  icon="edit-2"
+                  small
+                  variant="secondary"
+                  onPress={() => navigation.navigate('NewsEditor', { mode: 'newsletter', newsletterId: letter.id })}
+                />
+                <Button label="Delete" icon="trash-2" small variant="secondary" onPress={confirmDelete} />
+              </>
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -172,7 +205,7 @@ export function NewsletterScreen({ navigation, route }: any) {
                   <Text style={{ color: colors.textFaint, fontSize: 12 }}>
                     ♥ {a.likesCount} · {a.commentsCount} {a.commentsCount === 1 ? 'comment' : 'comments'}
                   </Text>
-                  {editor ? (
+                  {manages || (writer && a.authorId === user?.id) ? (
                     <Text
                       onPress={() => navigation.navigate('NewsEditor', { mode: 'article', newsletterId: letter.id, articleId: a.id })}
                       style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}

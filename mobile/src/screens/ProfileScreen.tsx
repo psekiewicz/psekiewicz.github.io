@@ -658,6 +658,7 @@ function achievementIcon(name: string): IconName {
     grid: 'image',
     eye: 'search',
     play: 'play',
+    trophy: 'trophy',
   };
   return map[name] || 'star';
 }

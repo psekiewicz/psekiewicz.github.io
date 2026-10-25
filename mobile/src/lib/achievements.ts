@@ -2,7 +2,7 @@ import { getCommentCountByUser } from '../data/comments';
 import { getFollowingCount } from '../data/follows';
 import { getProfile } from '../data/profiles';
 import { EMPTY_REPUTATION, getReputation } from '../data/reputation';
-import { getOwnedItemIds } from '../data/shop';
+import { getAchievementRecords, getOwnedItemIds } from '../data/shop';
 
 // Each achievement is independently unlockable, ordered here by reward
 // (roughly how hard it is to get) - used as the display order and to pick the
@@ -20,6 +20,7 @@ export type Achievement = {
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'completionist', label: 'Completionist', description: 'Unlocked every other achievement. Pays enough to start a newsletter.', icon: 'trophy', reward: 500, check: (s) => s.allAchievements },
   { id: 'icon', label: 'Icon', description: 'Received 100 or more likes across your projects.', icon: 'award', reward: 150, check: (s) => s.totalLikes >= 100 },
   { id: 'popular', label: 'Popular', description: '50 or more people follow you.', icon: 'users', reward: 140, check: (s) => s.followerCount >= 50 },
   { id: 'reached', label: 'Reached', description: '100 or more different people have opened your entries.', icon: 'eye', reward: 120, check: (s) => s.uniqueViewers >= 100 },
@@ -59,18 +60,20 @@ export type UserStats = {
   ownedItemsCount: number;
   releases: number;
   demoProjects: number;
+  allAchievements: boolean;
 };
 
 // Aggregates the stats every achievement check needs for one user. Every query
 // is individually guarded: without that a single failure rejects the whole
 // thing and the entire progress chain vanishes with no error anywhere.
 export async function getUserStats(userId: string): Promise<UserStats> {
-  const [reputation, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
+  const [reputation, followingCount, totalComments, profile, ownedItemIds, recorded] = await Promise.all([
     getReputation(userId).catch(() => ({ ...EMPTY_REPUTATION })),
     getFollowingCount(userId).catch(() => 0),
     getCommentCountByUser(userId).catch(() => 0),
     getProfile(userId).catch(() => null),
     getOwnedItemIds(userId).catch(() => new Set<string>()),
+    getAchievementRecords(userId).catch(() => ({ unlocked: new Set<string>() })),
   ]);
 
   const accountAgeDays = profile
@@ -84,7 +87,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       profile.equippedNameEffect !== 'none'
   );
 
-  return {
+  const stats: UserStats = {
     projectsPublished: reputation.publishedProjects,
     totalLikes: reputation.likesReceived,
     totalViews: reputation.totalViews,
@@ -100,7 +103,13 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     ownedItemsCount: ownedItemIds.size,
     releases: reputation.releases,
     demoProjects: reputation.demoProjects,
+    allAchievements: false,
   };
+  // Completionist: every other achievement, recorded or earned right now.
+  stats.allAchievements = ACHIEVEMENTS.filter((a) => a.id !== 'completionist').every(
+    (a) => recorded.unlocked.has(a.id) || a.check(stats)
+  );
+  return stats;
 }
 
 // Achievements are permanent: once earned they stay earned, even if the

@@ -75,29 +75,39 @@
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
     import {
-      getNewsletter, getArticles, getReadIds, isNewsEditor, articleDate,
+      getNewsletter, getArticles, getReadIds, isNewsEditor, canWriteNewsletter, articleDate,
       updateNewsletter, deleteNewsletter, createArticle, updateArticle, deleteArticle,
+      getNewsletterEditorIds, addNewsletterEditor, removeNewsletterEditor,
     } from '/js/news-data.js';
+    import { getProfile, getProfilesByIds } from '/js/profiles-data.js';
+    import { getFollowers, getFollowing } from '/js/follows-data.js';
+    import { personAvatar, personName } from '/js/people.js';
     import { escapeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
     import { shareLink } from '/js/share.js';
 
     // One newsletter: every article in it, newest first, each marked "New"
-    // until this reader has opened it. News editors also get the controls to
-    // edit the newsletter and add, edit or remove articles. Likes and comments
-    // are on each article's own page.
+    // until this reader has opened it, under who runs it. Whoever writes in it
+    // can add articles and edit their own; its owner (and the newsroom) can
+    // also edit any article, rename or delete it, and pick its editors. Likes
+    // and comments are on each article's own page.
 
     document.getElementById('year').textContent = new Date().getFullYear();
     const root = document.getElementById('letter-root');
     const id = new URLSearchParams(location.search).get('id');
 
     let user = null;
-    let editor = false;
+    let writer = false;
+    let newsroom = false;
+    let owner = null;
     let letter = null;
     let articles = [];
     let readIds = new Set();
 
     const editors = () => import('/js/news-editor.js');
+    // Runs the whole newsletter: its owner, or the newsroom.
+    const manages = () => Boolean(user && (letter.createdBy === user.id || newsroom));
+    const canEditArticle = (a) => manages() || (writer && user && a.authorId === user.id);
 
     function articleCardHtml(a) {
       const img = safeUrl(a.imageUrl);
@@ -116,7 +126,7 @@
             <p class="news-article-meta">
               <span>${icon('heart', { size: 13 })} ${a.likesCount}</span>
               <span>${icon('message-circle', { size: 13 })} ${a.commentsCount}</span>
-              ${editor ? `<button class="btn btn-secondary btn-sm" type="button" data-edit="${escapeHtml(a.id)}">${icon('pencil', { size: 14 })} Edit</button>
+              ${canEditArticle(a) ? `<button class="btn btn-secondary btn-sm" type="button" data-edit="${escapeHtml(a.id)}">${icon('pencil', { size: 14 })} Edit</button>
                 <button class="btn btn-secondary btn-sm" type="button" data-delete="${escapeHtml(a.id)}">${icon('trash', { size: 14 })}</button>` : ''}
             </p>
           </div>
@@ -134,18 +144,20 @@
             <strong>News</strong>
           </div>
           <header class="news-letter-head">
-            <h1 class="post-detail-title">${escapeHtml(letter.title)}${letter.published ? '' : ' <span class="status-pill draft">Draft - only editors see it</span>'}</h1>
+            <h1 class="post-detail-title">${escapeHtml(letter.title)}${letter.published ? '' : ' <span class="status-pill draft">Draft - only its editors see it</span>'}</h1>
             ${letter.summary ? `<p class="news-letter-summary">${escapeHtml(letter.summary)}</p>` : ''}
+            ${owner ? `<p class="news-letter-owner"><a href="/profile?user=${encodeURIComponent(owner.id)}">${personAvatar(owner, owner.displayName, 'avatar-sm')}<span>Run by</span> ${personName(owner, owner.displayName)}</a></p>` : ''}
             <p class="news-letter-meta">
               <span>${articles.length} ${articles.length === 1 ? 'article' : 'articles'}</span>
               ${unread ? `<span class="news-unread">${unread} new</span>` : articles.length ? `<span class="news-read">${icon('check', { size: 13 })} All read</span>` : ''}
               <button class="btn btn-secondary btn-sm" id="share-btn" type="button">${icon('share', { size: 14 })} Share</button>
             </p>
             ${cover ? `<img class="news-letter-hero" src="${escapeHtml(cover)}" alt="" onerror="this.remove()" />` : ''}
-            ${editor ? `<div class="news-editor-bar">
+            ${writer || manages() ? `<div class="news-editor-bar">
               <button class="btn btn-primary btn-sm" type="button" id="add-article">${icon('plus', { size: 14 })} Add article</button>
-              <button class="btn btn-secondary btn-sm" type="button" id="edit-letter">${icon('pencil', { size: 14 })} Edit newsletter</button>
-              <button class="btn btn-secondary btn-sm" type="button" id="delete-letter">${icon('trash', { size: 14 })} Delete</button>
+              <button class="btn btn-secondary btn-sm" type="button" id="letter-editors">${icon('users', { size: 14 })} Editors</button>
+              ${manages() ? `<button class="btn btn-secondary btn-sm" type="button" id="edit-letter">${icon('pencil', { size: 14 })} Edit newsletter</button>
+              <button class="btn btn-secondary btn-sm" type="button" id="delete-letter">${icon('trash', { size: 14 })} Delete</button>` : ''}
             </div>` : ''}
           </header>
           <div class="news-articles">
@@ -156,33 +168,13 @@
     }
 
     async function reload() {
-      [letter, articles] = await Promise.all([getNewsletter(id), getArticles(id)]);
+      [letter, articles, writer] = await Promise.all([getNewsletter(id), getArticles(id), user ? canWriteNewsletter(id) : false]);
       readIds = await getReadIds(user?.id, articles.map((a) => a.id)).catch(() => new Set());
       render();
     }
 
     function wire() {
       document.getElementById('share-btn').addEventListener('click', () => shareLink({ url: location.href, title: letter.title }));
-      if (!editor) return;
-      document.getElementById('add-article').addEventListener('click', async () => {
-        const { openArticleForm } = await editors();
-        const saved = await openArticleForm({ save: (fields) => createArticle(letter.id, user.id, fields) });
-        if (saved) await reload();
-      });
-      document.getElementById('edit-letter').addEventListener('click', async () => {
-        const { openNewsletterForm } = await editors();
-        const saved = await openNewsletterForm({ newsletter: letter, save: (fields) => updateNewsletter(letter.id, fields) });
-        if (saved) await reload();
-      });
-      document.getElementById('delete-letter').addEventListener('click', async () => {
-        if (!confirm(`Delete "${letter.title}" and all ${articles.length} of its articles? This can't be undone.`)) return;
-        try {
-          await deleteNewsletter(letter.id);
-          window.location.href = '/news';
-        } catch (err) {
-          alert(err.message);
-        }
-      });
       root.querySelectorAll('[data-edit]').forEach((btn) =>
         btn.addEventListener('click', async () => {
           const article = articles.find((a) => a.id === btn.dataset.edit);
@@ -203,6 +195,55 @@
           }
         })
       );
+      if (!writer && !manages()) return;
+      document.getElementById('add-article').addEventListener('click', async () => {
+        const { openArticleForm } = await editors();
+        const saved = await openArticleForm({ save: (fields) => createArticle(letter.id, user.id, fields) });
+        if (saved) await reload();
+      });
+      document.getElementById('letter-editors').addEventListener('click', async () => {
+        const { openEditorsPanel } = await editors();
+        const runs = manages();
+        const changed = await openEditorsPanel({
+          title: letter.title,
+          me: user.id,
+          manages: runs,
+          renderPerson: (p) => `${personAvatar(p, p.displayName)}<span>${personName(p, p.displayName)}</span>`,
+          load: async () => {
+            const ids = await getNewsletterEditorIds(letter.id);
+            const profiles = await getProfilesByIds([...ids, letter.createdBy].filter(Boolean));
+            let people = [];
+            if (runs) {
+              // The people to pick from: everyone this person follows or is followed by.
+              const [followers, following] = await Promise.all([getFollowers(user.id), getFollowing(user.id)]);
+              people = [...new Map([...following, ...followers].map((p) => [p.id, p])).values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+            }
+            return {
+              owner: profiles.get(letter.createdBy) || null,
+              editors: ids.map((uid) => profiles.get(uid)).filter(Boolean),
+              people,
+            };
+          },
+          add: (uid) => addNewsletterEditor(letter.id, user.id, uid),
+          remove: (uid) => removeNewsletterEditor(letter.id, uid),
+        });
+        if (changed) await reload();
+      });
+      if (!manages()) return;
+      document.getElementById('edit-letter').addEventListener('click', async () => {
+        const { openNewsletterForm } = await editors();
+        const saved = await openNewsletterForm({ newsletter: letter, save: (fields) => updateNewsletter(letter.id, fields) });
+        if (saved) await reload();
+      });
+      document.getElementById('delete-letter').addEventListener('click', async () => {
+        if (!confirm(`Delete "${letter.title}" and all ${articles.length} of its articles? This can't be undone.`)) return;
+        try {
+          await deleteNewsletter(letter.id);
+          window.location.href = '/news';
+        } catch (err) {
+          alert(err.message);
+        }
+      });
     }
 
     // Coming back from an article (the browser's Back keeps this page as it
@@ -218,11 +259,17 @@
       }
       try {
         user = await getCurrentUser();
-        [editor, letter, articles] = await Promise.all([user ? isNewsEditor() : false, getNewsletter(id), getArticles(id)]);
+        [newsroom, writer, letter, articles] = await Promise.all([
+          user ? isNewsEditor() : false,
+          user ? canWriteNewsletter(id) : false,
+          getNewsletter(id),
+          getArticles(id),
+        ]);
         if (!letter) {
           root.innerHTML = '<div class="container" style="padding-top:48px;"><div class="empty-state"><h3>Newsletter not found</h3><p>It may have been taken down.</p><a class="btn btn-primary" href="/news">All newsletters</a></div></div>';
           return;
         }
+        owner = letter.createdBy ? await getProfile(letter.createdBy).catch(() => null) : null;
         readIds = await getReadIds(user?.id, articles.map((a) => a.id)).catch(() => new Set());
         render();
       } catch (err) {

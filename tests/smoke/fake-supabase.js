@@ -22,10 +22,11 @@ const P3 = '00000000-0000-4000-8000-0000000000a3';
 const CBOT = '176c749c-dd5b-4aee-b184-aa59381e9d1d';
 const I1 = '00000000-0000-4000-8000-0000000000c1';
 const I2 = '00000000-0000-4000-8000-0000000000c2';
+const I3 = '00000000-0000-4000-8000-0000000000c3';
 const A1 = '00000000-0000-4000-8000-0000000000d1';
 const A2 = '00000000-0000-4000-8000-0000000000d2';
 
-export const SMOKE_IDS = { ADA, GRACE, CBOT, P1, P2, P3, I1, I2, A1, A2 };
+export const SMOKE_IDS = { ADA, GRACE, CBOT, P1, P2, P3, I1, I2, I3, A1, A2 };
 
 const profile = (id, name, extra = {}) => ({
   id,
@@ -79,7 +80,8 @@ const db = {
   ],
   // News: CBot writes T&G Weekly; Ada is an editor too, so the signed-in
   // pages show the newsroom's controls. One live newsletter with two
-  // articles (Grace has read the older one), and one draft newsletter.
+  // articles (Grace has read the older one), one draft newsletter, and a
+  // draft of Grace's own.
   news_editors: [{ user_id: CBOT }, { user_id: ADA }],
   newsletters: [
     {
@@ -87,6 +89,7 @@ const db = {
       cover_url: '', created_by: CBOT, published: true, created_at: ago(200), updated_at: ago(200),
     },
     { id: I2, title: 'Coming soon', summary: '', cover_url: '', created_by: ADA, published: false, created_at: ago(2), updated_at: ago(2) },
+    { id: I3, title: "Grace's Picks", summary: '', cover_url: '', created_by: GRACE, published: false, created_at: ago(1), updated_at: ago(1) },
   ],
   news_articles: [
     {
@@ -103,6 +106,7 @@ const db = {
   news_likes: [{ article_id: A1, user_id: GRACE, created_at: ago(4) }],
   news_comments: [{ id: 'nc1', article_id: A1, user_id: GRACE, author_name: 'Grace', body: 'Good week.', created_at: ago(4) }],
   news_reads: [{ user_id: GRACE, article_id: A2, read_at: ago(100) }],
+  newsletter_editors: [],
   likes: [{ project_id: P1, user_id: ADA, created_at: ago(3) }],
   comments: [
     { id: 'c1', project_id: P1, user_id: ADA, author_name: 'Ada', body: 'Lovely sound.', created_at: ago(2) },
@@ -172,11 +176,37 @@ function currentUser() {
 
 // What RLS would hide: drafts from anyone but their owner, and other
 // people's private rows. Only the rules the pages would visibly trip over.
+const isNewsroom = () => db.news_editors.some((e) => e.user_id === currentUser()?.id);
+
+function canWriteNewsletter(id) {
+  const me = currentUser()?.id;
+  if (!me) return false;
+  return (
+    isNewsroom() ||
+    db.newsletters.some((n) => n.id === id && n.created_by === me) ||
+    db.newsletter_editors.some((e) => e.newsletter_id === id && e.user_id === me)
+  );
+}
+
+// my_newsletter_terms() in schema.sql: free once 25 people follow you,
+// otherwise 500 points; up to 3 each; the newsroom is exempt.
+function newsletterTerms() {
+  const me = currentUser()?.id;
+  const followers = db.follows.filter((f) => f.following_id === me).length;
+  const owned = db.newsletters.filter((n) => n.created_by === me).length;
+  const points = db.profiles.find((p) => p.id === me)?.points ?? 0;
+  const cost = isNewsroom() || followers >= 25 ? 0 : 500;
+  return {
+    price: 500, popular_followers: 25, max_owned: 3, followers, owned, points, cost,
+    can_start: (isNewsroom() || owned < 3) && points >= cost,
+  };
+}
+
 function visible(table, row) {
   const me = currentUser()?.id;
   if (table === 'projects') return row.published || row.user_id === me;
   if (['notifications', 'saves', 'account_ages', 'news_reads'].includes(table)) return row.user_id === me;
-  if (table === 'newsletters') return row.published || db.news_editors.some((e) => e.user_id === me);
+  if (table === 'newsletters') return row.published || canWriteNewsletter(row.id);
   return true;
 }
 
@@ -309,7 +339,15 @@ const RPC = {
   admin_close_reports: () => 0,
   purchase_item: () => 80,
   purchase_bundle: () => 60,
-  is_news_editor: () => db.news_editors.some((e) => e.user_id === currentUser()?.id),
+  is_news_editor: () => isNewsroom(),
+  can_write_newsletter: ({ p_newsletter }) => canWriteNewsletter(p_newsletter),
+  my_newsletter_terms: () => newsletterTerms(),
+  start_newsletter: ({ p_title, p_summary, p_cover_url }) => {
+    const id = `fake-${Math.random().toString(36).slice(2)}`;
+    const at = new Date().toISOString();
+    db.newsletters.push({ id, title: p_title, summary: p_summary, cover_url: p_cover_url, created_by: currentUser().id, published: true, created_at: at, updated_at: at });
+    return id;
+  },
   admin_set_news_editor: () => null,
 };
 
@@ -324,7 +362,7 @@ export function createClient() {
 
   return {
     from: (table) => new Query(table),
-    rpc: (name) => ok(RPC[name] ? RPC[name]() : null),
+    rpc: (name, args = {}) => ok(RPC[name] ? RPC[name](args) : null),
     auth: {
       getUser: () => ok({ user: currentUser() }),
       getSession: () => ok({ session: session() }),

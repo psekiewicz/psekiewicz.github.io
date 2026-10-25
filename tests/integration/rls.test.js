@@ -1265,6 +1265,7 @@ const METRIC_OF_STAT = {
   profileComplete: 'profile_complete',
   releases: 'releases',
   demoProjects: 'demo_projects',
+  allAchievements: 'all_achievements',
 };
 
 itRls('every achievement the site shows pays what it says, for what it says', async () => {
@@ -1492,4 +1493,140 @@ itRls('an account still waiting on a parent can read the news but not react to i
   await asUser(teen);
   assert.equal((await client.query('select id from public.news_articles where id = $1', [article])).rowCount, 1);
   await expectRejects(() => client.query('insert into public.news_likes (article_id, user_id) values ($1, $2)', [article, teen]), /row-level security/);
+});
+
+// --- newsletters people run themselves -----------------------------------
+// Starting one costs points unless you're popular; the owner picks editors.
+
+async function givePoints(uid, points) {
+  await client.query('update public.profiles set points = $2 where id = $1', [uid, points]);
+}
+
+async function giveFollowers(uid, count) {
+  for (let i = 0; i < count; i++) {
+    const fan = await makeUser();
+    await client.query('insert into public.follows (follower_id, following_id) values ($1, $2)', [fan, uid]);
+  }
+}
+
+itRls('starting a newsletter costs 500 points, and without them it is refused', async () => {
+  const someone = await makeUser();
+  await givePoints(someone, 499);
+
+  await asUser(someone);
+  const terms = (await client.query('select public.my_newsletter_terms() as t')).rows[0].t;
+  assert.deepEqual({ cost: terms.cost, can_start: terms.can_start }, { cost: 500, can_start: false });
+  await expectRejects(() => client.query("select public.start_newsletter('My news')"), /Not enough points/);
+
+  await asSuperuser();
+  await givePoints(someone, 620);
+  await asUser(someone);
+  const { rows } = await client.query("select public.start_newsletter('My news', 'What I write about') as id");
+  await asSuperuser();
+  const letter = await client.query('select created_by, published from public.newsletters where id = $1', [rows[0].id]);
+  assert.deepEqual(letter.rows[0], { created_by: someone, published: true });
+  const left = await client.query('select points from public.profiles where id = $1', [someone]);
+  assert.equal(left.rows[0].points, 120);
+});
+
+itRls('someone popular starts a newsletter free; nobody runs more than three', async () => {
+  const star = await makeUser();
+  await giveFollowers(star, 25);
+
+  await asUser(star);
+  assert.equal((await client.query('select public.my_newsletter_terms() as t')).rows[0].t.cost, 0);
+  for (const title of ['One', 'Two', 'Three']) {
+    await client.query('select public.start_newsletter($1)', [`Letter ${title}`]);
+  }
+  await expectRejects(() => client.query("select public.start_newsletter('Letter Four')"), /already run 3/);
+  await asSuperuser();
+  assert.equal((await client.query('select points from public.profiles where id = $1', [star])).rows[0].points, 0);
+});
+
+itRls("an owner runs their newsletter and picks its editors; nobody else can write in it", async () => {
+  const owner = await makeUser({ displayName: 'Owner' });
+  const friend = await makeUser({ displayName: 'Friend' });
+  const stranger = await makeUser();
+  await giveFollowers(owner, 25);
+
+  await asUser(owner);
+  const letter = (await client.query("select public.start_newsletter('Owner weekly') as id")).rows[0].id;
+  await client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'First issue')", [letter, owner]);
+  await client.query('insert into public.newsletter_editors (newsletter_id, user_id, added_by) values ($1, $2, $3)', [letter, friend, owner]);
+  assert.equal((await client.query("update public.newsletters set title = 'Owner daily' where id = $1", [letter])).rowCount, 1);
+
+  // The friend writes and edits their own story, but can't rename the
+  // newsletter or add editors of their own.
+  await asSuperuser();
+  await asUser(friend);
+  const story = (
+    await client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'Guest story') returning id", [letter, friend])
+  ).rows[0].id;
+  assert.equal((await client.query("update public.news_articles set title = 'Guest story, fixed' where id = $1", [story])).rowCount, 1);
+  assert.equal((await client.query("update public.news_articles set title = 'Hijacked' where title = 'First issue'")).rowCount, 0);
+  assert.equal((await client.query("update public.newsletters set title = 'Taken' where id = $1", [letter])).rowCount, 0);
+  await expectRejects(
+    () => client.query('insert into public.newsletter_editors (newsletter_id, user_id, added_by) values ($1, $2, $3)', [letter, stranger, friend]),
+    /row-level security/
+  );
+
+  // A stranger can't write in it at all.
+  await asSuperuser();
+  await asUser(stranger);
+  await expectRejects(
+    () => client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'Spam')", [letter, stranger]),
+    /row-level security/
+  );
+  assert.equal((await client.query('delete from public.news_articles where newsletter_id = $1', [letter])).rowCount, 0);
+
+  // The owner removes the friend, who then can't write any more.
+  await asSuperuser();
+  await asUser(owner);
+  assert.equal((await client.query('delete from public.newsletter_editors where newsletter_id = $1 and user_id = $2', [letter, friend])).rowCount, 1);
+  await asSuperuser();
+  await asUser(friend);
+  await expectRejects(
+    () => client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'After')", [letter, friend]),
+    /row-level security/
+  );
+
+  // And the owner can take down any article in it, or the whole newsletter.
+  await asSuperuser();
+  await asUser(owner);
+  assert.equal((await client.query('delete from public.news_articles where id = $1', [story])).rowCount, 1);
+  assert.equal((await client.query('delete from public.newsletters where id = $1', [letter])).rowCount, 1);
+});
+
+itRls("an owner can't move an article into someone else's newsletter or link to javascript:", async () => {
+  const newsroom = await makeEditor();
+  const owner = await makeUser();
+  await giveFollowers(owner, 25);
+  const official = await makeNewsletter(newsroom);
+
+  await asUser(owner);
+  const letter = (await client.query("select public.start_newsletter('Mine') as id")).rows[0].id;
+  const story = (
+    await client.query("insert into public.news_articles (newsletter_id, author_id, title) values ($1, $2, 'Mine story') returning id", [letter, owner])
+  ).rows[0].id;
+  await client.query('update public.news_articles set newsletter_id = $2 where id = $1', [story, official]);
+  assert.equal((await client.query('select newsletter_id from public.news_articles where id = $1', [story])).rows[0].newsletter_id, letter);
+  await expectRejects(
+    () => client.query("update public.news_articles set source_url = 'javascript:alert(1)' where id = $1", [story]),
+    /must start with http/
+  );
+  await expectRejects(() => client.query("select public.start_newsletter('Other', '', 'javascript:x')"), /must start with http/);
+});
+
+itRls('Completionist is earned only once every other achievement is', async () => {
+  const someone = await makeUser();
+  await asUser(someone);
+  await expectRejects(() => client.query("select public.claim_achievement('completionist')"), /not yet earned/);
+
+  await asSuperuser();
+  await client.query(
+    "insert into public.unlocked_achievements (user_id, achievement_id) select $1, id from public.achievement_defs where id <> 'completionist'",
+    [someone]
+  );
+  await asUser(someone);
+  assert.equal((await client.query("select public.claim_achievement('completionist') as points")).rows[0].points, 500);
 });

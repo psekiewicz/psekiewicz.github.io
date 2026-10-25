@@ -1,5 +1,6 @@
 import { getCommentCountByUser } from './comments-data.js';
 import { getFollowingCount } from './follows-data.js';
+import { getAchievementRecords } from './points-data.js';
 import { getProfile } from './profiles-data.js';
 import { getOwnedItemIds } from './shop-data.js';
 import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
@@ -13,6 +14,14 @@ import { getReputation, EMPTY_REPUTATION } from './reputation-data.js';
 // which claim_achievement() reads to pay out and re-verify eligibility
 // server-side; keep the two in sync by hand (tests/integration checks).
 export const ACHIEVEMENTS = [
+  {
+    id: 'completionist',
+    label: 'Completionist',
+    description: 'Unlocked every other achievement. Pays enough to start a newsletter.',
+    icon: 'star-filled',
+    reward: 500,
+    check: (s) => s.allAchievements,
+  },
   {
     id: 'icon',
     label: 'Icon',
@@ -198,12 +207,13 @@ export async function getUserStats(userId) {
   // failing query rejects the whole thing, and because the only caller
   // wraps it in a bare .catch() the entire progress chain - level chip,
   // achievement recording, toasts - vanishes with no error anywhere.
-  const [reputation, followingCount, totalComments, profile, ownedItemIds] = await Promise.all([
+  const [reputation, followingCount, totalComments, profile, ownedItemIds, recorded] = await Promise.all([
     getReputation(userId).catch(() => ({ ...EMPTY_REPUTATION })),
     getFollowingCount(userId).catch(() => 0),
     getCommentCountByUser(userId).catch(() => 0),
     getProfile(userId).catch(() => null),
     getOwnedItemIds(userId).catch(() => new Set()),
+    getAchievementRecords(userId).catch(() => ({ unlocked: new Set() })),
   ]);
 
   const accountAgeDays = profile ? (Date.now() - new Date(profile.createdAt).getTime()) / 86_400_000 : 0;
@@ -212,7 +222,7 @@ export async function getUserStats(userId) {
     profile && profile.equippedBg !== 'none' && profile.equippedBorder !== 'none' && profile.equippedNameEffect !== 'none'
   );
 
-  return {
+  const stats = {
     projectsPublished: reputation.publishedProjects,
     totalLikes: reputation.likesReceived,
     totalViews: reputation.totalViews,
@@ -230,6 +240,11 @@ export async function getUserStats(userId) {
     stylized,
     ownedItemsCount: ownedItemIds.size,
   };
+  // Completionist: every other achievement, recorded or earned right now.
+  stats.allAchievements = ACHIEVEMENTS.filter((a) => a.id !== 'completionist').every(
+    (a) => recorded.unlocked.has(a.id) || a.check(stats)
+  );
+  return stats;
 }
 
 // Achievements are permanent: once earned they stay earned, even if the

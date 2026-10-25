@@ -471,7 +471,7 @@ test('the dashboard keeps an entry without a live link a draft, and offers only 
 // database; Grace isn't, and has read the older T&G article).
 const GRACE_SIGNED_IN = { ...SIGNED_IN, id: SMOKE_IDS.GRACE, user_metadata: { display_name: 'Grace' } };
 
-test('News lists the newsletters with what is new to the reader; an editor also sees drafts and can start one', async () => {
+test('News lists the newsletters with what is new to the reader; anyone signed in can start one, an editor also sees drafts', async () => {
   const out = await open('/news', null);
   await out.page.locator('.news-letter-card').first().waitFor({ timeout: 10_000 });
   assert.deepEqual(await out.page.locator('.news-letter-title').allInnerTexts(), ['XOXD T&G Weekly']);
@@ -479,14 +479,20 @@ test('News lists the newsletters with what is new to the reader; an editor also 
   assert.equal(await out.page.locator('#new-letter-btn').count(), 0);
   await out.context.close();
 
+  // Grace isn't in the newsroom: starting one would cost her 500 points,
+  // and she has 120, so the form says so and won't submit.
   const grace = await open('/news', GRACE_SIGNED_IN);
   await grace.page.locator('.news-letter-card').first().waitFor({ timeout: 10_000 });
   assert.match(await grace.page.locator('.news-letter-card').first().innerText(), /1 new/i);
+  await grace.page.locator('#new-letter-btn').click();
+  await grace.page.locator('.news-terms').waitFor({ timeout: 10_000 });
+  assert.match(await grace.page.locator('.news-terms').innerText(), /costs 500 points - you have 120/);
+  assert.equal(await grace.page.locator('.modal-overlay button[type="submit"]').isDisabled(), true);
   await grace.context.close();
 
   const editor = await open('/news', SIGNED_IN);
   await editor.page.locator('#new-letter-btn').waitFor({ timeout: 10_000 });
-  assert.equal(await editor.page.locator('.news-letter-card').count(), 2);
+  assert.equal(await editor.page.locator('.news-letter-card').count(), 3);
   await editor.page.locator('#new-letter-btn').click();
   await editor.page.locator('#nl-title').fill('Indie Picks');
   await editor.page.locator('.modal-overlay button[type="submit"]').click();
@@ -511,6 +517,21 @@ test('a newsletter lists every article newest first, each marked read or new, wi
   const editor = await open(`/newsletter?id=${SMOKE_IDS.I1}`, SIGNED_IN);
   await editor.page.locator('#add-article').waitFor({ timeout: 10_000 });
   await editor.context.close();
+});
+
+test("a newsletter's owner runs it and picks its editors from the people around them", async () => {
+  const { page, context } = await open(`/newsletter?id=${SMOKE_IDS.I3}`, GRACE_SIGNED_IN);
+  await page.locator('#letter-editors').waitFor({ timeout: 10_000 });
+  assert.equal(await page.locator('#edit-letter').count(), 1);
+  assert.match(await page.locator('.news-letter-owner').innerText(), /Run by\s+Grace/);
+  await page.locator('#letter-editors').click();
+  // Ada follows Grace, so she's who Grace can add.
+  const add = page.locator(`[data-add="${SMOKE_IDS.ADA}"]`);
+  await add.waitFor({ timeout: 10_000 });
+  await add.click();
+  await page.locator(`[data-remove="${SMOKE_IDS.ADA}"]`).waitFor({ timeout: 10_000 });
+  assert.match(await page.locator('[data-current]').innerText(), /Owner[\s\S]*Ada[\s\S]*Remove/i);
+  await context.close();
 });
 
 test('an article reads like a news story, carries its likes and comments, and counts as read once opened', async () => {

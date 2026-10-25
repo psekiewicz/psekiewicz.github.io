@@ -4,23 +4,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../../components/icons';
 import { Text } from '../../components/Text';
-import { useMotion } from '../../theme/MotionProvider';
 import { Anim, ease } from './anim';
 import { C, DemosScene, DotGrid, NewsScene, RanksScene, TilesScene, WelcomeScene, YouScene } from './scenes';
 
 // The intro a new install opens on: the XOXD tiles, then Demos, News, Ranks
-// and You - each a few seconds, tied together by the app's own bottom bar,
-// whose highlight moves to the tab each scene is about - and a welcome with
-// the way in. It runs by itself; Next and Skip hurry it, and "Watch the intro
-// again" replays it.
+// and You, tied together by the app's own bottom bar, whose highlight moves
+// to the tab each scene is about - and a welcome with the way in. It waits
+// for the person: Next moves on, Skip jumps to the welcome, and "Watch the
+// intro again" replays it.
 //
 // `onFinish` gets where the person chose to go: 'register', 'login', or
 // 'browse' (skipped past the buttons).
 
 export type IntroExit = 'register' | 'login' | 'browse';
 
-const DURATIONS = [3500, 3300, 3300, 3300, 3300];
-const WELCOME = DURATIONS.length;
+const SCENES = 5;
+const WELCOME = SCENES;
 
 // The bar's five slots; scenes 1-4 light Demos, News, Ranks and You.
 const TABS: { name: string; icon: IconName }[] = [
@@ -35,18 +34,11 @@ const TAB_OF_SCENE: Record<number, number> = { 1: 0, 2: 1, 3: 3, 4: 4 };
 export function IntroScreen({ onFinish }: { onFinish: (exit: IntroExit) => void }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { enabled: motion } = useMotion();
   const [scene, setScene] = useState(0);
   // Bumped on replay, so the first scene mounts afresh even when it's showing.
   const [round, setRound] = useState(0);
 
   const go = useCallback((n: number) => setScene(n), []);
-
-  useEffect(() => {
-    if (scene >= WELCOME) return;
-    const t = setTimeout(() => go(scene + 1), motion ? DURATIONS[scene] : DURATIONS[scene] + 1500);
-    return () => clearTimeout(t);
-  }, [scene, round, motion, go]);
 
   // The bar's highlight slides from tab to tab.
   const stage = Math.min(width, 440);
@@ -113,11 +105,11 @@ export function IntroScreen({ onFinish }: { onFinish: (exit: IntroExit) => void 
         {scene < WELCOME ? (
           <View style={{ position: 'absolute', left: 20, right: 10, top, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ flex: 1, flexDirection: 'row', gap: 5 }}>
-              {DURATIONS.map((d, i) => (
+              {Array.from({ length: SCENES }, (_, i) => (
                 <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, overflow: 'hidden', backgroundColor: dark ? 'rgba(255,255,255,0.18)' : 'rgba(25,23,19,0.12)' }}>
                   {i < scene ? <View style={{ flex: 1, backgroundColor: dark ? C.white : C.ink }} /> : null}
                   {i === scene ? (
-                    <Anim key={sceneKey} from={{ scaleX: 0 }} duration={motion ? d : 1} easing={(t) => t} style={{ flex: 1, backgroundColor: dark ? C.white : C.ink, transformOrigin: 'left' }} />
+                    <Anim key={sceneKey} from={{ scaleX: 0 }} duration={400} style={{ flex: 1, backgroundColor: dark ? C.white : C.ink, transformOrigin: 'left' }} />
                   ) : null}
                 </View>
               ))}
