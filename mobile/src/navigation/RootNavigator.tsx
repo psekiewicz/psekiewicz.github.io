@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, LinkingOptions, NavigationContainer } from '@r
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 
 import { AnnouncementPopup } from '../components/AnnouncementPopup';
@@ -20,6 +20,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BirthDateGate } from '../screens/BirthDateGate';
+import { hasSeenIntro, IntroRoute, IntroScreen, markIntroSeen } from '../features/intro';
 import { LegalScreen } from '../screens/LegalScreen';
 import { ProjectDetailScreen } from '../screens/ProjectDetailScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -149,6 +150,19 @@ export function RootNavigator() {
   const [needsAge, setNeedsAge] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // A fresh install opens on the intro (features/intro), once. Where it sends
+  // the person - Create account or Sign in - is opened as soon as the
+  // navigator is ready.
+  const [introChecked, setIntroChecked] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const afterIntro = useRef<string | null>(null);
+  useEffect(() => {
+    hasSeenIntro().then((seen) => {
+      setShowIntro(!seen);
+      setIntroChecked(true);
+    });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     if (!user) {
@@ -190,8 +204,20 @@ export function RootNavigator() {
   // the time the reveal does, so waiting on it alone meant the splash was cut
   // off mid-flight, at a different frame every launch. Whichever takes longer
   // now decides, and SplashReveal bounds its own half so this can never hang.
-  if (loading || !revealed || (user && !ageChecked)) {
+  if (loading || !revealed || !introChecked || (user && !ageChecked)) {
     return <SplashReveal onDone={() => setRevealed(true)} />;
+  }
+
+  if (showIntro && !user) {
+    return (
+      <IntroScreen
+        onFinish={(exit) => {
+          markIntroSeen();
+          afterIntro.current = exit === 'register' ? 'Register' : exit === 'login' ? 'Login' : null;
+          setShowIntro(false);
+        }}
+      />
+    );
   }
 
   if (user && needsAge && !dismissed) {
@@ -199,7 +225,15 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navTheme}
+      linking={linking}
+      onReady={() => {
+        if (afterIntro.current) navigationRef.navigate(afterIntro.current);
+        afterIntro.current = null;
+      }}
+    >
       <Stack.Navigator
         id={undefined}
         screenOptions={{
@@ -235,6 +269,7 @@ export function RootNavigator() {
         <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
         <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
+        <Stack.Screen name="Intro" component={IntroRoute} options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'Reset password' }} />
         <Stack.Screen
           name="Register"
