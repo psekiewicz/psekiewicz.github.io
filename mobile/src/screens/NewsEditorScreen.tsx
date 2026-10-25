@@ -8,10 +8,12 @@ import { UploadButton } from '../components/UploadButton';
 import { useAuth } from '../context/AuthContext';
 import {
   createArticle,
-  createNewsletter,
   deleteArticle,
   getArticle,
+  getMyNewsletterTerms,
   getNewsletter,
+  NewsletterTerms,
+  startNewsletter,
   updateArticle,
   updateNewsletter,
 } from '../data/news';
@@ -20,10 +22,11 @@ import { withScheme } from '../lib/media';
 import { useTheme } from '../theme/ThemeProvider';
 import { gutter, space, typography } from '../theme/tokens';
 
-// What a news editor writes with: a newsletter (mode 'newsletter') or an
-// article in one (mode 'article'), new or - given its id - edited. RLS is what stops
-// anyone else; this screen is only reachable from controls editors see. The
-// native side of js/news-editor.js.
+// What news is written with: a newsletter (mode 'newsletter') or an article
+// in one (mode 'article'), new or - given its id - edited. Anyone signed in
+// can start a newsletter (it says what that costs them); articles and edits
+// are for whoever writes in that newsletter. RLS is what stops anyone else.
+// The native side of js/news-editor.js.
 export function NewsEditorScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -46,9 +49,18 @@ export function NewsEditorScreen({ navigation, route }: any) {
   const [imageUrl, setImageUrl] = useState('');
   const [sourceName, setSourceName] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  // Starting a newsletter: what it costs this person.
+  const [terms, setTerms] = useState<NewsletterTerms | null>(null);
+  const starting = isLetter && !editingId;
 
   useEffect(() => {
     navigation.setOptions({ title: `${editingId ? 'Edit' : 'New'} ${isLetter ? 'newsletter' : 'article'}` });
+    if (isLetter && !editingId) {
+      getMyNewsletterTerms()
+        .then(setTerms)
+        .catch((e) => setError(e.message));
+      return;
+    }
     if (!editingId) return;
     (async () => {
       try {
@@ -91,8 +103,8 @@ export function NewsEditorScreen({ navigation, route }: any) {
           await updateNewsletter(editingId, fields);
           navigation.goBack();
         } else {
-          const created = await createNewsletter(user.id, fields);
-          navigation.replace('Newsletter', { newsletterId: created.id });
+          const id = await startNewsletter(fields);
+          navigation.replace('Newsletter', { newsletterId: id });
         }
       } else {
         const fields = {
@@ -146,7 +158,7 @@ export function NewsEditorScreen({ navigation, route }: any) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginVertical: space.lg }}>
               <Switch value={published} onValueChange={setPublished} />
               <Text style={[typography.small, { color: colors.textMuted, flex: 1 }]}>
-                {published ? 'Published - everyone can read it' : 'Draft - only news editors see it'}
+                {published ? 'Published - everyone can read it' : 'Draft - only you and its editors see it'}
               </Text>
             </View>
           </>
@@ -163,11 +175,35 @@ export function NewsEditorScreen({ navigation, route }: any) {
             <Field label="Source link" value={sourceUrl} onChangeText={setSourceUrl} placeholder="https://…" />
           </>
         )}
-        <Button label={editingId ? 'Save changes' : isLetter ? 'Create newsletter' : 'Add article'} icon="check" onPress={save} loading={busy} />
+        {starting && terms ? <TermsNote terms={terms} /> : null}
+        <Button
+          label={editingId ? 'Save changes' : isLetter ? (terms?.cost ? `Start it · ${terms.cost} points` : 'Start newsletter') : 'Add article'}
+          icon="check"
+          onPress={save}
+          loading={busy}
+          disabled={starting && (!terms || !terms.canStart)}
+        />
         {!isLetter && editingId ? (
           <Button label="Delete article" icon="trash-2" variant="danger" onPress={confirmDelete} style={{ marginTop: space.md }} />
         ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+// What starting a newsletter takes, and where this person stands.
+function TermsNote({ terms }: { terms: NewsletterTerms }) {
+  const { colors } = useTheme();
+  const atCap = !terms.canStart && terms.owned >= terms.maxOwned;
+  const line = atCap
+    ? `You already run ${terms.maxOwned} newsletters - the most anyone can.`
+    : terms.cost === 0
+      ? `Free for you - you're popular. You'll own it, and pick who else writes in it.`
+      : `It costs ${terms.price} points - you have ${terms.points}. It's free once ${terms.popularFollowers} people follow you (${terms.followers} do now), and Completionist - every other achievement - pays ${terms.price} on its own.`;
+  return (
+    <View style={{ padding: space.md, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, marginBottom: space.lg, gap: space.xs }}>
+      <Eyebrow>Your own newsletter</Eyebrow>
+      <Text style={[typography.small, { color: colors.textMuted }]}>{line}</Text>
+    </View>
   );
 }

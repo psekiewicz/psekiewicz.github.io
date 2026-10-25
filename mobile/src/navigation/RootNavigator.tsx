@@ -28,6 +28,7 @@ import { SavedScreen } from '../screens/SavedScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ShopScreen } from '../screens/ShopScreen';
 import { ArticleScreen } from '../screens/ArticleScreen';
+import { NewsletterEditorsScreen } from '../screens/NewsletterEditorsScreen';
 import { NewsletterScreen } from '../screens/NewsletterScreen';
 import { NewsEditorScreen } from '../screens/NewsEditorScreen';
 import { NewsScreen } from '../screens/NewsScreen';
@@ -260,6 +261,7 @@ export function RootNavigator() {
         <Stack.Screen name="Newsletter" component={NewsletterScreen} options={{ title: '' }} />
         <Stack.Screen name="Article" component={ArticleScreen} options={{ title: '' }} />
         <Stack.Screen name="NewsEditor" component={NewsEditorScreen} options={{ title: '' }} />
+        <Stack.Screen name="NewsletterEditors" component={NewsletterEditorsScreen} options={{ title: '' }} />
         <Stack.Screen
           name="Notifications"
           component={NotificationsScreen}

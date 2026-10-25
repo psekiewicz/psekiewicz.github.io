@@ -20,6 +20,7 @@ import {
   getNewsletter,
   getReadIds,
   hasLikedArticle,
+  canWriteNewsletter,
   isNewsEditor,
   likeArticle,
   markRead,
@@ -60,17 +61,21 @@ export function ArticleScreen({ navigation, route }: any) {
       if (a) {
         // Marked read as soon as it opens; a failure only means it stays "New".
         markRead(user?.id, a.id).catch(() => {});
-        const [l, list, canEdit, admin] = await Promise.all([
+        const [l, list, newsroom, writes, admin] = await Promise.all([
           getNewsletter(a.newsletterId),
           getArticles(a.newsletterId),
           user ? isNewsEditor() : Promise.resolve(false),
+          user ? canWriteNewsletter(a.newsletterId) : Promise.resolve(false),
           user ? isAdmin(user.id).catch(() => false) : Promise.resolve(false),
         ]);
         const rest = list.filter((x) => x.id !== a.id).slice(0, 6);
+        // The newsroom and the newsletter's owner edit anything in it and
+        // moderate its comments; one of its editors edits their own.
+        const manages = newsroom || Boolean(user && l?.createdBy === user.id);
         setLetter(l);
         setOthers(rest);
-        setEditor(canEdit);
-        setModerator(canEdit || admin);
+        setEditor(manages || (writes && a.authorId === user?.id));
+        setModerator(manages || admin);
         setReadIds(await getReadIds(user?.id, rest.map((x) => x.id)).catch(() => new Set<string>()));
         if (user) setLiked(await hasLikedArticle(user.id, a.id).catch(() => false));
       }

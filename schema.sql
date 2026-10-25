@@ -3189,8 +3189,8 @@ create policy "Signed-in users comment on articles"
 -- The commenter, any news editor (moderating the newsroom's own pages), the
 -- newsletter's owner (moderating theirs) or an admin can remove a comment.
 drop policy if exists "Comment author, news editor or admin can delete" on public.news_comments;
-drop policy if exists "Comment author, newsletter owner, news editor or admin can delete" on public.news_comments;
-create policy "Comment author, newsletter owner, news editor or admin can delete"
+drop policy if exists "Commenter, newsletter owner, news editor or admin delete" on public.news_comments;
+create policy "Commenter, newsletter owner, news editor or admin delete"
   on public.news_comments for delete
   using (
     (select auth.uid()) = user_id

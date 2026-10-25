@@ -7,7 +7,7 @@ import { Text } from '../components/Text';
 import { TopBar } from '../components/TopBar';
 import { Badge, Button, EmptyState, ErrorNote, Loading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
-import { getArticleIdsByNewsletter, getNewsletters, getReadIds, isNewsEditor, Newsletter } from '../data/news';
+import { getArticleIdsByNewsletter, getNewsletters, getReadIds, Newsletter } from '../data/news';
 import { column, TAB_BAR_CLEARANCE } from '../lib/layout';
 import { safeUrl } from '../lib/utils';
 import { useTheme } from '../theme/ThemeProvider';
@@ -15,8 +15,9 @@ import { radius, space, typography } from '../theme/tokens';
 
 // News, a tab: the newsletters there are to read - the native side of the
 // site's /news. Each says how many articles it holds and how many this reader hasn't
-// opened; one opens on the Newsletter screen. News editors (granted by an
-// admin) also see drafts and can start a newsletter.
+// opened; one opens on the Newsletter screen. Anyone signed in can start one
+// of their own (for points, or free once they're popular), and sees the drafts
+// of the ones they write in.
 export function NewsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -24,17 +25,15 @@ export function NewsScreen({ navigation }: any) {
   const [letters, setLetters] = useState<Newsletter[]>([]);
   const [articleIds, setArticleIds] = useState<Map<string, string[]>>(new Map());
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [editor, setEditor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const [list, canEdit] = await Promise.all([getNewsletters(), user ? isNewsEditor() : Promise.resolve(false)]);
+      const list = await getNewsletters();
       const byLetter = await getArticleIdsByNewsletter(list.map((l) => l.id)).catch(() => new Map<string, string[]>());
       setLetters(list);
-      setEditor(canEdit);
       setArticleIds(byLetter);
       setReadIds(await getReadIds(user?.id, [...byLetter.values()].flat()).catch(() => new Set<string>()));
       setError('');
@@ -79,10 +78,10 @@ export function NewsScreen({ navigation }: any) {
             <View style={{ gap: space.sm, marginBottom: space.sm }}>
               <ErrorNote message={error} />
               <Text style={[typography.small, { color: colors.textMuted }]}>
-                Newsletters from XOXD's editors - like Tech & Gaming Weekly, every Saturday. Pick one to see everything in it, and what you haven't read yet.
+                Newsletters from XOXD and the people on it. Pick one to see everything in it, and what you haven't read yet.
               </Text>
-              {editor ? (
-                <Button label="New newsletter" icon="plus" small onPress={() => navigation.navigate('NewsEditor', { mode: 'newsletter' })} />
+              {user ? (
+                <Button label="Start your own" icon="plus" small onPress={() => navigation.navigate('NewsEditor', { mode: 'newsletter' })} />
               ) : null}
             </View>
           }

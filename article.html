@@ -77,7 +77,7 @@
     import { getCurrentUser } from '/js/auth.js';
     import { isAdmin } from '/js/admin-data.js';
     import {
-      getArticle, getArticles, getNewsletter, isNewsEditor, articleDate, updateArticle, deleteArticle, getReadIds, markRead,
+      getArticle, getArticles, getNewsletter, isNewsEditor, canWriteNewsletter, articleDate, updateArticle, deleteArticle, getReadIds, markRead,
       hasLikedArticle, likeArticle, unlikeArticle, getArticleComments, addArticleComment, deleteArticleComment, linkedDemoIds,
     } from '/js/news-data.js';
     import { getDemosByIds } from '/js/projects-data.js';
@@ -99,8 +99,11 @@
     const id = new URLSearchParams(location.search).get('id');
 
     let user = null;
+    // Edits this article: the newsroom, the newsletter's owner, or its author
+    // while they still write in it.
     let editor = false;
-    let admin = false;
+    // Removes any comment here: the newsroom, the newsletter's owner, an admin.
+    let moderator = false;
 
     function render(article, letter, others, readIds, author) {
       document.getElementById('page-title').textContent = `${article.title} - XOXD`;
@@ -223,7 +226,7 @@
         ? comments
             .map((c) => {
               const p = profiles.get(c.userId);
-              const canDelete = Boolean(user && (user.id === c.userId || editor || admin));
+              const canDelete = Boolean(user && (user.id === c.userId || moderator));
               return `
                 <article class="comment">
                   <div class="comment-head">
@@ -295,15 +298,17 @@
         user = await getCurrentUser();
         // Marked read as soon as it opens; a failure only means it stays "New".
         markRead(user?.id, article.id).catch(() => {});
-        const [letter, siblings, isEditor, isAdminUser, authors] = await Promise.all([
+        const [letter, siblings, newsroom, writes, isAdminUser, authors] = await Promise.all([
           getNewsletter(article.newsletterId),
           getArticles(article.newsletterId),
           user ? isNewsEditor() : false,
+          user ? canWriteNewsletter(article.newsletterId) : false,
           user ? isAdmin(user.id).catch(() => false) : false,
           getProfilesByIds([article.authorId]).catch(() => new Map()),
         ]);
-        editor = isEditor;
-        admin = isAdminUser;
+        const manages = newsroom || Boolean(user && letter?.createdBy === user.id);
+        editor = manages || Boolean(writes && user && article.authorId === user.id);
+        moderator = manages || isAdminUser;
         const others = siblings.filter((a) => a.id !== article.id).slice(0, 6);
         const readIds = await getReadIds(user?.id, others.map((a) => a.id)).catch(() => new Set());
         render(article, letter, others, readIds, authors.get(article.authorId));

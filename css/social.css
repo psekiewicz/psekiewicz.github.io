@@ -1582,6 +1582,69 @@ textarea:focus {
   margin-top: 14px;
 }
 
+/* "Run by" under a newsletter's name. */
+.news-letter-owner {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-faint);
+}
+
+.news-letter-owner a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+}
+
+.news-letter-owner a:hover {
+  color: var(--color-primary);
+}
+
+/* What starting a newsletter takes, in its form. */
+.news-terms {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  line-height: 1.5;
+}
+
+/* The editors panel: one person per row, an action on the right. */
+.news-people {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.news-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.news-person-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  font-weight: 600;
+}
+
+.news-person-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
 .news-article-card {
   display: grid;
   grid-template-columns: 1fr;

@@ -1,9 +1,10 @@
 import { supabase } from './supabase-init.js';
 
 // News: newsletters and the articles in them (the news_* tables in
-// schema.sql). Anyone reads; only news editors write, and only an admin
-// decides who is one - RLS enforces all of it, these functions only shape
-// the rows and throw on error. People like and comment on an article, which
+// schema.sql). Anyone reads. The newsroom (news editors, whom only an admin
+// picks) writes anywhere; anyone else can start a newsletter of their own -
+// for points, or free once they're popular - and pick its editors. RLS
+// enforces all of it, these functions only shape the rows and throw on error. People like and comment on an article, which
 // earns nobody XP, and each reader's "read" marks are their own: kept in
 // news_reads when signed in, in this browser otherwise. The mirror of
 // mobile/src/data/news.ts.
@@ -63,7 +64,14 @@ export async function isNewsEditor() {
   return Boolean(data);
 }
 
-// Drafts come back only for an editor (RLS).
+// The newsroom, this newsletter's owner, or one of its editors.
+export async function canWriteNewsletter(newsletterId) {
+  const { data, error } = await supabase.rpc('can_write_newsletter', { p_newsletter: newsletterId });
+  if (error) return false;
+  return Boolean(data);
+}
+
+// Drafts come back only for whoever writes in them (RLS).
 export async function getNewsletters() {
   const { data, error } = await supabase.from(NEWSLETTERS).select('*').order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
@@ -118,14 +126,57 @@ function newsletterRow(fields) {
   };
 }
 
-export async function createNewsletter(uid, fields) {
-  const { data, error } = await supabase
-    .from(NEWSLETTERS)
-    .insert({ ...newsletterRow(fields), created_by: uid })
-    .select()
-    .single();
+// --- starting a newsletter of your own -------------------------------------
+
+// Where the signed-in person stands: what a newsletter costs them now (0 once
+// they're popular), and whether they can start one at all.
+export async function getMyNewsletterTerms() {
+  const { data, error } = await supabase.rpc('my_newsletter_terms');
   if (error) throw new Error(error.message);
-  return toNewsletter(data);
+  return {
+    price: data.price,
+    popularFollowers: data.popular_followers,
+    maxOwned: data.max_owned,
+    followers: data.followers,
+    owned: data.owned,
+    points: data.points,
+    cost: data.cost,
+    canStart: Boolean(data.can_start),
+  };
+}
+
+// Pays (unless popular) and creates it, owned by the caller. Returns its id.
+export async function startNewsletter(fields) {
+  const row = newsletterRow(fields);
+  const { data, error } = await supabase.rpc('start_newsletter', {
+    p_title: row.title,
+    p_summary: row.summary,
+    p_cover_url: row.cover_url,
+  });
+  if (error) throw new Error(error.message);
+  if (!row.published) await updateNewsletter(data, fields);
+  return data;
+}
+
+// --- a newsletter's editors -------------------------------------------------
+
+export async function getNewsletterEditorIds(newsletterId) {
+  const { data, error } = await supabase.from('newsletter_editors').select('user_id').eq('newsletter_id', newsletterId);
+  if (error) throw new Error(error.message);
+  return data.map((row) => row.user_id);
+}
+
+export async function addNewsletterEditor(newsletterId, ownerId, userId) {
+  const { error } = await supabase
+    .from('newsletter_editors')
+    .insert({ newsletter_id: newsletterId, user_id: userId, added_by: ownerId });
+  if (error) throw new Error(error.message);
+}
+
+// The owner removes an editor, or an editor steps down.
+export async function removeNewsletterEditor(newsletterId, userId) {
+  const { error } = await supabase.from('newsletter_editors').delete().eq('newsletter_id', newsletterId).eq('user_id', userId);
+  if (error) throw new Error(error.message);
 }
 
 export async function updateNewsletter(id, fields) {

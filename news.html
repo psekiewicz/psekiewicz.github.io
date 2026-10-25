@@ -60,7 +60,7 @@
         <div class="section-head">
           <div>
             <h1 style="margin-bottom:6px;">News</h1>
-            <p style="margin:0;">Newsletters from XOXD's editors - like Tech &amp; Gaming Weekly, every Saturday. Pick one to see everything in it, and what you haven't read yet.</p>
+            <p style="margin:0;">Newsletters from XOXD and the people on it. Pick one to see everything in it, and what you haven't read yet.</p>
           </div>
           <div id="editor-actions"></div>
         </div>
@@ -86,14 +86,15 @@
   <script type="module" src="/js/animations.js"></script>
   <script type="module">
     import { getCurrentUser } from '/js/auth.js';
-    import { getNewsletters, getArticleIdsByNewsletter, getReadIds, isNewsEditor, createNewsletter } from '/js/news-data.js';
+    import { getNewsletters, getArticleIdsByNewsletter, getReadIds, getMyNewsletterTerms, startNewsletter } from '/js/news-data.js';
     import { escapeHtml, safeUrl } from '/js/utils.js';
     import { icon } from '/js/icons.js';
 
     // News: the newsletters there are to read. Each card says how many
     // articles it holds and how many of them this reader hasn't opened yet;
-    // a newsletter opens on /newsletter. News editors (granted by an admin)
-    // also see drafts and a "New newsletter" button.
+    // a newsletter opens on /newsletter. Anyone signed in can start one of
+    // their own (for points, or free once they're popular), and sees the
+    // drafts of the ones they write in.
 
     document.getElementById('year').textContent = new Date().getFullYear();
     const root = document.getElementById('news-root');
@@ -123,19 +124,20 @@
 
     (async () => {
       try {
-        const [user, editor, letters] = await Promise.all([getCurrentUser(), isNewsEditor(), getNewsletters()]);
-        if (user && editor) {
+        const [user, letters] = await Promise.all([getCurrentUser(), getNewsletters()]);
+        if (user) {
           const actions = document.getElementById('editor-actions');
-          actions.innerHTML = `<button class="btn btn-primary" id="new-letter-btn" type="button">${icon('plus', { size: 16 })} New newsletter</button>`;
+          actions.innerHTML = `<button class="btn btn-primary" id="new-letter-btn" type="button">${icon('plus', { size: 16 })} Start your own</button>`;
           document.getElementById('new-letter-btn').addEventListener('click', async () => {
-            const { openNewsletterForm } = await import('/js/news-editor.js');
+            const [{ openNewsletterForm }, terms] = await Promise.all([import('/js/news-editor.js'), getMyNewsletterTerms()]);
             let created = null;
             await openNewsletterForm({
+              terms,
               save: async (fields) => {
-                created = await createNewsletter(user.id, fields);
+                created = await startNewsletter(fields);
               },
             });
-            if (created) window.location.href = `/newsletter?id=${encodeURIComponent(created.id)}`;
+            if (created) window.location.href = `/newsletter?id=${encodeURIComponent(created)}`;
           });
         }
         if (!letters.length) {
