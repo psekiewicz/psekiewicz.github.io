@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, LinkingOptions, NavigationContainer } from '@r
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 
 import { AnnouncementPopup } from '../components/AnnouncementPopup';
@@ -20,7 +20,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { BirthDateGate } from '../screens/BirthDateGate';
-import { hasSeenIntro, IntroRoute, IntroScreen, markIntroSeen } from '../features/intro';
+import { hasSeenIntro, IntroRoute } from '../features/intro';
 import { LegalScreen } from '../screens/LegalScreen';
 import { ProjectDetailScreen } from '../screens/ProjectDetailScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -151,12 +151,11 @@ export function RootNavigator() {
   const [needsAge, setNeedsAge] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // A fresh install opens on the intro (features/intro), once. Where it sends
-  // the person - Create account or Sign in - is opened as soon as the
-  // navigator is ready.
+  // A fresh install opens on the intro (features/intro), once: it starts as a
+  // screen above the tabs, so Sign in and Create account open on top of it
+  // and Back comes back to it, and leaving it lands on Demos.
   const [introChecked, setIntroChecked] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
-  const afterIntro = useRef<string | null>(null);
   useEffect(() => {
     hasSeenIntro().then((seen) => {
       setShowIntro(!seen);
@@ -209,18 +208,6 @@ export function RootNavigator() {
     return <SplashReveal onDone={() => setRevealed(true)} />;
   }
 
-  if (showIntro && !user) {
-    return (
-      <IntroScreen
-        onFinish={(exit) => {
-          markIntroSeen();
-          afterIntro.current = exit === 'register' ? 'Register' : exit === 'login' ? 'Login' : null;
-          setShowIntro(false);
-        }}
-      />
-    );
-  }
-
   if (user && needsAge && !dismissed) {
     return <BirthDateGate onDone={() => setDismissed(true)} />;
   }
@@ -230,10 +217,13 @@ export function RootNavigator() {
       ref={navigationRef}
       theme={navTheme}
       linking={linking}
-      onReady={() => {
-        if (afterIntro.current) navigationRef.navigate(afterIntro.current);
-        afterIntro.current = null;
-      }}
+      // Read once, when the navigator first mounts; a link the app was opened
+      // with wins over it, and the intro waits for the next launch.
+      initialState={
+        showIntro && !user
+          ? ({ index: 1, routes: [{ name: 'Tabs' }, { name: 'Intro', params: { firstRun: true } }] } as any)
+          : undefined
+      }
     >
       <Stack.Navigator
         id={undefined}
@@ -271,7 +261,15 @@ export function RootNavigator() {
         <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
         <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
-        <Stack.Screen name="Intro" component={IntroRoute} options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen
+          name="Intro"
+          component={IntroRoute}
+          options={({ route }: any) =>
+            route.params?.firstRun
+              ? { headerShown: false, animation: 'none', gestureEnabled: false }
+              : { headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }
+          }
+        />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'Reset password' }} />
         <Stack.Screen
           name="Register"
