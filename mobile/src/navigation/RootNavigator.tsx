@@ -151,14 +151,15 @@ export function RootNavigator() {
   const [needsAge, setNeedsAge] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // A fresh install opens on the intro (features/intro), once: it starts as a
-  // screen above the tabs, so Sign in and Create account open on top of it
-  // and Back comes back to it, and leaving it lands on Demos.
+  // Signed out, every launch opens on the start screen (features/intro): the
+  // whole tour on a fresh install, its last screen - the way in - after that.
+  // It starts as a screen above the tabs, so Sign in and Create account open
+  // on top of it and Back comes back to it, and leaving it lands on Demos.
   const [introChecked, setIntroChecked] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
+  const [introSeen, setIntroSeen] = useState(false);
   useEffect(() => {
     hasSeenIntro().then((seen) => {
-      setShowIntro(!seen);
+      setIntroSeen(seen);
       setIntroChecked(true);
     });
   }, []);
@@ -218,11 +219,11 @@ export function RootNavigator() {
       theme={navTheme}
       linking={linking}
       // Read once, when the navigator first mounts; a link the app was opened
-      // with wins over it, and the intro waits for the next launch.
+      // with wins over it, and the start screen waits for the next launch.
       initialState={
-        showIntro && !user
-          ? ({ index: 1, routes: [{ name: 'Tabs' }, { name: 'Intro', params: { firstRun: true } }] } as any)
-          : undefined
+        user
+          ? undefined
+          : ({ index: 1, routes: [{ name: 'Tabs' }, { name: 'Intro', params: { onLaunch: true, tour: !introSeen } }] } as any)
       }
     >
       <Stack.Navigator
@@ -265,7 +266,7 @@ export function RootNavigator() {
           name="Intro"
           component={IntroRoute}
           options={({ route }: any) =>
-            route.params?.firstRun
+            route.params?.onLaunch
               ? { headerShown: false, animation: 'none', gestureEnabled: false }
               : { headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }
           }

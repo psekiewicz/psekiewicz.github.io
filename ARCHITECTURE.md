@@ -252,10 +252,11 @@ A fresh install opens on the intro, `mobile/src/features/intro/`: a short
 animated tour (the XOXD tiles, then Demos, News, Ranks and You, tied together
 by the app's own bottom bar) that moves on only when the person taps Next,
 and ends on Get started / I already have an account / Continue without
-signing in. It is shown once per install (a flag in AsyncStorage), as a
-screen above the tabs, so Sign in and Create account open on top of it and
-Back returns to it; signing in or continuing leaves it for Demos. Settings
-can replay it. It is built from two small pieces in `anim.tsx` - `Anim` (enter,
+signing in. Signed out, every launch opens on it, as a screen above the
+tabs: the whole tour once per install (a flag in AsyncStorage), only its last
+screen after that. Sign in and Create account open on top of it and Back
+returns to it; signing in or continuing leaves it for Demos. Settings can
+replay it. It is built from two small pieces in `anim.tsx` - `Anim` (enter,
 then optionally move on) and `Loop` - on React Native's own Animated, native
 driver, and with reduced motion on every element simply rests where its
 animation would end.
