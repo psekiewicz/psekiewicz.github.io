@@ -93,6 +93,21 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # The runtime version is what an over-the-air update has to match to
+      # reach this APK. Left to itself, Gradle computes it in the middle of the
+      # build, after compiling has already written into node_modules (the
+      # build/ folders of masked-view and expo-updates' own Gradle plugin), so
+      # every APK got a runtime version no update was ever published for, and
+      # updates never arrived. Computed here instead, on the clean checkout,
+      # exactly as eas-update.yml's publish computes it, and handed to Gradle.
+      - name: Fix the runtime version
+        run: |
+          set -euo pipefail
+          fingerprint=$(npx expo-updates fingerprint:generate --platform android 2>/dev/null \
+            | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>console.log(JSON.parse(s).hash))')
+          echo "Runtime version: $fingerprint"
+          echo "EXPO_UPDATES_FINGERPRINT_OVERRIDE=$fingerprint" >> "$GITHUB_ENV"
+
       # Also applies plugins/withReleaseSigning.js, which is what gives the
       # generated project a release signing config to point at below.
       # Android refuses to install a build whose versionCode is not higher than
@@ -183,7 +198,7 @@ jobs:
         run: ./gradlew bundleRelease --no-daemon
         working-directory: mobile/android
 
-      - name: Confirm the artifacts are not debug-signed
+      - name: Confirm the artifacts are release-signed and take updates
         if: github.event_name != 'pull_request'
         # A release build that silently fell back to the debug key is worse
         # than a failed build, because it looks like a shippable APK. The
@@ -220,6 +235,15 @@ jobs:
           fi
           printf '%s\n' "$certs"
           echo "Signature check passed."
+
+          # And that the APK asks for the runtime version updates are published
+          # under (see "Fix the runtime version"); otherwise none would reach it.
+          embedded=$(unzip -p "$apk" assets/fingerprint)
+          if [ "$embedded" != "$EXPO_UPDATES_FINGERPRINT_OVERRIDE" ]; then
+            echo "::error::The APK's runtime version is $embedded, not $EXPO_UPDATES_FINGERPRINT_OVERRIDE - over-the-air updates would never reach it."
+            exit 1
+          fi
+          echo "Runtime version check passed: $embedded"
         working-directory: mobile/android
 
       - name: Upload APK
