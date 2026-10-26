@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../../components/icons';
 import { Text } from '../../components/Text';
+import { useAuth } from '../../context/AuthContext';
 import { Anim, ease } from './anim';
 import { C, DemosScene, DotGrid, NewsScene, RanksScene, TilesScene, WelcomeScene, YouScene } from './scenes';
+import { markIntroSeen } from './storage';
 
 // The intro a new install opens on: the XOXD tiles, then Demos, News, Ranks
 // and You, tied together by the app's own bottom bar, whose highlight moves
@@ -14,7 +16,7 @@ import { C, DemosScene, DotGrid, NewsScene, RanksScene, TilesScene, WelcomeScene
 // intro again" replays it.
 //
 // `onFinish` gets where the person chose to go: 'register', 'login', or
-// 'browse' (skipped past the buttons).
+// 'browse' (continue without signing in).
 
 export type IntroExit = 'register' | 'login' | 'browse';
 
@@ -93,6 +95,9 @@ export function IntroScreen({ onFinish }: { onFinish: (exit: IntroExit) => void 
               </Pressable>
               <Pressable onPress={() => onFinish('login')} accessibilityRole="button" style={styles.textButton}>
                 <Text style={{ fontSize: 13, fontWeight: '600', color: C.white }}>I already have an account</Text>
+              </Pressable>
+              <Pressable onPress={() => onFinish('browse')} accessibilityRole="button" style={styles.textButton}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: C.white }}>Continue without signing in</Text>
               </Pressable>
               <Pressable onPress={replay} accessibilityRole="button" style={styles.textButton}>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: C.faint }}>Watch the intro again</Text>
@@ -198,13 +203,35 @@ const styles = StyleSheet.create({
   },
 });
 
-/** The intro as a screen of its own (Settings -> Watch the intro). */
-export function IntroRoute({ navigation }: any) {
+/**
+ * The intro as a screen: on a fresh install it sits above the tabs
+ * (`firstRun`), and Settings -> Watch the intro opens it again. Sign in and
+ * Create account open on top of it, so Back returns here; continuing without
+ * signing in, or signing in, leaves it for the app.
+ */
+export function IntroRoute({ navigation, route }: any) {
+  const { user } = useAuth();
+  const firstRun = Boolean(route.params?.firstRun);
+
+  // Once per install: leaving it any way at all counts as seen.
+  useEffect(() => {
+    return () => {
+      if (firstRun) markIntroSeen();
+    };
+  }, [firstRun]);
+
+  // Signed in from the screen opened over it: the tour has done its job.
+  const signedIn = useRef(Boolean(user));
+  useEffect(() => {
+    if (user && !signedIn.current) navigation.goBack();
+    signedIn.current = Boolean(user);
+  }, [user, navigation]);
+
   return (
     <IntroScreen
       onFinish={(exit) => {
-        if (exit === 'register') navigation.replace('Register');
-        else if (exit === 'login') navigation.replace('Login');
+        if (exit === 'register') navigation.navigate('Register');
+        else if (exit === 'login') navigation.navigate('Login');
         else navigation.goBack();
       }}
     />
