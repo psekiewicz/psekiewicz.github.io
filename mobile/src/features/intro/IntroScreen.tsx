@@ -33,10 +33,12 @@ const TABS: { name: string; icon: IconName }[] = [
 ];
 const TAB_OF_SCENE: Record<number, number> = { 1: 0, 2: 1, 3: 3, 4: 4 };
 
-export function IntroScreen({ onFinish }: { onFinish: (exit: IntroExit) => void }) {
+// `welcomeOnly` opens straight on the last screen - how a signed-out launch
+// after the first one starts; "Watch the intro again" still plays it all.
+export function IntroScreen({ onFinish, welcomeOnly = false }: { onFinish: (exit: IntroExit) => void; welcomeOnly?: boolean }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [scene, setScene] = useState(0);
+  const [scene, setScene] = useState(welcomeOnly ? WELCOME : 0);
   // Bumped on replay, so the first scene mounts afresh even when it's showing.
   const [round, setRound] = useState(0);
 
@@ -204,21 +206,22 @@ const styles = StyleSheet.create({
 });
 
 /**
- * The intro as a screen: on a fresh install it sits above the tabs
- * (`firstRun`), and Settings -> Watch the intro opens it again. Sign in and
+ * The intro as a screen. Signed out, every launch starts on it, above the
+ * tabs (`onLaunch`): the whole tour the first time (`tour`), only its last
+ * screen after that. Settings -> Watch the intro opens it too. Sign in and
  * Create account open on top of it, so Back returns here; continuing without
  * signing in, or signing in, leaves it for the app.
  */
 export function IntroRoute({ navigation, route }: any) {
   const { user } = useAuth();
-  const firstRun = Boolean(route.params?.firstRun);
+  const tour = Boolean(route.params?.tour);
 
-  // Once per install: leaving it any way at all counts as seen.
+  // The whole tour plays once per install: leaving it any way counts as seen.
   useEffect(() => {
     return () => {
-      if (firstRun) markIntroSeen();
+      if (tour) markIntroSeen();
     };
-  }, [firstRun]);
+  }, [tour]);
 
   // Signed in from the screen opened over it: the tour has done its job.
   const signedIn = useRef(Boolean(user));
@@ -229,6 +232,7 @@ export function IntroRoute({ navigation, route }: any) {
 
   return (
     <IntroScreen
+      welcomeOnly={Boolean(route.params?.onLaunch) && !tour}
       onFinish={(exit) => {
         if (exit === 'register') navigation.navigate('Register');
         else if (exit === 'login') navigation.navigate('Login');
