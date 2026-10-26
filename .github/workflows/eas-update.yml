@@ -12,7 +12,8 @@ name: Publish OTA update
 # remembering to bump it; forgetting meant an update that crashed on launch.
 # mobile/fingerprint.config.js leaves out the version fields, because
 # android.yml stamps versionCode just before it builds and this job never sees
-# that number.
+# that number. android.yml computes the APK's runtime version the same way,
+# on a clean checkout before Gradle runs, and checks the built APK carries it.
 #
 # Needs the repository secret EXPO_TOKEN (expo.dev > Account > Access tokens).
 
