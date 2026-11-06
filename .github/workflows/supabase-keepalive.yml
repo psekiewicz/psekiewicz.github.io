@@ -1,0 +1,30 @@
+name: Supabase keep-alive
+
+# Free-tier Supabase projects pause after 7 days without requests, and the
+# audio guide (Przewodnik) reads its content from this project. This calls
+# public.keepalive() every 3 days. The URL and anon key are public values.
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        env:
+          URL: https://tgikpcvkkkbkqtahmczt.supabase.co
+          KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWtwY3Zra2tia3F0YWhtY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc3NjAsImV4cCI6MjEwMjE4Mzc2MH0.xphJ9crDXfddBJmIsB0x78vU1fMrpcuiiyGB-bDDOMg
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+            "$URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" -d '{}')
+          echo "Supabase responded with HTTP $status"
+          if [ "$status" -ge 400 ]; then
+            echo "::error::Supabase keep-alive ping failed with HTTP $status"
+            exit 1
+          fi
