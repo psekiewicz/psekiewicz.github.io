@@ -1,11 +1,8 @@
 name: Supabase keep-alive
 
-# Free-tier Supabase projects auto-pause after 7 days with no API activity.
-# This pings the REST API every 3 days (comfortable margin) so the project
-# never goes to sleep, without needing anyone to remember to open the app.
-# URL/anon key are read straight from js/supabase-config.js — the same
-# public, safe-to-expose values already committed there — so this workflow
-# never needs editing if the Supabase project ever changes.
+# Free-tier Supabase projects pause after 7 days without requests, and the
+# audio guide (Przewodnik) reads its content from this project. This calls
+# public.keepalive() every 3 days. The URL and anon key are public values.
 
 on:
   schedule:
@@ -16,18 +13,17 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Ping Supabase REST API
+      - name: Ping Supabase
+        env:
+          URL: https://tgikpcvkkkbkqtahmczt.supabase.co
+          KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWtwY3Zra2tia3F0YWhtY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc3NjAsImV4cCI6MjEwMjE4Mzc2MH0.xphJ9crDXfddBJmIsB0x78vU1fMrpcuiiyGB-bDDOMg
         run: |
           set -euo pipefail
-          url=$(grep -oP "url: '\K[^']+" js/supabase-config.js)
-          key=$(grep -oP "anonKey: '\K[^']+" js/supabase-config.js)
-          status=$(curl -sS -o /dev/null -w '%{http_code}' \
-            "$url/rest/v1/profiles?select=id&limit=1" \
-            -H "apikey: $key" \
-            -H "Authorization: Bearer $key")
-          echo "Supabase REST API responded with HTTP $status"
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+            "$URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" -d '{}')
+          echo "Supabase responded with HTTP $status"
           if [ "$status" -ge 400 ]; then
             echo "::error::Supabase keep-alive ping failed with HTTP $status"
             exit 1
